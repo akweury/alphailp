@@ -16,7 +16,7 @@ from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
 
 from clause_generator import ClauseGenerator
-
+from src import config
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -233,8 +233,8 @@ def main(n):
     #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
 
     # load logical representations
-    lark_path = '/Users/jing/PycharmProjects/alphailp/src/lark/exp.lark'
-    lang_base_path = '/Users/jing/PycharmProjects/alphailp/data/lang/'
+    lark_path = str(config.root) + '/src/lark/exp.lark'
+    lang_base_path = str(config.root) + '/data/lang/'
     lang, clauses, bk_clauses, bk, atoms = get_lang(
         lark_path, lang_base_path, args.dataset_type, args.dataset)
     clauses = update_initial_clauses(clauses, args.n_obj)
