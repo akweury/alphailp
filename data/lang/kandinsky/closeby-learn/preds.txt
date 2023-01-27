@@ -5,11 +5,11 @@ diff_color_pair:2:object,object
 diff_shape_pair:2:object,object
 diff_color:2:color,color
 diff_shape:2:shape,shape
-at_area_0:2:object, object
-at_area_1:2:object, object
-at_area_2:2:object, object
-at_area_3:2:object, object
-at_area_4:2:object, object
-at_area_5:2:object, object
-at_area_6:2:object, object
-at_area_7:2:object, object
+at_area_0:2:object,object
+at_area_1:2:object,object
+at_area_2:2:object,object
+at_area_3:2:object,object
+at_area_4:2:object,object
+at_area_5:2:object,object
+at_area_6:2:object,object
+at_area_7:2:object,object
