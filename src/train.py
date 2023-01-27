@@ -26,7 +26,7 @@ def get_args():
                         default=1, help="Batch size in beam search")
     parser.add_argument("--e", type=int, default=6,
                         help="The maximum number of objects in one image")
-    parser.add_argument("--dataset", choices=["twopairs", "threepairs", "red-triangle", "closeby",
+    parser.add_argument("--dataset", choices=["twopairs", "threepairs", "red-triangle", "closeby", "closeby-learn",
                                               "online", "online-pair", "nine-circles", "clevr-hans0", "clevr-hans1",
                                               "clevr-hans2"], help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
