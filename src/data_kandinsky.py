@@ -5,6 +5,9 @@ import torch.utils.data
 import torchvision.transforms as transforms
 import numpy as np
 import random
+
+import config
+
 random.seed(10)
 
 class KANDINSKY(torch.utils.data.Dataset):
@@ -39,7 +42,7 @@ def load_images_and_labels(dataset='twopairs', split='train', img_size=128, smal
     """
     image_paths = []
     labels = []
-    folder = '/Users/jing/PycharmProjects/alphailp/data/kandinsky/' + dataset + '/' + split + '/'
+    folder = str(config.root) + '/data/kandinsky/' + dataset + '/' + split + '/'
     true_folder = folder + 'true/'
     false_folder = folder + 'false/'
 
@@ -101,7 +104,7 @@ def load_images_and_labels_positive(dataset='twopairs', split='train', img_size=
     """
     image_paths = []
     labels = []
-    folder = '/Users/jing/PycharmProjects/alphailp/data/kandinsky/' + dataset + '/' + split + '/'
+    folder = str(config.root) + '/data/kandinsky/' + dataset + '/' + split + '/'
     true_folder = folder + 'true/'
 
     filenames = sorted(os.listdir(true_folder))[:500]
