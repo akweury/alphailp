@@ -16,7 +16,7 @@ from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
 
 from clause_generator import ClauseGenerator
-from src import config
+import config
 
 def get_args():
     parser = argparse.ArgumentParser()
