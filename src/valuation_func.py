@@ -107,6 +107,41 @@ class YOLOClosebyValuationFunction(nn.Module):
         return torch.stack((x, y))
 
 
+class YOLOLearnClosebyValuationFunction(nn.Module):
+    """The function v_closeby.
+    """
+
+    def __init__(self, device):
+        super(YOLOLearnClosebyValuationFunction, self).__init__()
+        self.device = device
+        self.logi = LogisticRegression(input_dim=1)
+        self.logi.to(device)
+
+    def forward(self, z_1, z_2):
+        """
+        Args:
+            z_1 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+            z_2 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+
+        Returns:
+            A batch of probabilities.
+        """
+        c_1 = self.to_center(z_1)
+        c_2 = self.to_center(z_2)
+
+        dist = torch.norm(c_1 - c_2, dim=0).unsqueeze(-1)
+        return self.logi(dist).squeeze()
+
+    def to_center(self, z):
+        x = (z[:, 0] + z[:, 2]) / 2
+        y = (z[:, 1] + z[:, 3]) / 2
+        return torch.stack((x, y))
+
+
 class YOLOOnlineValuationFunction(nn.Module):
     """The function v_online.
     """

@@ -9,7 +9,8 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from rtpt import RTPT
 
-from nsfr_utils import denormalize_kandinsky, get_data_loader, get_data_pos_loader, get_prob, get_nsfr_model, update_initial_clauses
+from nsfr_utils import denormalize_kandinsky, get_data_loader, get_data_pos_loader, get_prob, get_nsfr_model, \
+    update_initial_clauses
 from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, generate_captions
 from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
@@ -26,7 +27,8 @@ def get_args():
     parser.add_argument("--e", type=int, default=6,
                         help="The maximum number of objects in one image")
     parser.add_argument("--dataset", choices=["twopairs", "threepairs", "red-triangle", "closeby",
-                                              "online", "online-pair", "nine-circles", "clevr-hans0", "clevr-hans1", "clevr-hans2"], help="Use kandinsky patterns dataset")
+                                              "online", "online-pair", "nine-circles", "clevr-hans0", "clevr-hans1",
+                                              "clevr-hans2"], help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
                         help="kandinsky or clevr")
     parser.add_argument('--device', default='cpu',
@@ -64,6 +66,7 @@ def get_args():
     args = parser.parse_args()
     return args
 
+
 # def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=False):
 
 
@@ -77,7 +80,7 @@ def discretise_NSFR(NSFR, args, device):
     return get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=False)
 
 
-def predict(NSFR, loader, args, device,  th=None, split='train'):
+def predict(NSFR, loader, args, device, th=None, split='train'):
     predicted_list = []
     target_list = []
     count = 0
@@ -98,7 +101,8 @@ def predict(NSFR, loader, args, device,  th=None, split='train'):
             captions = generate_captions(
                 V_T, NSFR.atoms, NSFR.pm.e, th=0.3)
             save_images_with_captions(
-                imgs, captions, folder='result/kandinsky/' + args.dataset + '/' + split + '/', img_id_start=count, dataset=args.dataset)
+                imgs, captions, folder='result/kandinsky/' + args.dataset + '/' + split + '/', img_id_start=count,
+                dataset=args.dataset)
         count += V_T.size(0)  # batch size
 
     predicted = torch.cat(predicted_list, dim=0).detach().cpu().numpy()
@@ -117,7 +121,7 @@ def predict(NSFR, loader, args, device,  th=None, split='train'):
         max_accuracy = accuracies.max()
         max_accuracy_threshold = thresholds[accuracies.argmax()]
         rec_score = recall_score(
-            target_set,  [m > thresh for m in predicted], average=None)
+            target_set, [m > thresh for m in predicted], average=None)
 
         print('target_set: ', target_set, target_set.shape)
         print('predicted: ', predicted, predicted.shape)
@@ -129,7 +133,7 @@ def predict(NSFR, loader, args, device,  th=None, split='train'):
     else:
         accuracy = accuracy_score(target_set, [m > th for m in predicted])
         rec_score = recall_score(
-            target_set,  [m > th for m in predicted], average=None)
+            target_set, [m > th for m in predicted], average=None)
         return accuracy, rec_score, th
 
 
@@ -158,10 +162,10 @@ def train_nsfr(args, NSFR, optimizer, train_loader, val_loader, test_loader, dev
             #    NSFR.print_program()
             #    print("loss: ", loss.item())
 
-            #print("Predicting on validation data set...")
+            # print("Predicting on validation data set...")
             # acc_val, rec_val, th_val = predict(
             #    NSFR, val_loader, args, device, writer, th=0.33, split='val')
-            #print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
+            # print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
         loss_list.append(loss_i)
         rtpt.step(subtitle=f"loss={loss_i:2.2f}")
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
@@ -212,7 +216,7 @@ def main(n):
         device = torch.device('cuda:' + args.device)
 
     print('device: ', device)
-    #run_name = 'predict/' + args.dataset
+    # run_name = 'predict/' + args.dataset
     writer = SummaryWriter(f"runs/{name}", purge_step=0)
 
     # Create RTPT object
@@ -222,15 +226,15 @@ def main(n):
     rtpt.start()
 
     # get torch data loader
-    train_loader, val_loader,  test_loader = get_data_loader(args)
+    train_loader, val_loader, test_loader = get_data_loader(args)
 
     train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(
         args)
     #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
 
     # load logical representations
-    lark_path = 'src/lark/exp.lark'
-    lang_base_path = 'data/lang/'
+    lark_path = '/Users/jing/PycharmProjects/alphailp/src/lark/exp.lark'
+    lang_base_path = '/Users/jing/PycharmProjects/alphailp/data/lang/'
     lang, clauses, bk_clauses, bk, atoms = get_lang(
         lark_path, lang_base_path, args.dataset_type, args.dataset)
     clauses = update_initial_clauses(clauses, args.n_obj)
