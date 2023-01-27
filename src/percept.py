@@ -8,6 +8,8 @@ from yolov5.utils.general import non_max_suppression
 
 from slot_attention.model import SlotAttention_model
 import sys
+import config
+
 sys.path.insert(0, 'src/yolov5')
 
 
@@ -29,7 +31,7 @@ class YOLOPerceptionModule(nn.Module):
         self.device = device
         self.train_ = train  # the parameters should be trained or not
         self.model = self.load_model(
-            path='/Users/jing/PycharmProjects/alphailp/src/weights/yolov5/best.pt', device=device)
+            path= str(config.root) + '/src/weights/yolov5/best.pt', device=device)
         # function to transform e * d shape, YOLO returns class labels,
         # it should be decomposed into attributes and the probabilities.
         self.preprocess = YOLOPreprocess(device)
