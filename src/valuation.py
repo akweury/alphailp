@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from valuation_func import *
-
+import config
 
 class YOLOValuationModule(nn.Module):
     """A module to call valuation functions.
@@ -48,7 +48,7 @@ class YOLOValuationModule(nn.Module):
         #if dataset in ['closeby', 'red-triangle']:
         vfs['closeby'] = v_closeby
         vfs['closeby'].load_state_dict(torch.load(
-                '/Users/jing/PycharmProjects/alphailp/src/weights/neural_predicates/closeby_pretrain.pt', map_location=device))
+                str(config.root) + '/src/weights/neural_predicates/closeby_pretrain.pt', map_location=device))
         vfs['closeby'].eval()
         layers.append(v_closeby)
             #print('Pretrained  neural predicate closeby have been loaded!')
@@ -56,7 +56,7 @@ class YOLOValuationModule(nn.Module):
         v_online = YOLOOnlineValuationFunction(device)
         vfs['online'] = v_online
         vfs['online'].load_state_dict(torch.load(
-                '/Users/jing/PycharmProjects/alphailp/src/weights/neural_predicates/online_pretrain.pt', map_location=device))
+                str(config.root) + '/src/weights/neural_predicates/online_pretrain.pt', map_location=device))
         vfs['online'].eval()
         layers.append(v_online)
         #    print('Pretrained  neural predicate online have been loaded!')
