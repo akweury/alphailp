@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from rtpt import RTPT
-#from sklearn.metrics import precision_score, accuracy_score
+# from sklearn.metrics import precision_score, accuracy_score
 from sklearn.metrics import accuracy_score, recall_score, roc_curve
 
 from nsfr_utils import get_data_loader
@@ -20,7 +20,6 @@ from valuation import *
 from neural_utils import LogisticRegression
 
 matplotlib.use("Agg")
-
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -99,6 +98,7 @@ def compute_acc(outputs, targets):
     predicts = np.argmax(outputs, axis=1)
     return accuracy_score(targets, predicts)
 
+
 def predict(net, predict_net, loader, device, th=None):
     predicted_list = []
     target_list = []
@@ -128,7 +128,7 @@ def predict(net, predict_net, loader, device, th=None):
         max_accuracy = accuracies.max()
         max_accuracy_threshold = thresholds[accuracies.argmax()]
         rec_score = recall_score(
-            target_set,  [m > thresh for m in predicted], average=None)
+            target_set, [m > thresh for m in predicted], average=None)
 
         print('target_set: ', target_set, target_set.shape)
         print('predicted: ', predicted, predicted.shape)
@@ -140,10 +140,12 @@ def predict(net, predict_net, loader, device, th=None):
     else:
         accuracy = accuracy_score(target_set, [m > th for m in predicted])
         rec_score = recall_score(
-            target_set,  [m > th for m in predicted], average=None)
+            target_set, [m > th for m in predicted], average=None)
         return accuracy, rec_score, th
 
-def run(net, predict_net,  loader, optimizer, criterion, writer, args, device, train=False, epoch=0,  rtpt=None, max_obj_num=4):
+
+def run(net, predict_net, loader, optimizer, criterion, writer, args, device, train=False, epoch=0, rtpt=None,
+        max_obj_num=4):
     iters_per_epoch = len(loader)
     loss_list = []
     val_loss_list = []
@@ -172,6 +174,7 @@ def run(net, predict_net,  loader, optimizer, criterion, writer, args, device, t
             optimizer.step()
 
     return loss_sum
+
 
 def main(n):
     args = get_args()
@@ -206,9 +209,10 @@ def main(n):
     for epoch in np.arange(start_epoch, args.epochs + start_epoch):
         # training step
         loss = run(
-            net, predict_net, train_loader, optimizer, criterion, writer, args, device=device, train=True, epoch=epoch, rtpt=rtpt)
+            net, predict_net, train_loader, optimizer, criterion, writer, args, device=device, train=True, epoch=epoch,
+            rtpt=rtpt)
         writer.add_scalar("metric/train_loss", loss, global_step=epoch)
-        #writer.add_scalar("metric/train_acc",
+        # writer.add_scalar("metric/train_acc",
         #                          mean_acc, global_step=epoch)
         rtpt.step(subtitle=f"loss={loss:2.2f}")
 
@@ -216,7 +220,7 @@ def main(n):
             # validation split
             print("Predicting on validation data set...")
             acc_val, rec_val, th_val = predict(net, predict_net, val_loader, device)
-            writer.add_scalar("metric/val_acc",acc_val, global_step=epoch)
+            writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
 
             print("Predicting on training data set...")
             # training split
@@ -228,7 +232,7 @@ def main(n):
             acc_test, rec_test, th_test = predict(
                 net, predict_net, test_loader, device, th=th_val)
             writer.add_scalar("metric/test_acc", acc_test, global_step=epoch)
-            #def predict(net, predict_net, loader, device, th=None):
+            # def predict(net, predict_net, loader, device, th=None):
             print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
             print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
             print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)

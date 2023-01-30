@@ -107,17 +107,17 @@ class YOLOClosebyValuationFunction(nn.Module):
         return torch.stack((x, y))
 
 
-class YOLOLearnClosebyValuationFunction(nn.Module):
-    """The function v_closeby.
+class YOLOAreaValuationFunction(nn.Module):
+    """The function v_area.
     """
 
     def __init__(self, device):
-        super(YOLOLearnClosebyValuationFunction, self).__init__()
+        super(YOLOAreaValuationFunction, self).__init__()
         self.device = device
         self.logi = LogisticRegression(input_dim=1)
         self.logi.to(device)
 
-    def forward(self, z_1, z_2):
+    def forward(self, z_1, z_2, area):
         """
         Args:
             z_1 (tensor): 2-d tensor (B * D), the object-centric representation.
@@ -134,7 +134,20 @@ class YOLOLearnClosebyValuationFunction(nn.Module):
         c_2 = self.to_center(z_2)
 
         dist = torch.norm(c_1 - c_2, dim=0).unsqueeze(-1)
-        return self.logi(dist).squeeze()
+
+        dir_vec = c_2 - c_1
+        rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
+        phi_clock_shift = (90 - int(phi)) % 360
+        clock_num_zone = (phi_clock_shift + 15) // 30 % 12
+
+        sss = (area * clock_num_zone).sum(dim=1)
+        return self.logi(dist).squeeze(), clock_num_zone
+
+    def cart2pol(self, x, y):
+        rho = torch.sqrt(x ** 2 + y ** 2)
+        phi = torch.atan2(y, x)
+        phi = torch.rad2deg(phi)
+        return (rho, phi)
 
     def to_center(self, z):
         x = (z[:, 0] + z[:, 2]) / 2
@@ -166,9 +179,9 @@ class YOLOOnlineValuationFunction(nn.Module):
             A batch of probabilities.
         """
         X = torch.stack([self.to_center_x(z)
-                        for z in [z_1, z_2, z_3, z_4, z_5]], dim=1).unsqueeze(-1)
+                         for z in [z_1, z_2, z_3, z_4, z_5]], dim=1).unsqueeze(-1)
         Y = torch.stack([self.to_center_y(z)
-                        for z in [z_1, z_2, z_3, z_4, z_5]], dim=1).unsqueeze(-1)
+                         for z in [z_1, z_2, z_3, z_4, z_5]], dim=1).unsqueeze(-1)
         # add bias term
         X = torch.cat([torch.ones_like(X), X], dim=2)
         X_T = torch.transpose(X, 1, 2)
@@ -176,7 +189,7 @@ class YOLOOnlineValuationFunction(nn.Module):
         W = torch.matmul(torch.matmul(
             torch.inverse(torch.matmul(X_T, X)), X_T), Y)
         diff = torch.norm(Y - torch.sum(torch.transpose(W, 1, 2)
-                          * X, dim=2).unsqueeze(-1), dim=1)
+                                        * X, dim=2).unsqueeze(-1), dim=1)
         self.diff = diff
         return self.logi(diff).squeeze()
 

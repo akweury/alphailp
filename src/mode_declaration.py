@@ -31,14 +31,14 @@ class ModeDeclaration(object):
       modeb(*, parent(-human, +human)).:-
        modeb(*, male(+human)).
        The  first  mode  states  that  the  head  of  the  rule
-        (and  therefore  the  targetpredicate) will be the atomgrandfather.
-         Its parameters have to be of the typehuman.
+        (and  therefore  the  target predicate) will be the atom grandfather.
+         Its parameters have to be of the type human.
           The  +  annotation  says  that  the  rule  head  needs  two  variables.
-            Thesecond mode declaration states theparentatom and declares again
-             that theparameters have to be of type human.
-              Here,  the + at the second parametertells, that the system is only allowed to
-              introduce the atomparentin the clauseif it already contains a variable of type human.
-               The−at the first attribute in-troduces a new variable into the clause.
+            The second mode declaration states the parent atom and declares again
+             that the parameters have to be of type human.
+              Here,  the + at the second parameter tells, that the system is only allowed to
+              introduce the atom parent in the clause if it already contains a variable of type human.
+               That the first attribute introduces a new variable into the clause.
     The  modes  consist  of  a  recall n that  states  how  many  versions  of  the
     literal are allowed in a rule and an atom with place-markers that state the literal to-gether
     with annotations on input- and output-variables as well as constants (see[Mug95]).
@@ -122,30 +122,47 @@ def get_mode_declarations_kandinsky(lang, obj_num):
     p_image = ModeTerm('+', DataType('image'))
     m_object = ModeTerm('-', DataType('object'))
     p_object = ModeTerm('+', DataType('object'))
+
+    m_area = ModeTerm('-', DataType('area'))
+    p_area = ModeTerm('+', DataType('area'))
+
+
     s_color = ModeTerm('#', DataType('color'))
     s_shape = ModeTerm('#', DataType('shape'))
+    s_area = ModeTerm('#', DataType('area'))
 
     # modeh_1 = ModeDeclaration('head', 'kp', p_image)
 
     modeb_list = [
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name(
-            'in'), [m_object, p_image]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name(
-            'color'), [p_object, s_color]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name(
-            'shape'), [p_object, s_shape]),
-        ModeDeclaration('body', 2, lang.get_pred_by_name(
-            'same_color_pair'), [p_object, p_object], ordered=False),
-        ModeDeclaration('body', 2, lang.get_pred_by_name(
-            'same_shape_pair'), [p_object, p_object], ordered=False),
-        ModeDeclaration('body', 1, lang.get_pred_by_name(
-            'diff_color_pair'), [p_object, p_object], ordered=False),
-        ModeDeclaration('body', 1, lang.get_pred_by_name(
-            'diff_shape_pair'), [p_object, p_object], ordered=False),
-        ModeDeclaration('body', 1, lang.get_pred_by_name(
-            'closeby'), [p_object, p_object], ordered=False),
-        ModeDeclaration('body', 1, lang.get_pred_by_name('online'), [
-                        p_object, p_object, p_object, p_object, p_object], ordered=False),
+        ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('color'), [p_object, s_color]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('shape'), [p_object, s_shape]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('area'), [p_object, p_object, s_area]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_0'), [s_area]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_1'), [s_area]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_2'), [s_area]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_3'), [s_area]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_4'), [s_area]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_5'), [s_area]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_6'), [s_area]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_7'), [s_area]),
+
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_0'), [p_object, p_object]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_1'), [p_object, p_object]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_2'), [p_object, p_object]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_3'), [p_object, p_object]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_4'), [p_object, p_object]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_5'), [p_object, p_object]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_6'), [p_object, p_object]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_7'), [p_object, p_object]),
+
+        ModeDeclaration('body', 2, lang.get_pred_by_name('same_color_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 2, lang.get_pred_by_name('same_shape_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('diff_color_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('diff_shape_pair'), [p_object, p_object], ordered=False),
+
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('closeby'), [p_object, p_object], ordered=False),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('online'), [p_object, p_object, p_object, p_object, p_object], ordered=False),
         # ModeDeclaration('body', 2, lang.get_pred_by_name('diff_shape_pair'), [p_object, p_object]),
     ]
     return modeb_list

@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from valuation_func import *
 import config
 
+
 class YOLOValuationModule(nn.Module):
     """A module to call valuation functions.
         Attrs:
@@ -36,30 +37,45 @@ class YOLOValuationModule(nn.Module):
         """
         layers = []
         vfs = {}  # a dictionary: pred_name -> valuation function
+
         v_color = YOLOColorValuationFunction()
         vfs['color'] = v_color
         layers.append(v_color)
+
         v_shape = YOLOShapeValuationFunction()
         vfs['shape'] = v_shape
+        layers.append(v_shape)
+
         v_in = YOLOInValuationFunction()
         vfs['in'] = v_in
         layers.append(v_in)
-        v_closeby = YOLOClosebyValuationFunction(device)
-        #if dataset in ['closeby', 'red-triangle']:
-        vfs['closeby'] = v_closeby
-        vfs['closeby'].load_state_dict(torch.load(
-                str(config.root) + '/src/weights/neural_predicates/closeby_pretrain.pt', map_location=device))
-        vfs['closeby'].eval()
-        layers.append(v_closeby)
-            #print('Pretrained  neural predicate closeby have been loaded!')
-        #elif dataset == 'online-pair':
-        v_online = YOLOOnlineValuationFunction(device)
-        vfs['online'] = v_online
-        vfs['online'].load_state_dict(torch.load(
-                str(config.root) + '/src/weights/neural_predicates/online_pretrain.pt', map_location=device))
-        vfs['online'].eval()
-        layers.append(v_online)
+
+        v_area = YOLOAreaValuationFunction(device)
+        # if dataset in ['closeby', 'red-triangle']:
+        vfs['area'] = v_area
+        # vfs['area'].load_state_dict(torch.load(
+        #     str(config.root) + '/src/weights/neural_predicates/area_pretrain.pt', map_location=device))
+        # vfs['area'].eval()
+        layers.append(v_area)
+
+        # v_closeby = YOLOClosebyValuationFunction(device)
+        # #if dataset in ['closeby', 'red-triangle']:
+        # vfs['closeby'] = v_closeby
+        # vfs['closeby'].load_state_dict(torch.load(
+        #         str(config.root) + '/src/weights/neural_predicates/closeby_pretrain.pt', map_location=device))
+        # vfs['closeby'].eval()
+        # layers.append(v_closeby)
+        # print('Pretrained  neural predicate closeby have been loaded!')
+        # elif dataset == 'online-pair':
+
+        # v_online = YOLOOnlineValuationFunction(device)
+        # vfs['online'] = v_online
+        # vfs['online'].load_state_dict(torch.load(
+        #         str(config.root) + '/src/weights/neural_predicates/online_pretrain.pt', map_location=device))
+        # vfs['online'].eval()
+        # layers.append(v_online)
         #    print('Pretrained  neural predicate online have been loaded!')
+
         return nn.ModuleList(layers), vfs
 
     def init_attr_encodings(self, device):
@@ -71,7 +87,7 @@ class YOLOValuationModule(nn.Module):
             Returns:
                 attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
         """
-        attr_names = ['color', 'shape']
+        attr_names = ['color', 'shape', 'area']
         attrs = {}
         for dtype_name in attr_names:
             for term in self.lang.get_by_dtype_name(dtype_name):
@@ -98,7 +114,7 @@ class YOLOValuationModule(nn.Module):
             # call valuation function
             return self.vfs[atom.pred.name](*args)
         else:
-            return torch.zeros((zs.size(0), )).to(
+            return torch.zeros((zs.size(0),)).to(
                 torch.float32).to(self.device)
 
     def ground_to_tensor(self, term, zs):
@@ -114,13 +130,13 @@ class YOLOValuationModule(nn.Module):
         term_index = self.lang.term_index(term)
         if term.dtype.name == 'object':
             return zs[:, term_index]
-        elif term.dtype.name == 'color' or term.dtype.name == 'shape':
+        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'area':
             return self.attrs[term]
         elif term.dtype.name == 'image':
             return None
         else:
             assert 0, "Invalid datatype of the given term: " + \
-                str(term) + ':' + term.dtype.name
+                      str(term) + ':' + term.dtype.name
 
 
 class SlotAttentionValuationModule(nn.Module):

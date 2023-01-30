@@ -90,6 +90,12 @@ def generate_atoms(lang):
         args_str_list = []
         # args_mem = []
         for args in args_list:
+
+            # check if args and pred correspond are in the same area
+            if pred.dtypes[0].name == 'area':
+                if pred.name[0] + pred.name[5:] != args[0].name:
+                    continue
+
             if len(args) == 1 or len(set(args)) == len(args):
                 # if len(args) == 1 or (args[0] != args[1] and args[0].mode == args[1].mode):
                 # if len(set(args)) == len(args):
