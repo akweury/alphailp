@@ -16,6 +16,7 @@ class Term(ABC):
         name (str): Name of the term.
         dtype (datatype): Data type of the term.
     """
+
     @abstractmethod
     def __repr__(self, level=0):
         pass
@@ -266,7 +267,7 @@ class FuncTerm(Term):
         if i == 0:
             return self.func_symbol
         else:
-            return self.pre_order(i-1)
+            return self.pre_order(i - 1)
 
     def get_ith_symbol(self, i):
         return self.to_list()[i]
@@ -284,6 +285,7 @@ class FuncTerm(Term):
                     for term in x.args:
                         index[0] += 1
                         _loop(term, i)
+
         _loop(self, i)
         return result[0]
 
@@ -299,6 +301,7 @@ class FuncTerm(Term):
             else:
                 # const or var
                 ls.append(x)
+
         _to_list(self)
         return ls
 
@@ -326,11 +329,11 @@ class FuncTerm(Term):
 
     def max_depth(self):
         arg_depth = max([arg.max_depth() for arg in self.args])
-        return arg_depth+1
+        return arg_depth + 1
 
     def min_depth(self):
         arg_depth = min([arg.min_depth() for arg in self.args])
-        return arg_depth+1
+        return arg_depth + 1
 
     def size(self):
         size = 1
@@ -400,11 +403,45 @@ class NeuralPredicate(Predicate):
 
     def __hash__(self):
         return hash(self.__str__())
+
     def __repr__(self):
         return self.__str__()
 
     def __eq__(self, other):
         return type(other) == NeuralPredicate and self.name == other.name
+
+    def __lt__(self, other):
+        return self.__str__() < other.__str__()
+
+
+class InventedPredicate(Predicate):
+    """Invented predicats.
+
+    A class of invented predicates, which are associated with a differentiable function.
+
+    Attributes:
+        name (str): A name of the predicate.
+        arity (int): The arity of the predicate.
+        dtypes (List[DataTypes]): The data types of the arguments for the predicate.
+    """
+
+    def __init__(self, name, arity, dtypes):
+        super(InventedPredicate, self).__init__(name, arity, dtypes)
+        self.name = name
+        self.arity = arity
+        self.dtypes = dtypes
+
+    def __str__(self):
+        return self.name + '/' + str(self.arity) + '/' + str(self.dtypes)
+
+    def __hash__(self):
+        return hash(self.__str__())
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return type(other) == InventedPredicate and self.name == other.name
 
     def __lt__(self, other):
         return self.__str__() < other.__str__()
@@ -504,7 +541,7 @@ class Atom(object):
         result = []
         for i, term in enumerate(self.terms):
             if self.pred.dtypes[i] == dtype:
-                #print( self.pred.dtypes[i], dtype,  self.pred.dtypes[i] == dtype)
+                # print( self.pred.dtypes[i], dtype,  self.pred.dtypes[i] == dtype)
                 result.append(term)
         return result
 
@@ -522,10 +559,10 @@ class Clause(object):
     def __init__(self, head, body):
         self.head = head
         self.body = sorted(body)
-        #self.body = body
-        #print(self)
+        # self.body = body
+        # print(self)
         ###self._rename()
-        #print(self)
+        # print(self)
 
     def __str__(self):
 
@@ -542,9 +579,9 @@ class Clause(object):
         return self.__str__()
 
     def __eq__(self, other):
-        #return self._id_str() == other._id_str()
+        # return self._id_str() == other._id_str()
         return self.head == other.head and set(self.body) == set(other.body)
-        #return self.__str__() == other.__str__()
+        # return self.__str__() == other.__str__()
 
     def __hash__(self):
         return hash(self.__str__())
@@ -619,7 +656,6 @@ class Clause(object):
         body_str = body_str[0:-1]
         body_str += '.'
         return head_str + ':-' + body_str
-
 
     def is_tautology(self):
         return len(self.body) == 1 and self.body[0] == self.head

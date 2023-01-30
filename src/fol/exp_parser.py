@@ -57,6 +57,10 @@ class ExpTree(Transformer):
         pred = [p for p in self.lang.preds if p.name == alphas[0]][0]
         return pred
 
+    def invented_preds(self, alphas):
+        pred = [p for p in self.lang.invented_preds if p.name == alphas[0]][0]
+        return pred
+
     def term(self, content):
         if type(content[0]) == FuncSymbol:
             func = content[0]

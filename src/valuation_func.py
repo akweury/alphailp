@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from neural_utils import MLP, LogisticRegression
+from neural_utils import MLP, LogisticRegression, AreaNet
 
 
 ################################
@@ -115,6 +115,7 @@ class YOLOAreaValuationFunction(nn.Module):
         super(YOLOAreaValuationFunction, self).__init__()
         self.device = device
         self.logi = LogisticRegression(input_dim=1)
+        self.area_net = AreaNet(input_dim=2, output_dim=8)
         self.logi.to(device)
 
     def forward(self, z_1, z_2, area):
@@ -139,13 +140,17 @@ class YOLOAreaValuationFunction(nn.Module):
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
         phi_clock_shift = (90 - int(phi)) % 360
         zone_id = phi_clock_shift // 90 % 4
-
-
-
-        area_pred = torch.zeros(area.size())
+        if rho<0.3:
+            zone_shift = 0
+        else:
+            zone_shift = 4
+        zone_id = zone_id + zone_shift
+        area_pred = torch.zeros(area.shape)
         area_pred[zone_id] = 1
 
-        return self.logi(area * area_pred).squeeze(),
+        # area_pred = self.area_net(rho, phi)
+
+        return (area * area_pred).sum()
 
     def cart2pol(self, x, y):
         rho = torch.sqrt(x ** 2 + y ** 2)

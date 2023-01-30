@@ -12,6 +12,28 @@ class LogisticRegression(torch.nn.Module):
         y_pred = torch.sigmoid(self.linear(x))
         return y_pred
 
+
+class AreaNet(torch.nn.Module):
+    def __init__(self, input_dim, output_dim=1):
+        super(AreaNet, self).__init__()
+        hidden_dim = 32
+
+        self.layer_1 = nn.Linear(input_dim, hidden_dim)
+        self.layer_2 = nn.Linear(hidden_dim, hidden_dim)
+        self.layer_out = nn.Linear(hidden_dim, output_dim)
+        self.relu = nn.ReLU()
+
+    def forward(self, rho, phi):
+
+        x = torch.cat((rho, phi))
+
+        x = self.relu(self.layer_1(x))
+        x = self.relu(self.layer_2(x))
+        x = self.layer_out(x)
+        x = torch.sigmoid(x)
+        return x
+
+
 class MLP(nn.Module):
     def __init__(self, in_channels, out_channels, hidden_dim=256):
         super(MLP, self).__init__()

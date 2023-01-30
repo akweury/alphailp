@@ -18,10 +18,11 @@ class Language(object):
         consts (List[Const]): A set of constants.
     """
 
-    def __init__(self, preds, funcs, consts):
+    def __init__(self, preds, funcs, consts, invented_preds):
         self.preds = preds
         self.funcs = funcs
         self.consts = consts
+        self.invented_preds = invented_preds
 
     def __str__(self):
         s = "===Predicates===\n"
@@ -33,6 +34,9 @@ class Language(object):
         s += "===Constants===\n"
         for const in self.consts:
             s += const.__str__() + '\n'
+        s += "===Invented Predicates===\n"
+        for invented_predicates in self.invented_preds:
+            s += invented_predicates.__str__() + '\n'
         return s
 
     def __repr__(self):
@@ -117,6 +121,19 @@ class Language(object):
         pred = [pred for pred in self.preds if pred.name == pred_name]
         assert len(pred) == 1, 'Too many or less match in ' + pred_name
         return pred[0]
+
+    def get_invented_pred_by_name(self, invented_pred_name):
+        """Get the predicate by its name.
+
+        Args:
+            invented_pred_name (str): The name of the predicate.
+
+        Returns:
+            InventedPredicat: The matched invented preicate with the given name.
+        """
+        invented_pred = [invented_pred for invented_pred in self.invented_preds if invented_pred.name == invented_pred_name]
+        assert len(invented_pred) == 1, 'Too many or less match in ' + invented_pred_name
+        return invented_pred[0]
 
 
 class DataType(object):

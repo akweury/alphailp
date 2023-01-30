@@ -1,6 +1,7 @@
 clause : atom ":-" body
 
 body : atom "," body
+	 | atom ";" body
 	 | atom "."
 	 | "."
 
