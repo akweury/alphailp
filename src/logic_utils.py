@@ -4,7 +4,6 @@ from fol.logic import *
 from fol.data_utils import DataUtils
 from fol.language import DataType
 
-
 p_ = Predicate('.', 1, [DataType('spec')])
 false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
 true = Atom(p_, [Const('__T__', dtype=DataType('spec'))])
@@ -19,11 +18,12 @@ def get_lang(lark_path, lang_base_path, dataset_type, dataset):
     du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
                    dataset_type=dataset_type, dataset=dataset)
     lang = du.load_language()
-    clauses = du.load_clauses(du.base_path + 'clauses.txt', lang)
-    bk_clauses = du.load_clauses(du.base_path + 'bk_clauses.txt', lang)
-    bk = du.load_atoms(du.base_path + 'bk.txt', lang)
+    clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
+    bk_clauses = du.load_clauses( str(du.base_path / 'bk_clauses.txt'), lang)
+    bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
     atoms = generate_atoms(lang)
     return lang, clauses, bk_clauses, bk, atoms
+
 
 def get_searched_clauses(lark_path, lang_base_path, dataset_type, dataset):
     """Load the language of first-order logic from files.
@@ -34,9 +34,8 @@ def get_searched_clauses(lark_path, lang_base_path, dataset_type, dataset):
     du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
                    dataset_type=dataset_type, dataset=dataset)
     lang = du.load_language()
-    clauses = du.load_clauses(du.base_path  +  dataset +  '/beam_searched.txt', lang)
+    clauses = du.load_clauses(str(du.base_path / dataset / 'beam_searched.txt'), lang)
     return clauses
-
 
 
 def _get_lang(lark_path, lang_base_path, dataset_type, dataset):
@@ -53,6 +52,7 @@ def _get_lang(lark_path, lang_base_path, dataset_type, dataset):
     atoms = generate_atoms(lang)
     return lang, clauses, bk, atoms
 
+
 def build_infer_module(clauses, bk_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
     I = te.encode()
@@ -66,6 +66,7 @@ def build_infer_module(clauses, bk_clauses, atoms, lang, device, m=3, infer_step
     im = InferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk)
     return im
 
+
 def build_clause_infer_module(clauses, bk_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
     I = te.encode()
@@ -78,6 +79,7 @@ def build_clause_infer_module(clauses, bk_clauses, atoms, lang, device, m=3, inf
 
     im = ClauseInferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk)
     return im
+
 
 def generate_atoms(lang):
     spec_atoms = [false, true]

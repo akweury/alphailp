@@ -138,10 +138,14 @@ class YOLOAreaValuationFunction(nn.Module):
         dir_vec = c_2 - c_1
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
         phi_clock_shift = (90 - int(phi)) % 360
-        clock_num_zone = (phi_clock_shift + 15) // 30 % 12
+        zone_id = phi_clock_shift // 90 % 4
 
-        sss = (area * clock_num_zone).sum(dim=1)
-        return self.logi(dist).squeeze(), clock_num_zone
+
+
+        area_pred = torch.zeros(area.size())
+        area_pred[zone_id] = 1
+
+        return self.logi(area * area_pred).squeeze(),
 
     def cart2pol(self, x, y):
         rho = torch.sqrt(x ** 2 + y ** 2)

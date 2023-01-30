@@ -1,5 +1,5 @@
 import argparse
-
+from pathlib import Path
 import numpy as np
 from sklearn.metrics import accuracy_score, recall_score, roc_curve
 
@@ -17,6 +17,7 @@ from mode_declaration import get_mode_declarations
 
 from clause_generator import ClauseGenerator
 import config
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -198,14 +199,14 @@ def main(n):
     args = get_args()
     if args.dataset_type == 'kandinsky':
         if args.small_data:
-            name = 'small_KP/aILP:' + args.dataset + '_' + str(n)
+            name = str(Path("small_KP") / f"aILP_{args.dataset}_{str(n)}")
         else:
-            name = 'KP/aILP:' + args.dataset + '_' + str(n)
+            name = str(Path("KP") / f"aILP_{args.dataset}_{str(n)}")
     else:
         if not args.no_xil:
-            name = 'CH/aILP:' + args.dataset + '_' + str(n)
+            name = str(Path('CH') / Path(f"/aILP_{args.dataset}_{str(n)}"))
         else:
-            name = 'CH/aILP-noXIL:' + args.dataset + '_' + str(n)
+            name = str(Path('CH') / f"aILP-noXIL_{args.dataset}_{str(n)}")
     print('args ', args)
     if args.no_cuda:
         device = torch.device('cpu')
@@ -217,7 +218,7 @@ def main(n):
 
     print('device: ', device)
     # run_name = 'predict/' + args.dataset
-    writer = SummaryWriter(f"runs/{name}", purge_step=0)
+    writer = SummaryWriter(str(config.root / "runs" / name), purge_step=0)
 
     # Create RTPT object
     rtpt = RTPT(name_initials='HS', experiment_name=name,
@@ -233,8 +234,8 @@ def main(n):
     #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
 
     # load logical representations
-    lark_path = str(config.root) + '/src/lark/exp.lark'
-    lang_base_path = str(config.root) + '/data/lang/'
+    lark_path = str(config.root / 'src' / 'lark'/'exp.lark')
+    lang_base_path = config.root / 'data' / 'lang'
     lang, clauses, bk_clauses, bk, atoms = get_lang(
         lark_path, lang_base_path, args.dataset_type, args.dataset)
     clauses = update_initial_clauses(clauses, args.n_obj)
