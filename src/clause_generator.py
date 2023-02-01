@@ -251,7 +251,7 @@ class ClauseGenerator(object):
         for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
             imgs, target_set = map(lambda x: x.to(self.device), sample)
             # print(NSFR.clauses)
-            img_array = imgs.squeeze(0).permute(1, 2, 0).numpy()
+            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
             img_array_int8 = np.uint8(img_array * 255)
             img_pil = Image.fromarray(img_array_int8)
             # img_pil.show()
