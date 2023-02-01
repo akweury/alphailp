@@ -658,5 +658,5 @@ class PIClauseGenerator(object):
         # return score
         # score = 1 - score.detach().cpu().numpy() / N_data
         best_score = score.max()
-        best_score_index = np.argmax(best_score)
-        return best_score, best_score_index
+        best_score_index = np.argmax(best_score.to("cpu"))
+        return best_score.to("cpu"), best_score_index
