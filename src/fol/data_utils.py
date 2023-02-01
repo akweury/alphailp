@@ -173,16 +173,17 @@ class DataUtils(object):
         if (len(line)) == 0:
             return None
 
-        pred, arity, dtype_names_str, pred_num = line.split(':')
-
+        pred, arity, dtype_names_str, pred_num, child_preds_str = line.split(':')
+        child_predicates = child_preds_str.split(';')
         dtype_names = dtype_names_str.split(',')
         dtypes = [DataType(dt) for dt in dtype_names]
         assert int(arity) == len(dtypes), 'Invalid arity and dtypes in ' + pred + '.'
 
         invented_predicates = []
         for i in range(int(pred_num)):
-            pred_with_id = pred + f"_{i}"
-            invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes)
+            # pred_with_id = pred + f"_{i}"
+            pred_with_id = pred
+            invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes, child_predicates=child_predicates)
             invented_predicates.append(invented_pred)
 
         return invented_predicates

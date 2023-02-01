@@ -137,10 +137,11 @@ class YOLOAreaValuationFunction(nn.Module):
         dist = torch.norm(c_1 - c_2, dim=0).unsqueeze(-1)
 
         dir_vec = c_2 - c_1
+        dir_vec[1] = -dir_vec[1]
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
         phi_clock_shift = (90 - int(phi)) % 360
         zone_id = phi_clock_shift // 90 % 4
-        if rho<0.3:
+        if rho < 0.3:
             zone_shift = 0
         else:
             zone_shift = 4
@@ -201,6 +202,45 @@ class YOLOOnlineValuationFunction(nn.Module):
                                         * X, dim=2).unsqueeze(-1), dim=1)
         self.diff = diff
         return self.logi(diff).squeeze()
+
+    def to_center_x(self, z):
+        x = (z[:, 0] + z[:, 2]) / 2
+        return x
+
+    def to_center_y(self, z):
+        y = (z[:, 1] + z[:, 3]) / 2
+        return y
+
+
+#####################################################
+# Valuation functions for invented predicates       #
+#####################################################
+
+class Inv1ValuationFunction(nn.Module):
+    """The function v_online.
+    """
+
+    def __init__(self, device):
+        super(Inv1ValuationFunction, self).__init__()
+        self.logi = LogisticRegression(input_dim=1)
+        self.logi.to(device)
+
+    def forward(self, z_1, z_2):
+        """The function to compute the probability of the online predicate.
+
+        The closed form of the linear regression is computed.
+        The error value is fed into the 1-d logistic regression function.
+
+        Args:
+            z_i (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+
+        Returns:
+            A batch of probabilities.
+        """
+
+        return self.logi(z_1.sum(dim=1)).squeeze()
 
     def to_center_x(self, z):
         x = (z[:, 0] + z[:, 2]) / 2

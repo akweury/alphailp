@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from fol.logic import NeuralPredicate
+from fol.logic import NeuralPredicate, InventedPredicate
 from tqdm import tqdm
 
 
@@ -9,12 +9,13 @@ class FactsConverter(nn.Module):
     FactsConverter converts the output from the perception module to the valuation vector.
     """
 
-    def __init__(self, lang, perception_module, valuation_module, device=None):
+    def __init__(self, lang, perception_module, valuation_module,pi_valuation_module, device=None):
         super(FactsConverter, self).__init__()
         self.e = perception_module.e
         self.d = perception_module.d
         self.lang = lang
         self.vm = valuation_module  # valuation functions
+        self.pi_vm = pi_valuation_module
         self.device = device
 
     def __str__(self):
@@ -23,8 +24,8 @@ class FactsConverter(nn.Module):
     def __repr__(self):
         return "FactsConverter(entities={}, dimension={})".format(self.e, self.d)
 
-    def forward(self, Z, G, B):
-        return self.convert(Z, G, B)
+    def forward(self, Z, G, B, scores=None):
+        return self.convert(Z, G, B, scores)
 
     def get_params(self):
         return self.vm.get_params()
@@ -47,21 +48,31 @@ class FactsConverter(nn.Module):
             vs.append(self.convert_i(zs, G))
         return torch.stack(vs)
 
-    def convert(self, Z, G, B):
+    def convert(self, Z, G, B, scores=None):
         batch_size = Z.size(0)
 
         # V = self.init_valuation(len(G), Z.size(0))
-        V = torch.zeros((batch_size, len(G))).to(
-            torch.float32).to(self.device)
+
+        # evaluate value of each atom
+        V = torch.zeros((batch_size, len(G))).to(torch.float32).to(self.device)
         for i, atom in enumerate(G):
+
+            # this atom is a neural predicate
             if type(atom.pred) == NeuralPredicate and i > 1:
                 V[:, i] = self.vm(Z, atom)
+
+            # this atom is an invented predicate
+            # elif type(atom.pred) == InventedPredicate:
+            #     child_atoms = atom.pred.child_predicates
+            #     V[:, i] = self.pi_vm(atom, child_atoms, scores)
+
+            # this atom in background knowledge
             elif atom in B:
                 # V[:, i] += 1.0
-                V[:, i] += torch.ones((batch_size, )).to(
-                    torch.float32).to(self.device)
-        V[:, 1] = torch.ones((batch_size, )).to(
-            torch.float32).to(self.device)
+                value = torch.ones((batch_size,)).to(torch.float32).to(self.device)
+                V[:, i] += value
+
+        V[:, 1] = torch.ones((batch_size,)).to(torch.float32).to(self.device)
         return V
 
     def convert_i(self, zs, G):

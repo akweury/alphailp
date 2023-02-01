@@ -1,1 +1,1 @@
-cluster_pred:2:object,object:1
+inv_1:2:object,object:1:at_area_0;at_area_1;at_area_2;at_area_3

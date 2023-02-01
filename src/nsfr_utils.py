@@ -8,8 +8,9 @@ import data_kandinsky
 from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
 from facts_converter import FactsConverter
 from nsfr import NSFReasoner
-from logic_utils import build_infer_module, build_clause_infer_module
-from valuation import SlotAttentionValuationModule, YOLOValuationModule
+from logic_utils import build_infer_module, build_clause_infer_module, build_pi_clause_infer_module
+from valuation import SlotAttentionValuationModule, YOLOValuationModule, PIValuationModule
+
 attrs = ['color', 'shape', 'material', 'size']
 
 
@@ -28,7 +29,7 @@ def valuation_to_attr_string(v, atoms, e, th=0.5):
     for i in range(e):
         st_i = ''
         for j, atom in enumerate(atoms):
-            #print(atom, [str(term) for term in atom.terms])
+            # print(atom, [str(term) for term in atom.terms])
             if 'obj' + str(i) in [str(term) for term in atom.terms] and atom.pred.name in attrs:
                 if v[j] > th:
                     prob = np.round(v[j].detach().cpu().numpy(), 2)
@@ -44,7 +45,7 @@ def valuation_to_rel_string(v, atoms, th=0.5):
     st = ''
     n = 0
     for j, atom in enumerate(atoms):
-        if v[j] > th and not (atom.pred.name in attrs+['in', '.']):
+        if v[j] > th and not (atom.pred.name in attrs + ['in', '.']):
             prob = np.round(v[j].detach().cpu().numpy(), 2)
             st += str(prob) + ':' + str(atom) + ','
             n += len(str(prob) + ':' + str(atom) + ',')
@@ -94,7 +95,7 @@ def save_images_with_captions(imgs, captions, folder, img_id_start, dataset):
         plt.imshow(img)
         plt.xlabel(captions[i])
         plt.tight_layout()
-        plt.savefig(folder+str(img_id)+'.png')
+        plt.savefig(folder + str(img_id) + '.png')
         img_id += 1
         plt.close()
 
@@ -302,19 +303,18 @@ def get_prob_by_prednames(v_T, NSFR, prednames):
 def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=False):
     if args.dataset_type == 'kandinsky':
         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-        VM = YOLOValuationModule(
-            lang=lang, device=device, dataset=args.dataset)
+        VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
+        PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
     elif args.dataset_type == 'clevr':
         PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
-        VM = SlotAttentionValuationModule(lang=lang,  device=device)
+        VM = SlotAttentionValuationModule(lang=lang, device=device)
+        PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
+
     else:
         assert False, "Invalid dataset type: " + str(args.dataset_type)
-    FC = FactsConverter(lang=lang, perception_module=PM,
-                        valuation_module=VM, device=device)
-    IM = build_infer_module(clauses, bk_clauses, atoms, lang,
-                            m=args.m, infer_step=2, device=device, train=train)
-    CIM = build_clause_infer_module(clauses, bk_clauses, atoms, lang,
-                                    m=len(clauses), infer_step=2, device=device)
+    FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,pi_valuation_module=PI_VM, device=device)
+    IM = build_infer_module(clauses, bk_clauses, atoms, lang, m=args.m, infer_step=2, device=device, train=train)
+    CIM = build_clause_infer_module(clauses, bk_clauses, atoms, lang, m=len(clauses), infer_step=2, device=device)
     # Neuro-Symbolic Forward Reasoner
     NSFR = NSFReasoner(perception_module=PM, facts_converter=FC,
                        infer_module=IM, clause_infer_module=CIM, atoms=atoms, bk=bk, clauses=clauses)
@@ -325,11 +325,13 @@ def __get_nsfr_model_from_nsfr(NSFR, lang, clauses, atoms, bk, bk_clauses, devic
     lang = NSFR.lang
     PM = YOLOPerceptionModule(e=NSFR.pm.e, d=11, device=device)
     VM = YOLOValuationModule(lang=lang, device=device)
+    PI_VM = PIValuationModule(lang=lang, device=device)
+
     # elif args.dataset_type == 'clevr':
     #    PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
     #    VM = SlotAttentionValuationModule(lang=lang,  device=device)
     FC = FactsConverter(lang=lang, perception_module=PM,
-                        valuation_module=VM, device=device)
+                        valuation_module=VM, pi_valuation_module=PI_VM, device=device)
     IM = build_infer_module(clauses, bk_clauses, atoms, lang,
                             m=len(clauses), infer_step=4, device=device)
     CIM = build_infer_module(clauses, bk_clauses, atoms, lang,
@@ -353,20 +355,20 @@ def update_nsfr_clauses(nsfr, clauses, bk_clauses, device):
 def get_nsfr_model_train(args, lang, clauses, atoms, bk, device, m):
     if args.dataset_type == 'kandinsky':
         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-        VM = YOLOValuationModule(
-            lang=lang, device=device, dataset=args.dataset)
+        VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
+        PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
+
     elif args.dataset_type == 'clevr':
         PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
-        VM = SlotAttentionValuationModule(lang=lang,  device=device)
+        VM = SlotAttentionValuationModule(lang=lang, device=device)
+        PI_VM = SlotAttentionValuationModule(lang=lang, device=device)
+
     else:
         assert False, "Invalid dataset type: " + str(args.dataset_type)
-    FC = FactsConverter(lang=lang, perception_module=PM,
-                        valuation_module=VM, device=device)
-    IM = build_infer_module(clauses, atoms, lang,
-                            m=m, infer_step=4, device=device, train=True)
+    FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM, pi_valuation_module=PI_VM, device=device)
+    IM = build_infer_module(clauses, atoms, lang, m=m, infer_step=4, device=device, train=True)
     # Neuro-Symbolic Forward Reasoner
-    NSFR = NSFReasoner(perception_module=PM, facts_converter=FC,
-                       infer_module=IM, atoms=atoms, bk=bk, clauses=clauses)
+    NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM, atoms=atoms, bk=bk, clauses=clauses)
     return NSFR
 
 

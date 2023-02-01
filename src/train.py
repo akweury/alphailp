@@ -9,6 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from rtpt import RTPT
 
+import pi_utils
 from nsfr_utils import denormalize_kandinsky, get_data_loader, get_data_pos_loader, get_prob, get_nsfr_model, \
     update_initial_clauses
 from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, generate_captions
@@ -46,7 +47,7 @@ def get_args():
                         help='Smooth parameter in the softor function')
     parser.add_argument("--plot", action="store_true",
                         help="Plot images with captions.")
-    parser.add_argument("--t-beam", type=int, default=4,
+    parser.add_argument("--t-beam", type=int, default=2,
                         help="Number of rule expantion of clause generation.")
     parser.add_argument("--n-beam", type=int, default=5,
                         help="The size of the beam.")
@@ -231,63 +232,49 @@ def main(n):
     # get torch data loader
     train_loader, val_loader, test_loader = get_data_loader(args)
 
-    train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(
-        args)
+    train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(args)
     #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
 
     # load logical representations
     lark_path = str(config.root / 'src' / 'lark' / 'exp.lark')
     lang_base_path = config.root / 'data' / 'lang'
-    lang, clauses, bk_clauses, bk, pi_clauses, atoms = get_lang(
-        lark_path, lang_base_path, args.dataset_type, args.dataset)
-    clauses = update_initial_clauses(clauses, args.n_obj)
-    print("clauses: ", clauses)
+    lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(lark_path, lang_base_path, args.dataset_type,
+                                                                     args.dataset)
+    init_clauses = update_initial_clauses(init_clauses, args.n_obj)
+    print("clauses: ", init_clauses)
 
     # loop for predicate invention
     for i in range(args.pi_epochs):
-
         # invent new predicate
-
         # Neuro-Symbolic Forward Reasoner for clause generation
-        NSFR_cgen = get_nsfr_model(
-            args, lang, clauses, atoms, bk, bk_clauses, device=device)  # torch.device('cpu'))
+        NSFR_cgen = get_nsfr_model(args, lang, init_clauses, atoms, bk, bk_clauses,
+                                   device=device)  # torch.device('cpu'))
+        PI_cgen = pi_utils.get_pi_model(args, lang, init_clauses, atoms, bk, bk_clauses,
+                                        device=device)  # torch.device('cpu'))
+
         mode_declarations = get_mode_declarations(args, lang, args.n_obj)
-        cgen = ClauseGenerator(args, NSFR_cgen, lang, val_pos_loader, mode_declarations,
-                               bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
+        clause_generator = ClauseGenerator(args, NSFR_cgen,PI_cgen, lang, val_pos_loader, mode_declarations,
+                                           bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
 
         # generate clauses
-        if args.pre_searched:
-            clauses = get_searched_clauses(
-                lark_path, lang_base_path, args.dataset_type, args.dataset)
-        else:
-            clauses = cgen.generate(
-                clauses, T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
-        print("====== ", len(clauses), " clauses are generated!! ======")
+        gen_clauses = clause_generator.generate(init_clauses, T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
+        print("====== ", len(gen_clauses), " clauses are generated!! ======")
         # update
-        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk,
-                              bk_clauses, device, train=True)
-
+        NSFR = get_nsfr_model(args, lang, gen_clauses, atoms, bk, bk_clauses, device, train=True)
         params = NSFR.get_params()
         optimizer = torch.optim.RMSprop(params, lr=args.lr)
         ##optimizer = torch.optim.Adam(params, lr=args.lr)
-
-        loss_list = train_nsfr(args, NSFR, optimizer, train_loader,
-                               val_loader, test_loader, device, writer, rtpt)
+        loss_list = train_nsfr(args, NSFR, optimizer, train_loader, val_loader, test_loader, device, writer, rtpt)
 
         # validation split
         print("Predicting on validation data set...")
-        acc_val, rec_val, th_val = predict(
-            NSFR, val_loader, args, device, th=0.33, split='val')
-
+        acc_val, rec_val, th_val = predict(NSFR, val_loader, args, device, th=0.33, split='val')
         print("Predicting on training data set...")
         # training split
-        acc, rec, th = predict(
-            NSFR, train_loader, args, device, th=th_val, split='train')
-
+        acc, rec, th = predict(NSFR, train_loader, args, device, th=th_val, split='train')
         print("Predicting on test data set...")
         # test split
-        acc_test, rec_test, th_test = predict(
-            NSFR, test_loader, args, device, th=th_val, split='test')
+        acc_test, rec_test, th_test = predict(NSFR, test_loader, args, device, th=th_val, split='test')
 
         print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
         print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)

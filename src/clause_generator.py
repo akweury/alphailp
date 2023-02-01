@@ -1,11 +1,13 @@
 from fol.logic import *
 from nsfr_utils import update_nsfr_clauses, get_prob, get_nsfr_model
-#from eval_clause import EvalInferModule
+# from eval_clause import EvalInferModule
 from refinement import RefinementGenerator
 from tqdm import tqdm
 import torch
 import numpy as np
-
+import matplotlib.pyplot as plt
+from PIL import Image
+from pi_utils import get_pi_model
 
 class ClauseGenerator(object):
     """
@@ -21,9 +23,10 @@ class ClauseGenerator(object):
         max number of atoms in body of clauses
     """
 
-    def __init__(self, args, NSFR, lang, pos_data_loader, mode_declarations, bk_clauses, device, no_xil=False):
+    def __init__(self, args, NSFR, PI, lang, pos_data_loader, mode_declarations, bk_clauses, device, no_xil=False):
         self.args = args
         self.NSFR = NSFR
+        self.PI = PI
         self.lang = lang
         self.mode_declarations = mode_declarations
         self.bk_clauses = bk_clauses
@@ -33,9 +36,9 @@ class ClauseGenerator(object):
         self.pos_loader = pos_data_loader
         self.bce_loss = torch.nn.BCELoss()
 
-        #self.labels = torch.cat([
+        # self.labels = torch.cat([
         #    torch.ones((len(self.ilp_problem.pos), )),
-        #], dim=0).to(device)
+        # ], dim=0).to(device)
 
     def _is_valid(self, clause):
         obj_num = len([b for b in clause.body if b.pred.name == 'in'])
@@ -49,8 +52,8 @@ class ClauseGenerator(object):
 
         attr_vars = list(set(attr_vars))
 
-        #print(clause, obj_num, attr_vars)
-        return obj_num == len(attr_vars) #or len(attr_body) == 0
+        # print(clause, obj_num, attr_vars)
+        return obj_num == len(attr_vars)  # or len(attr_body) == 0
 
     def _cf0(self, clause):
         """Confounded rule for CLEVR-Hans.
@@ -71,7 +74,6 @@ class ClauseGenerator(object):
                         return True
         return False
 
-
     def _is_confounded(self, clause):
         if self.no_xil:
             return False
@@ -84,7 +86,6 @@ class ClauseGenerator(object):
                 return self._cf1(clause)
             else:
                 return False
-
 
     def generate(self, C_0, gen_mode='beam', T_beam=7, N_beam=20, N_max=100):
         """
@@ -109,10 +110,10 @@ class ClauseGenerator(object):
             set of generated clauses
         """
         if gen_mode == 'beam':
-            return self.beam_search(C_0, T_beam=T_beam, N_beam=N_beam, N_max=N_max)
+            beam_search_clauses = self.beam_search(C_0, T_beam=T_beam, N_beam=N_beam, N_max=N_max)
+            return beam_search_clauses
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
-
 
     def beam_search_clause(self, clause, T_beam=7, N_beam=20, N_max=100, th=0.98):
         """
@@ -157,26 +158,28 @@ class ClauseGenerator(object):
                     print("Added: ", c)
 
             print('Evaluating ', len(refs), 'generated clauses.')
-            loss_list = self.eval_clauses(refs)
+            loss_list = self.eval_clauses(refs)  # time-consuming line
+            pi_loss_list = self.eval_pi_clauses(refs)
+
             for i, ref in enumerate(refs):
                 # check duplication
                 if not self.is_in_beam(B_new, ref, loss_list[i]):
                     B_new[ref] = loss_list[i]
                     C_dic[ref] = loss_list[i]
 
-                #if len(C) >= N_max:
+                # if len(C) >= N_max:
                 #    break
             B_new_sorted = sorted(B_new.items(), key=lambda x: x[1], reverse=True)
             # top N_beam refiements
             B_new_sorted = B_new_sorted[:N_beam]
-            #B_new_sorted = [x for x in B_new_sorted if x[1] > th]
+            # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
             for x in B_new_sorted:
                 print(x[1], x[0])
             B = [x[0] for x in B_new_sorted]
             step += 1
             if len(B) == 0:
                 break
-            #if len(C) >= N_max:
+            # if len(C) >= N_max:
             #    break
         return C
 
@@ -191,7 +194,7 @@ class ClauseGenerator(object):
             preds_i = set([clause.head.pred] + [b.pred for b in clause.body])
             if preds == preds_i and np.abs(score - score_i) < 1e-2:
                 y = True
-                #print("duplicated: ", clause, ci)
+                # print("duplicated: ", clause, ci)
                 break
         return y
 
@@ -215,31 +218,40 @@ class ClauseGenerator(object):
         """
         C = set()
         for clause in C_0:
-            C = C.union(self.beam_search_clause(
-                clause, T_beam, N_beam, N_max))
+            C = C.union(self.beam_search_clause(clause, T_beam, N_beam, N_max))
         C = sorted(list(C))
         print('======= BEAM SEARCHED CLAUSES ======')
         for c in C:
             print(c)
         return C
 
+    def eval_pi_clauses(self, clauses):
+        return None
+
     def eval_clauses(self, clauses):
         C = len(clauses)
         print("Eval clauses: ", len(clauses))
         # update infer module with new clauses
-        #NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
-        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses, self.device)
+        # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
+        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
+                              self.device)
+        PI = get_pi_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
+                              self.device)
         # TODO: Compute loss for validation data , score is bce loss
         # N C B G
         predicted_list_list = []
 
-        score = torch.zeros((C, )).to(self.device)
+        score = torch.zeros((C,)).to(self.device)
         N_data = 0
-        # List(C*B*G)
+        # List(C * B * G)
 
         for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
             imgs, target_set = map(lambda x: x.to(self.device), sample)
-            #print(NSFR.clauses)
+            # print(NSFR.clauses)
+            img_array = imgs.squeeze(0).permute(1, 2, 0).numpy()
+            img_array_int8 = np.uint8(img_array * 255)
+            img_pil = Image.fromarray(img_array_int8)
+            # img_pil.show()
             N_data += imgs.size(0)
             B = imgs.size(0)
             # C * B * G
@@ -248,19 +260,20 @@ class ClauseGenerator(object):
             for i, V_T in enumerate(V_T_list):
                 # for each clause
                 # B
-                #print(V_T.shape)
+                # print(V_T.shape)
                 predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                #print("clause: ", clauses[i])
-                #NSFR.print_valuation_batch(V_T)
-                #print(predicted)
-                #predicted = self.bce_loss(predicted, target_set)
-                #predicted = torch.abs(predicted - target_set)
-                #print(predicted)
+                # print("clause: ", clauses[i])
+                # NSFR.print_valuation_batch(V_T)
+                # print(predicted)
+                # predicted = self.bce_loss(predicted, target_set)
+                # predicted = torch.abs(predicted - target_set)
+                # print(predicted)
                 C_score[i] = predicted
             # C
+            C_score = PI.clause_eval(C_score)
             # sum over positive prob
             C_score = C_score.sum(dim=1)
             score += C_score
-        #return score
-        #score = 1 - score.detach().cpu().numpy() / N_data
+        # return score
+        # score = 1 - score.detach().cpu().numpy() / N_data
         return score
