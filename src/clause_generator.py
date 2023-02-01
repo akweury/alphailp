@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from pi_utils import get_pi_model
 
+
 class ClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -23,7 +24,8 @@ class ClauseGenerator(object):
         max number of atoms in body of clauses
     """
 
-    def __init__(self, args, NSFR, PI, lang, pos_data_loader, mode_declarations, bk_clauses, device, no_xil=False):
+    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations, bk_clauses, device,
+                 no_xil=False):
         self.args = args
         self.NSFR = NSFR
         self.PI = PI
@@ -34,6 +36,7 @@ class ClauseGenerator(object):
         self.no_xil = no_xil
         self.rgen = RefinementGenerator(lang=lang, mode_declarations=mode_declarations)
         self.pos_loader = pos_data_loader
+        self.neg_loader = neg_data_loader
         self.bce_loss = torch.nn.BCELoss()
 
         # self.labels = torch.cat([
@@ -236,7 +239,7 @@ class ClauseGenerator(object):
         NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
                               self.device)
         PI = get_pi_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
-                              self.device)
+                          self.device)
         # TODO: Compute loss for validation data , score is bce loss
         # N C B G
         predicted_list_list = []
@@ -269,6 +272,35 @@ class ClauseGenerator(object):
                 # predicted = torch.abs(predicted - target_set)
                 # print(predicted)
                 C_score[i] = predicted
+            C_score = PI.clause_eval(C_score)
+            # sum over positive prob
+            C_score = C_score.sum(dim=1)
+            score += C_score
+
+        for i, sample in tqdm(enumerate(self.neg_loader, start=0)):
+            imgs, target_set = map(lambda x: x.to(self.device), sample)
+            # print(NSFR.clauses)
+            img_array = imgs.squeeze(0).permute(1, 2, 0).numpy()
+            img_array_int8 = np.uint8(img_array * 255)
+            img_pil = Image.fromarray(img_array_int8)
+            # img_pil.show()
+            N_data += imgs.size(0)
+            B = imgs.size(0)
+            # C * B * G
+            V_T_list = NSFR.clause_eval(imgs).detach()
+            C_score = torch.zeros((C, B)).to(self.device)
+            for i, V_T in enumerate(V_T_list):
+                # for each clause
+                # B
+                # print(V_T.shape)
+                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                # print("clause: ", clauses[i])
+                # NSFR.print_valuation_batch(V_T)
+                # print(predicted)
+                # predicted = self.bce_loss(predicted, target_set)
+                # predicted = torch.abs(predicted - target_set)
+                # print(predicted)
+                C_score[i] = 1 - predicted
             # C
             C_score = PI.clause_eval(C_score)
             # sum over positive prob

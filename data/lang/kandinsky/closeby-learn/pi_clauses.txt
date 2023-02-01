@@ -1,1 +1,1 @@
-cluster_pred(X,Y):-pred_2_args_id_0(X,Y).
+cluster_pred(X,Y):-pred_2_args(X,Y).

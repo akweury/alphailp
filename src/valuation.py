@@ -218,6 +218,7 @@ class PIValuationModule(nn.Module):
                 A batch of the probabilities of the target atom.
         """
 
+        # TODO: rewrite this function
         atom_eval_values = []
         for child_pred in child_preds:
             child_pred_score = []
@@ -225,9 +226,9 @@ class PIValuationModule(nn.Module):
                 for body_atom in clause.body:
                     if body_atom.pred.name == child_pred:
                         child_pred_score.append(scores[i])
-            atom_eval_values.append(max(child_pred_score))
+            atom_eval_values.append(min(child_pred_score))
 
-        return max(atom_eval_values)
+        return min(atom_eval_values)
 
     def ground_to_tensor(self, term, zs):
         """Ground terms into tensor representations.

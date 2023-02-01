@@ -10,6 +10,7 @@ import config
 
 random.seed(10)
 
+
 class KANDINSKY(torch.utils.data.Dataset):
     """Kandinsky Patterns dataset.
     """
@@ -49,9 +50,8 @@ def load_images_and_labels(dataset='twopairs', split='train', img_size=128, smal
     filenames = sorted(os.listdir(true_folder))
     # sample 10% if small data
     if small_data:
-        n = int(len(filenames)/10)
+        n = int(len(filenames) / 10)
         filenames = random.sample(filenames, n)
-
 
     for filename in filenames:
         if filename != '.DS_Store':
@@ -61,7 +61,7 @@ def load_images_and_labels(dataset='twopairs', split='train', img_size=128, smal
     filenames = sorted(os.listdir(false_folder))
     # sample 10% if small data
     if small_data:
-        n = int(len(filenames)/10)
+        n = int(len(filenames) / 10)
         filenames = random.sample(filenames, n)
     for filename in filenames:
         if filename != '.DS_Store':
@@ -87,6 +87,34 @@ class KANDINSKY_POSITIVE(torch.utils.data.Dataset):
         # sample 500
         # only validation is used to generate clauses
 
+    def __getitem__(self, item):
+        image = load_image_yolo(
+            self.image_paths[item], img_size=self.img_size)
+        image = torch.from_numpy(image).type(torch.float32) / 255.
+
+        label = torch.tensor(self.labels[item], dtype=torch.float32)
+        return image, label
+
+    def __len__(self):
+        return len(self.labels)
+
+
+class KANDINSKY_NEGATIVE(torch.utils.data.Dataset):
+    """Kandinsky Patterns dataset.
+    """
+
+    def __init__(self, dataset, split, img_size=128, small_data=False):
+        self.img_size = img_size
+        self.small_data = small_data
+        assert split in {
+            "train",
+            "val",
+            "test",
+        }
+        self.image_paths, self.labels = load_images_and_labels_negative(
+            dataset=dataset, split=split, small_data=self.small_data)
+        # sample 500
+        # only validation is used to generate clauses
 
     def __getitem__(self, item):
         image = load_image_yolo(
@@ -99,6 +127,7 @@ class KANDINSKY_POSITIVE(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.labels)
 
+
 def load_images_and_labels_positive(dataset='twopairs', split='train', img_size=128, small_data=False):
     """Load image paths and labels for kandinsky dataset.
     """
@@ -108,13 +137,32 @@ def load_images_and_labels_positive(dataset='twopairs', split='train', img_size=
     true_folder = folder + 'true/'
 
     filenames = sorted(os.listdir(true_folder))[:500]
-    #n = 500 #int(len(filenames)/10)
-    #filenames = random.sample(filenames, n)
+    # n = 500 #int(len(filenames)/10)
+    # filenames = random.sample(filenames, n)
     for filename in filenames:
         if filename != '.DS_Store':
             image_paths.append(os.path.join(true_folder, filename))
             labels.append(1)
     return image_paths, labels
+
+
+def load_images_and_labels_negative(dataset='twopairs', split='train', img_size=128, small_data=False):
+    """Load image paths and labels for kandinsky dataset.
+    """
+    image_paths = []
+    labels = []
+    folder = str(config.root) + '/data/kandinsky/' + dataset + '/' + split + '/'
+    false_folder = folder + 'false/'
+
+    filenames = sorted(os.listdir(false_folder))[:500]
+    # n = 500 #int(len(filenames)/10)
+    # filenames = random.sample(filenames, n)
+    for filename in filenames:
+        if filename != '.DS_Store':
+            image_paths.append(os.path.join(false_folder, filename))
+            labels.append(1)
+    return image_paths, labels
+
 
 def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scaleFill=False, scaleup=True, stride=32):
     """A utilitiy function for yolov5 model to make predictions. The implementation is from the yolov5 repository.
@@ -135,14 +183,14 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
     ratio = r, r  # width, height ratios
     new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
     dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - \
-        new_unpad[1]  # wh padding
+             new_unpad[1]  # wh padding
     if auto:  # minimum rectangle
         dw, dh = np.mod(dw, stride), np.mod(dh, stride)  # wh padding
     elif scaleFill:  # stretch
         dw, dh = 0.0, 0.0
         new_unpad = (new_shape[1], new_shape[0])
         ratio = new_shape[1] / shape[1], new_shape[0] / \
-            shape[0]  # width, height ratios
+                shape[0]  # width, height ratios
 
     dw /= 2  # divide padding into 2 sides
     dh /= 2

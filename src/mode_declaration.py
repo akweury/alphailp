@@ -104,16 +104,11 @@ def get_mode_declarations_clevr(lang, obj_num):
     kp3(X):-in(O1,X),in(O2,X),size(O1,large),color(O1,blue),shape(O1,sphere),size(O2,small),color(O2,yellow),shape(O2,sphere)."""
 
     modeb_list = [
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name(
-            'in'), [m_object, p_image]),
-        ModeDeclaration('body', 2, lang.get_pred_by_name(
-            'color'), [p_object, s_color]),
-        ModeDeclaration('body', 2, lang.get_pred_by_name(
-            'shape'), [p_object, s_shape]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name(
-            'material'), [p_object, s_material]),
-        ModeDeclaration('body', 2, lang.get_pred_by_name(
-            'size'), [p_object, s_size]),
+        ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]),
+        ModeDeclaration('body', 2, lang.get_pred_by_name('color'), [p_object, s_color]),
+        ModeDeclaration('body', 2, lang.get_pred_by_name('shape'), [p_object, s_shape]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('material'), [p_object, s_material]),
+        ModeDeclaration('body', 2, lang.get_pred_by_name('size'), [p_object, s_size]),
     ]
     return modeb_list
 

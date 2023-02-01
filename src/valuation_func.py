@@ -154,8 +154,8 @@ class YOLOAreaValuationFunction(nn.Module):
         return (area * area_pred).sum()
 
     def cart2pol(self, x, y):
-        rho = torch.sqrt(x ** 2 + y ** 2)
-        phi = torch.atan2(y, x)
+        rho = torch.sqrt(x ** 2 + y ** 2)[0]
+        phi = torch.atan2(y, x)[0]
         phi = torch.rad2deg(phi)
         return (rho, phi)
 

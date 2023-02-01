@@ -12,6 +12,8 @@ from rtpt import RTPT
 import pi_utils
 from nsfr_utils import denormalize_kandinsky, get_data_loader, get_data_pos_loader, get_prob, get_nsfr_model, \
     update_initial_clauses
+import nsfr_utils
+
 from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, generate_captions
 from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
@@ -47,7 +49,7 @@ def get_args():
                         help='Smooth parameter in the softor function')
     parser.add_argument("--plot", action="store_true",
                         help="Plot images with captions.")
-    parser.add_argument("--t-beam", type=int, default=2,
+    parser.add_argument("--t-beam", type=int, default=4,
                         help="Number of rule expantion of clause generation.")
     parser.add_argument("--n-beam", type=int, default=5,
                         help="The size of the beam.")
@@ -233,6 +235,8 @@ def main(n):
     train_loader, val_loader, test_loader = get_data_loader(args)
 
     train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(args)
+    train_neg_loader, val_neg_loader, test_neg_loader = nsfr_utils.get_data_neg_loader(args)
+
     #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
 
     # load logical representations
@@ -253,7 +257,7 @@ def main(n):
                                         device=device)  # torch.device('cpu'))
 
         mode_declarations = get_mode_declarations(args, lang, args.n_obj)
-        clause_generator = ClauseGenerator(args, NSFR_cgen,PI_cgen, lang, val_pos_loader, mode_declarations,
+        clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader,val_neg_loader, mode_declarations,
                                            bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
 
         # generate clauses
