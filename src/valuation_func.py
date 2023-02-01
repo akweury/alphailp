@@ -146,7 +146,7 @@ class YOLOAreaValuationFunction(nn.Module):
         else:
             zone_shift = 4
         zone_id = zone_id + zone_shift
-        area_pred = torch.zeros(area.shape)
+        area_pred = torch.zeros(area.shape).to(area.device)
         area_pred[zone_id] = 1
 
         # area_pred = self.area_net(rho, phi)
