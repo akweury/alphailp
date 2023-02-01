@@ -286,5 +286,4 @@ def main(n):
 
 
 if __name__ == "__main__":
-    for i in range(5):
-        main(n=i)
+    main(n=0)
