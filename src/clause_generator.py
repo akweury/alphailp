@@ -441,25 +441,34 @@ class PIClauseGenerator(object):
 
             best_values.append(np.max(level_best_values))
             best_clause_combinations.append(pi_clauses_candidates)
+        print(f"========best value in each level==========================\n"
+              f"{best_values}")
+        print(f"========best combinations in each level==========================\n"
+              f"{best_clause_combinations}")
+        # for i, ref in enumerate(refs):
+        #     # check duplication
+        #     if not self.is_in_beam(B_new, ref, loss_list[i]):
+        #         B_new[ref] = loss_list[i]
+        #         C_dic[ref] = loss_list[i]
+        #
+        #     # if len(C) >= N_max:
+        #     #    break
+        # B_new_sorted = sorted(B_new.items(), key=lambda x: x[1], reverse=True)
+        # # top N_beam refiements
+        # B_new_sorted = B_new_sorted[:N_beam]
+        # # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
+        # for x in B_new_sorted:
+        #     print(x[1], x[0])
+        # B = [x[0] for x in B_new_sorted]
+        # step += 1
+        # if len(B) == 0:
+        #     break
 
-            # for i, ref in enumerate(refs):
-            #     # check duplication
-            #     if not self.is_in_beam(B_new, ref, loss_list[i]):
-            #         B_new[ref] = loss_list[i]
-            #         C_dic[ref] = loss_list[i]
-            #
-            #     # if len(C) >= N_max:
-            #     #    break
-            # B_new_sorted = sorted(B_new.items(), key=lambda x: x[1], reverse=True)
-            # # top N_beam refiements
-            # B_new_sorted = B_new_sorted[:N_beam]
-            # # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
-            # for x in B_new_sorted:
-            #     print(x[1], x[0])
-            # B = [x[0] for x in B_new_sorted]
-            # step += 1
-            # if len(B) == 0:
-            #     break
+        best_index = np.argmax(best_values)
+        pi_clauses = best_clause_combinations[best_index]
+        pi_clauses_value =  np.max(best_values)
+        print(f"best clause: {pi_clauses}")
+        print(f"best clause value: {pi_clauses_value}")
 
         return pi_clauses
 
