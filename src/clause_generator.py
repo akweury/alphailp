@@ -419,33 +419,29 @@ class PIClauseGenerator(object):
         pi_clauses_candidates = list(beam_search_clauses)
         best_values = []
         best_clause_combinations = []
-        value, _ = self.eval_multip_clauses(pi_clauses_candidates)  # time-consuming line
+        value = self.eval_multip_clauses(pi_clauses_candidates)  # time-consuming line
         best_values.append(value)
         for del_level in range(1, len(beam_search_clauses)):
-            level_best_values = []
-            level_best_combinations = []
+            level_values = []
+            level_combinations = []
             for i, pi_clauses_candidate in enumerate(pi_clauses_candidates):
-                new_pi_clauses_candidate = pi_clauses_candidates[:i] + pi_clauses_candidates[i + 1:]
-                new_value, best_del_index = self.eval_multip_clauses(new_pi_clauses_candidate)  # time-consuming line
-                level_best_values.append(new_value)
+                level_clause_combination = pi_clauses_candidates[:i] + pi_clauses_candidates[i + 1:]
+                new_value = self.eval_multip_clauses(level_clause_combination)  # time-consuming line
+                level_values.append(new_value)
 
-                level_best_combinations.append(pi_clauses_candidates)
+                level_combinations.append(level_clause_combination)
 
             print(f"========== level {del_level} ==================\n"
-                  f"level values: {level_best_values}\n "
-                  f"level best values: {np.max(level_best_values)}")
+                  f"level values: {level_values}\n "
+                  f"level best values: {np.max(level_values)}")
 
-
-
-
-
-            level_best_index = np.argmax(level_best_values)
+            level_best_index = np.argmax(level_values)
 
             print(f"===================== del clauses: \n ======================")
             print(pi_clauses_candidates[level_best_index])
 
             pi_clauses_candidates.pop(level_best_index)
-            best_values.append(np.max(level_best_values))
+            best_values.append(np.max(level_values))
             best_clause_combinations.append(pi_clauses_candidates)
 
             print(f"===================== left clauses: \n ======================")
@@ -477,7 +473,7 @@ class PIClauseGenerator(object):
 
         best_index = np.argmax(best_values)
         pi_clauses = best_clause_combinations[best_index]
-        pi_clauses_value =  np.max(best_values)
+        pi_clauses_value = np.max(best_values)
         print(f"best clause: {pi_clauses}")
         print(f"best clause value: {pi_clauses_value}")
 
@@ -678,5 +674,5 @@ class PIClauseGenerator(object):
         # return score
         # score = 1 - score.detach().cpu().numpy() / N_data
         best_score = score.max()
-        best_score_index = np.argmax(best_score.to("cpu"))
-        return best_score.to("cpu"), best_score_index
+
+        return best_score.to("cpu")
