@@ -18,7 +18,7 @@ from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, gene
 from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
 
-from clause_generator import ClauseGenerator
+from clause_generator import ClauseGenerator, PIClauseGenerator
 import config
 
 
@@ -249,7 +249,7 @@ def main(n):
 
     # loop for predicate invention
     for i in range(args.pi_epochs):
-        # invent new predicate
+
         # Neuro-Symbolic Forward Reasoner for clause generation
         NSFR_cgen = get_nsfr_model(args, lang, init_clauses, atoms, bk, bk_clauses,
                                    device=device)  # torch.device('cpu'))
@@ -260,9 +260,17 @@ def main(n):
         clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader,val_neg_loader, mode_declarations,
                                            bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
 
+        pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader,val_neg_loader, mode_declarations,
+                                           bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
+
         # generate clauses
         gen_clauses = clause_generator.generate(init_clauses, T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
         print("====== ", len(gen_clauses), " clauses are generated!! ======")
+
+        # invent new predicate and generate pi clauses
+        gen_pi_clauses = pi_clause_generator.generate(gen_clauses)
+        print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
+
         # update
         NSFR = get_nsfr_model(args, lang, gen_clauses, atoms, bk, bk_clauses, device, train=True)
         params = NSFR.get_params()
