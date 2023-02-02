@@ -432,24 +432,26 @@ class PIClauseGenerator(object):
 
                 level_combinations.append(level_clause_combination)
 
-            print(f"========== level {del_level} ==================\n"
-                  f"level values: {level_values}\n "
-                  f"level best values: {np.max(level_values)}")
 
+            level_best_value = np.max(level_values)
             level_best_index = np.argmax(level_values)
+            level_del_clause = pi_clauses_candidates[level_best_index]
 
-            print(f"======= del clauses: ==================")
-            print(pi_clauses_candidates[level_best_index])
 
             pi_clauses_candidates.pop(level_best_index)
-            best_values.append(np.max(level_values))
-            best_clause_combinations.append(pi_clauses_candidates)
 
-            print(f"============= left clauses: ================")
+            level_best_combination = pi_clauses_candidates.copy()
+            best_clause_combinations.append(level_best_combination)
+            best_values.append(level_best_value)
+            print(f"========== level {del_level} ==================\n"
+                  f"level values: {level_values}\n "
+                  f"level best values: {level_best_value}\n"
+                  f"level delete clause: {level_del_clause}\n"
+                  f"level left clauses: \n")
             for clause in pi_clauses_candidates:
                 print(clause)
 
-        print(f"========best value in each level============\n"
+        print(f"======== best value in each level============\n"
               f"{best_values}")
         print(f"========best combinations in each level========\n")
         for each in best_clause_combinations:
