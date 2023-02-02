@@ -649,7 +649,7 @@ class PIClauseGenerator(object):
             # sum over positive prob
             score_positive[i,:] = C_score.squeeze(1)
 
-        best_positive = score_positive.max(dim=0).values
+        best_positive = score_positive.max(dim=1).values
 
         for i, sample in tqdm(enumerate(self.neg_loader, start=0)):
             imgs, target_set = map(lambda x: x.to(self.device), sample)
@@ -681,9 +681,9 @@ class PIClauseGenerator(object):
             score_negative[i, :] = C_score.squeeze(1)
 
 
-        best_negative = 1 - score_negative.sum(dim=0) / neg_img_num
+        best_negative = 1 - score_negative.sum(dim=1) / C
 
-        best_score = (best_positive + best_negative).sum() / len(clauses)
+        best_score = (best_positive + best_negative).sum() / len(pos_img_num)
 
         return best_score.to("cpu")
 
