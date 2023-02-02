@@ -692,8 +692,27 @@ class PIClauseGenerator(object):
                     if clause.body[i].terms == clause.body[j].terms:
                         is_conflict = True
                         print(f'conflict clause: {clause}')
+                    if self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name, list(clause.body[i].terms), list(clause.body[j].terms)):
+                        is_conflict = True
+                        print(f'conflict clause: {clause}')
 
             if not is_conflict:
                 non_conflict_clauses.append(clause)
 
         return non_conflict_clauses
+
+    def conflict_pred(self, p1, p2, t1, t2):
+        confliect_dict = {
+            "at_area_0": ["at_area_1", "at_area_3"],
+            "at_area_1": ["at_area_2", "at_area_0"],
+            "at_area_2": ["at_area_1", "at_area_3"],
+            "at_area_3": ["at_area_2", "at_area_0"],
+            "at_area_4": ["at_area_5", "at_area_7"],
+            "at_area_5": ["at_area_4", "at_area_6"],
+            "at_area_6": ["at_area_5", "at_area_7"],
+            "at_area_7": ["at_area_4", "at_area_6"],
+        }
+        if p2 in confliect_dict[p1]:
+            if t1[0] == t2[1] and t2[0] == t1[1]:
+                return True
+        return False
