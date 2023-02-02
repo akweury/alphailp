@@ -10,6 +10,7 @@ from PIL import Image
 from pi_utils import get_pi_model
 import chart_utils
 
+
 class ClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -693,9 +694,12 @@ class PIClauseGenerator(object):
                     if clause.body[i].terms == clause.body[j].terms:
                         is_conflict = True
                         print(f'conflict clause: {clause}')
-                    if self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name, list(clause.body[i].terms), list(clause.body[j].terms)):
+                    if self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
+                                          list(clause.body[i].terms), list(clause.body[j].terms)):
                         is_conflict = True
+
                         print(f'conflict clause: {clause}')
+                        break
 
             if not is_conflict:
                 non_conflict_clauses.append(clause)
