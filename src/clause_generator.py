@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from pi_utils import get_pi_model
-
+import chart_utils
 
 class ClauseGenerator(object):
     """
@@ -454,6 +454,7 @@ class PIClauseGenerator(object):
 
         print(f"======== best value in each level============\n"
               f"{best_values}")
+        chart_utils.plot_line_chart(best_values)
         # for i, ref in enumerate(refs):
         #     # check duplication
         #     if not self.is_in_beam(B_new, ref, loss_list[i]):
@@ -703,17 +704,17 @@ class PIClauseGenerator(object):
 
     def conflict_pred(self, p1, p2, t1, t2):
         confliect_dict = {
-            "at_area_0": ["at_area_1", "at_area_3"],
-            "at_area_1": ["at_area_2", "at_area_0"],
-            "at_area_2": ["at_area_1", "at_area_3"],
-            "at_area_3": ["at_area_2", "at_area_0"],
-            "at_area_4": ["at_area_5", "at_area_7"],
-            "at_area_5": ["at_area_4", "at_area_6"],
-            "at_area_6": ["at_area_5", "at_area_7"],
-            "at_area_7": ["at_area_4", "at_area_6"],
+            "at_area_0": ["at_area_2"],
+            "at_area_1": ["at_area_3"],
+            "at_area_2": ["at_area_0"],
+            "at_area_3": ["at_area_1"],
+            "at_area_4": ["at_area_6"],
+            "at_area_5": ["at_area_7"],
+            "at_area_6": ["at_area_4"],
+            "at_area_7": ["at_area_5"],
         }
         if p1 in confliect_dict.keys():
-            if p2 in confliect_dict[p1]:
+            if p2 not in confliect_dict[p1]:
                 if t1[0] == t2[1] and t2[0] == t1[1]:
                     return True
         return False
