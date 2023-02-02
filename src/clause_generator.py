@@ -437,20 +437,20 @@ class PIClauseGenerator(object):
 
             level_best_index = np.argmax(level_values)
 
-            print(f"===================== del clauses: \n ======================")
+            print(f"======= del clauses: \n ==================")
             print(pi_clauses_candidates[level_best_index])
 
             pi_clauses_candidates.pop(level_best_index)
             best_values.append(np.max(level_values))
             best_clause_combinations.append(pi_clauses_candidates)
 
-            print(f"===================== left clauses: \n ======================")
+            print(f"============= left clauses: \n ================")
             for clause in pi_clauses_candidates:
                 print(clause)
 
-        print(f"========best value in each level==========================\n"
+        print(f"========best value in each level============\n"
               f"{best_values}")
-        print(f"========best combinations in each level==========================\n"
+        print(f"========best combinations in each level========\n"
               f"{best_clause_combinations}")
         # for i, ref in enumerate(refs):
         #     # check duplication
@@ -605,11 +605,12 @@ class PIClauseGenerator(object):
         # TODO: Compute loss for validation data , score is bce loss
         # N C B G
         predicted_list_list = []
-
-        score = torch.zeros((C,)).to(self.device)
+        pos_img_num = self.pos_loader.dataset.__len__()
+        neg_img_num = self.neg_loader.dataset.__len__()
+        score_positive = torch.zeros((pos_img_num, C)).to(self.device)
+        score_negative = torch.zeros((neg_img_num, C)).to(self.device)
         N_data = 0
         # List(C * B * G)
-
         for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
             imgs, target_set = map(lambda x: x.to(self.device), sample)
             # print(NSFR.clauses)
@@ -624,7 +625,7 @@ class PIClauseGenerator(object):
             # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
             V_T_list = NSFR.clause_eval(imgs).detach()
             C_score = torch.zeros((C, B)).to(self.device)
-            for i, V_T in enumerate(V_T_list):
+            for j, V_T in enumerate(V_T_list):
                 # for each clause
                 # B
                 # print(V_T.shape)
@@ -635,12 +636,13 @@ class PIClauseGenerator(object):
                 # predicted = self.bce_loss(predicted, target_set)
                 # predicted = torch.abs(predicted - target_set)
                 # print(predicted)
-                C_score[i] = predicted
+                C_score[j] = predicted
             # C_score = PI.clause_eval(C_score)
-            C_score = C_score.max()
-            # sum over positive prob
 
-            score += C_score
+            # sum over positive prob
+            score_positive[i,:] = C_score.squeeze(1)
+
+        best_positive = score_positive.max(dim=0).values
 
         for i, sample in tqdm(enumerate(self.neg_loader, start=0)):
             imgs, target_set = map(lambda x: x.to(self.device), sample)
@@ -654,7 +656,7 @@ class PIClauseGenerator(object):
             # C * B * G
             V_T_list = NSFR.clause_eval(imgs).detach()
             C_score = torch.zeros((C, B)).to(self.device)
-            for i, V_T in enumerate(V_T_list):
+            for clause_index, V_T in enumerate(V_T_list):
                 # for each clause
                 # B
                 # print(V_T.shape)
@@ -665,14 +667,15 @@ class PIClauseGenerator(object):
                 # predicted = self.bce_loss(predicted, target_set)
                 # predicted = torch.abs(predicted - target_set)
                 # print(predicted)
-                C_score[i] = 1 - predicted
+                C_score[clause_index] = predicted
             # C
             # C_score = PI.clause_eval(C_score)
             # sum over positive prob
-            C_score = C_score.max()
-            score += C_score
-        # return score
-        # score = 1 - score.detach().cpu().numpy() / N_data
-        best_score = score.max()
+            score_negative[i, :] = C_score.squeeze(1)
+
+
+        best_negative = 1 - score_negative.sum(dim=0) / neg_img_num
+
+        best_score = (best_positive + best_negative).max()
 
         return best_score.to("cpu")
