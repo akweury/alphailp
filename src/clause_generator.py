@@ -422,7 +422,7 @@ class PIClauseGenerator(object):
         best_clause_combinations = []
         value = self.eval_multip_clauses(pi_clauses_candidates)  # time-consuming line
         best_values.append(value)
-        for del_level in range(1, len(beam_search_clauses)):
+        for del_level in range(1, len(pi_clauses_candidates)):
             level_values = []
             level_combinations = []
             for i, pi_clauses_candidate in enumerate(pi_clauses_candidates):
