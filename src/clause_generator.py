@@ -417,6 +417,7 @@ class PIClauseGenerator(object):
         """
         pi_clauses = set()
         pi_clauses_candidates = list(beam_search_clauses)
+        pi_clauses_candidates = self.remove_conflict_clauses(list(beam_search_clauses))
         best_values = []
         best_clause_combinations = []
         value = self.eval_multip_clauses(pi_clauses_candidates)  # time-consuming line
@@ -437,14 +438,14 @@ class PIClauseGenerator(object):
 
             level_best_index = np.argmax(level_values)
 
-            print(f"======= del clauses: \n ==================")
+            print(f"======= del clauses: ==================")
             print(pi_clauses_candidates[level_best_index])
 
             pi_clauses_candidates.pop(level_best_index)
             best_values.append(np.max(level_values))
             best_clause_combinations.append(pi_clauses_candidates)
 
-            print(f"============= left clauses: \n ================")
+            print(f"============= left clauses: ================")
             for clause in pi_clauses_candidates:
                 print(clause)
 
@@ -679,3 +680,18 @@ class PIClauseGenerator(object):
         best_score = (best_positive + best_negative).max()
 
         return best_score.to("cpu")
+
+    def remove_conflict_clauses(self, clauses):
+        non_conflict_clauses = []
+        for clause in clauses:
+            is_conflict = False
+            for i in range(len(clause.body)):
+                for j in range(i+1, len(clause.body)):
+                    if clause.body[i].terms == clause.body[j].terms:
+                        is_conflict = True
+                        print(f'conflict clause: {clause}')
+
+            if not is_conflict:
+                non_conflict_clauses.append(clause)
+
+        return non_conflict_clauses
