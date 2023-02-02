@@ -699,7 +699,6 @@ class PIClauseGenerator(object):
                         is_conflict = True
 
                         print(f'conflict clause: {clause}')
-                        break
 
             if not is_conflict:
                 non_conflict_clauses.append(clause)

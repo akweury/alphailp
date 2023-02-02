@@ -240,7 +240,7 @@ class Inv1ValuationFunction(nn.Module):
             A batch of probabilities.
         """
 
-        return self.logi(z_1.sum(dim=1)).squeeze()
+        return self.logi(0).squeeze()
 
     def to_center_x(self, z):
         x = (z[:, 0] + z[:, 2]) / 2
