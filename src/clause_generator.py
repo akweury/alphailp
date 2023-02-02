@@ -712,7 +712,8 @@ class PIClauseGenerator(object):
             "at_area_6": ["at_area_5", "at_area_7"],
             "at_area_7": ["at_area_4", "at_area_6"],
         }
-        if p2 in confliect_dict[p1]:
-            if t1[0] == t2[1] and t2[0] == t1[1]:
-                return True
+        if p1 in confliect_dict.keys():
+            if p2 in confliect_dict[p1]:
+                if t1[0] == t2[1] and t2[0] == t1[1]:
+                    return True
         return False
