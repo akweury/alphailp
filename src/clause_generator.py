@@ -432,23 +432,21 @@ class PIClauseGenerator(object):
 
                 level_combinations.append(level_clause_combination)
 
-
             level_best_value = np.max(level_values)
             level_best_index = np.argmax(level_values)
             level_del_clause = pi_clauses_candidates[level_best_index]
 
             print(f"========== level {del_level} ==================\n"
                   f"level all clauses:")
-            for clause in pi_clauses_candidates:
-                print(clause)
+            for i, clause in enumerate(pi_clauses_candidates):
+                print(f"{clause}\t{level_values[i]}")
 
             pi_clauses_candidates.pop(level_best_index)
             level_best_combination = pi_clauses_candidates.copy()
             best_clause_combinations.append(level_best_combination)
             best_values.append(level_best_value)
 
-            print(f"level values: {level_values}\n "
-                  f"level best values: {level_best_value}\n"
+            print(f"level best values: {level_best_value}\n"
                   f"level delete clause: {level_del_clause}\n"
                   f"level left clauses:")
             for clause in pi_clauses_candidates:
@@ -456,9 +454,6 @@ class PIClauseGenerator(object):
 
         print(f"======== best value in each level============\n"
               f"{best_values}")
-        print(f"========best combinations in each level========\n")
-        for each in best_clause_combinations:
-            print(each)
         # for i, ref in enumerate(refs):
         #     # check duplication
         #     if not self.is_in_beam(B_new, ref, loss_list[i]):
@@ -481,7 +476,9 @@ class PIClauseGenerator(object):
         best_index = np.argmax(best_values)
         pi_clauses = best_clause_combinations[best_index]
         pi_clauses_value = np.max(best_values)
-        print(f"best clause: {pi_clauses}")
+        print(f"best clause combination:")
+        for each in pi_clauses:
+            print(each)
         print(f"best clause value: {pi_clauses_value}")
 
         return pi_clauses
@@ -647,7 +644,7 @@ class PIClauseGenerator(object):
             # C_score = PI.clause_eval(C_score)
 
             # sum over positive prob
-            score_positive[i,:] = C_score.squeeze(1)
+            score_positive[i, :] = C_score.squeeze(1)
 
         best_positive = score_positive.max(dim=1).values
 
@@ -680,7 +677,6 @@ class PIClauseGenerator(object):
             # sum over positive prob
             score_negative[i, :] = C_score.squeeze(1)
 
-
         best_negative = 1 - score_negative.sum(dim=1) / C
 
         best_score = (best_positive + best_negative).sum() / pos_img_num
@@ -692,7 +688,7 @@ class PIClauseGenerator(object):
         for clause in clauses:
             is_conflict = False
             for i in range(len(clause.body)):
-                for j in range(i+1, len(clause.body)):
+                for j in range(i + 1, len(clause.body)):
                     if clause.body[i].terms == clause.body[j].terms:
                         is_conflict = True
                         print(f'conflict clause: {clause}')
