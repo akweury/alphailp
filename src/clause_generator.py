@@ -683,7 +683,7 @@ class PIClauseGenerator(object):
 
         best_negative = 1 - score_negative.sum(dim=1) / C
 
-        best_score = (best_positive + best_negative).sum() / len(pos_img_num)
+        best_score = (best_positive + best_negative).sum() / pos_img_num
 
         return best_score.to("cpu")
 
