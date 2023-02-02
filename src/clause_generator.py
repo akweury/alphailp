@@ -446,7 +446,7 @@ class PIClauseGenerator(object):
             best_clause_combinations.append(level_best_combination)
             best_values.append(level_best_value)
 
-            print(f"level best values: {level_best_value}\n"
+            print(f"level best values: {level_best_value}\n\n"
                   f"level delete clause: {level_del_clause}\n"
                   f"level left clauses:")
             for clause in pi_clauses_candidates:
@@ -679,7 +679,7 @@ class PIClauseGenerator(object):
 
         best_negative = 1 - score_negative.sum(dim=1) / C
 
-        best_score = (best_positive + best_negative).sum() / pos_img_num
+        best_score = (best_positive + 1.5 * best_negative).sum() / pos_img_num
 
         return best_score.to("cpu")
 
