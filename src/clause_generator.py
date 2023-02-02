@@ -451,8 +451,9 @@ class PIClauseGenerator(object):
 
         print(f"========best value in each level============\n"
               f"{best_values}")
-        print(f"========best combinations in each level========\n"
-              f"{best_clause_combinations}")
+        print(f"========best combinations in each level========\n")
+        for each in best_clause_combinations:
+            print(each)
         # for i, ref in enumerate(refs):
         #     # check duplication
         #     if not self.is_in_beam(B_new, ref, loss_list[i]):
@@ -677,7 +678,7 @@ class PIClauseGenerator(object):
 
         best_negative = 1 - score_negative.sum(dim=0) / neg_img_num
 
-        best_score = (best_positive + best_negative).sum()
+        best_score = (best_positive + best_negative).sum() / len(clauses)
 
         return best_score.to("cpu")
 
