@@ -606,7 +606,7 @@ class PIClauseGenerator(object):
         N_data = 0
         # List(C * B * G)
 
-        # image loop
+        # positive image loop
         for image_index in range(self.pos_loader.dataset.__len__()):
             V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
             C_score = torch.zeros((C, batch_size)).to(self.device)
@@ -618,6 +618,7 @@ class PIClauseGenerator(object):
             # sum over positive prob
             score_positive[image_index, :] = C_score.squeeze(1)
 
+        # negative image loop
         for image_index in range(self.neg_loader.dataset.__len__()):
             V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
             C_score = torch.zeros((C, batch_size)).to(self.device)
@@ -632,80 +633,14 @@ class PIClauseGenerator(object):
         best_positive = score_positive.max(dim=1).values
         best_negative = 1 - score_negative.sum(dim=1) / C
 
-        scatter_data = []
         for c_index in range(score_positive.shape[1]):
-            scatter_data.append([score_positive[:, c_index], score_negative[:, c_index]])
-
-        # TODO: print chart for each clauses
-        chart_utils.plot_scatter_chart(scatter_data, config.buffer_path, "clause_eval_scatter", log_y=True, log_x=True)
+            scatter_data = [score_negative[:, c_index], score_positive[:, c_index]]
+            chart_utils.plot_scatter_heat_chart([scatter_data], config.buffer_path / "img",
+                                                f"scatter_mce_{len(clauses)}_{c_index}",
+                                                labels=f"{str(clauses[c_index])}",
+                                                x_label="positive score", y_label="negative score")
 
         best_score = (best_positive + 1.5 * best_negative).sum() / pos_img_num
-
-        # for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
-        #     imgs, target_set = map(lambda x: x.to(self.device), sample)
-        #     # print(NSFR.clauses)
-        #     img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-        #     img_array_int8 = np.uint8(img_array * 255)
-        #     img_pil = Image.fromarray(img_array_int8)
-        #     # img_pil.show()
-        #     N_data += imgs.size(0)
-        #     B = imgs.size(0)
-        #     # C * B * G
-        #     # when evaluate a clause which its body contains invented predicates,
-        #     # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
-        #     V_T_list = NSFR.clause_eval(imgs).detach()
-        #     C_score = torch.zeros((C, B)).to(self.device)
-        #     for j, V_T in enumerate(V_T_list):
-        #         # for each clause
-        #         # B
-        #         # print(V_T.shape)
-        #         predicted = NSFR.predict(v=V_T, predname='kp').detach()
-        #         # print("clause: ", clauses[i])
-        #         # NSFR.print_valuation_batch(V_T)
-        #         # print(predicted)
-        #         # predicted = self.bce_loss(predicted, target_set)
-        #         # predicted = torch.abs(predicted - target_set)
-        #         # print(predicted)
-        #         C_score[j] = predicted
-        #     # C_score = PI.clause_eval(C_score)
-        #
-        #     # sum over positive prob
-        #     score_positive[i, :] = C_score.squeeze(1)
-        #
-        # best_positive = score_positive.max(dim=1).values
-        #
-        # for i, sample in tqdm(enumerate(self.neg_loader, start=0)):
-        #     imgs, target_set = map(lambda x: x.to(self.device), sample)
-        #     # print(NSFR.clauses)
-        #     img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-        #     img_array_int8 = np.uint8(img_array * 255)
-        #     img_pil = Image.fromarray(img_array_int8)
-        #     # img_pil.show()
-        #     N_data += imgs.size(0)
-        #     B = imgs.size(0)
-        #     # C * B * G
-        #     V_T_list = NSFR.clause_eval(imgs).detach()
-        #     C_score = torch.zeros((C, B)).to(self.device)
-        #     for clause_index, V_T in enumerate(V_T_list):
-        #         # for each clause
-        #         # B
-        #         # print(V_T.shape)
-        #         predicted = NSFR.predict(v=V_T, predname='kp').detach()
-        #         # print("clause: ", clauses[i])
-        #         # NSFR.print_valuation_batch(V_T)
-        #         # print(predicted)
-        #         # predicted = self.bce_loss(predicted, target_set)
-        #         # predicted = torch.abs(predicted - target_set)
-        #         # print(predicted)
-        #         C_score[clause_index] = predicted
-        #     # C
-        #     # C_score = PI.clause_eval(C_score)
-        #     # sum over positive prob
-        #     score_negative[i, :] = C_score.squeeze(1)
-        #
-        # best_negative = 1 - score_negative.sum(dim=1) / C
-        # best_score = (best_positive + 1.5 * best_negative).sum() / pos_img_num
-
         return best_score.to("cpu")
 
     def remove_conflict_clauses(self, clauses):
