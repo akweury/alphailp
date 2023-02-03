@@ -1,25 +1,23 @@
-import argparse
-from pathlib import Path
-import numpy as np
-from sklearn.metrics import accuracy_score, recall_score, roc_curve
-
+import os
 import torch
-
+import argparse
+import numpy as np
+from pathlib import Path
+from sklearn.metrics import accuracy_score, recall_score, roc_curve
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from rtpt import RTPT
 
+import config
 import pi_utils
+import nsfr_utils
+import percept
 from nsfr_utils import denormalize_kandinsky, get_data_loader, get_data_pos_loader, get_prob, get_nsfr_model, \
     update_initial_clauses
-import nsfr_utils
-
 from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, generate_captions
 from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
-
 from clause_generator import ClauseGenerator, PIClauseGenerator
-import config
 
 
 def get_args():
@@ -251,31 +249,41 @@ def main(n):
     for i in range(args.pi_epochs):
 
         # Neuro-Symbolic Forward Reasoner for clause generation
-        NSFR_cgen = get_nsfr_model(args, lang, init_clauses, atoms, bk, bk_clauses,
-                                   device=device)  # torch.device('cpu'))
-        PI_cgen = pi_utils.get_pi_model(args, lang, init_clauses, atoms, bk, bk_clauses,
-                                        device=device)  # torch.device('cpu'))
+        NSFR_cgen = get_nsfr_model(args, lang, init_clauses, atoms, bk, bk_clauses, device=device)
+        PI_cgen = pi_utils.get_pi_model(args, lang, init_clauses, atoms, bk, bk_clauses, device=device)
 
         mode_declarations = get_mode_declarations(args, lang, args.n_obj)
-        clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader,val_neg_loader, mode_declarations,
+        clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
+                                           mode_declarations,
                                            bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
 
-        pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader,val_neg_loader, mode_declarations,
-                                           bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
+        pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
+                                                mode_declarations,
+                                                bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
+
+        # use perception model to evaluate image
+        pos_res_file_name = str(config.buffer_path / "pm_res.pth.tar")
+        if os.path.exists(pos_res_file_name):
+            pm_res = torch.load(pos_res_file_name)
+            pos_pred = pm_res['pos_res']
+            neg_pred = pm_res['neg_res']
+        else:
+            pos_pred, neg_pred = percept.eval_images(args, pos_res_file_name, device, val_pos_loader, val_neg_loader)
 
         # generate clauses
-        gen_clauses = clause_generator.generate(init_clauses, T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
+        gen_clauses = clause_generator.generate(init_clauses, pos_pred, neg_pred,
+                                                T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
         print("====== ", len(gen_clauses), " clauses are generated!! ======")
 
         # invent new predicate and generate pi clauses
-        gen_pi_clauses = pi_clause_generator.generate(gen_clauses)
+        gen_pi_clauses = pi_clause_generator.generate(gen_clauses, pos_pred, neg_pred)
         print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
 
         # update
         NSFR = get_nsfr_model(args, lang, gen_clauses, atoms, bk, bk_clauses, device, train=True)
         params = NSFR.get_params()
         optimizer = torch.optim.RMSprop(params, lr=args.lr)
-        ##optimizer = torch.optim.Adam(params, lr=args.lr)
+        # optimizer = torch.optim.Adam(params, lr=args.lr)
         loss_list = train_nsfr(args, NSFR, optimizer, train_loader, val_loader, test_loader, device, writer, rtpt)
 
         # validation split

@@ -1,3 +1,5 @@
+import os.path
+
 from fol.logic import *
 from nsfr_utils import update_nsfr_clauses, get_prob, get_nsfr_model
 # from eval_clause import EvalInferModule
@@ -9,6 +11,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from pi_utils import get_pi_model
 import chart_utils
+from percept import YOLOPerceptionModule
+import config
 
 
 class ClauseGenerator(object):
@@ -91,7 +95,7 @@ class ClauseGenerator(object):
             else:
                 return False
 
-    def generate(self, C_0, gen_mode='beam', T_beam=7, N_beam=20, N_max=100):
+    def generate(self, C_0, pos_pred, neg_pred, gen_mode='beam', T_beam=7, N_beam=20, N_max=100):
         """
         call clause generation function with or without beam-searching
         Inputs
@@ -114,12 +118,12 @@ class ClauseGenerator(object):
             set of generated clauses
         """
         if gen_mode == 'beam':
-            beam_search_clauses = self.beam_search(C_0, T_beam=T_beam, N_beam=N_beam, N_max=N_max)
+            beam_search_clauses = self.beam_search(C_0, pos_pred, neg_pred, T_beam=T_beam, N_beam=N_beam, N_max=N_max)
             return beam_search_clauses
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
 
-    def beam_search_clause(self, clause, T_beam=7, N_beam=20, N_max=100, th=0.98):
+    def beam_search_clause(self, clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
         """
         perform beam-searching from a clause
         Inputs
@@ -162,8 +166,7 @@ class ClauseGenerator(object):
                     print("Added: ", c)
 
             print('Evaluating ', len(refs), 'generated clauses.')
-            loss_list = self.eval_clauses(refs)  # time-consuming line
-            pi_loss_list = self.eval_pi_clauses(refs)
+            loss_list = self.eval_clauses(refs, pos_pred, neg_pred)
 
             for i, ref in enumerate(refs):
                 # check duplication
@@ -187,6 +190,55 @@ class ClauseGenerator(object):
             #    break
         return C
 
+    def eval_images(self, save_path):
+
+        prop_dim = 11
+        # perception model
+        pm = YOLOPerceptionModule(e=self.args.e, d=prop_dim, device=self.device)
+
+        # positive image evaluation
+        N_data = 0
+        pos_eval_res = torch.zeros((self.pos_loader.dataset.__len__(), self.args.e, prop_dim)).to(self.device)
+        for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
+            imgs, target_set = map(lambda x: x.to(self.device), sample)
+            # print(NSFR.clauses)
+            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
+            img_array_int8 = np.uint8(img_array * 255)
+            img_pil = Image.fromarray(img_array_int8)
+            # img_pil.show()
+            N_data += imgs.size(0)
+            B = imgs.size(0)
+            # C * B * G
+            # when evaluate a clause which its body contains invented predicates,
+            # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
+            res = pm(imgs)
+            pos_eval_res[i, :] = res
+
+            # negative image evaluation
+        N_data = 0
+        neg_eval_res = torch.zeros((self.neg_loader.dataset.__len__(), self.args.e, prop_dim)).to(self.device)
+        for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
+            imgs, target_set = map(lambda x: x.to(self.device), sample)
+            # print(NSFR.clauses)
+            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
+            img_array_int8 = np.uint8(img_array * 255)
+            img_pil = Image.fromarray(img_array_int8)
+            # img_pil.show()
+            N_data += imgs.size(0)
+            B = imgs.size(0)
+            # C * B * G
+            # when evaluate a clause which its body contains invented predicates,
+            # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
+            res = pm(imgs)
+            neg_eval_res[i, :] = res
+
+        # save tensors
+        pm_res = {'pos_res': pos_eval_res.detach(),
+                  'neg_res': neg_eval_res.detach()}
+        torch.save(pm_res, str(save_path))
+
+        return pos_eval_res, neg_eval_res
+
     def is_in_beam(self, B, clause, score):
         """If score is the same, same predicates => duplication
         """
@@ -202,7 +254,7 @@ class ClauseGenerator(object):
                 break
         return y
 
-    def beam_search(self, C_0, T_beam=7, N_beam=20, N_max=100):
+    def beam_search(self, C_0, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100):
         """
         generate clauses by beam-searching from initial clauses
         Inputs
@@ -222,7 +274,7 @@ class ClauseGenerator(object):
         """
         C = set()
         for clause in C_0:
-            C = C.union(self.beam_search_clause(clause, T_beam, N_beam, N_max))
+            C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
         C = sorted(list(C))
         print('======= BEAM SEARCHED CLAUSES ======')
         for c in C:
@@ -232,85 +284,42 @@ class ClauseGenerator(object):
     def eval_pi_clauses(self, clauses):
         return None
 
-    def eval_clauses(self, clauses):
+    def eval_clauses(self, clauses, pos_pm_res, neg_pm_res):
         C = len(clauses)
         print("Eval clauses: ", len(clauses))
         # update infer module with new clauses
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
         NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
                               self.device)
-        PI = get_pi_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
-                          self.device)
         # TODO: Compute loss for validation data , score is bce loss
-        # N C B G
-        predicted_list_list = []
 
         score = torch.zeros((C,)).to(self.device)
-        N_data = 0
-        # List(C * B * G)
 
-        for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
-            imgs, target_set = map(lambda x: x.to(self.device), sample)
-            # print(NSFR.clauses)
-            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-            img_array_int8 = np.uint8(img_array * 255)
-            img_pil = Image.fromarray(img_array_int8)
-            # img_pil.show()
-            N_data += imgs.size(0)
-            B = imgs.size(0)
-            # C * B * G
-            # when evaluate a clause which its body contains invented predicates,
-            # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
-            V_T_list = NSFR.clause_eval(imgs).detach()
-            C_score = torch.zeros((C, B)).to(self.device)
-            for i, V_T in enumerate(V_T_list):
-                # for each clause
-                # B
-                # print(V_T.shape)
+        batch_size = self.args.batch_size_bs
+        for i in range(self.pos_loader.dataset.__len__()):
+            V_T_list = NSFR.clause_eval_quick(pos_pm_res[i].unsqueeze(0)).detach()
+            C_score = torch.zeros((C, batch_size)).to(self.device)
+            for j, V_T in enumerate(V_T_list):
                 predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                # print("clause: ", clauses[i])
-                # NSFR.print_valuation_batch(V_T)
-                # print(predicted)
-                # predicted = self.bce_loss(predicted, target_set)
-                # predicted = torch.abs(predicted - target_set)
-                # print(predicted)
-                C_score[i] = predicted
-            C_score = PI.clause_eval(C_score)
+                C_score[j] = predicted
+            # C_score = PI.clause_eval(C_score)
             # sum over positive prob
             C_score = C_score.sum(dim=1)
             score += C_score
 
-        for i, sample in tqdm(enumerate(self.neg_loader, start=0)):
-            imgs, target_set = map(lambda x: x.to(self.device), sample)
-            # print(NSFR.clauses)
-            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-            img_array_int8 = np.uint8(img_array * 255)
-            img_pil = Image.fromarray(img_array_int8)
-            # img_pil.show()
-            N_data += imgs.size(0)
-            B = imgs.size(0)
-            # C * B * G
-            V_T_list = NSFR.clause_eval(imgs).detach()
-            C_score = torch.zeros((C, B)).to(self.device)
-            for i, V_T in enumerate(V_T_list):
-                # for each clause
-                # B
-                # print(V_T.shape)
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                # print("clause: ", clauses[i])
-                # NSFR.print_valuation_batch(V_T)
-                # print(predicted)
-                # predicted = self.bce_loss(predicted, target_set)
-                # predicted = torch.abs(predicted - target_set)
-                # print(predicted)
-                C_score[i] = 1 - predicted
-            # C
-            C_score = PI.clause_eval(C_score)
-            # sum over positive prob
-            C_score = C_score.sum(dim=1)
-            score += C_score
-        # return score
-        # score = 1 - score.detach().cpu().numpy() / N_data
+        # for i in range(self.neg_loader.dataset.__len__()):
+        #     V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
+        #     C_score = torch.zeros((C, batch_size)).to(self.device)
+        #     for i, V_T in enumerate(V_T_list):
+        #         predicted = NSFR.predict(v=V_T, predname='kp').detach()
+        #         C_score[i] = 1 - predicted
+        #     # C_score = PI.clause_eval(C_score)
+        #     # sum over positive prob
+        #     # C_score = PI.clause_eval(C_score)
+        #     # sum over positive prob
+        #     C_score = C_score.sum(dim=1)
+        #     score += C_score
+
         return score
 
 
@@ -394,94 +403,71 @@ class PIClauseGenerator(object):
             else:
                 return False
 
-    def generate(self, beam_search_clauses):
+    def generate(self, beam_search_clauses, pos_pred, neg_pred):
         """
         call clause generation function with or without beam-searching
         Inputs
         ------
         C_0 : Set[.logic.Clause]
             a set of initial clauses
-        gen_mode : string
-            a generation mode
-            'beam' - with beam-searching
-            'naive' - without beam-searching
-        T_beam : int
-            number of steps in beam-searching
-        N_beam : int
-            size of the beam
-        N_max : int
-            maximum number of clauses to be generated
         Returns
         -------
         C : Set[.logic.Clause]
             set of generated clauses
         """
-        pi_clauses = set()
-        pi_clauses_candidates = list(beam_search_clauses)
+        # remove conflict clauses
         pi_clauses_candidates = self.remove_conflict_clauses(list(beam_search_clauses))
-        best_values = []
-        best_clause_combinations = []
-        value = self.eval_multip_clauses(pi_clauses_candidates)  # time-consuming line
-        best_values.append(value)
+
+        # evaluate for all the clauses
+        best_values = np.zeros((1, len(pi_clauses_candidates)))
+        best_clause_combinations = [pi_clauses_candidates]
+        value = self.eval_multip_clauses(pi_clauses_candidates, pos_pred, neg_pred)  # time-consuming line
+        best_values[0, 0] = value.numpy()
+        level_best_combination = pi_clauses_candidates
+
+        # remove clauses and evaluate
         for del_level in range(1, len(pi_clauses_candidates)):
             level_values = []
             level_combinations = []
-            for i, pi_clauses_candidate in enumerate(pi_clauses_candidates):
-                level_clause_combination = pi_clauses_candidates[:i] + pi_clauses_candidates[i + 1:]
-                new_value = self.eval_multip_clauses(level_clause_combination)  # time-consuming line
+            for i, pi_clauses_candidate in enumerate(level_best_combination):
+                level_clause_combination = level_best_combination[:i] + level_best_combination[i + 1:]
+                new_value = self.eval_multip_clauses(level_clause_combination, pos_pred, neg_pred)
                 level_values.append(new_value)
-
                 level_combinations.append(level_clause_combination)
 
             level_best_value = np.max(level_values)
             level_best_index = np.argmax(level_values)
-            level_del_clause = pi_clauses_candidates[level_best_index]
+            level_del_clause = level_best_combination[level_best_index]
 
-            print(f"========== level {del_level} ==================\n"
-                  f"level all clauses:")
-            for i, clause in enumerate(pi_clauses_candidates):
+            print(f"\n\n========== level {del_level} ==================\n"
+                  f"\nclauses:")
+            for i, clause in enumerate(level_best_combination):
                 print(f"{clause}\t{level_values[i]}")
 
-            pi_clauses_candidates.pop(level_best_index)
-            level_best_combination = pi_clauses_candidates.copy()
+            level_best_combination = level_combinations[level_best_index]
             best_clause_combinations.append(level_best_combination)
-            best_values.append(level_best_value)
+            best_values[0, del_level] = level_best_value
 
-            print(f"level best values: {level_best_value}\n\n"
-                  f"level delete clause: {level_del_clause}\n"
-                  f"level left clauses:")
-            for clause in pi_clauses_candidates:
+            print(f"\nlevel best values: {level_best_value}\n\n"
+                  f"level delete clause: {level_del_clause}\n\n"
+                  f"clauses after removing:")
+            for clause in level_best_combination:
                 print(clause)
-
-        print(f"======== best value in each level============\n"
-              f"{best_values}")
-        chart_utils.plot_line_chart(best_values)
-        # for i, ref in enumerate(refs):
-        #     # check duplication
-        #     if not self.is_in_beam(B_new, ref, loss_list[i]):
-        #         B_new[ref] = loss_list[i]
-        #         C_dic[ref] = loss_list[i]
-        #
-        #     # if len(C) >= N_max:
-        #     #    break
-        # B_new_sorted = sorted(B_new.items(), key=lambda x: x[1], reverse=True)
-        # # top N_beam refiements
-        # B_new_sorted = B_new_sorted[:N_beam]
-        # # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
-        # for x in B_new_sorted:
-        #     print(x[1], x[0])
-        # B = [x[0] for x in B_new_sorted]
-        # step += 1
-        # if len(B) == 0:
-        #     break
 
         best_index = np.argmax(best_values)
         pi_clauses = best_clause_combinations[best_index]
         pi_clauses_value = np.max(best_values)
-        print(f"best clause combination:")
+
+        # print logs
+        print(f"\n======== best value in each level============\n"
+              f"{best_values}")
+        print(f"=========== best clause combination: ==============")
         for each in pi_clauses:
             print(each)
-        print(f"best clause value: {pi_clauses_value}")
+        print(f"\nbest clause value: {pi_clauses_value}")
+
+        # plot results and save
+        chart_utils.plot_line_chart(best_values, path=config.buffer_path, labels=["pi_score"])
 
         return pi_clauses
 
@@ -598,12 +584,13 @@ class PIClauseGenerator(object):
     def eval_pi_clauses(self, clauses):
         return None
 
-    def eval_multip_clauses(self, clauses):
+    def eval_multip_clauses(self, clauses, pos_pred, neg_pred):
 
         C = len(clauses)
         print("Eval clauses: ", len(clauses))
         # update infer module with new clauses
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
+
         NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
                               self.device)
         PI = get_pi_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
@@ -611,81 +598,118 @@ class PIClauseGenerator(object):
         # TODO: Compute loss for validation data , score is bce loss
         # N C B G
         predicted_list_list = []
+        batch_size = self.args.batch_size_bs
         pos_img_num = self.pos_loader.dataset.__len__()
         neg_img_num = self.neg_loader.dataset.__len__()
         score_positive = torch.zeros((pos_img_num, C)).to(self.device)
         score_negative = torch.zeros((neg_img_num, C)).to(self.device)
         N_data = 0
         # List(C * B * G)
-        for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
-            imgs, target_set = map(lambda x: x.to(self.device), sample)
-            # print(NSFR.clauses)
-            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-            img_array_int8 = np.uint8(img_array * 255)
-            img_pil = Image.fromarray(img_array_int8)
-            # img_pil.show()
-            N_data += imgs.size(0)
-            B = imgs.size(0)
-            # C * B * G
-            # when evaluate a clause which its body contains invented predicates,
-            # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
-            V_T_list = NSFR.clause_eval(imgs).detach()
-            C_score = torch.zeros((C, B)).to(self.device)
-            for j, V_T in enumerate(V_T_list):
-                # for each clause
-                # B
-                # print(V_T.shape)
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                # print("clause: ", clauses[i])
-                # NSFR.print_valuation_batch(V_T)
-                # print(predicted)
-                # predicted = self.bce_loss(predicted, target_set)
-                # predicted = torch.abs(predicted - target_set)
-                # print(predicted)
-                C_score[j] = predicted
-            # C_score = PI.clause_eval(C_score)
 
+        # image loop
+        for image_index in range(self.pos_loader.dataset.__len__()):
+            V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
+            C_score = torch.zeros((C, batch_size)).to(self.device)
+
+            # clause loop
+            for clause_index, V_T in enumerate(V_T_list):
+                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                C_score[clause_index] = predicted
             # sum over positive prob
-            score_positive[i, :] = C_score.squeeze(1)
+            score_positive[image_index, :] = C_score.squeeze(1)
+
+        for image_index in range(self.neg_loader.dataset.__len__()):
+            V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
+            C_score = torch.zeros((C, batch_size)).to(self.device)
+            for clause_index, V_T in enumerate(V_T_list):
+                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                C_score[clause_index] = predicted
+                # C
+                # C_score = PI.clause_eval(C_score)
+                # sum over positive prob
+            score_negative[image_index, :] = C_score.squeeze(1)
 
         best_positive = score_positive.max(dim=1).values
-
-        for i, sample in tqdm(enumerate(self.neg_loader, start=0)):
-            imgs, target_set = map(lambda x: x.to(self.device), sample)
-            # print(NSFR.clauses)
-            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-            img_array_int8 = np.uint8(img_array * 255)
-            img_pil = Image.fromarray(img_array_int8)
-            # img_pil.show()
-            N_data += imgs.size(0)
-            B = imgs.size(0)
-            # C * B * G
-            V_T_list = NSFR.clause_eval(imgs).detach()
-            C_score = torch.zeros((C, B)).to(self.device)
-            for clause_index, V_T in enumerate(V_T_list):
-                # for each clause
-                # B
-                # print(V_T.shape)
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                # print("clause: ", clauses[i])
-                # NSFR.print_valuation_batch(V_T)
-                # print(predicted)
-                # predicted = self.bce_loss(predicted, target_set)
-                # predicted = torch.abs(predicted - target_set)
-                # print(predicted)
-                C_score[clause_index] = predicted
-            # C
-            # C_score = PI.clause_eval(C_score)
-            # sum over positive prob
-            score_negative[i, :] = C_score.squeeze(1)
-
         best_negative = 1 - score_negative.sum(dim=1) / C
 
+        scatter_data = []
+        for c_index in range(score_positive.shape[1]):
+            scatter_data.append([score_positive[:, c_index], score_negative[:, c_index]])
+
+        # TODO: print chart for each clauses
+        chart_utils.plot_scatter_chart(scatter_data, config.buffer_path, "clause_eval_scatter", log_y=True, log_x=True)
+
         best_score = (best_positive + 1.5 * best_negative).sum() / pos_img_num
+
+        # for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
+        #     imgs, target_set = map(lambda x: x.to(self.device), sample)
+        #     # print(NSFR.clauses)
+        #     img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
+        #     img_array_int8 = np.uint8(img_array * 255)
+        #     img_pil = Image.fromarray(img_array_int8)
+        #     # img_pil.show()
+        #     N_data += imgs.size(0)
+        #     B = imgs.size(0)
+        #     # C * B * G
+        #     # when evaluate a clause which its body contains invented predicates,
+        #     # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
+        #     V_T_list = NSFR.clause_eval(imgs).detach()
+        #     C_score = torch.zeros((C, B)).to(self.device)
+        #     for j, V_T in enumerate(V_T_list):
+        #         # for each clause
+        #         # B
+        #         # print(V_T.shape)
+        #         predicted = NSFR.predict(v=V_T, predname='kp').detach()
+        #         # print("clause: ", clauses[i])
+        #         # NSFR.print_valuation_batch(V_T)
+        #         # print(predicted)
+        #         # predicted = self.bce_loss(predicted, target_set)
+        #         # predicted = torch.abs(predicted - target_set)
+        #         # print(predicted)
+        #         C_score[j] = predicted
+        #     # C_score = PI.clause_eval(C_score)
+        #
+        #     # sum over positive prob
+        #     score_positive[i, :] = C_score.squeeze(1)
+        #
+        # best_positive = score_positive.max(dim=1).values
+        #
+        # for i, sample in tqdm(enumerate(self.neg_loader, start=0)):
+        #     imgs, target_set = map(lambda x: x.to(self.device), sample)
+        #     # print(NSFR.clauses)
+        #     img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
+        #     img_array_int8 = np.uint8(img_array * 255)
+        #     img_pil = Image.fromarray(img_array_int8)
+        #     # img_pil.show()
+        #     N_data += imgs.size(0)
+        #     B = imgs.size(0)
+        #     # C * B * G
+        #     V_T_list = NSFR.clause_eval(imgs).detach()
+        #     C_score = torch.zeros((C, B)).to(self.device)
+        #     for clause_index, V_T in enumerate(V_T_list):
+        #         # for each clause
+        #         # B
+        #         # print(V_T.shape)
+        #         predicted = NSFR.predict(v=V_T, predname='kp').detach()
+        #         # print("clause: ", clauses[i])
+        #         # NSFR.print_valuation_batch(V_T)
+        #         # print(predicted)
+        #         # predicted = self.bce_loss(predicted, target_set)
+        #         # predicted = torch.abs(predicted - target_set)
+        #         # print(predicted)
+        #         C_score[clause_index] = predicted
+        #     # C
+        #     # C_score = PI.clause_eval(C_score)
+        #     # sum over positive prob
+        #     score_negative[i, :] = C_score.squeeze(1)
+        #
+        # best_negative = 1 - score_negative.sum(dim=1) / C
+        # best_score = (best_positive + 1.5 * best_negative).sum() / pos_img_num
 
         return best_score.to("cpu")
 
     def remove_conflict_clauses(self, clauses):
+        print("check for conflict clauses...")
         non_conflict_clauses = []
         for clause in clauses:
             is_conflict = False
@@ -694,19 +718,27 @@ class PIClauseGenerator(object):
                     if clause.body[i].terms == clause.body[j].terms:
                         is_conflict = True
                         print(f'conflict clause: {clause}')
-                    if self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
-                                          list(clause.body[i].terms), list(clause.body[j].terms)):
+                        break
+                    elif self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
+                                            list(clause.body[i].terms), list(clause.body[j].terms)):
                         is_conflict = True
-
                         print(f'conflict clause: {clause}')
-
+                        break
+                if is_conflict:
+                    break
             if not is_conflict:
                 non_conflict_clauses.append(clause)
+
+        print("end for checking.")
+        print("========= All non-conflict clauses ==========")
+        for each in non_conflict_clauses:
+            print(each)
+        print("=============================================")
 
         return non_conflict_clauses
 
     def conflict_pred(self, p1, p2, t1, t2):
-        confliect_dict = {
+        non_confliect_dict = {
             "at_area_0": ["at_area_2"],
             "at_area_1": ["at_area_3"],
             "at_area_2": ["at_area_0"],
@@ -716,8 +748,8 @@ class PIClauseGenerator(object):
             "at_area_6": ["at_area_4"],
             "at_area_7": ["at_area_5"],
         }
-        if p1 in confliect_dict.keys():
-            if p2 not in confliect_dict[p1]:
+        if p1 in non_confliect_dict.keys():
+            if p2 not in non_confliect_dict[p1]:
                 if t1[0] == t2[1] and t2[0] == t1[1]:
                     return True
         return False

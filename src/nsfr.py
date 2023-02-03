@@ -14,7 +14,8 @@ class NSFReasoner(nn.Module):
         atoms (list(atom)): The set of ground atoms (facts).
     """
 
-    def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, atoms, bk, clauses, train=False):
+    def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, atoms, bk, clauses,
+                 train=False):
         super().__init__()
         self.pm = perception_module
         self.fc = facts_converter
@@ -54,12 +55,24 @@ class NSFReasoner(nn.Module):
         V_T = self.cim(V_0)
         return V_T
 
+    def clause_eval_quick(self, x):
+        # convert to the valuation tensor
+        V_0 = self.fc(x, self.atoms, self.bk)
+        # perform T-step forward-chaining reasoning
+        V_T = self.cim(V_0)
+        return V_T
+
+    def img_eval(self, x):
+        # obtain the object-centric representation
+        zs = self.pm(x)
+
+        return zs
+
     def predict(self, v, predname):
         """Extracting a value from the valuation tensor using a given predicate.
         """
         # v: batch * |atoms|
-        target_index = get_index_by_predname(
-            pred_str=predname, atoms=self.atoms)
+        target_index = get_index_by_predname(pred_str=predname, atoms=self.atoms)
         return v[:, target_index]
 
     def predict_multi(self, v, prednames):
@@ -74,7 +87,7 @@ class NSFReasoner(nn.Module):
                 pred_str=predname, atoms=self.atoms)
             target_indices.append(target_index)
         prob = torch.cat([v[:, i].unsqueeze(-1)
-                         for i in target_indices], dim=1)
+                          for i in target_indices], dim=1)
         B = v.size(0)
         N = len(prednames)
         assert prob.size(0) == B and prob.size(
@@ -93,7 +106,7 @@ class NSFReasoner(nn.Module):
 
         for i, W_ in enumerate(Ws_softmaxed):
             max_i = np.argmax(W_.detach().cpu().numpy())
-            print('C_'+str(i)+': ',
+            print('C_' + str(i) + ': ',
                   C[max_i], np.round(np.array(W_[max_i].detach().cpu().item()), 2))
 
     def print_valuation_batch(self, valuation, n=40):

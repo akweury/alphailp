@@ -2,7 +2,9 @@ import sys
 
 import torch
 import torch.nn as nn
-
+import numpy as np
+from tqdm import tqdm
+from PIL import Image
 from yolov5.models.experimental import attempt_load
 from yolov5.utils.general import non_max_suppression
 
@@ -186,3 +188,52 @@ class YOLOPreprocess(nn.Module):
             obj = torch.cat([xyxy, color, shape, prob], dim=-1)
             object_list.append(obj)
         return torch.stack(object_list, dim=1).to(self.device)
+
+
+def eval_images(args, save_path, device, pos_loader, neg_loader):
+    prop_dim = 11
+    # perception model
+    pm = YOLOPerceptionModule(e=args.e, d=prop_dim, device=device)
+
+    # positive image evaluation
+    N_data = 0
+    pos_eval_res = torch.zeros((pos_loader.dataset.__len__(), args.e, prop_dim)).to(device)
+    for i, sample in tqdm(enumerate(pos_loader, start=0)):
+        imgs, target_set = map(lambda x: x.to(device), sample)
+        # print(NSFR.clauses)
+        img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
+        img_array_int8 = np.uint8(img_array * 255)
+        img_pil = Image.fromarray(img_array_int8)
+        # img_pil.show()
+        N_data += imgs.size(0)
+        B = imgs.size(0)
+        # C * B * G
+        # when evaluate a clause which its body contains invented predicates,
+        # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
+        res = pm(imgs)
+        pos_eval_res[i, :] = res
+
+        # negative image evaluation
+    N_data = 0
+    neg_eval_res = torch.zeros((neg_loader.dataset.__len__(), args.e, prop_dim)).to(device)
+    for i, sample in tqdm(enumerate(neg_loader, start=0)):
+        imgs, target_set = map(lambda x: x.to(device), sample)
+        # print(NSFR.clauses)
+        img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
+        img_array_int8 = np.uint8(img_array * 255)
+        img_pil = Image.fromarray(img_array_int8)
+        # img_pil.show()
+        N_data += imgs.size(0)
+        B = imgs.size(0)
+        # C * B * G
+        # when evaluate a clause which its body contains invented predicates,
+        # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
+        res = pm(imgs)
+        neg_eval_res[i, :] = res
+
+    # save tensors
+    pm_res = {'pos_res': pos_eval_res.detach(),
+              'neg_res': neg_eval_res.detach()}
+    torch.save(pm_res, str(save_path))
+
+    return pos_eval_res, neg_eval_res

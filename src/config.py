@@ -5,7 +5,7 @@ from pathlib import Path
 
 root = Path(__file__).parents[1]
 
-work_place_path = root / "workplace"
 
+buffer_path = root / "src" / "runs" / "buffer"
 if __name__ == "__main__":
     print("root path: " + str(root))
