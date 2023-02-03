@@ -425,12 +425,12 @@ class InventedPredicate(Predicate):
         dtypes (List[DataTypes]): The data types of the arguments for the predicate.
     """
 
-    def __init__(self, name, arity, dtypes, child_predicates):
+    def __init__(self, name, arity, dtypes):
         super(InventedPredicate, self).__init__(name, arity, dtypes)
         self.name = name
         self.arity = arity
         self.dtypes = dtypes
-        self.child_predicates = child_predicates
+        self.body = None
 
     def __str__(self):
         return self.name + '/' + str(self.arity) + '/' + str(self.dtypes)
@@ -739,3 +739,20 @@ class Clause(object):
         for bi in self.body:
             size += bi.size()
         return size
+
+
+class InventedClause(Clause):
+    """Invented Clauses in first-oder logic.
+
+    A class of invented clauses in first-order logic: A :- B1, ..., Bn.
+
+    Attributes:
+        head (Atom): The head atom.
+        body (List[Atom]): The atoms for the body.
+    """
+
+    def __init__(self, head, body):
+        super(InventedClause, self).__init__(head, body)
+
+        self.head = head
+        self.body = sorted(body)

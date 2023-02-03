@@ -15,6 +15,7 @@ import percept
 from nsfr_utils import denormalize_kandinsky, get_data_loader, get_data_pos_loader, get_prob, get_nsfr_model, \
     update_initial_clauses
 from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, generate_captions
+import logic_utils
 from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
 from clause_generator import ClauseGenerator, PIClauseGenerator
@@ -102,16 +103,14 @@ def predict(NSFR, loader, args, device, th=None, split='train'):
         target_list.append(target_set.detach())
         if args.plot:
             imgs = to_plot_images_kandinsky(imgs)
-            captions = generate_captions(
-                V_T, NSFR.atoms, NSFR.pm.e, th=0.3)
+            captions = generate_captions(V_T, NSFR.atoms, NSFR.pm.e, th=0.3)
             save_images_with_captions(
                 imgs, captions, folder='result/kandinsky/' + args.dataset + '/' + split + '/', img_id_start=count,
                 dataset=args.dataset)
         count += V_T.size(0)  # batch size
 
     predicted = torch.cat(predicted_list, dim=0).detach().cpu().numpy()
-    target_set = torch.cat(target_list, dim=0).to(
-        torch.int64).detach().cpu().numpy()
+    target_set = torch.cat(target_list, dim=0).to(torch.int64).detach().cpu().numpy()
 
     if th == None:
         fpr, tpr, thresholds = roc_curve(target_set, predicted, pos_label=1)
@@ -178,20 +177,72 @@ def train_nsfr(args, NSFR, optimizer, train_loader, val_loader, test_loader, dev
         if epoch % 20 == 0:
             NSFR.print_program()
             print("Predicting on validation data set...")
-            acc_val, rec_val, th_val = predict(
-                NSFR, val_loader, args, device, th=0.33, split='val')
+            acc_val, rec_val, th_val = predict(NSFR, val_loader, args, device, th=0.33, split='val')
             writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
             print("acc_val: ", acc_val)
 
             print("Predicting on training data set...")
-            acc, rec, th = predict(
-                NSFR, train_loader, args, device, th=th_val, split='train')
+            acc, rec, th = predict(NSFR, train_loader, args, device, th=th_val, split='train')
             writer.add_scalar("metric/train_acc", acc, global_step=epoch)
             print("acc_train: ", acc)
 
             print("Predicting on test data set...")
-            acc, rec, th = predict(
-                NSFR, test_loader, args, device, th=th_val, split='train')
+            acc, rec, th = predict(NSFR, test_loader, args, device, th=th_val, split='train')
+            writer.add_scalar("metric/test_acc", acc, global_step=epoch)
+            print("acc_test: ", acc)
+
+    return loss
+
+
+def train_pi(args, PI, optimizer, train_loader, val_loader, test_loader, device, writer, rtpt):
+    bce = torch.nn.BCELoss()
+    loss_list = []
+    loss = None
+    for epoch in range(args.epochs):
+        loss_i = 0
+        for i, sample in tqdm(enumerate(train_loader, start=0)):
+            # to cuda
+            imgs, target_set = map(lambda x: x.to(device), sample)
+            # infer and predict the target probability
+            V_T = PI(imgs)
+            # NSFR.print_valuation_batch(V_T)
+            predicted = get_prob(V_T, PI, args)
+            loss = bce(predicted, target_set)
+            loss_i += loss.item()
+            loss.backward()
+
+            optimizer.step()
+
+            # if i % 20 == 0:
+            #    NSFR.print_valuation_batch(V_T)
+            #    print("predicted: ", np.round(predicted.detach().cpu().numpy(), 2))
+            #    print("target: ", target_set.detach().cpu().numpy())
+            #    NSFR.print_program()
+            #    print("loss: ", loss.item())
+
+            # print("Predicting on validation data set...")
+            # acc_val, rec_val, th_val = predict(
+            #    NSFR, val_loader, args, device, writer, th=0.33, split='val')
+            # print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
+        loss_list.append(loss_i)
+        rtpt.step(subtitle=f"loss={loss_i:2.2f}")
+        writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
+        print("loss: ", loss_i)
+        # NSFR.print_program()
+        if epoch % 20 == 0:
+            PI.print_program()
+            print("Predicting on validation data set...")
+            acc_val, rec_val, th_val = predict(PI, val_loader, args, device, th=0.33, split='val')
+            writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
+            print("acc_val: ", acc_val)
+
+            print("Predicting on training data set...")
+            acc, rec, th = predict(PI, train_loader, args, device, th=th_val, split='train')
+            writer.add_scalar("metric/train_acc", acc, global_step=epoch)
+            print("acc_train: ", acc)
+
+            print("Predicting on test data set...")
+            acc, rec, th = predict(PI, test_loader, args, device, th=th_val, split='train')
             writer.add_scalar("metric/test_acc", acc, global_step=epoch)
             print("acc_test: ", acc)
 
@@ -271,29 +322,38 @@ def main(n):
             pos_pred, neg_pred = percept.eval_images(args, pos_res_file_name, device, val_pos_loader, val_neg_loader)
 
         # generate clauses
-        gen_clauses = clause_generator.generate(init_clauses, pos_pred, neg_pred,
-                                                T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
-        print("====== ", len(gen_clauses), " clauses are generated!! ======")
+        bs_clauses = clause_generator.generate(init_clauses, pos_pred, neg_pred,
+                                               T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
+        print("====== ", len(bs_clauses), " clauses are generated!! ======")
 
         # invent new predicate and generate pi clauses
-        gen_pi_clauses = pi_clause_generator.generate(gen_clauses, pos_pred, neg_pred)
+        gen_pi_clauses_str_list = pi_clause_generator.generate(bs_clauses, pos_pred, neg_pred)
+        gen_pi_clauses = logic_utils.get_pi_clauses_objs(lark_path, lang_base_path, args.dataset_type, args.dataset,
+                                                         gen_pi_clauses_str_list)
         print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
 
-        # update
-        NSFR = get_nsfr_model(args, lang, gen_clauses, atoms, bk, bk_clauses, device, train=True)
-        params = NSFR.get_params()
-        optimizer = torch.optim.RMSprop(params, lr=args.lr)
+        # update NFSR
+        NSFR = get_nsfr_model(args, lang, bs_clauses, atoms, bk, bk_clauses, device, train=True)
+        params_nsfr = NSFR.get_params()
+        optimizer_nsfr = torch.optim.RMSprop(params_nsfr, lr=args.lr)
+        nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, train_loader, val_loader, test_loader, device, writer,
+                                    rtpt)
+
+        # update PI
+        PI = pi_utils.get_pi_model(args, lang, pi_clauses, atoms, bk, bk_clauses, device=device)
+        params_pi = PI.get_params()
+        optimizer_pi = torch.optim.RMSprop(params_pi, lr=args.lr)
         # optimizer = torch.optim.Adam(params, lr=args.lr)
-        loss_list = train_nsfr(args, NSFR, optimizer, train_loader, val_loader, test_loader, device, writer, rtpt)
+        pi_loss_list = train_pi(args, PI, optimizer_pi, train_loader, val_loader, test_loader, device, writer, rtpt)
 
         # validation split
         print("Predicting on validation data set...")
-        acc_val, rec_val, th_val = predict(NSFR, val_loader, args, device, th=0.33, split='val')
-        print("Predicting on training data set...")
+        acc_val, rec_val, th_val = predict(NSFR, PI, val_loader, args, device, th=0.33, split='val')
         # training split
+        print("Predicting on training data set...")
         acc, rec, th = predict(NSFR, train_loader, args, device, th=th_val, split='train')
-        print("Predicting on test data set...")
         # test split
+        print("Predicting on test data set...")
         acc_test, rec_test, th_test = predict(NSFR, test_loader, args, device, th=th_val, split='test')
 
         print("training acc: ", acc, "threashold: ", th, "recall: ", rec)

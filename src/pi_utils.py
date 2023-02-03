@@ -25,13 +25,15 @@ class PIReasoner(nn.Module):
         atoms (list(atom)): The set of ground atoms (facts).
     """
 
-    def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, atoms, bk, clauses,
+    def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, pi_clause_infer_module,
+                 atoms, bk, clauses,
                  pi_valuation_module, train=False):
         super().__init__()
         self.pm = perception_module
         self.fc = facts_converter
         self.im = infer_module
         self.cim = clause_infer_module
+        self.pi_cim = pi_clause_infer_module
         self.atoms = atoms
         self.pi_vm = pi_valuation_module
         self.bk = bk
@@ -69,7 +71,6 @@ class PIReasoner(nn.Module):
                     for body_atom in clause.body:
                         if body_atom.pred.name == atom.pred.name:
                             scores[i] = new_score
-
 
         # update scores
         # new_scores = self.update_scores(self.atoms, self.bk, scores)
@@ -165,7 +166,9 @@ def get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=False
     PICIM = build_pi_clause_infer_module(clauses, bk_clauses, atoms, lang, m=len(clauses), infer_step=2, device=device)
 
     PI = PIReasoner(perception_module=PM, facts_converter=FC,
-                    infer_module=IM, clause_infer_module=CIM, atoms=atoms, bk=bk, clauses=clauses,
+                    infer_module=IM, clause_infer_module=CIM,
+                    pi_clause_infer_module=PICIM,
+                    atoms=atoms, bk=bk, clauses=clauses,
                     pi_valuation_module=PI_VM)
     # Neuro-Symbolic Forward Reasoner
     return PI

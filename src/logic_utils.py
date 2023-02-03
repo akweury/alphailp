@@ -28,6 +28,22 @@ def get_lang(lark_path, lang_base_path, dataset_type, dataset):
     atoms = generate_atoms(lang)
     return lang, clauses, bk_clauses, pi_clauses, bk, atoms
 
+def get_pi_clauses_objs(lark_path, lang_base_path, dataset_type, dataset, clauses_str_list):
+    """Load the language of first-order logic from files.
+
+    Read the language, clauses, background knowledge from files.
+    Atoms are generated from the language.
+    """
+    du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
+                   dataset_type=dataset_type, dataset=dataset)
+    lang = du.load_language()
+    pi_clauses = du.gen_pi_clauses(str(du.base_path / 'pi_clauses.txt'),
+                                    lang, clauses_str_list)
+
+    # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
+    # atoms = generate_atoms(lang)
+    return pi_clauses
+
 
 def get_searched_clauses(lark_path, lang_base_path, dataset_type, dataset):
     """Load the language of first-order logic from files.

@@ -1,6 +1,5 @@
 import os.path
 
-from fol.logic import *
 from nsfr_utils import update_nsfr_clauses, get_prob, get_nsfr_model
 # from eval_clause import EvalInferModule
 from refinement import RefinementGenerator
@@ -9,10 +8,12 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+
 from pi_utils import get_pi_model
 import chart_utils
 from percept import YOLOPerceptionModule
 import config
+from src.fol.exp_parser import ExpTree
 
 
 class ClauseGenerator(object):
@@ -343,65 +344,10 @@ class PIClauseGenerator(object):
         self.NSFR = NSFR
         self.PI = PI
         self.lang = lang
-        self.mode_declarations = mode_declarations
         self.bk_clauses = bk_clauses
         self.device = device
-        self.no_xil = no_xil
-        self.rgen = RefinementGenerator(lang=lang, mode_declarations=mode_declarations)
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
-        self.bce_loss = torch.nn.BCELoss()
-
-        # self.labels = torch.cat([
-        #    torch.ones((len(self.ilp_problem.pos), )),
-        # ], dim=0).to(device)
-
-    def _is_valid(self, clause):
-        obj_num = len([b for b in clause.body if b.pred.name == 'in'])
-        attr_body = [b for b in clause.body if b.pred.name != 'in']
-        attr_vars = []
-        for b in attr_body:
-            dtypes = b.pred.dtypes
-            for i, term in enumerate(b.terms):
-                if dtypes[i].name == 'object' and term.is_var():
-                    attr_vars.append(term)
-
-        attr_vars = list(set(attr_vars))
-
-        # print(clause, obj_num, attr_vars)
-        return obj_num == len(attr_vars)  # or len(attr_body) == 0
-
-    def _cf0(self, clause):
-        """Confounded rule for CLEVR-Hans.
-        not gray
-        """
-        for bi in clause.body:
-            if bi.pred.name == 'color' and str(bi.terms[-1]) == 'gray':
-                return True
-        return False
-
-    def _cf1(self, clause):
-        """not metal sphere.
-        """
-        for bi in clause.body:
-            for bj in clause.body:
-                if bi.pred.name == 'material' and str(bi.terms[-1]) == 'gray':
-                    if bj.pred.name == 'shape' and str(bj.terms[-1]) == 'sphere':
-                        return True
-        return False
-
-    def _is_confounded(self, clause):
-        if self.no_xil:
-            return False
-        if self.args.dataset_type == 'kandinsky':
-            return False
-        else:
-            if self.args.dataset == 'clevr-hans0':
-                return self._cf0(clause)
-            elif self.args.dataset == 'clevr-hans1':
-                return self._cf1(clause)
-            else:
-                return False
 
     def generate(self, beam_search_clauses, pos_pred, neg_pred):
         """
@@ -417,174 +363,14 @@ class PIClauseGenerator(object):
         """
         # remove conflict clauses
         pi_clauses_candidates = self.remove_conflict_clauses(list(beam_search_clauses))
-
         # evaluate for all the clauses
-        best_values = np.zeros((1, len(pi_clauses_candidates)))
-        best_clause_combinations = [pi_clauses_candidates]
-        value = self.eval_multip_clauses(pi_clauses_candidates, pos_pred, neg_pred)  # time-consuming line
-        best_values[0, 0] = value.numpy()
-        level_best_combination = pi_clauses_candidates
+        positive_clauses = self.eval_multi_clauses(pi_clauses_candidates, pos_pred, neg_pred)  # time-consuming line
 
-        # remove clauses and evaluate
-        for del_level in range(1, len(pi_clauses_candidates)):
-            level_values = []
-            level_combinations = []
-            for i, pi_clauses_candidate in enumerate(level_best_combination):
-                level_clause_combination = level_best_combination[:i] + level_best_combination[i + 1:]
-                new_value = self.eval_multip_clauses(level_clause_combination, pos_pred, neg_pred)
-                level_values.append(new_value)
-                level_combinations.append(level_clause_combination)
+        new_predicate = self.generate_new_predicate(positive_clauses, mode="clustering")
+        new_clauses_str_list = self.generate_new_clauses_str_list(new_predicate)
+        return new_clauses_str_list
 
-            level_best_value = np.max(level_values)
-            level_best_index = np.argmax(level_values)
-            level_del_clause = level_best_combination[level_best_index]
-
-            print(f"\n\n========== level {del_level} ==================\n"
-                  f"\nclauses:")
-            for i, clause in enumerate(level_best_combination):
-                print(f"{clause}\t{level_values[i]}")
-
-            level_best_combination = level_combinations[level_best_index]
-            best_clause_combinations.append(level_best_combination)
-            best_values[0, del_level] = level_best_value
-
-            print(f"\nlevel best values: {level_best_value}\n\n"
-                  f"level delete clause: {level_del_clause}\n\n"
-                  f"clauses after removing:")
-            for clause in level_best_combination:
-                print(clause)
-
-        best_index = np.argmax(best_values)
-        pi_clauses = best_clause_combinations[best_index]
-        pi_clauses_value = np.max(best_values)
-
-        # print logs
-        print(f"\n======== best value in each level============\n"
-              f"{best_values}")
-        print(f"=========== best clause combination: ==============")
-        for each in pi_clauses:
-            print(each)
-        print(f"\nbest clause value: {pi_clauses_value}")
-
-        # plot results and save
-        chart_utils.plot_line_chart(best_values, path=config.buffer_path, labels=["pi_score"])
-
-        return pi_clauses
-
-    def beam_search_clause(self, clause, T_beam=7, N_beam=20, N_max=100, th=0.98):
-        """
-        perform beam-searching from a clause
-        Inputs
-        ------
-        clause : Clause
-            initial clause
-        T_beam : int
-            number of steps in beam-searching
-        N_beam : int
-            size of the beam
-        N_max : int
-            maximum number of clauses to be generated
-        Returns
-        -------
-        C : Set[.logic.Clause]
-            a set of generated clauses
-        """
-        step = 0
-        init_step = 0
-        B = [clause]
-        C = set()
-        C_dic = {}
-        B_ = []
-        lang = self.lang
-
-        while step < T_beam:
-            # print('Beam step: ', str(step),  'Beam: ', len(B))
-            B_new = {}
-            refs = []
-            for c in B:
-                refs_i = self.rgen.refinement_clause(c)
-                # remove invalid clauses
-                ###refs_i = [x for x in refs_i if self._is_valid(x)]
-                # remove already appeared refs
-                refs_i = list(set(refs_i).difference(set(B_)))
-                B_.extend(refs_i)
-                refs.extend(refs_i)
-                if self._is_valid(c) and not self._is_confounded(c):
-                    C = C.union(set([c]))
-                    print("Added: ", c)
-
-            print('Evaluating ', len(refs), 'generated clauses.')
-            loss_list = self.eval_multip_clauses(refs)  # time-consuming line
-            pi_loss_list = self.eval_pi_clauses(refs)
-
-            for i, ref in enumerate(refs):
-                # check duplication
-                if not self.is_in_beam(B_new, ref, loss_list[i]):
-                    B_new[ref] = loss_list[i]
-                    C_dic[ref] = loss_list[i]
-
-                # if len(C) >= N_max:
-                #    break
-            B_new_sorted = sorted(B_new.items(), key=lambda x: x[1], reverse=True)
-            # top N_beam refiements
-            B_new_sorted = B_new_sorted[:N_beam]
-            # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
-            for x in B_new_sorted:
-                print(x[1], x[0])
-            B = [x[0] for x in B_new_sorted]
-            step += 1
-            if len(B) == 0:
-                break
-            # if len(C) >= N_max:
-            #    break
-        return C
-
-    def is_in_beam(self, B, clause, score):
-        """If score is the same, same predicates => duplication
-        """
-        score = score.detach().cpu().numpy()
-        preds = set([clause.head.pred] + [b.pred for b in clause.body])
-        y = False
-        for ci, score_i in B.items():
-            score_i = score_i.detach().cpu().numpy()
-            preds_i = set([clause.head.pred] + [b.pred for b in clause.body])
-            if preds == preds_i and np.abs(score - score_i) < 1e-2:
-                y = True
-                # print("duplicated: ", clause, ci)
-                break
-        return y
-
-    def beam_search(self, C_0, T_beam=7, N_beam=20, N_max=100):
-        """
-        generate clauses by beam-searching from initial clauses
-        Inputs
-        ------
-        C_0 : Set[.logic.Clause]
-            set of initial clauses
-        T_beam : int
-            number of steps in beam-searching
-        N_beam : int
-            size of the beam
-        N_max : int
-            maximum number of clauses to be generated
-        Returns
-        -------
-        C : Set[.logic.Clause]
-            a set of generated clauses
-        """
-        C = set()
-        for clause in C_0:
-            C = C.union(self.beam_search_clause(clause, T_beam, N_beam, N_max))
-        C = sorted(list(C))
-        print('======= BEAM SEARCHED CLAUSES ======')
-        for c in C:
-            print(c)
-        return C
-
-    def eval_pi_clauses(self, clauses):
-        return None
-
-    def eval_multip_clauses(self, clauses, pos_pred, neg_pred):
+    def eval_multi_clauses(self, clauses, pos_pred, neg_pred):
 
         C = len(clauses)
         print("Eval clauses: ", len(clauses))
@@ -595,9 +381,7 @@ class PIClauseGenerator(object):
                               self.device)
         PI = get_pi_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
                           self.device)
-        # TODO: Compute loss for validation data , score is bce loss
-        # N C B G
-        predicted_list_list = []
+
         batch_size = self.args.batch_size_bs
         pos_img_num = self.pos_loader.dataset.__len__()
         neg_img_num = self.neg_loader.dataset.__len__()
@@ -630,18 +414,20 @@ class PIClauseGenerator(object):
                 # sum over positive prob
             score_negative[image_index, :] = C_score.squeeze(1)
 
-        best_positive = score_positive.max(dim=1).values
-        best_negative = 1 - score_negative.sum(dim=1) / C
-
+        positive_clauses = []
         for c_index in range(score_positive.shape[1]):
-            scatter_data = [score_negative[:, c_index], score_positive[:, c_index]]
-            chart_utils.plot_scatter_heat_chart([scatter_data], config.buffer_path / "img",
+
+            clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
+            clause_sign = self.eval_clause_sign(clause_scores)
+            if clause_sign:
+                positive_clauses.append(clauses[c_index])
+                # plot the clause evaluation
+            chart_utils.plot_scatter_heat_chart([clause_scores], config.buffer_path / "img",
                                                 f"scatter_mce_{len(clauses)}_{c_index}",
-                                                labels=f"{str(clauses[c_index])}",
+                                                labels=f"{str(clauses[c_index]) + str(clause_sign)}",
                                                 x_label="positive score", y_label="negative score")
 
-        best_score = (best_positive + 1.5 * best_negative).sum() / pos_img_num
-        return best_score.to("cpu")
+        return positive_clauses
 
     def remove_conflict_clauses(self, clauses):
         print("check for conflict clauses...")
@@ -688,3 +474,45 @@ class PIClauseGenerator(object):
                 if t1[0] == t2[1] and t2[0] == t1[1]:
                     return True
         return False
+
+    def eval_clause_sign(self, clause_scores):
+        resolution = 2
+        data_map = np.zeros(shape=[resolution, resolution])
+        for index in range(len(clause_scores[0])):
+            x_index = int(clause_scores[0][index] * resolution)
+            y_index = int(clause_scores[1][index] * resolution)
+            data_map[x_index, y_index] += 1
+
+        if np.max(data_map) == data_map[0, 1]:
+            return True
+
+        return False
+
+    def generate_new_predicate(self, positive_clauses, mode):
+        new_predicate = None
+        if mode == "clustering":
+            print("break")
+            new_predicate = self.lang.invented_preds[0]
+            new_predicate.body = [clause.body for clause in positive_clauses]
+
+        return new_predicate
+
+    def generate_new_clauses_str_list(self, new_predicate):
+        clauses_str_list = []
+        head_args = "(X,Y)" if new_predicate.arity == 2 else "(X)"
+        head = new_predicate.name + head_args + ":-"
+        for body in new_predicate.body:
+            body_str = ""
+            for atom_index in range(len(body)):
+                atom_str = str(body[atom_index])
+                atom_str = atom_str.replace("O1", "A")
+                atom_str = atom_str.replace("O2", "B")
+                end_str = "." if atom_index == len(body) - 1 else ","
+                body_str += atom_str + end_str
+            new_clause = head + body_str
+            clauses_str_list.append(new_clause)
+
+        print("============ generated pi clauses ================")
+        for clause_str in clauses_str_list:
+            print(clause_str)
+        return clauses_str_list

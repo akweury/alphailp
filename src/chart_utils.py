@@ -122,11 +122,12 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
         plt.xscale('log')
 
     if labels is not None:
-        plt.text(-0.4, 1.4, labels, bbox=dict(boxstyle="square",
-                                              ec=(1., 0.5, 0.5),
-                                              fc=(1., 0.8, 0.8)))
+        plt.text(-0.4, 1.4, labels,
+                 bbox=dict(boxstyle="square", ec=(1., 0.5, 0.5), fc=(1., 0.8, 0.8)),
+                 fontsize=8,
+                 )
 
-    plt.legend()
+    # plt.legend()
 
     # plt.figure(figsize=(1000, 1000 * 0.618))
     if not os.path.exists(str(path)):

@@ -61,6 +61,17 @@ class DataUtils(object):
 
         return clauses
 
+    def gen_pi_clauses(self, path, lang, clause_str_list):
+        """Read lines and parse to Atom objects.
+        """
+        clauses = []
+        for clause_str in clause_str_list:
+            tree = self.lp_clause.parse(clause_str)
+            clause = ExpTree(lang).transform(tree)
+            clauses.append(clause)
+
+        return clauses
+
     def get_clause_candidates(self, lang, clause_template):
         """
 
@@ -173,8 +184,7 @@ class DataUtils(object):
         if (len(line)) == 0:
             return None
 
-        pred, arity, dtype_names_str, pred_num, child_preds_str = line.split(':')
-        child_predicates = child_preds_str.split(';')
+        pred, arity, dtype_names_str, pred_num = line.split(':')
         dtype_names = dtype_names_str.split(',')
         dtypes = [DataType(dt) for dt in dtype_names]
         assert int(arity) == len(dtypes), 'Invalid arity and dtypes in ' + pred + '.'
@@ -183,7 +193,7 @@ class DataUtils(object):
         for i in range(int(pred_num)):
             # pred_with_id = pred + f"_{i}"
             pred_with_id = pred
-            invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes, child_predicates=child_predicates)
+            invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes)
             invented_predicates.append(invented_pred)
 
         return invented_predicates

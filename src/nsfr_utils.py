@@ -143,6 +143,7 @@ def get_data_neg_loader(args):
     if args.dataset_type == 'kandinsky':
         return get_kandinsky_neg_loader(args)
 
+
 def get_clevr_loader(args):
     dataset_train = data_clevr.CLEVRHans(
         args.dataset, 'train'
@@ -241,6 +242,7 @@ def get_kandinsky_pos_loader(args, shuffle=False):
 
     return train_loader, val_loader, test_loader
 
+
 def get_kandinsky_neg_loader(args, shuffle=False):
     dataset_train = data_kandinsky.KANDINSKY_NEGATIVE(
         args.dataset, 'train', small_data=args.small_data
@@ -272,7 +274,6 @@ def get_kandinsky_neg_loader(args, shuffle=False):
     )
 
     return train_loader, val_loader, test_loader
-
 
 
 def get_clevr_pos_loader(args):
@@ -341,15 +342,15 @@ def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=Fal
     if args.dataset_type == 'kandinsky':
         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
         VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
-        PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
+        # PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
     elif args.dataset_type == 'clevr':
         PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
         VM = SlotAttentionValuationModule(lang=lang, device=device)
-        PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
+        # PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
 
     else:
         assert False, "Invalid dataset type: " + str(args.dataset_type)
-    FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,pi_valuation_module=PI_VM, device=device)
+    FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM, pi_valuation_module=PI_VM, device=device)
     IM = build_infer_module(clauses, bk_clauses, atoms, lang, m=args.m, infer_step=2, device=device, train=train)
     CIM = build_clause_infer_module(clauses, bk_clauses, atoms, lang, m=len(clauses), infer_step=2, device=device)
     # Neuro-Symbolic Forward Reasoner

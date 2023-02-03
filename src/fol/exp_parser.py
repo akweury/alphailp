@@ -21,7 +21,10 @@ class ExpTree(Transformer):
     def clause(self, trees):
         head = trees[0]
         body = flatten([trees[1]])
-        return Clause(head, body)
+        if type(head.pred) == InventedPredicate:
+            return InventedClause(head, body)
+        elif type(head.pred) == Predicate:
+            return Clause(head, body)
 
     def body(self, trees):
         if len(trees) == 0:
