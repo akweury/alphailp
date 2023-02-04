@@ -63,14 +63,15 @@ class FactsConverter(nn.Module):
 
             # this atom is an invented predicate
             # elif type(atom.pred) == InventedPredicate:
-            #     child_atoms = atom.pred.child_predicates
-            #     V[:, i] = self.pi_vm(atom, child_atoms, scores)
+            #     if atom.pred.body is not None:
+            #         V[:, i] = self.pi_vm(atom, atom.pred.body, scores)
 
             # this atom in background knowledge
             elif atom in B:
                 # V[:, i] += 1.0
                 value = torch.ones((batch_size,)).to(torch.float32).to(self.device)
                 V[:, i] += value
+
 
         V[:, 1] = torch.ones((batch_size,)).to(torch.float32).to(self.device)
         return V

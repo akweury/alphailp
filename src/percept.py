@@ -1,5 +1,5 @@
 import sys
-
+import os
 import torch
 import torch.nn as nn
 import numpy as np
@@ -33,7 +33,7 @@ class YOLOPerceptionModule(nn.Module):
         self.device = device
         self.train_ = train  # the parameters should be trained or not
         self.model = self.load_model(
-            path= str(config.root) + '/src/weights/yolov5/best.pt', device=device)
+            path=str(config.root) + '/src/weights/yolov5/best.pt', device=device)
         # function to transform e * d shape, YOLO returns class labels,
         # it should be decomposed into attributes and the probabilities.
         self.preprocess = YOLOPreprocess(device)
@@ -139,7 +139,7 @@ class YOLOPreprocess(nn.Module):
         self.device = device
         self.img_size = img_size
         self.classes = ['red square', 'red circle', 'red triangle',
-                        'yellow square', 'yellow circle',  'yellow triangle',
+                        'yellow square', 'yellow circle', 'yellow triangle',
                         'blue square', 'blue circle', 'blue triangle']
         self.colors = torch.stack([
             torch.tensor([1, 0, 0]).to(device),
@@ -190,50 +190,56 @@ class YOLOPreprocess(nn.Module):
         return torch.stack(object_list, dim=1).to(self.device)
 
 
-def eval_images(args, save_path, device, pos_loader, neg_loader):
-    prop_dim = 11
-    # perception model
-    pm = YOLOPerceptionModule(e=args.e, d=prop_dim, device=device)
+def eval_images(args, model_file, device, pos_loader, neg_loader):
+    if os.path.exists(model_file):
+        pm_res = torch.load(model_file)
+        pos_pred = pm_res['pos_res']
+        neg_pred = pm_res['neg_res']
 
-    # positive image evaluation
-    N_data = 0
-    pos_eval_res = torch.zeros((pos_loader.dataset.__len__(), args.e, prop_dim)).to(device)
-    for i, sample in tqdm(enumerate(pos_loader, start=0)):
-        imgs, target_set = map(lambda x: x.to(device), sample)
-        # print(NSFR.clauses)
-        img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-        img_array_int8 = np.uint8(img_array * 255)
-        img_pil = Image.fromarray(img_array_int8)
-        # img_pil.show()
-        N_data += imgs.size(0)
-        B = imgs.size(0)
-        # C * B * G
-        # when evaluate a clause which its body contains invented predicates,
-        # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
-        res = pm(imgs)
-        pos_eval_res[i, :] = res
+    else:
+        prop_dim = 11
+        # perception model
+        pm = YOLOPerceptionModule(e=args.e, d=prop_dim, device=device)
 
-        # negative image evaluation
-    N_data = 0
-    neg_eval_res = torch.zeros((neg_loader.dataset.__len__(), args.e, prop_dim)).to(device)
-    for i, sample in tqdm(enumerate(neg_loader, start=0)):
-        imgs, target_set = map(lambda x: x.to(device), sample)
-        # print(NSFR.clauses)
-        img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-        img_array_int8 = np.uint8(img_array * 255)
-        img_pil = Image.fromarray(img_array_int8)
-        # img_pil.show()
-        N_data += imgs.size(0)
-        B = imgs.size(0)
-        # C * B * G
-        # when evaluate a clause which its body contains invented predicates,
-        # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
-        res = pm(imgs)
-        neg_eval_res[i, :] = res
+        # positive image evaluation
+        N_data = 0
+        pos_pred = torch.zeros((pos_loader.dataset.__len__(), args.e, prop_dim)).to(device)
+        for i, sample in tqdm(enumerate(pos_loader, start=0)):
+            imgs, target_set = map(lambda x: x.to(device), sample)
+            # print(NSFR.clauses)
+            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
+            img_array_int8 = np.uint8(img_array * 255)
+            img_pil = Image.fromarray(img_array_int8)
+            # img_pil.show()
+            N_data += imgs.size(0)
+            B = imgs.size(0)
+            # C * B * G
+            # when evaluate a clause which its body contains invented predicates,
+            # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
+            res = pm(imgs)
+            pos_pred[i, :] = res
 
-    # save tensors
-    pm_res = {'pos_res': pos_eval_res.detach(),
-              'neg_res': neg_eval_res.detach()}
-    torch.save(pm_res, str(save_path))
+            # negative image evaluation
+        N_data = 0
+        neg_pred = torch.zeros((neg_loader.dataset.__len__(), args.e, prop_dim)).to(device)
+        for i, sample in tqdm(enumerate(neg_loader, start=0)):
+            imgs, target_set = map(lambda x: x.to(device), sample)
+            # print(NSFR.clauses)
+            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
+            img_array_int8 = np.uint8(img_array * 255)
+            img_pil = Image.fromarray(img_array_int8)
+            # img_pil.show()
+            N_data += imgs.size(0)
+            B = imgs.size(0)
+            # C * B * G
+            # when evaluate a clause which its body contains invented predicates,
+            # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
+            res = pm(imgs)
+            neg_pred[i, :] = res
 
-    return pos_eval_res, neg_eval_res
+        # save tensors
+        pm_res = {'pos_res': pos_pred.detach(),
+                  'neg_res': neg_pred.detach()}
+        torch.save(pm_res, str(model_file))
+
+    return pos_pred, neg_pred

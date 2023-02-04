@@ -154,12 +154,9 @@ class PIReasoner(nn.Module):
         return text
 
 
-def get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=False):
+def get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, FC, device, train=False):
     PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-    VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
     PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
-
-    FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM, pi_valuation_module=PI_VM, device=device)
     IM = build_infer_module(clauses, bk_clauses, atoms, lang, m=args.m, infer_step=2, device=device, train=train)
     CIM = build_clause_infer_module(clauses, bk_clauses, atoms, lang, m=len(clauses), infer_step=2, device=device)
 

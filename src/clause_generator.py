@@ -290,8 +290,8 @@ class ClauseGenerator(object):
         print("Eval clauses: ", len(clauses))
         # update infer module with new clauses
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
-        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
-                              self.device)
+        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms,
+                              self.NSFR.bk, self.bk_clauses, self.NSFR.fc, self.device)
         # TODO: Compute loss for validation data , score is bce loss
 
         score = torch.zeros((C,)).to(self.device)
@@ -378,8 +378,8 @@ class PIClauseGenerator(object):
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
 
         NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
-                              self.device)
-        PI = get_pi_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
+                              self.NSFR.fc, self.device)
+        PI = get_pi_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses, self.NSFR.fc,
                           self.device)
 
         batch_size = self.args.batch_size_bs
@@ -499,7 +499,8 @@ class PIClauseGenerator(object):
 
     def generate_new_clauses_str_list(self, new_predicate):
         clauses_str_list = []
-        head_args = "(X,Y)" if new_predicate.arity == 2 else "(X)"
+        clauses_str_list.append("kp(X):-inv_1(O1,O2),in(O1,X),in(O2,X).")
+        head_args = "(A,B)" if new_predicate.arity == 2 else "(X)"
         head = new_predicate.name + head_args + ":-"
         for body in new_predicate.body:
             body_str = ""

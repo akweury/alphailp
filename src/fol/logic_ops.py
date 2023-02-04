@@ -1,4 +1,4 @@
-from .logic import Clause, Atom, FuncTerm, Const, Var
+from .logic import Clause, Atom, FuncTerm, Const, Var, InventedClause
 
 
 def subs(exp, target_var, const):
@@ -56,6 +56,14 @@ def subs_list(exp, theta_list):
         for target_var, const in theta_list:
             terms = [subs(term, target_var, const) for term in terms]
         return Atom(exp.pred, terms)
+    elif type(exp) == InventedClause:
+        head = exp.head
+        body = exp.body
+        for target_var, const in theta_list:
+            head = subs(head, target_var, const)
+            body = [subs(bi, target_var, const) for bi in body]
+        return Clause(head, body)
+
     #elif type(exp) == FuncTerm:
     #    for target_var, const in theta_list:
     #        args = [subs(arg, target_var, const) for arg in exp.args]
@@ -68,7 +76,7 @@ def subs_list(exp, theta_list):
     #elif type(exp) == Const:
     #    return exp
     else:
-        assert 1 == 0, 'Unknown type in substitution: ' + str(exp)
+        raise TypeError('Unknown type in substitution: ' + str(exp))
 
 
 

@@ -5,10 +5,10 @@ import torch
 
 import data_clevr
 import data_kandinsky
-from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
 from facts_converter import FactsConverter
 from nsfr import NSFReasoner
 from logic_utils import build_infer_module, build_clause_infer_module, build_pi_clause_infer_module
+from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
 from valuation import SlotAttentionValuationModule, YOLOValuationModule, PIValuationModule
 
 attrs = ['color', 'shape', 'material', 'size']
@@ -338,19 +338,18 @@ def get_prob_by_prednames(v_T, NSFR, prednames):
     return predicted
 
 
-def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=False):
+def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, FC, device, train=False):
     if args.dataset_type == 'kandinsky':
         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-        VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
+        # VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
         # PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
     elif args.dataset_type == 'clevr':
         PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
-        VM = SlotAttentionValuationModule(lang=lang, device=device)
+        # VM = SlotAttentionValuationModule(lang=lang, device=device)
         # PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
 
     else:
         assert False, "Invalid dataset type: " + str(args.dataset_type)
-    FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM, pi_valuation_module=PI_VM, device=device)
     IM = build_infer_module(clauses, bk_clauses, atoms, lang, m=args.m, infer_step=2, device=device, train=train)
     CIM = build_clause_infer_module(clauses, bk_clauses, atoms, lang, m=len(clauses), infer_step=2, device=device)
     # Neuro-Symbolic Forward Reasoner
