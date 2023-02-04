@@ -162,6 +162,9 @@ def train_nsfr(args, NSFR, optimizer, train_pos_pred, train_neg_pred, val_pos_pr
             # infer and predict the target probability
             sample = sample.unsqueeze(0)
             V_T = NSFR(sample)
+            # watch out for PI values
+
+
             # NSFR.print_valuation_batch(V_T)
             predicted = get_prob(V_T, NSFR, args)
             loss = bce(predicted, train_label[:, i])
@@ -346,8 +349,7 @@ def main(n):
         params_nsfr = NSFR.get_params()
         optimizer_nsfr = torch.optim.RMSprop(params_nsfr, lr=args.lr)
         nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, train_pos_pred, train_neg_pred,
-                                    val_pos_pred, val_neg_pred, test_pos_pred, test_neg_pred,
-                                    device, writer, rtpt)
+                                    val_pos_pred, val_neg_pred, test_pos_pred, test_neg_pred, device, writer, rtpt)
 
         # update PI
         # PI = pi_utils.get_pi_model(args, lang, pi_clauses, atoms, bk, bk_clauses, device=device)

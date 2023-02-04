@@ -62,9 +62,10 @@ class FactsConverter(nn.Module):
                 V[:, i] = self.vm(Z, atom)
 
             # this atom is an invented predicate
-            # elif type(atom.pred) == InventedPredicate:
-            #     if atom.pred.body is not None:
-            #         V[:, i] = self.pi_vm(atom, atom.pred.body, scores)
+            elif type(atom.pred) == InventedPredicate:
+                if atom.pred.body is not None:
+                    value = self.pi_vm(atom, atom.pred.body, V, G)
+                    V[:, i] = value
 
             # this atom in background knowledge
             elif atom in B:

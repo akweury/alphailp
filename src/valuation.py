@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import valuation_func
 import config
+from fol.logic import Atom
 
 
 class YOLOValuationModule(nn.Module):
@@ -207,7 +208,7 @@ class PIValuationModule(nn.Module):
                 attrs[term] = one_hot
         return attrs
 
-    def forward(self, child_preds, clauses, scores):
+    def forward(self, head_atom, clauses, V, G):
         """Convert the object-centric representation to a valuation tensor.
 
             Args:
@@ -219,10 +220,44 @@ class PIValuationModule(nn.Module):
         """
 
         # evaluate each clauses, choose the max value
-        atom_eval_values =0
+        atom_eval_values = torch.zeros(len(clauses))
+        sub_dict = {}
+        for term in head_atom.terms:
+            sub_dict[term] = ""
+        # the atom probabilities decided by the highest value of one of its bodies
+        for i, clause in enumerate(clauses):
+            clause_value = 0
+            for body_atom in clause:
+                # get evaluated value of the body atom
+                if body_atom.pred.name == "in":
+                    continue
+                body_atom_list = list(body_atom.terms)
+                for i in range(len(body_atom_list)):
+                    # search for a substitution for each body terms
+                    if body_atom_list[i] not in sub_dict.values():
+                        for sub_key in sub_dict.keys():
+                            if sub_dict[sub_key] == "":
+                                sub_dict[sub_key] = body_atom_list[i]
+                                break
+                    for sub in sub_dict:
+                        if sub_dict[sub] == body_atom_list[i]:
+                            body_atom_list[i] = sub
+                # body_atom_list[i] = [sub for sub in sub_dict if sub_dict[sub] == body_atom_list[i]][0]
+                terms = tuple(body_atom_list)
+                pred = body_atom.pred
+                eval_atom = Atom(pred, terms)
+                # TODO: consider the case with hidden terms in the body
+                try:
+                    body_atom_index = G.index(eval_atom)
+                except ValueError:
+                    print("value error")
+                body_atom_value = V[0, body_atom_index]
+                clause_value += body_atom_value
+            clause_value_avg = clause_value / (len(clause) - 2)
+            atom_eval_values[i] = clause_value_avg
 
-
-        return atom_eval_values
+        atom_value = atom_eval_values.max()
+        return atom_value
 
     def ground_to_tensor(self, term, zs):
         """Ground terms into tensor representations.
