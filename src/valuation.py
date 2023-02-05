@@ -247,10 +247,8 @@ class PIValuationModule(nn.Module):
                 pred = body_atom.pred
                 eval_atom = Atom(pred, terms)
                 # TODO: consider the case with hidden terms in the body
-                try:
-                    body_atom_index = G.index(eval_atom)
-                except ValueError:
-                    print("value error")
+
+                body_atom_index = G.index(eval_atom)
                 body_atom_value = V[0, body_atom_index]
                 clause_value += body_atom_value
             clause_value_avg = clause_value / (len(clause) - 2)

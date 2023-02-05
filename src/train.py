@@ -163,14 +163,14 @@ def train_nsfr(args, NSFR, optimizer, train_pos_pred, train_neg_pred, val_pos_pr
             sample = sample.unsqueeze(0)
             V_T = NSFR(sample)
             # watch out for PI values
-
+            a = V_T.detach().numpy().reshape(-1, 1)  # DEBUG
 
             # NSFR.print_valuation_batch(V_T)
             predicted = get_prob(V_T, NSFR, args)
             loss = bce(predicted, train_label[:, i])
             loss_i += loss.item()
             loss.backward()
-
+            # TODO: problem: performs good in positive but bad in negative
             optimizer.step()
 
         loss_list.append(loss_i)
@@ -308,8 +308,8 @@ def main(n):
         FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
                                             pi_valuation_module=PI_VM, device=device)
         # Neuro-Symbolic Forward Reasoner for clause generation
-        NSFR_cgen = get_nsfr_model(args, lang, init_clauses, atoms, bk, bk_clauses, FC, device)
-        PI_cgen = pi_utils.get_pi_model(args, lang, init_clauses, atoms, bk, bk_clauses, FC, device=device)
+        NSFR_cgen = get_nsfr_model(args, lang, init_clauses, atoms, bk, bk_clauses, pi_clauses, FC, device)
+        PI_cgen = pi_utils.get_pi_model(args, lang, init_clauses, atoms, bk, bk_clauses,pi_clauses, FC, device=device)
 
         mode_declarations = get_mode_declarations(args, lang, args.n_obj)
         clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
@@ -345,7 +345,7 @@ def main(n):
 
         # update NFSR
         clauses = bs_clauses + gen_pi_clauses
-        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, FC, device, train=True)
+        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, gen_pi_clauses, FC, device, train=True)
         params_nsfr = NSFR.get_params()
         optimizer_nsfr = torch.optim.RMSprop(params_nsfr, lr=args.lr)
         nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, train_pos_pred, train_neg_pred,
@@ -357,20 +357,20 @@ def main(n):
         # optimizer_pi = torch.optim.RMSprop(params_pi, lr=args.lr)
         # # optimizer = torch.optim.Adam(params, lr=args.lr)
         # pi_loss_list = train_pi(args, PI, optimizer_pi, train_loader, val_loader, test_loader, device, writer, rtpt)
-
-        # validation split
-        print("Predicting on validation data set...")
-        acc_val, rec_val, th_val = predict(NSFR, val_pos_pred, val_neg_pred, args, device, th=0.33, split='val')
-        # training split
-        print("Predicting on training data set...")
-        acc, rec, th = predict(NSFR, train_pos_pred, train_neg_pred, args, device, th=th_val, split='train')
-        # test split
-        print("Predicting on test data set...")
-        acc_test, rec_test, th_test = predict(NSFR, test_pos_pred, test_neg_pred, args, device, th=th_val, split='test')
-
-        print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
-        print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
-        print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)
+        #
+        # # validation split
+        # print("Predicting on validation data set...")
+        # acc_val, rec_val, th_val = predict(NSFR, val_pos_pred, val_neg_pred, args, device, th=0.33, split='val')
+        # # training split
+        # print("Predicting on training data set...")
+        # acc, rec, th = predict(NSFR, train_pos_pred, train_neg_pred, args, device, th=th_val, split='train')
+        # # test split
+        # print("Predicting on test data set...")
+        # acc_test, rec_test, th_test = predict(NSFR, test_pos_pred, test_neg_pred, args, device, th=th_val, split='test')
+        #
+        # print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
+        # print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
+        # print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)
 
 
 if __name__ == "__main__":

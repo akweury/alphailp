@@ -28,6 +28,7 @@ def get_lang(lark_path, lang_base_path, dataset_type, dataset):
     atoms = generate_atoms(lang)
     return lang, clauses, bk_clauses, pi_clauses, bk, atoms
 
+
 def get_pi_clauses_objs(lark_path, lang_base_path, dataset_type, dataset, clauses_str_list):
     """Load the language of first-order logic from files.
 
@@ -38,7 +39,7 @@ def get_pi_clauses_objs(lark_path, lang_base_path, dataset_type, dataset, clause
                    dataset_type=dataset_type, dataset=dataset)
     lang = du.load_language()
     pi_clauses = du.gen_pi_clauses(str(du.base_path / 'pi_clauses.txt'),
-                                    lang, clauses_str_list)
+                                   lang, clauses_str_list)
 
     # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
     # atoms = generate_atoms(lang)
@@ -73,7 +74,7 @@ def _get_lang(lark_path, lang_base_path, dataset_type, dataset):
     return lang, clauses, bk, atoms
 
 
-def build_infer_module(clauses, bk_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
+def build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
     I = te.encode()
     if len(bk_clauses) > 0:
@@ -82,8 +83,14 @@ def build_infer_module(clauses, bk_clauses, atoms, lang, device, m=3, infer_step
     else:
         te_bk = None
         I_bk = None
+    if len(pi_clauses) > 0:
+        te_pi = TensorEncoder(lang, atoms, pi_clauses, device=device)
+        I_pi = te_pi.encode()
+    else:
+        te_pi = None
+        I_pi = None
     ##I_bk = None
-    im = InferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk)
+    im = InferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk, I_pi=I_pi)
     return im
 
 
@@ -99,6 +106,7 @@ def build_clause_infer_module(clauses, bk_clauses, atoms, lang, device, m=3, inf
 
     im = ClauseInferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk)
     return im
+
 
 def build_pi_clause_infer_module(clauses, bk_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)

@@ -1,4 +1,3 @@
-
 import random
 
 import numpy as np
@@ -10,12 +9,12 @@ from torch_utils import softor, weight_sum
 
 
 def init_identity_weights(X, device):
-    ones = torch.ones((X.size(0), ), dtype=torch.float32) * 100
+    ones = torch.ones((X.size(0),), dtype=torch.float32) * 100
     return torch.diag(ones).to(device)
 
 
 class InferModule(nn.Module):
-    def __init__(self, I, infer_step, gamma=0.01, device=None, train=False, m=1, I_bk=None):
+    def __init__(self, I, infer_step, gamma=0.01, device=None, train=False, m=1, I_bk=None, I_pi=None):
         """
         In the constructor we instantiate two nn.Linear modules and assign them as
         member variables.
@@ -23,6 +22,7 @@ class InferModule(nn.Module):
         super(InferModule, self).__init__()
         self.I = I
         self.I_bk = I_bk
+        self.I_pi = I_pi
         self.infer_step = infer_step
         self.m = m
         self.C = self.I.size(0)
@@ -43,12 +43,14 @@ class InferModule(nn.Module):
                    for i in range(self.I.size(0))]
 
         if not I_bk is None:
-            self.cs_bk = [ClauseFunction(I_bk[i], gamma=gamma)
-                          for i in range(self.I_bk.size(0))]
+            self.cs_bk = [ClauseFunction(I_bk[i], gamma=gamma) for i in range(self.I_bk.size(0))]
             self.W_bk = init_identity_weights(I_bk, device)
+        if I_pi is not None:
+            self.cs_pi = [ClauseFunction(I_pi[i], gamma=gamma) for i in range(self.I_pi.size(0))]
+            self.W_pi = init_identity_weights(I_pi, device)
 
-        #print("W: ", self.W.shape)
-        #print("W_bk: ", self.W_bk)
+        # print("W: ", self.W.shape)
+        # print("W_bk: ", self.W_bk)
 
         # assert m == self.C, "Invalid m and C: " + \
         #    str(m) + ' and ' + str(self.C)
@@ -69,25 +71,47 @@ class InferModule(nn.Module):
                 R = softor([R, self.r(R)], dim=1, gamma=self.gamma)
         else:
             for t in range(self.infer_step):
-                #R = softor([R, self.r_bk(R)], dim=1, gamma=self.gamma)
-                R = softor([R, self.r(R), self.r_bk(R)],
-                           dim=1, gamma=self.gamma)
+                # R = softor([R, self.r_bk(R)], dim=1, gamma=self.gamma)
+                a = R.detach().numpy().reshape(-1, 1)
+
+                r_R = self.r(R)
+                b = r_R.detach().numpy().reshape(-1, 1)
+
+                r_bk_R = self.r_bk(R)
+                c = r_bk_R.detach().numpy().reshape(-1, 1)
+
+                r_pi_R = self.r_pi(R)
+                d = r_pi_R.detach().numpy().reshape(-1, 1)
+
+
+                R = softor([R, r_R, r_bk_R, r_pi_R], dim=1, gamma=self.gamma)
+
+        z = R.detach().numpy().reshape(-1, 1)
         return R
 
     def r(self, x):
         B = x.size(0)  # batch size
         # apply each clause c_i and stack to a tensor C
+        b = x.detach().numpy().reshape(-1, 1)
+        clause_function_value_lists = []
+        for i in range(self.I.size(0)):
+            clause_function = self.cs[i]
+            # TODO: Think about the clause function of pi clauses
+            valuation_vector = clause_function(x)
+
+            a = valuation_vector.detach().numpy().reshape(-1, 1)
+            clause_function_value_lists.append(valuation_vector)
         # C * B * G
-        C = torch.stack([self.cs[i](x)
-                        for i in range(self.I.size(0))], 0)
+        C = torch.stack(clause_function_value_lists, 0)
+
+        # C = torch.stack([self.cs[i](x) for i in range(self.I.size(0))], 0)
 
         # taking weighted sum using m weights and stack to a tensor H
         # m * C
         # W_star = torch.softmax(self.W * (1 / self.beta), 1)
         W_star = torch.softmax(self.W, 1)
         # m * C * B * G
-        W_tild = W_star.unsqueeze(
-            dim=-1).unsqueeze(dim=-1).expand(self.m, self.C, B, self.G)
+        W_tild = W_star.unsqueeze(dim=-1).unsqueeze(dim=-1).expand(self.m, self.C, B, self.G)
         # m * C * B * G
         C_tild = C.unsqueeze(dim=0).expand(self.m, self.C, B, self.G)
         # m * B * G
@@ -95,31 +119,46 @@ class InferModule(nn.Module):
         # taking soft or to compose a logic program with m clauses
         # B * G
         R = softor(H, dim=0, gamma=self.gamma)
+        c = R.detach().numpy().reshape(-1, 1)
         return R
 
     def r_bk(self, x):
         B = x.size(0)  # batch size
         # apply each clause c_i and stack to a tensor C
+        a = x.detach().numpy().reshape(-1, 1)  # DEBUG
         # C * B * G
-        C = torch.stack([self.cs_bk[i](x)
-                        for i in range(self.I_bk.size(0))], 0)
-        # B * G
-        return softor(C, dim=0, gamma=self.gamma)
-        # taking weighted sum using m weights and stack to a tensor H
-        # m * C
-        W_star = torch.softmax(self.W_bk, 1)
-        # m * C * B * G
-        W_tild = W_star.unsqueeze(
-            dim=-1).unsqueeze(dim=-1).expand(self.m, self.C, B, self.G)
-        # m * C * B * G
-        C_tild = C.unsqueeze(dim=0).expand(self.m, self.C, B, self.G)
-        # m * B * G
-        #H = torch.sum(W_tild * C_tild, dim=1)
 
-        # taking soft or to compose a logic program with m clauses
+        value_list = []
+        for i in range(self.I_bk.size(0)):
+            bk_clause_function = self.cs_bk[i]
+            value = bk_clause_function(x)
+            b = value.detach().numpy().reshape(-1, 1)  # DEBUG
+            value_list.append(value)
+
+        C = torch.stack(value_list, 0)
         # B * G
-        R = softor(H, dim=0, gamma=self.gamma)
-        return R
+        res = softor(C, dim=0, gamma=self.gamma)
+        b = res.detach().numpy().reshape(-1, 1)  # DEBUG
+        return res
+
+    def r_pi(self, x):
+        B = x.size(0)  # batch size
+        # apply each clause c_i and stack to a tensor C
+        a = x.detach().numpy().reshape(-1, 1)  # DEBUG
+        # C * B * G
+
+        value_list = []
+        for i in range(self.I_pi.size(0)):
+            pi_clause_function = self.cs_pi[i]
+            value = pi_clause_function(x)
+            b = value.detach().numpy().reshape(-1, 1)  # DEBUG
+            value_list.append(value)
+
+        C = torch.stack(value_list, 0)
+        # B * G
+        res = softor(C, dim=0, gamma=self.gamma)
+        b = res.detach().numpy().reshape(-1, 1)  # DEBUG
+        return res
 
 
 class ClauseInferModule(nn.Module):
@@ -156,7 +195,7 @@ class ClauseInferModule(nn.Module):
             self.W_bk = init_identity_weights(I_bk, device)
 
         assert m == self.C, "Invalid m and C: " + \
-            str(m) + ' and ' + str(self.C)
+                            str(m) + ' and ' + str(self.C)
 
     def forward(self, x):
         """
@@ -173,14 +212,15 @@ class ClauseInferModule(nn.Module):
         else:
             for t in range(self.infer_step):
                 # infer by background knowledge
-                #r_bk = self.r_bk(R[0])
-                #R_bk = self.r_bk(r_bk).unsqueeze(dim=0).expand(self.C, B, self.G)
-                #R = R_bk
-                #print("R: ", R.shape)
-                #print("r(R): ", self.r(R).shape)
-                #print("r_bk(R): ", self.r_bk(R).shape)
+                # r_bk = self.r_bk(R[0])
+                # R_bk = self.r_bk(r_bk).unsqueeze(dim=0).expand(self.C, B, self.G)
+                # R = R_bk
+                # print("R: ", R.shape)
+                # print("r(R): ", self.r(R).shape)
+                # print("r_bk(R): ", self.r_bk(R).shape)
                 # shape? dim?
-                R = softor([R, self.r(R), self.r_bk(R).unsqueeze(dim=0).expand(self.C, B, self.G)], dim=2, gamma=self.gamma)
+                R = softor([R, self.r(R), self.r_bk(R).unsqueeze(dim=0).expand(self.C, B, self.G)], dim=2,
+                           gamma=self.gamma)
         return R
 
     def r(self, x):
@@ -189,8 +229,7 @@ class ClauseInferModule(nn.Module):
         # apply each clause c_i and stack to a tensor C
         # C * B * G
         # infer from i-th valuation tensor using i-th clause
-        C = torch.stack([self.cs[i](x[i])
-                        for i in range(self.I.size(0))], 0)
+        C = torch.stack([self.cs[i](x[i]) for i in range(self.I.size(0))], 0)
         return C
 
     def r_bk(self, x):
@@ -200,7 +239,7 @@ class ClauseInferModule(nn.Module):
         # C * B * G
         # just use the first row
         C = torch.stack([self.cs_bk[i](x)
-                        for i in range(self.I_bk.size(0))], 0)
+                         for i in range(self.I_bk.size(0))], 0)
         # B * G
         return softor(C, dim=0, gamma=self.gamma)
         # taking weighted sum using m weights and stack to a tensor H
@@ -217,7 +256,6 @@ class ClauseInferModule(nn.Module):
         # B * G
         R = softor(H, dim=0, gamma=self.gamma)
         return R
-
 
 
 class PIClauseInferModule(nn.Module):
@@ -254,7 +292,7 @@ class PIClauseInferModule(nn.Module):
             self.W_bk = init_identity_weights(I_bk, device)
 
         assert m == self.C, "Invalid m and C: " + \
-            str(m) + ' and ' + str(self.C)
+                            str(m) + ' and ' + str(self.C)
 
     def forward(self, x):
         """
@@ -271,12 +309,12 @@ class PIClauseInferModule(nn.Module):
         else:
             for t in range(self.infer_step):
                 # infer by background knowledge
-                #r_bk = self.r_bk(R[0])
-                #R_bk = self.r_bk(r_bk).unsqueeze(dim=0).expand(self.C, B, self.G)
-                #R = R_bk
-                #print("R: ", R.shape)
-                #print("r(R): ", self.r(R).shape)
-                #print("r_bk(R): ", self.r_bk(R).shape)
+                # r_bk = self.r_bk(R[0])
+                # R_bk = self.r_bk(r_bk).unsqueeze(dim=0).expand(self.C, B, self.G)
+                # R = R_bk
+                # print("R: ", R.shape)
+                # print("r(R): ", self.r(R).shape)
+                # print("r_bk(R): ", self.r_bk(R).shape)
                 # shape? dim?
                 R = softor([R, self.r(R), self.r_bk(R).unsqueeze(
                     dim=0).expand(self.C, B, self.G)], dim=2, gamma=self.gamma)
@@ -289,7 +327,7 @@ class PIClauseInferModule(nn.Module):
         # C * B * G
         # infer from i-th valuation tensor using i-th clause
         C = torch.stack([self.cs[i](x[i])
-                        for i in range(self.I.size(0))], 0)
+                         for i in range(self.I.size(0))], 0)
         return C
 
     def r_bk(self, x):
@@ -299,7 +337,7 @@ class PIClauseInferModule(nn.Module):
         # C * B * G
         # just use the first row
         C = torch.stack([self.cs_bk[i](x)
-                        for i in range(self.I_bk.size(0))], 0)
+                         for i in range(self.I_bk.size(0))], 0)
         # B * G
         return softor(C, dim=0, gamma=self.gamma)
         # taking weighted sum using m weights and stack to a tensor H
@@ -316,8 +354,6 @@ class PIClauseInferModule(nn.Module):
         # B * G
         R = softor(H, dim=0, gamma=self.gamma)
         return R
-
-
 
 
 class ClauseFunction(nn.Module):
@@ -338,7 +374,7 @@ class ClauseFunction(nn.Module):
         # B * G
         V = x
         # G * S * b
-        #I_i = self.I[self.i, :, :, :]
+        # I_i = self.I[self.i, :, :, :]
 
         # B * G -> B * G * S * L
         V_tild = V.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.S, self.L)
@@ -346,6 +382,5 @@ class ClauseFunction(nn.Module):
         I_i_tild = self.I_i.repeat(batch_size, 1, 1, 1)
 
         # B * G
-        C = softor(torch.prod(torch.gather(V_tild, 1, I_i_tild), 3),
-                   dim=2, gamma=self.gamma)
+        C = softor(torch.prod(torch.gather(V_tild, 1, I_i_tild), 3), dim=2, gamma=self.gamma)
         return C

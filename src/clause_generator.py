@@ -290,8 +290,9 @@ class ClauseGenerator(object):
         print("Eval clauses: ", len(clauses))
         # update infer module with new clauses
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
+        pi_clauses = []
         NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms,
-                              self.NSFR.bk, self.bk_clauses, self.NSFR.fc, self.device)
+                              self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
         # TODO: Compute loss for validation data , score is bce loss
 
         score = torch.zeros((C,)).to(self.device)
@@ -376,11 +377,9 @@ class PIClauseGenerator(object):
         print("Eval clauses: ", len(clauses))
         # update infer module with new clauses
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
-
-        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses,
+        pi_clauses = []
+        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses, pi_clauses,
                               self.NSFR.fc, self.device)
-        PI = get_pi_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses, self.NSFR.fc,
-                          self.device)
 
         batch_size = self.args.batch_size_bs
         pos_img_num = self.pos_loader.dataset.__len__()

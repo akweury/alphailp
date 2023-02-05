@@ -42,8 +42,16 @@ class NSFReasoner(nn.Module):
         # zs = self.pm(x)
         # convert to the valuation tensor
         V_0 = self.fc(x, self.atoms, self.bk)
+
+        a = V_0.detach().numpy().reshape(-1, 1)  # DEBUG
+
         # perform T-step forward-chaining reasoning
         V_T = self.im(V_0)
+
+        tuple_list = []
+        for index in range(len(self.atoms)):
+            tuple_list.append((self.atoms[index], V_T[0, index]))
+        b = V_T.detach().numpy().reshape(-1, 1)  # DEBUG
         return V_T
 
     def clause_eval(self, x):

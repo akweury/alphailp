@@ -9,7 +9,7 @@ class FactsConverter(nn.Module):
     FactsConverter converts the output from the perception module to the valuation vector.
     """
 
-    def __init__(self, lang, perception_module, valuation_module,pi_valuation_module, device=None):
+    def __init__(self, lang, perception_module, valuation_module, pi_valuation_module, device=None):
         super(FactsConverter, self).__init__()
         self.e = perception_module.e
         self.d = perception_module.d
@@ -62,27 +62,28 @@ class FactsConverter(nn.Module):
                 V[:, i] = self.vm(Z, atom)
 
             # this atom is an invented predicate
-            elif type(atom.pred) == InventedPredicate:
-                if atom.pred.body is not None:
-                    value = self.pi_vm(atom, atom.pred.body, V, G)
-                    V[:, i] = value
+            # elif type(atom.pred) == InventedPredicate:
+            #     if atom.pred.body is not None:
+            #         value = self.pi_vm(atom, atom.pred.body, V, G)
+            #         V[:, i] = value
 
-            # this atom in background knowledge
+                # this atom in background knowledge
             elif atom in B:
-                # V[:, i] += 1.0
+            # V[:, i] += 1.0
                 value = torch.ones((batch_size,)).to(torch.float32).to(self.device)
                 V[:, i] += value
-
 
         V[:, 1] = torch.ones((batch_size,)).to(torch.float32).to(self.device)
         return V
 
-    def convert_i(self, zs, G):
-        v = self.init_valuation(len(G))
-        for i, atom in enumerate(G):
-            if type(atom.pred) == NeuralPredicate and i > 1:
-                v[i] = self.vm.eval(atom, zs)
-        return v
 
-    def call(self, pred):
-        return pred
+def convert_i(self, zs, G):
+    v = self.init_valuation(len(G))
+    for i, atom in enumerate(G):
+        if type(atom.pred) == NeuralPredicate and i > 1:
+            v[i] = self.vm.eval(atom, zs)
+    return v
+
+
+def call(self, pred):
+    return pred
