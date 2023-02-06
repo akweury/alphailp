@@ -309,7 +309,7 @@ def main(n):
                                             pi_valuation_module=PI_VM, device=device)
         # Neuro-Symbolic Forward Reasoner for clause generation
         NSFR_cgen = get_nsfr_model(args, lang, init_clauses, atoms, bk, bk_clauses, pi_clauses, FC, device)
-        PI_cgen = pi_utils.get_pi_model(args, lang, init_clauses, atoms, bk, bk_clauses,pi_clauses, FC, device=device)
+        PI_cgen = pi_utils.get_pi_model(args, lang, init_clauses, atoms, bk, bk_clauses, pi_clauses, FC, device=device)
 
         mode_declarations = get_mode_declarations(args, lang, args.n_obj)
         clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
@@ -317,8 +317,8 @@ def main(n):
                                            bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
 
         pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
-                                                mode_declarations,
-                                                bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
+                                                mode_declarations, bk_clauses, device=device,
+                                                no_xil=args.no_xil)  # torch.device('cpu'))
 
         # use perception model to evaluate image
 

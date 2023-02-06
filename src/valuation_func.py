@@ -143,7 +143,7 @@ class YOLOAreaValuationFunction(nn.Module):
         zone_id = phi_clock_shift // 90 % 4
 
         # This is a threshold, but it can be decided automatically.
-        if rho < 0.1:
+        if rho < 0.15:
             zone_shift = 0
         else:
             zone_shift = 4

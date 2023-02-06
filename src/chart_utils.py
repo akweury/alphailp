@@ -58,7 +58,7 @@ def plot_scatter_chart(data_list, path, title=None, x_scale=None, y_scale=None, 
     color = ["#" + ''.join([random.choice('0123456789ABCDEF') for i in range(6)])
              for j in range(no_of_colors)]
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(6, 6))
     for i, data in enumerate(data_list):
         data_x = data[0]
         data_y = data[1]
@@ -78,7 +78,8 @@ def plot_scatter_chart(data_list, path, title=None, x_scale=None, y_scale=None, 
         plt.xscale('log')
 
     plt.legend()
-
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
     # plt.figure(figsize=(1000, 1000 * 0.618))
     if not os.path.exists(str(path)):
         os.mkdir(path)
@@ -98,7 +99,7 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
         plt.colorbar()
 
     resolution = 2
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(6, 6))
     for i, data in enumerate(data_list):
         data_map = np.zeros(shape=[resolution, resolution])
         for index in range(len(data[0])):
@@ -133,7 +134,7 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
     if not os.path.exists(str(path)):
         os.mkdir(path)
     plt.savefig(
-        str(Path(path) / f"{title}_{date_now}_{time_now}.png"))
+        str(Path(path) / f"{date_now}_{time_now}_{title}.png"))
 
     if show:
         plt.show()

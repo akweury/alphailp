@@ -422,9 +422,14 @@ class PIClauseGenerator(object):
                 positive_clauses.append(clauses[c_index])
                 # plot the clause evaluation
             chart_utils.plot_scatter_heat_chart([clause_scores], config.buffer_path / "img",
-                                                f"scatter_mce_{len(clauses)}_{c_index}",
+                                                f"scatter_multiple_clause_eval_{len(clauses)}_{c_index}",
                                                 labels=f"{str(clauses[c_index]) + str(clause_sign)}",
                                                 x_label="positive score", y_label="negative score")
+            clause_scores_reverse = [score_positive[:, c_index], score_negative[:, c_index]]
+            chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
+                                           f"scatter_clause_eval_{len(clauses)}_{c_index}",
+                                           labels=f"{str(clauses[c_index]) + str(clause_sign)}",
+                                           x_label="positive score", y_label="negative score")
 
         return positive_clauses
 
