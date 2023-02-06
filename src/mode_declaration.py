@@ -130,8 +130,8 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
     modeb_list = [
         ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('color'), [p_object, s_color]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('shape'), [p_object, s_shape]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('color'), [p_object, s_color]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('shape'), [p_object, s_shape]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area'), [p_object, p_object, s_area]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_0'), [s_area]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_1'), [s_area]),
@@ -153,10 +153,10 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
         ModeDeclaration('body', 1, lang.get_pred_by_name('inv_1'), [p_object, p_object]),
 
-        # ModeDeclaration('body', 2, lang.get_pred_by_name('same_color_pair'), [p_object, p_object], ordered=False),
-        # ModeDeclaration('body', 2, lang.get_pred_by_name('same_shape_pair'), [p_object, p_object], ordered=False),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('diff_color_pair'), [p_object, p_object], ordered=False),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('diff_shape_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 2, lang.get_pred_by_name('same_color_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 2, lang.get_pred_by_name('same_shape_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('diff_color_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('diff_shape_pair'), [p_object, p_object], ordered=False),
 
         # ModeDeclaration('body', 1, lang.get_pred_by_name('closeby'), [p_object, p_object], ordered=False),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('online'), [p_object, p_object, p_object, p_object, p_object], ordered=False),

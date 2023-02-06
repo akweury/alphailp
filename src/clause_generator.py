@@ -167,6 +167,7 @@ class ClauseGenerator(object):
                     print("Added: ", c)
 
             print('Evaluating ', len(refs), 'generated clauses.')
+            # evaluate clauses, it should consider both positive images as well as negative images.
             loss_list = self.eval_clauses(refs, pos_pred, neg_pred)
 
             for i, ref in enumerate(refs):
@@ -190,6 +191,34 @@ class ClauseGenerator(object):
             # if len(C) >= N_max:
             #    break
         return C
+
+    def beam_search_clause_quick(self, clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
+
+        step = 0
+        init_step = 0
+        B = [clause]
+        C = set()
+        C_dic = {}
+        B_ = []
+        lang = self.lang
+
+        refs = []
+        for c in B:
+            refs_i = self.rgen.refinement_clause(c)
+            # remove invalid clauses
+            ###refs_i = [x for x in refs_i if self._is_valid(x)]
+            # remove already appeared refs
+            refs_i = list(set(refs_i).difference(set(B_)))
+            B_.extend(refs_i)
+            refs.extend(refs_i)
+            if self._is_valid(c) and not self._is_confounded(c):
+                C = C.union(set([c]))
+                print("Added: ", c)
+
+        print('Evaluating ', len(refs), 'generated clauses.')
+        # evaluate clauses, it should consider both positive images as well as negative images.
+        clauses = self.eval_clauses(refs, pos_pred, neg_pred)
+        return clauses
 
     def eval_images(self, save_path):
 
@@ -275,7 +304,7 @@ class ClauseGenerator(object):
         """
         C = set()
         for clause in C_0:
-            C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
+            C = C.union(self.beam_search_clause_quick(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
         C = sorted(list(C))
         print('======= BEAM SEARCHED CLAUSES ======')
         for c in C:
@@ -285,19 +314,35 @@ class ClauseGenerator(object):
     def eval_pi_clauses(self, clauses):
         return None
 
+    def eval_clause_sign(self, clause_scores):
+        resolution = 2
+        data_map = np.zeros(shape=[resolution, resolution])
+        for index in range(len(clause_scores[0])):
+            x_index = int(clause_scores[0][index] * resolution)
+            y_index = int(clause_scores[1][index] * resolution)
+            data_map[x_index, y_index] += 1
+
+        if np.max(data_map) == data_map[0, 1]:
+            return True
+
+        return False
+
     def eval_clauses(self, clauses, pos_pm_res, neg_pm_res):
         C = len(clauses)
         print("Eval clauses: ", len(clauses))
         # update infer module with new clauses
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
         pi_clauses = []
+        batch_size = self.args.batch_size_bs
         NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms,
                               self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
         # TODO: Compute loss for validation data , score is bce loss
+        pos_img_num = self.pos_loader.dataset.__len__()
+        neg_img_num = self.neg_loader.dataset.__len__()
 
-        score = torch.zeros((C,)).to(self.device)
+        positive_score = torch.zeros((pos_img_num, C)).to(self.device)
+        negative_score = torch.zeros((neg_img_num, C)).to(self.device)
 
-        batch_size = self.args.batch_size_bs
         for i in range(self.pos_loader.dataset.__len__()):
             V_T_list = NSFR.clause_eval_quick(pos_pm_res[i].unsqueeze(0)).detach()
             C_score = torch.zeros((C, batch_size)).to(self.device)
@@ -307,22 +352,41 @@ class ClauseGenerator(object):
             # C_score = PI.clause_eval(C_score)
             # sum over positive prob
             C_score = C_score.sum(dim=1)
-            score += C_score
+            positive_score[i, :] = C_score
+        a = positive_score.detach().numpy()
 
-        # for i in range(self.neg_loader.dataset.__len__()):
-        #     V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
-        #     C_score = torch.zeros((C, batch_size)).to(self.device)
-        #     for i, V_T in enumerate(V_T_list):
-        #         predicted = NSFR.predict(v=V_T, predname='kp').detach()
-        #         C_score[i] = 1 - predicted
-        #     # C_score = PI.clause_eval(C_score)
-        #     # sum over positive prob
-        #     # C_score = PI.clause_eval(C_score)
-        #     # sum over positive prob
-        #     C_score = C_score.sum(dim=1)
-        #     score += C_score
+        for i in range(self.neg_loader.dataset.__len__()):
+            V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
+            C_score = torch.zeros((C, batch_size)).to(self.device)
+            for j, V_T in enumerate(V_T_list):
+                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                C_score[j] = predicted
+            # C_score = PI.clause_eval(C_score)
+            # sum over positive prob
+            # C_score = PI.clause_eval(C_score)
+            # sum over positive prob
+            C_score = C_score.sum(dim=1)
+            negative_score[i] = C_score
+        b = negative_score.detach().numpy()
 
-        return score
+        positive_clauses = []
+        for c_index in range(positive_score.shape[1]):
+
+            clause_scores = [negative_score[:, c_index], positive_score[:, c_index]]
+            clause_sign = self.eval_clause_sign(clause_scores)
+            if clause_sign:
+                positive_clauses.append(clauses[c_index])
+                # plot the clause evaluation
+            chart_utils.plot_scatter_heat_chart([clause_scores], config.buffer_path / "img",
+                                                f"heat_ce_all_{len(clauses)}_{c_index}",
+                                                labels=f"{str(clauses[c_index]) + str(clause_sign)}",
+                                                x_label="positive score", y_label="negative score")
+            clause_scores_reverse = [positive_score[:, c_index], negative_score[:, c_index]]
+            # chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
+            #                                f"scatter_ce_all_{len(clauses)}_{c_index}",
+            #                                labels=f"{str(clauses[c_index]) + str(clause_sign)}",
+            #                                x_label="positive score", y_label="negative score")
+        return positive_clauses
 
 
 class PIClauseGenerator(object):
