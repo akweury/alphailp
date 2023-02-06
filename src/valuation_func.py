@@ -141,7 +141,9 @@ class YOLOAreaValuationFunction(nn.Module):
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
         phi_clock_shift = (90 - int(phi)) % 360
         zone_id = phi_clock_shift // 90 % 4
-        if rho < 0.3:
+
+        # This is a threshold, but it can be decided automatically.
+        if rho < 0.1:
             zone_shift = 0
         else:
             zone_shift = 4
