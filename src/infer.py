@@ -86,7 +86,7 @@ class InferModule(nn.Module):
 
                 R = softor([R, r_R, r_bk_R, r_pi_R], dim=1, gamma=self.gamma)
 
-        z = R.detach().to("cpu").umpy().reshape(-1, 1)
+        z = R.detach().to("cpu").numpy().reshape(-1, 1)
         return R
 
     def r(self, x):
