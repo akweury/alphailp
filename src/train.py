@@ -153,7 +153,7 @@ def train_nsfr(args, NSFR, optimizer, train_pos_pred, train_neg_pred, val_pos_pr
 
     # prepare perception result
     train_pred = torch.cat((train_pos_pred, train_neg_pred), dim=0)
-    train_label = torch.zeros(1, len(train_pred))
+    train_label = torch.zeros(1, len(train_pred)).to(device)
     train_label[0, :len(train_pos_pred)] = 1.0
 
     for epoch in range(args.epochs):

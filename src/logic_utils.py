@@ -173,3 +173,54 @@ def get_index_by_predname(pred_str, atoms):
 def parse_clauses(lang, clause_strs):
     du = DataUtils(lang)
     return [du.parse_clause(c) for c in clause_strs]
+
+
+def remove_conflict_clauses(clauses):
+    print("check for conflict clauses...")
+    non_conflict_clauses = []
+    for clause in clauses:
+        is_conflict = False
+        for i in range(len(clause.body)):
+            for j in range(i + 1, len(clause.body)):
+                if "at_area" in clause.body[i].pred.name and "at_area" in clause.body[j].pred.name:
+                    if clause.body[i].terms == clause.body[j].terms:
+                        is_conflict = True
+                        print(f'conflict clause: {clause}')
+                        break
+                    elif conflict_pred(clause.body[i].pred.name,
+                                       clause.body[j].pred.name,
+                                       list(clause.body[i].terms),
+                                       list(clause.body[j].terms)):
+                        is_conflict = True
+                        print(f'conflict clause: {clause}')
+                        break
+            if is_conflict:
+                break
+        if not is_conflict:
+            non_conflict_clauses.append(clause)
+
+    print("end for checking.")
+    print("========= All non-conflict clauses ==========")
+    for each in non_conflict_clauses:
+        print(each)
+    print("=============================================")
+
+    return non_conflict_clauses
+
+
+def conflict_pred(p1, p2, t1, t2):
+    non_confliect_dict = {
+        "at_area_0": ["at_area_2"],
+        "at_area_1": ["at_area_3"],
+        "at_area_2": ["at_area_0"],
+        "at_area_3": ["at_area_1"],
+        "at_area_4": ["at_area_6"],
+        "at_area_5": ["at_area_7"],
+        "at_area_6": ["at_area_4"],
+        "at_area_7": ["at_area_5"],
+    }
+    if p1 in non_confliect_dict.keys():
+        if "at_area" in p2 and p2 not in non_confliect_dict[p1]:
+            if t1[0] == t2[1] and t2[0] == t1[1]:
+                return True
+    return False
