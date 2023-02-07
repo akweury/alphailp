@@ -649,7 +649,8 @@ class PIClauseGenerator(object):
 
         positive_clauses = []
         for c_index in range(score_positive.shape[1]):
-
+            score_negative = score_negative.to("cpu")
+            score_positive = score_positive.to("cpu")
             clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
             clause_sign = self.eval_clause_sign(clause_scores)
             if clause_sign:
