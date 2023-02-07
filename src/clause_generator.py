@@ -13,7 +13,6 @@ from pi_utils import get_pi_model
 import chart_utils
 from percept import YOLOPerceptionModule
 import config
-from src.fol.exp_parser import ExpTree
 
 
 class ClauseGenerator(object):
