@@ -526,7 +526,7 @@ class ClauseGenerator(object):
             # sum over positive prob
             C_score = C_score.sum(dim=1)
             positive_score[i, :] = C_score
-        a = positive_score.detach().numpy()
+        a = positive_score.detach().to("cpu").numpy()
 
         for i in range(self.neg_loader.dataset.__len__()):
             V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
@@ -540,7 +540,7 @@ class ClauseGenerator(object):
             # sum over positive prob
             C_score = C_score.sum(dim=1)
             negative_score[i] = C_score
-        b = negative_score.detach().numpy()
+        b = negative_score.detach().to("cpu").numpy()
 
         positive_clauses = []
         all_clause_scores = []
