@@ -124,7 +124,7 @@ class ClauseGenerator(object):
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
 
-    def beam_search_clause(self, clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
+    def beam_search_clause(self, init_clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
         """
         perform beam-searching from a clause
         Inputs
@@ -144,7 +144,7 @@ class ClauseGenerator(object):
         """
         step = 0
         init_step = 0
-        B = [clause]
+        B = [init_clause]
         C = set()
         C_dic = {}
         B_ = []
@@ -169,7 +169,6 @@ class ClauseGenerator(object):
             print('Evaluating ', len(refs), 'generated clauses.')
             # evaluate clauses, it should consider both positive images as well as negative images.
             loss_list = self.eval_clauses(refs, pos_pred, neg_pred)
-
             for i, ref in enumerate(refs):
                 # check duplication
                 if not self.is_in_beam(B_new, ref, loss_list[i]):
@@ -179,6 +178,7 @@ class ClauseGenerator(object):
                 # if len(C) >= N_max:
                 #    break
             B_new_sorted = sorted(B_new.items(), key=lambda x: x[1], reverse=True)
+
             # top N_beam refiements
             B_new_sorted = B_new_sorted[:N_beam]
             # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
@@ -192,33 +192,126 @@ class ClauseGenerator(object):
             #    break
         return C
 
-    def beam_search_clause_quick(self, clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
+    def remove_conflict_clauses(self, clauses):
+        print("check for conflict clauses...")
+        non_conflict_clauses = []
+        for clause in clauses:
+            is_conflict = False
+            for i in range(len(clause.body)):
+                for j in range(i + 1, len(clause.body)):
+                    if "at_area" in clause.body[i].pred.name and "at_area" in clause.body[j].pred.name:
+                        if clause.body[i].terms == clause.body[j].terms:
+                            is_conflict = True
+                            print(f'conflict clause: {clause}')
+                            break
+                        elif self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
+                                                list(clause.body[i].terms), list(clause.body[j].terms)):
+                            is_conflict = True
+                            print(f'conflict clause: {clause}')
+                            break
+                if is_conflict:
+                    break
+            if not is_conflict:
+                non_conflict_clauses.append(clause)
+
+        print("end for checking.")
+        print("========= All non-conflict clauses ==========")
+        for each in non_conflict_clauses:
+            print(each)
+        print("=============================================")
+
+        return non_conflict_clauses
+
+    def conflict_pred(self, p1, p2, t1, t2):
+        non_confliect_dict = {
+            "at_area_0": ["at_area_2"],
+            "at_area_1": ["at_area_3"],
+            "at_area_2": ["at_area_0"],
+            "at_area_3": ["at_area_1"],
+            "at_area_4": ["at_area_6"],
+            "at_area_5": ["at_area_7"],
+            "at_area_6": ["at_area_4"],
+            "at_area_7": ["at_area_5"],
+        }
+        if p1 in non_confliect_dict.keys():
+            if "at_area" in p2 and p2 not in non_confliect_dict[p1]:
+                if t1[0] == t2[1] and t2[0] == t1[1]:
+                    return True
+        return False
+
+    def beam_search_clause_quick(self, init_clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
 
         step = 0
         init_step = 0
-        B = [clause]
+        B = [init_clause]
         C = set()
         C_dic = {}
         B_ = []
         lang = self.lang
+        bs_clauses = []
+        while step < T_beam:
+            if step == 4:
+                print("break")
+            B_new = {}
+            refs = []
+            for c in B:
+                refs_i = self.rgen.refinement_clause(c)
+                # remove invalid clauses
+                ###refs_i = [x for x in refs_i if self._is_valid(x)]
+                # remove already appeared refs
+                refs_i = list(set(refs_i).difference(set(B_)))
+                B_.extend(refs_i)
+                refs.extend(refs_i)
+                if self._is_valid(c) and not self._is_confounded(c):
+                    C = C.union(set([c]))
+                    print("Added: ", c)
 
-        refs = []
-        for c in B:
-            refs_i = self.rgen.refinement_clause(c)
-            # remove invalid clauses
-            ###refs_i = [x for x in refs_i if self._is_valid(x)]
-            # remove already appeared refs
-            refs_i = list(set(refs_i).difference(set(B_)))
-            B_.extend(refs_i)
-            refs.extend(refs_i)
-            if self._is_valid(c) and not self._is_confounded(c):
-                C = C.union(set([c]))
-                print("Added: ", c)
+            print('Evaluating ', len(refs), 'generated clauses.')
+            # evaluate clauses, it should consider both positive images as well as negative images.
+            refs_non_conflict = self.remove_conflict_clauses(refs)
+            clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
+            clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
 
-        print('Evaluating ', len(refs), 'generated clauses.')
-        # evaluate clauses, it should consider both positive images as well as negative images.
-        clauses = self.eval_clauses(refs, pos_pred, neg_pred)
-        return clauses
+            # check for duplication
+            non_duplicate_clause_index = []
+            non_duplicate_full_scores = []
+            for i, ref in enumerate(refs_non_conflict):
+                # check duplication
+                if not self.is_in_beam(B_new, ref, clause_scores_full[i]):
+                    B_new[ref] = clause_scores_full[i]
+                    C_dic[ref] = clause_scores_full[i]
+                    non_duplicate_clause_index.append(i)
+                    non_duplicate_full_scores.append(clause_scores_full[i])
+            is_plot_4zone = False
+            if is_plot_4zone:
+                for i, clause in enumerate(B_new):
+                    clause_index = non_duplicate_clause_index[i]
+                    chart_utils.plot_scatter_heat_chart([clause_image_scores[clause_index]],
+                                                        config.buffer_path / "img",
+                                                        f"heat_ce_all_{len(B_new)}_{i}",
+                                                        sub_folder=str(step),
+                                                        labels=f"{str(clause) + str(clause_signs[clause_index])}",
+                                                        x_label="positive score", y_label="negative score")
+
+                    clause_scores_reverse = [clause_image_scores[clause_index][1], clause_image_scores[clause_index][0]]
+                    chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
+                                                   f"scatter_ce_all_{len(B_new)}_{i}",
+                                                   sub_folder=str(step),
+                                                   labels=f"{str(clause) + str(clause_signs[clause_index])}",
+                                                   x_label="positive score", y_label="negative score")
+            B_new_sorted = sorted(B_new.items(), key=lambda x: x[1][1], reverse=True)
+            B_new_sorted = self.select_good_clauses(B_new_sorted)
+            if len(B_new_sorted) > 10:
+                B_new_sorted = B_new_sorted[:10]
+            # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
+            for x in B_new_sorted:
+                print(x[1], x[0])
+            B = [x[0] for x in B_new_sorted]
+            step += 1
+            if len(B) == 0:
+                break
+
+        return C
 
     def eval_images(self, save_path):
 
@@ -269,16 +362,16 @@ class ClauseGenerator(object):
 
         return pos_eval_res, neg_eval_res
 
-    def is_in_beam(self, B, clause, score):
+    def is_in_beam(self, B, clause, scores):
         """If score is the same, same predicates => duplication
         """
-        score = score.detach().cpu().numpy()
+
         preds = set([clause.head.pred] + [b.pred for b in clause.body])
         y = False
         for ci, score_i in B.items():
-            score_i = score_i.detach().cpu().numpy()
+
             preds_i = set([clause.head.pred] + [b.pred for b in clause.body])
-            if preds == preds_i and np.abs(score - score_i) < 1e-2:
+            if preds == preds_i and np.sum(np.abs(np.array([scores]) - np.array([score_i]))) < 1e-2:
                 y = True
                 # print("duplicated: ", clause, ci)
                 break
@@ -305,6 +398,7 @@ class ClauseGenerator(object):
         C = set()
         for clause in C_0:
             C = C.union(self.beam_search_clause_quick(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
+            # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
         C = sorted(list(C))
         print('======= BEAM SEARCHED CLAUSES ======')
         for c in C:
@@ -314,18 +408,37 @@ class ClauseGenerator(object):
     def eval_pi_clauses(self, clauses):
         return None
 
-    def eval_clause_sign(self, clause_scores):
+    def eval_clause_sign(self, clause_image_scores):
         resolution = 2
-        data_map = np.zeros(shape=[resolution, resolution])
-        for index in range(len(clause_scores[0])):
-            x_index = int(clause_scores[0][index] * resolution)
-            y_index = int(clause_scores[1][index] * resolution)
-            data_map[x_index, y_index] += 1
 
-        if np.max(data_map) == data_map[0, 1]:
-            return True
+        clause_sign_list = []
+        clause_score_list = []
+        clause_score_full_list = []
+        for clause_image_score in clause_image_scores:
+            data_map = np.zeros(shape=[resolution, resolution])
+            for index in range(len(clause_image_score[0])):
+                x_index = int(clause_image_score[0][index] * resolution)
+                y_index = int(clause_image_score[1][index] * resolution)
+                data_map[x_index, y_index] += 1
 
-        return False
+            pos_low_neg_low_area = data_map[0, 0]
+            pos_high_neg_low_area = data_map[0, 1]
+            pos_low_neg_high_area = data_map[1, 0]
+            pos_high_neg_high_area = data_map[1, 1]
+
+            # TODO: find a better score evaluation function
+            clause_score = pos_high_neg_low_area - pos_high_neg_high_area
+            clause_score_list.append(clause_score)
+            clause_score_full_list.append(
+                [pos_low_neg_low_area, pos_high_neg_low_area, pos_low_neg_high_area, pos_high_neg_high_area])
+
+            data_map[0, 0] = 0
+            if np.max(data_map) == data_map[0, 1] and data_map[0, 1] > data_map[1, 1]:
+                clause_sign_list.append(True)
+            else:
+                clause_sign_list.append(False)
+
+        return clause_sign_list, clause_score_list, clause_score_full_list
 
     def eval_clauses(self, clauses, pos_pm_res, neg_pm_res):
         C = len(clauses)
@@ -370,23 +483,81 @@ class ClauseGenerator(object):
         b = negative_score.detach().numpy()
 
         positive_clauses = []
+        all_clauses_scores = []
         for c_index in range(positive_score.shape[1]):
 
             clause_scores = [negative_score[:, c_index], positive_score[:, c_index]]
-            clause_sign = self.eval_clause_sign(clause_scores)
+            clause_sign, clause_score = self.eval_clause_sign(clause_scores)
+            all_clauses_scores.append(clause_score)
             if clause_sign:
                 positive_clauses.append(clauses[c_index])
                 # plot the clause evaluation
-            chart_utils.plot_scatter_heat_chart([clause_scores], config.buffer_path / "img",
-                                                f"heat_ce_all_{len(clauses)}_{c_index}",
-                                                labels=f"{str(clauses[c_index]) + str(clause_sign)}",
-                                                x_label="positive score", y_label="negative score")
+
             clause_scores_reverse = [positive_score[:, c_index], negative_score[:, c_index]]
             # chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
             #                                f"scatter_ce_all_{len(clauses)}_{c_index}",
             #                                labels=f"{str(clauses[c_index]) + str(clause_sign)}",
             #                                x_label="positive score", y_label="negative score")
-        return positive_clauses
+
+        return all_clauses_scores
+
+    def eval_clauses_scores(self, clauses, pos_pm_res, neg_pm_res):
+        C = len(clauses)
+        print("Eval clauses: ", len(clauses))
+        # update infer module with new clauses
+        # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
+        pi_clauses = []
+        batch_size = self.args.batch_size_bs
+        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms,
+                              self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
+        # TODO: Compute loss for validation data , score is bce loss
+        pos_img_num = self.pos_loader.dataset.__len__()
+        neg_img_num = self.neg_loader.dataset.__len__()
+
+        positive_score = torch.zeros((pos_img_num, C)).to(self.device)
+        negative_score = torch.zeros((neg_img_num, C)).to(self.device)
+
+        for i in range(self.pos_loader.dataset.__len__()):
+            V_T_list = NSFR.clause_eval_quick(pos_pm_res[i].unsqueeze(0)).detach()
+            C_score = torch.zeros((C, batch_size)).to(self.device)
+            for j, V_T in enumerate(V_T_list):
+                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                C_score[j] = predicted
+            # C_score = PI.clause_eval(C_score)
+            # sum over positive prob
+            C_score = C_score.sum(dim=1)
+            positive_score[i, :] = C_score
+        a = positive_score.detach().numpy()
+
+        for i in range(self.neg_loader.dataset.__len__()):
+            V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
+            C_score = torch.zeros((C, batch_size)).to(self.device)
+            for j, V_T in enumerate(V_T_list):
+                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                C_score[j] = predicted
+            # C_score = PI.clause_eval(C_score)
+            # sum over positive prob
+            # C_score = PI.clause_eval(C_score)
+            # sum over positive prob
+            C_score = C_score.sum(dim=1)
+            negative_score[i] = C_score
+        b = negative_score.detach().numpy()
+
+        positive_clauses = []
+        all_clause_scores = []
+        for c_index in range(positive_score.shape[1]):
+            clause_scores = [negative_score[:, c_index], positive_score[:, c_index]]
+            all_clause_scores.append(clause_scores)
+        return all_clause_scores
+
+    def select_good_clauses(self, B_new_sorted):
+        good_clauses = []
+
+        for clause, scores in B_new_sorted:
+            last_3 = scores[1:]
+            if np.max(last_3) == last_3[0] and last_3[0] > last_3[2]:
+                good_clauses.append((clause, scores))
+        return good_clauses
 
 
 class PIClauseGenerator(object):
@@ -538,7 +709,7 @@ class PIClauseGenerator(object):
             "at_area_7": ["at_area_5"],
         }
         if p1 in non_confliect_dict.keys():
-            if p2 not in non_confliect_dict[p1]:
+            if "at_area" in p2 and p2 not in non_confliect_dict[p1]:
                 if t1[0] == t2[1] and t2[0] == t1[1]:
                     return True
         return False

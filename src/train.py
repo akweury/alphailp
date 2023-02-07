@@ -322,9 +322,9 @@ def main(n):
 
         # use perception model to evaluate image
 
-        pm_val_res_file = str(config.buffer_path / "pm_res_val.pth.tar")
-        pm_train_res_file = str(config.buffer_path / "pm_res_train.pth.tar")
-        pm_test_res_file = str(config.buffer_path / "pm_res_test.pth.tar")
+        pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
+        pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
+        pm_test_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_test.pth.tar")
 
         val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, device, val_pos_loader, val_neg_loader)
         train_pos_pred, train_neg_pred = percept.eval_images(args, pm_train_res_file, device, train_pos_loader,
