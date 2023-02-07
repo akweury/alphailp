@@ -111,8 +111,8 @@ def predict(NSFR, pos_pred, neg_pred, args, device, th=None, split='train'):
         # loss_i += loss.item()
         # loss.backward()
 
-        predicted_list.append(predicted.detach())
-        target_list.append(train_label[:, i].detach())
+        predicted_list.append(predicted.detach().to("cpu"))
+        target_list.append(train_label[:, i].detach().to("cpu"))
         count += V_T.size(0)  # batch size
 
     predicted = torch.cat(predicted_list, dim=0).detach().cpu().numpy()
@@ -163,7 +163,7 @@ def train_nsfr(args, NSFR, optimizer, train_pos_pred, train_neg_pred, val_pos_pr
             sample = sample.unsqueeze(0)
             V_T = NSFR(sample)
             # watch out for PI values
-            a = V_T.detach().numpy().reshape(-1, 1)  # DEBUG
+            a = V_T.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
 
             # NSFR.print_valuation_batch(V_T)
             predicted = get_prob(V_T, NSFR, args)
