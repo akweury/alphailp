@@ -151,7 +151,7 @@ def get_mode_declarations_kandinsky(lang, obj_num):
         ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_6'), [p_object, p_object]),
         ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_7'), [p_object, p_object]),
 
-        ModeDeclaration('body', 1, lang.get_pred_by_name('inv_1'), [p_object, p_object]),
+        # ModeDeclaration('body', 1, lang.get_pred_by_name('inv_1'), [p_object, p_object]),
 
         ModeDeclaration('body', 2, lang.get_pred_by_name('same_color_pair'), [p_object, p_object], ordered=False),
         ModeDeclaration('body', 2, lang.get_pred_by_name('same_shape_pair'), [p_object, p_object], ordered=False),

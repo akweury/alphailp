@@ -1,6 +1,6 @@
 from .logic import Var
 import itertools
-
+from .logic import Predicate, NeuralPredicate, InventedPredicate, FuncSymbol, Const
 
 class Language(object):
     """Language of first-order logic.
@@ -18,11 +18,12 @@ class Language(object):
         consts (List[Const]): A set of constants.
     """
 
-    def __init__(self, preds, funcs, consts, invented_preds):
+    def __init__(self, preds, funcs, consts, pi_templates):
         self.preds = preds
         self.funcs = funcs
         self.consts = consts
-        self.invented_preds = invented_preds
+        self.pi_templates = pi_templates
+        self.invented_preds = []
 
     def __str__(self):
         s = "===Predicates===\n"
@@ -129,11 +130,29 @@ class Language(object):
             invented_pred_name (str): The name of the predicate.
 
         Returns:
-            InventedPredicat: The matched invented preicate with the given name.
+            InventedPredicat: The matched invented predicate with the given name.
         """
-        invented_pred = [invented_pred for invented_pred in self.invented_preds if invented_pred.name == invented_pred_name]
+        invented_pred = [invented_pred for invented_pred in self.invented_preds if
+                         invented_pred.name == invented_pred_name]
         assert len(invented_pred) == 1, 'Too many or less match in ' + invented_pred_name
         return invented_pred[0]
+
+    def get_new_invented_predicate(self, arity, pi_dtypes):
+        """Get the predicate by its id.
+
+        Args:
+            pi_template (str): The name of the predicate template.
+
+        Returns:
+            InventedPredicat: The matched invented predicate with the given name.
+        """
+        prefix = "inv_pred"
+        new_predicate_id = len(self.invented_preds)
+        pred_with_id = prefix + str(new_predicate_id)
+
+        new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes)
+        self.invented_preds.append(new_predicate)
+        return new_predicate
 
 
 class DataType(object):

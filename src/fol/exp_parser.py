@@ -21,6 +21,11 @@ class ExpTree(Transformer):
     def clause(self, trees):
         head = trees[0]
         body = flatten([trees[1]])
+
+        for b in body:
+            if type(b.pred) == InventedPredicate:
+                return InventedClause(head, body)
+
         if type(head.pred) == InventedPredicate:
             return InventedClause(head, body)
         elif type(head.pred) == Predicate:
@@ -57,8 +62,18 @@ class ExpTree(Transformer):
         return func
 
     def predicate(self, alphas):
-        pred = [p for p in self.lang.preds if p.name == alphas[0]][0]
-        return pred
+        pred = []
+        for p in self.lang.preds:
+            if p.name == alphas[0]:
+                pred.append(p)
+        if (len(pred) == 0):
+            for p in self.lang.invented_preds:
+                if p.name == alphas[0]:
+                    pred.append(p)
+        if (len(pred) == 0):
+            raise ValueError("Not found predicate.")
+        pred_0 = pred[0]
+        return pred_0
 
     def invented_preds(self, alphas):
         pred = [p for p in self.lang.invented_preds if p.name == alphas[0]][0]

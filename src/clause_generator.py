@@ -13,7 +13,8 @@ from pi_utils import get_pi_model
 import chart_utils
 from percept import YOLOPerceptionModule
 import config
-
+import logic_utils
+from fol.language import Language, DataType
 
 class ClauseGenerator(object):
     """
@@ -191,52 +192,52 @@ class ClauseGenerator(object):
             #    break
         return C
 
-    def remove_conflict_clauses(self, clauses):
-        print("check for conflict clauses...")
-        non_conflict_clauses = []
-        for clause in clauses:
-            is_conflict = False
-            for i in range(len(clause.body)):
-                for j in range(i + 1, len(clause.body)):
-                    if "at_area" in clause.body[i].pred.name and "at_area" in clause.body[j].pred.name:
-                        if clause.body[i].terms == clause.body[j].terms:
-                            is_conflict = True
-                            print(f'conflict clause: {clause}')
-                            break
-                        elif self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
-                                                list(clause.body[i].terms), list(clause.body[j].terms)):
-                            is_conflict = True
-                            print(f'conflict clause: {clause}')
-                            break
-                if is_conflict:
-                    break
-            if not is_conflict:
-                non_conflict_clauses.append(clause)
-
-        print("end for checking.")
-        print("========= All non-conflict clauses ==========")
-        for each in non_conflict_clauses:
-            print(each)
-        print("=============================================")
-
-        return non_conflict_clauses
-
-    def conflict_pred(self, p1, p2, t1, t2):
-        non_confliect_dict = {
-            "at_area_0": ["at_area_2"],
-            "at_area_1": ["at_area_3"],
-            "at_area_2": ["at_area_0"],
-            "at_area_3": ["at_area_1"],
-            "at_area_4": ["at_area_6"],
-            "at_area_5": ["at_area_7"],
-            "at_area_6": ["at_area_4"],
-            "at_area_7": ["at_area_5"],
-        }
-        if p1 in non_confliect_dict.keys():
-            if "at_area" in p2 and p2 not in non_confliect_dict[p1]:
-                if t1[0] == t2[1] and t2[0] == t1[1]:
-                    return True
-        return False
+    # def remove_conflict_clauses(self, clauses):
+    #     print("check for conflict clauses...")
+    #     non_conflict_clauses = []
+    #     for clause in clauses:
+    #         is_conflict = False
+    #         for i in range(len(clause.body)):
+    #             for j in range(i + 1, len(clause.body)):
+    #                 if "at_area" in clause.body[i].pred.name and "at_area" in clause.body[j].pred.name:
+    #                     if clause.body[i].terms == clause.body[j].terms:
+    #                         is_conflict = True
+    #                         print(f'conflict clause: {clause}')
+    #                         break
+    #                     elif self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
+    #                                             list(clause.body[i].terms), list(clause.body[j].terms)):
+    #                         is_conflict = True
+    #                         print(f'conflict clause: {clause}')
+    #                         break
+    #             if is_conflict:
+    #                 break
+    #         if not is_conflict:
+    #             non_conflict_clauses.append(clause)
+    #
+    #     print("end for checking.")
+    #     print("========= All non-conflict clauses ==========")
+    #     for each in non_conflict_clauses:
+    #         print(each)
+    #     print("=============================================")
+    #
+    #     return non_conflict_clauses
+    #
+    # def conflict_pred(self, p1, p2, t1, t2):
+    #     non_confliect_dict = {
+    #         "at_area_0": ["at_area_2"],
+    #         "at_area_1": ["at_area_3"],
+    #         "at_area_2": ["at_area_0"],
+    #         "at_area_3": ["at_area_1"],
+    #         "at_area_4": ["at_area_6"],
+    #         "at_area_5": ["at_area_7"],
+    #         "at_area_6": ["at_area_4"],
+    #         "at_area_7": ["at_area_5"],
+    #     }
+    #     if p1 in non_confliect_dict.keys():
+    #         if "at_area" in p2 and p2 not in non_confliect_dict[p1]:
+    #             if t1[0] == t2[1] and t2[0] == t1[1]:
+    #                 return True
+    #     return False
 
     def beam_search_clause_quick(self, init_clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
 
@@ -267,7 +268,7 @@ class ClauseGenerator(object):
 
             print('Evaluating ', len(refs), 'generated clauses.')
             # evaluate clauses, it should consider both positive images as well as negative images.
-            refs_non_conflict = self.remove_conflict_clauses(refs)
+            refs_non_conflict = logic_utils.remove_conflict_clauses(refs)
             clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
             clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
 
@@ -481,18 +482,17 @@ class ClauseGenerator(object):
             negative_score[i] = C_score
         b = negative_score.detach().numpy()
 
-        positive_clauses = []
+        # positive_clauses = []
         all_clauses_scores = []
         for c_index in range(positive_score.shape[1]):
-
             clause_scores = [negative_score[:, c_index], positive_score[:, c_index]]
-            clause_sign, clause_score = self.eval_clause_sign(clause_scores)
+            clause_sign, clause_score, clause_score_full = self.eval_clause_sign(clause_scores)
             all_clauses_scores.append(clause_score)
-            if clause_sign:
-                positive_clauses.append(clauses[c_index])
-                # plot the clause evaluation
+            # if clause_sign:
+            #     positive_clauses.append(clauses[c_index])
+            # plot the clause evaluation
 
-            clause_scores_reverse = [positive_score[:, c_index], negative_score[:, c_index]]
+            # clause_scores_reverse = [positive_score[:, c_index], negative_score[:, c_index]]
             # chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
             #                                f"scatter_ce_all_{len(clauses)}_{c_index}",
             #                                labels=f"{str(clauses[c_index]) + str(clause_sign)}",
@@ -597,11 +597,26 @@ class PIClauseGenerator(object):
             set of generated clauses
         """
         # remove conflict clauses
-        pi_clauses_candidates = self.remove_conflict_clauses(list(beam_search_clauses))
+        pi_clauses_candidates = logic_utils.remove_conflict_clauses(list(beam_search_clauses))
         # evaluate for all the clauses
-        positive_clauses = self.eval_multi_clauses(pi_clauses_candidates, pos_pred, neg_pred)  # time-consuming line
+        clause_image_scores = self.eval_multi_clauses(pi_clauses_candidates, pos_pred, neg_pred)  # time-consuming line
+        clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
+        PI_new = {}
+        for i, ref in enumerate(pi_clauses_candidates):
+            # check duplication
+            PI_new[ref] = clause_scores_full[i]
+        # PI_clauses_sorted = sorted(PI_new.items(), key=lambda x: x[1][1], reverse=True)
 
-        new_predicate = self.generate_new_predicate(positive_clauses, mode="clustering")
+        # invent new predicate
+        new_pi_clauses = [c for c in PI_new]
+        independent_clauses_all = logic_utils.search_independent_clauses(new_pi_clauses)
+        cluster_candidates = logic_utils.search_cluster_candidates(independent_clauses_all, clause_scores_full)
+
+        # new_pi_clauses = self.eval_pi_clauses(new_pi_clauses, clause_image_scores, clause_scores_full,
+        #                                       pos_pred, neg_pred)  # time-consuming line
+
+        # generate new predicate
+        new_predicate = self.generate_new_predicate(cluster_candidates, mode="clustering")
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicate)
         return new_clauses_str_list
 
@@ -647,112 +662,152 @@ class PIClauseGenerator(object):
                 # sum over positive prob
             score_negative[image_index, :] = C_score.squeeze(1)
 
-        positive_clauses = []
+        # all_clauses_scores = []
+        # for c_index in range(score_positive.shape[1]):
+        #     clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
+        #     clause_sign, clause_score, clause_score_full = self.eval_clause_sign(clause_scores)
+        #     all_clauses_scores.append(clause_score)
+        all_clause_scores = []
         for c_index in range(score_positive.shape[1]):
-            score_negative = score_negative.to("cpu")
-            score_positive = score_positive.to("cpu")
             clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
-            clause_sign = self.eval_clause_sign(clause_scores)
-            if clause_sign:
-                positive_clauses.append(clauses[c_index])
-                # plot the clause evaluation
-            chart_utils.plot_scatter_heat_chart([clause_scores], config.buffer_path / "img",
-                                                f"scatter_multiple_clause_eval_{len(clauses)}_{c_index}",
-                                                labels=f"{str(clauses[c_index]) + str(clause_sign)}",
-                                                x_label="positive score", y_label="negative score")
-            clause_scores_reverse = [score_positive[:, c_index], score_negative[:, c_index]]
-            chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
-                                           f"scatter_clause_eval_{len(clauses)}_{c_index}",
-                                           labels=f"{str(clauses[c_index]) + str(clause_sign)}",
-                                           x_label="positive score", y_label="negative score")
+            all_clause_scores.append(clause_scores)
 
-        return positive_clauses
+        return all_clause_scores
 
-    def remove_conflict_clauses(self, clauses):
-        print("check for conflict clauses...")
-        non_conflict_clauses = []
-        for clause in clauses:
-            is_conflict = False
-            for i in range(len(clause.body)):
-                for j in range(i + 1, len(clause.body)):
-                    if clause.body[i].terms == clause.body[j].terms:
-                        is_conflict = True
-                        print(f'conflict clause: {clause}')
-                        break
-                    elif self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
-                                            list(clause.body[i].terms), list(clause.body[j].terms)):
-                        is_conflict = True
-                        print(f'conflict clause: {clause}')
-                        break
-                if is_conflict:
-                    break
-            if not is_conflict:
-                non_conflict_clauses.append(clause)
+    # def remove_conflict_clauses(self, clauses):
+    #     print("check for conflict clauses...")
+    #     non_conflict_clauses = []
+    #     for clause in clauses:
+    #         is_conflict = False
+    #         for i in range(len(clause.body)):
+    #             for j in range(i + 1, len(clause.body)):
+    #                 if clause.body[i].terms == clause.body[j].terms:
+    #                     is_conflict = True
+    #                     print(f'conflict clause: {clause}')
+    #                     break
+    #                 elif self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
+    #                                         list(clause.body[i].terms), list(clause.body[j].terms)):
+    #                     is_conflict = True
+    #                     print(f'conflict clause: {clause}')
+    #                     break
+    #             if is_conflict:
+    #                 break
+    #         if not is_conflict:
+    #             non_conflict_clauses.append(clause)
+    #
+    #     print("end for checking.")
+    #     print("========= All non-conflict clauses ==========")
+    #     for each in non_conflict_clauses:
+    #         print(each)
+    #     print("=============================================")
+    #
+    #     return non_conflict_clauses
+    #
+    # def conflict_pred(self, p1, p2, t1, t2):
+    #     non_confliect_dict = {
+    #         "at_area_0": ["at_area_2"],
+    #         "at_area_1": ["at_area_3"],
+    #         "at_area_2": ["at_area_0"],
+    #         "at_area_3": ["at_area_1"],
+    #         "at_area_4": ["at_area_6"],
+    #         "at_area_5": ["at_area_7"],
+    #         "at_area_6": ["at_area_4"],
+    #         "at_area_7": ["at_area_5"],
+    #     }
+    #     if p1 in non_confliect_dict.keys():
+    #         if "at_area" in p2 and p2 not in non_confliect_dict[p1]:
+    #             if t1[0] == t2[1] and t2[0] == t1[1]:
+    #                 return True
+    #     return False
 
-        print("end for checking.")
-        print("========= All non-conflict clauses ==========")
-        for each in non_conflict_clauses:
-            print(each)
-        print("=============================================")
-
-        return non_conflict_clauses
-
-    def conflict_pred(self, p1, p2, t1, t2):
-        non_confliect_dict = {
-            "at_area_0": ["at_area_2"],
-            "at_area_1": ["at_area_3"],
-            "at_area_2": ["at_area_0"],
-            "at_area_3": ["at_area_1"],
-            "at_area_4": ["at_area_6"],
-            "at_area_5": ["at_area_7"],
-            "at_area_6": ["at_area_4"],
-            "at_area_7": ["at_area_5"],
-        }
-        if p1 in non_confliect_dict.keys():
-            if "at_area" in p2 and p2 not in non_confliect_dict[p1]:
-                if t1[0] == t2[1] and t2[0] == t1[1]:
-                    return True
-        return False
-
-    def eval_clause_sign(self, clause_scores):
+    def eval_clause_sign(self, clause_image_scores):
+        # resolution = 2
+        # data_map = np.zeros(shape=[resolution, resolution])
+        # for index in range(len(clause_scores[0])):
+        #     x_index = int(clause_scores[0][index] * resolution)
+        #     y_index = int(clause_scores[1][index] * resolution)
+        #     data_map[x_index, y_index] += 1
+        #
+        # if np.max(data_map) == data_map[0, 1]:
+        #     return True
+        #
+        # return False
         resolution = 2
-        data_map = np.zeros(shape=[resolution, resolution])
-        for index in range(len(clause_scores[0])):
-            x_index = int(clause_scores[0][index] * resolution)
-            y_index = int(clause_scores[1][index] * resolution)
-            data_map[x_index, y_index] += 1
 
-        if np.max(data_map) == data_map[0, 1]:
-            return True
+        clause_sign_list = []
+        clause_score_list = []
+        clause_score_full_list = []
+        for clause_image_score in clause_image_scores:
+            data_map = np.zeros(shape=[resolution, resolution])
+            for index in range(len(clause_image_score[0])):
+                x_index = int(clause_image_score[0][index] * resolution)
+                y_index = int(clause_image_score[1][index] * resolution)
+                data_map[x_index, y_index] += 1
 
-        return False
+            pos_low_neg_low_area = data_map[0, 0]
+            pos_high_neg_low_area = data_map[0, 1]
+            pos_low_neg_high_area = data_map[1, 0]
+            pos_high_neg_high_area = data_map[1, 1]
 
-    def generate_new_predicate(self, positive_clauses, mode):
+            # TODO: find a better score evaluation function
+            clause_score = pos_high_neg_low_area - pos_high_neg_high_area
+            clause_score_list.append(clause_score)
+            clause_score_full_list.append(
+                [pos_low_neg_low_area, pos_high_neg_low_area, pos_low_neg_high_area, pos_high_neg_high_area])
+
+            data_map[0, 0] = 0
+            if np.max(data_map) == data_map[0, 1] and data_map[0, 1] > data_map[1, 1]:
+                clause_sign_list.append(True)
+            else:
+                clause_sign_list.append(False)
+
+        return clause_sign_list, clause_score_list, clause_score_full_list
+
+    def generate_new_predicate(self, new_pi_clauses, mode):
         new_predicate = None
+        # positive_clauses_exchange = [(c[1], c[0]) for c in positive_clauses]
+        # no_hn_ = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0 and c[0][3] == 0]
+        # no_hnlp = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0]
+        # score clauses properly
+        new_predicates = []
         if mode == "clustering":
-            print("break")
-            new_predicate = self.lang.invented_preds[0]
-            new_predicate.body = [clause.body for clause in positive_clauses]
 
-        return new_predicate
+            for pi_index, clause_cluster in enumerate(new_pi_clauses):
+                dtypes = [DataType(dt) for dt in ["object","object"]]
+                new_predicate = self.lang.get_new_invented_predicate(arity=2,pi_dtypes=dtypes)
+                new_predicate.body = [clause.body for clause in clause_cluster]
+                new_predicates.append(new_predicate)
 
-    def generate_new_clauses_str_list(self, new_predicate):
-        clauses_str_list = []
-        clauses_str_list.append("kp(X):-inv_1(O1,O2),in(O1,X),in(O2,X).")
-        head_args = "(A,B)" if new_predicate.arity == 2 else "(X)"
-        head = new_predicate.name + head_args + ":-"
-        for body in new_predicate.body:
-            body_str = ""
-            for atom_index in range(len(body)):
-                atom_str = str(body[atom_index])
-                atom_str = atom_str.replace("O1", "A")
-                atom_str = atom_str.replace("O2", "B")
-                end_str = "." if atom_index == len(body) - 1 else ","
-                body_str += atom_str + end_str
-            new_clause = head + body_str
-            clauses_str_list.append(new_clause)
+        return new_predicates
 
-        print("============ generated pi clauses ================")
-        for clause_str in clauses_str_list:
-            print(clause_str)
-        return clauses_str_list
+    def generate_new_clauses_str_list(self, new_predicates):
+        pi_str_lists = []
+
+        for new_predicate in new_predicates:
+            pi_str_lists.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
+            head_args = "(A,B)" if new_predicate.arity == 2 else "(X)"
+            head = new_predicate.name + head_args + ":-"
+            for body in new_predicate.body:
+                body_str = ""
+                for atom_index in range(len(body)):
+                    atom_str = str(body[atom_index])
+                    atom_str = atom_str.replace("O1", "A")
+                    atom_str = atom_str.replace("O2", "B")
+                    end_str = "." if atom_index == len(body) - 1 else ","
+                    body_str += atom_str + end_str
+                new_clause = head + body_str
+                pi_str_lists.append(new_clause)
+            # pi_str_lists.append(clauses_str_list)
+        return pi_str_lists
+
+    def eval_pi_clauses(self, pi_clauses, clause_image_scores, clause_scores_full, pos_pred, neg_pred):
+        new_pi_clauses = []
+        is_fully_satisfied = False
+
+        full_score = np.sum(clause_scores_full[0])
+        clause_score_positive = [scores[1] + scores[3] for scores in clause_scores_full]
+
+        while not is_fully_satisfied:
+            print("eval pi clauses: break")
+
+        return new_pi_clauses

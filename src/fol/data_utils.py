@@ -61,7 +61,7 @@ class DataUtils(object):
 
         return clauses
 
-    def gen_pi_clauses(self, path, lang, clause_str_list):
+    def gen_pi_clauses(self, lang, clause_str_list):
         """Read lines and parse to Atom objects.
         """
         clauses = []
@@ -140,11 +140,16 @@ class DataUtils(object):
     def load_invented_preds(self, path):
         f = open(path)
         lines = f.readlines()
-        preds = []
+        preds = {}
         for line in lines:
-            new_preds = self.parse_invented_pred(line)
-            if new_preds is not None:
-                preds += new_preds
+            new_pred = self.parse_invented_pred(line)
+            if new_pred is not None:
+                if new_pred.arity == 1:
+                    preds["1-ary"] = new_pred
+                elif new_pred.arity == 2:
+                    preds["2-ary"] = new_pred
+                elif new_pred.arity == 3:
+                    preds["3-ary"] = new_pred
         return preds
 
     def load_consts(self, path):
@@ -184,19 +189,16 @@ class DataUtils(object):
         if (len(line)) == 0:
             return None
 
-        pred, arity, dtype_names_str, pred_num = line.split(':')
+        pred, arity, dtype_names_str = line.split(':')
         dtype_names = dtype_names_str.split(',')
         dtypes = [DataType(dt) for dt in dtype_names]
         assert int(arity) == len(dtypes), 'Invalid arity and dtypes in ' + pred + '.'
 
-        invented_predicates = []
-        for i in range(int(pred_num)):
-            # pred_with_id = pred + f"_{i}"
-            pred_with_id = pred
-            invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes)
-            invented_predicates.append(invented_pred)
+        # pred_with_id = pred + f"_{i}"
+        pred_with_id = pred
+        invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes)
 
-        return invented_predicates
+        return invented_pred
 
     def parse_funcs(self, line):
         """Parse string to function symbols.
@@ -231,8 +233,8 @@ class DataUtils(object):
         """
         preds = self.load_preds(str(self.base_path / 'preds.txt'))
         preds += self.load_neural_preds(str(self.base_path / 'neural_preds.txt'))
-        invented_preds = self.load_invented_preds(str(self.base_path / 'invent_preds.txt'))
-        preds += invented_preds
+        pi_templates = self.load_invented_preds(str(self.base_path / 'invent_preds.txt'))
+        # preds += pi_templates
         consts = self.load_consts(str(self.base_path / 'consts.txt'))
-        lang = Language(preds, [], consts, invented_preds)
+        lang = Language(preds, [], consts, pi_templates)
         return lang

@@ -61,9 +61,9 @@ def get_args():
                         help="The size of the logic program.")
     parser.add_argument("--n-obj", type=int, default=2,
                         help="The number of objects to be focused.")
-    parser.add_argument("--epochs", type=int, default=101,
+    parser.add_argument("--epochs", type=int, default=21,
                         help="The number of epochs.")
-    parser.add_argument("--pi_epochs", type=int, default=1,
+    parser.add_argument("--pi_epochs", type=int, default=3,
                         help="The number of epochs for predicate invention.")
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="The learning rate.")
@@ -297,7 +297,7 @@ def main(n):
     lang_base_path = config.root / 'data' / 'lang'
     lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(lark_path, lang_base_path, args.dataset_type,
                                                                      args.dataset)
-    init_clauses = update_initial_clauses(init_clauses, args.n_obj)
+    clauses = update_initial_clauses(init_clauses, args.n_obj)
     print("clauses: ", init_clauses)
 
     # loop for predicate invention
@@ -308,8 +308,8 @@ def main(n):
         FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
                                             pi_valuation_module=PI_VM, device=device)
         # Neuro-Symbolic Forward Reasoner for clause generation
-        NSFR_cgen = get_nsfr_model(args, lang, init_clauses, atoms, bk, bk_clauses, pi_clauses, FC, device)
-        PI_cgen = pi_utils.get_pi_model(args, lang, init_clauses, atoms, bk, bk_clauses, pi_clauses, FC, device=device)
+        NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, device)
+        PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, device=device)
 
         mode_declarations = get_mode_declarations(args, lang, args.n_obj)
         clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
@@ -339,17 +339,21 @@ def main(n):
 
         # invent new predicate and generate pi clauses
         gen_pi_clauses_str_list = pi_clause_generator.generate(bs_clauses, val_pos_pred, val_neg_pred)
-        gen_pi_clauses = logic_utils.get_pi_clauses_objs(lark_path, lang_base_path, args.dataset_type, args.dataset,
-                                                         gen_pi_clauses_str_list)
+
+
+
+        gen_pi_clauses = logic_utils.get_pi_clauses_objs(lang, lark_path, lang_base_path,
+                                                         args.dataset_type, args.dataset, gen_pi_clauses_str_list)
         print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
 
         # update NFSR
+        atoms = logic_utils.get_atoms(lang)
         clauses = bs_clauses + gen_pi_clauses
         NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, gen_pi_clauses, FC, device, train=True)
         params_nsfr = NSFR.get_params()
         optimizer_nsfr = torch.optim.RMSprop(params_nsfr, lr=args.lr)
-        nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, train_pos_pred, train_neg_pred,
-                                    val_pos_pred, val_neg_pred, test_pos_pred, test_neg_pred, device, writer, rtpt)
+        nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, train_pos_pred, train_neg_pred, val_pos_pred,
+                                    val_neg_pred, test_pos_pred, test_neg_pred, device, writer, rtpt)
 
         # update PI
         # PI = pi_utils.get_pi_model(args, lang, pi_clauses, atoms, bk, bk_clauses, device=device)
@@ -357,20 +361,20 @@ def main(n):
         # optimizer_pi = torch.optim.RMSprop(params_pi, lr=args.lr)
         # # optimizer = torch.optim.Adam(params, lr=args.lr)
         # pi_loss_list = train_pi(args, PI, optimizer_pi, train_loader, val_loader, test_loader, device, writer, rtpt)
-        #
-        # # validation split
-        # print("Predicting on validation data set...")
-        # acc_val, rec_val, th_val = predict(NSFR, val_pos_pred, val_neg_pred, args, device, th=0.33, split='val')
-        # # training split
-        # print("Predicting on training data set...")
-        # acc, rec, th = predict(NSFR, train_pos_pred, train_neg_pred, args, device, th=th_val, split='train')
-        # # test split
-        # print("Predicting on test data set...")
-        # acc_test, rec_test, th_test = predict(NSFR, test_pos_pred, test_neg_pred, args, device, th=th_val, split='test')
-        #
-        # print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
-        # print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
-        # print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)
+
+        # validation split
+        print("Predicting on validation data set...")
+        acc_val, rec_val, th_val = predict(NSFR, val_pos_pred, val_neg_pred, args, device, th=0.33, split='val')
+        # training split
+        print("Predicting on training data set...")
+        acc, rec, th = predict(NSFR, train_pos_pred, train_neg_pred, args, device, th=th_val, split='train')
+        # test split
+        print("Predicting on test data set...")
+        acc_test, rec_test, th_test = predict(NSFR, test_pos_pred, test_neg_pred, args, device, th=th_val, split='test')
+
+        print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
+        print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
+        print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)
 
 
 if __name__ == "__main__":

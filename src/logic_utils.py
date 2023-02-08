@@ -1,3 +1,5 @@
+import numpy as np
+import itertools
 from infer import InferModule, ClauseInferModule
 from tensor_encoder import TensorEncoder
 from fol.logic import *
@@ -29,7 +31,27 @@ def get_lang(lark_path, lang_base_path, dataset_type, dataset):
     return lang, clauses, bk_clauses, pi_clauses, bk, atoms
 
 
-def get_pi_clauses_objs(lark_path, lang_base_path, dataset_type, dataset, clauses_str_list):
+def get_atoms(lang):
+    atoms = generate_atoms(lang)
+    return atoms
+
+
+# def update_lang(lang, gen_pi_clauses_str_list):
+#     # update invented preds
+#
+#     # clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
+#     # bk_clauses = du.load_clauses(str(du.base_path / 'bk_clauses.txt'), lang)
+#     # pi_clauses = du.load_pi_clauses(str(du.base_path / 'pi_clauses.txt'), lang)
+#     #
+#     # # clauses += pi_clauses
+#     #
+#     # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
+#     # atoms = generate_atoms(lang)
+#     new_lang = None
+#     return new_lang
+
+
+def get_pi_clauses_objs(lang, lark_path, lang_base_path, dataset_type, dataset, clauses_str_list):
     """Load the language of first-order logic from files.
 
     Read the language, clauses, background knowledge from files.
@@ -37,10 +59,9 @@ def get_pi_clauses_objs(lark_path, lang_base_path, dataset_type, dataset, clause
     """
     du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
                    dataset_type=dataset_type, dataset=dataset)
-    lang = du.load_language()
-    pi_clauses = du.gen_pi_clauses(str(du.base_path / 'pi_clauses.txt'),
-                                   lang, clauses_str_list)
-
+    pi_clauses = du.gen_pi_clauses(lang, clauses_str_list)
+    for pi_c in pi_clauses:
+        print(pi_c)
     # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
     # atoms = generate_atoms(lang)
     return pi_clauses
@@ -147,7 +168,22 @@ def generate_atoms(lang):
                 # args_str_list.append(
                 #    str(sorted([str(arg) for arg in args])))
                 # print('add atom: ', Atom(pred, args))
-    return spec_atoms + sorted(atoms)
+    pi_atoms = []
+    for pred in lang.invented_preds:
+        dtypes = pred.dtypes
+        consts_list = [lang.get_by_dtype(dtype) for dtype in dtypes]
+        args_list = list(set(itertools.product(*consts_list)))
+
+        args_str_list = []
+
+        for args in args_list:
+            # check if args and pred correspond are in the same area
+            if pred.dtypes[0].name == 'area':
+                if pred.name[0] + pred.name[5:] != args[0].name:
+                    continue
+            if len(args) == 1 or len(set(args)) == len(args):
+                pi_atoms.append(Atom(pred, args))
+    return spec_atoms + sorted(atoms) + sorted(pi_atoms)
 
 
 def generate_bk(lang):
@@ -224,3 +260,97 @@ def conflict_pred(p1, p2, t1, t2):
             if t1[0] == t2[1] and t2[0] == t1[1]:
                 return True
     return False
+
+
+def common_body_pi_clauses(pi_clause_i, pi_clause_j):
+    i_body = set([atom.pred.name for atom in pi_clause_i.body])
+    j_body = set([atom.pred.name for atom in pi_clause_j.body])
+    common_body = set.intersection(i_body, j_body)
+    return common_body
+
+
+def search_independent_clauses(clauses):
+    independent_clauses_all = []
+    for i_index, clause_i in enumerate(clauses):
+        independent_clauses = []
+        for j_index, clause_j in enumerate(clauses):
+            if clause_j == clause_i:
+                continue
+            common_body = common_body_pi_clauses(clause_i, clause_j)
+            if len(common_body) > 1:
+                continue
+            independent_clauses.append({clause_j: j_index})
+        independent_clauses_all.append({clause_i: independent_clauses})
+    return independent_clauses_all
+
+
+def sub_lists(l):
+    # initializing empty list
+    comb = []
+
+    # Iterating till length of list
+    for i in range(len(l) + 1):
+        # Generating sub list
+        comb += [list(j) for j in itertools.combinations(l, i)]
+    # Returning list
+    return comb
+
+
+def search_cluster_candidates(independent_clauses_all, clause_scores_full):
+    print("search_cluster_candidates")
+    cluster_candidates = []
+    for c_index, clause_dict in enumerate(independent_clauses_all):
+        clause = list(clause_dict.keys())[0]
+        clause_full_score = clause_scores_full[c_index]
+        total_score = np.sum(clause_full_score)
+        complementary_clauses = [list(ic_dict.keys())[0] for ic_dict in list(clause_dict.values())[0]]
+        complementary_clauses_index = [list(ic_dict.values())[0] for ic_dict in list(clause_dict.values())[0]]
+        complementary_clauses_full_score = [clause_scores_full[index] for index in complementary_clauses_index]
+
+        complementary_clauses_full_score_no_repeat = []
+        complementary_clauses_no_repeat = []
+        for i, full_scores_i in enumerate(complementary_clauses_full_score):
+            for j, full_scores_j in enumerate(complementary_clauses_full_score):
+                if i == j:
+                    continue
+                if full_scores_j == full_scores_i:
+                    if full_scores_j in complementary_clauses_full_score_no_repeat:
+                        continue
+                    else:
+                        complementary_clauses_full_score_no_repeat.append(full_scores_j)
+                        complementary_clauses_no_repeat.append(complementary_clauses[j])
+        sum_pos_clause = clause_full_score[1] + clause_full_score[3]
+        sum_pos_clause_ind = [fs[1] + fs[3] for fs in complementary_clauses_full_score_no_repeat]
+        if (sum_pos_clause + np.sum(sum_pos_clause_ind)) == total_score:
+            cluster_candidates.append(clause_dict)
+        elif (sum_pos_clause + np.sum(sum_pos_clause_ind)) >= total_score:
+            sum_ind = total_score - sum_pos_clause
+            # find a subset of sum_pos_clause_ind, so that the sum of the subset equal to sum_ind
+            sub_sets_candidates = []
+            subsets = []
+            for i in range(0, len(sum_pos_clause_ind) + 1):  # to get all lengths: 0 to 3
+                for subset in itertools.combinations(sum_pos_clause_ind, i):
+                    subsets.append(subset)
+            sum_pos_clause_ind_index = [i for i in range(len(sum_pos_clause_ind))]
+            subset_index = []
+            for i in range(0, len(sum_pos_clause_ind_index) + 1):  # to get all lengths: 0 to 3
+                for subset in itertools.combinations(sum_pos_clause_ind_index, i):
+                    subset_index.append(subset)
+
+            for subset_i, subset in enumerate(subsets):
+                if np.sum(list(subset)) == sum_ind:
+                    indices = subset_index[subset_i]
+                    clauses_set = [clause_dict[clause][c_i] for c_i in indices]
+                    cluster_candidates.append({
+                        "clause": clause,
+                        "clause_score": sum_pos_clause,
+                        "clause_set": clauses_set,
+                        "clause_set_score": subset,
+                    })
+    new_pi_clauses = []
+    for cluster in cluster_candidates:
+        cluster_ind = [list(c.keys())[0] for c in cluster["clause_set"]]
+        new_pi_clauses.append(
+            [cluster["clause"]] + cluster_ind
+        )
+    return new_pi_clauses

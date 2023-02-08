@@ -134,7 +134,7 @@ class YOLOAreaValuationFunction(nn.Module):
         c_1 = self.to_center(z_1)
         c_2 = self.to_center(z_2)
 
-        dist = torch.norm(c_1 - c_2, dim=0).unsqueeze(-1)
+        dist = c_1 - c_2
 
         dir_vec = c_2 - c_1
         dir_vec[1] = -dir_vec[1]
@@ -143,7 +143,7 @@ class YOLOAreaValuationFunction(nn.Module):
         zone_id = phi_clock_shift // 90 % 4
 
         # This is a threshold, but it can be decided automatically.
-        if rho < 0.15:
+        if rho < 0.12:
             zone_shift = 0
         else:
             zone_shift = 4
