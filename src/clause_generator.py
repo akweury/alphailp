@@ -16,6 +16,7 @@ import config
 import logic_utils
 from fol.language import Language, DataType
 
+
 class ClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -597,27 +598,27 @@ class PIClauseGenerator(object):
             set of generated clauses
         """
         # remove conflict clauses
-        pi_clauses_candidates = logic_utils.remove_conflict_clauses(list(beam_search_clauses))
+        bs_clauses_non_conflict = logic_utils.remove_conflict_clauses(list(beam_search_clauses))
         # evaluate for all the clauses
-        clause_image_scores = self.eval_multi_clauses(pi_clauses_candidates, pos_pred, neg_pred)  # time-consuming line
+        clause_image_scores = self.eval_multi_clauses(bs_clauses_non_conflict, pos_pred,
+                                                      neg_pred)  # time-consuming line
         clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
         PI_new = {}
-        for i, ref in enumerate(pi_clauses_candidates):
+        for i, ref in enumerate(bs_clauses_non_conflict):
             # check duplication
             PI_new[ref] = clause_scores_full[i]
         # PI_clauses_sorted = sorted(PI_new.items(), key=lambda x: x[1][1], reverse=True)
 
         # invent new predicate
-        new_pi_clauses = [c for c in PI_new]
-        independent_clauses_all = logic_utils.search_independent_clauses(new_pi_clauses)
+        pi_clauses_candidates = [c for c in PI_new]
+        independent_clauses_all = logic_utils.search_independent_clauses(pi_clauses_candidates)
         cluster_candidates = logic_utils.search_cluster_candidates(independent_clauses_all, clause_scores_full)
 
-        # new_pi_clauses = self.eval_pi_clauses(new_pi_clauses, clause_image_scores, clause_scores_full,
-        #                                       pos_pred, neg_pred)  # time-consuming line
+        # generate new clauses
+        new_predicates = self.generate_new_predicate(cluster_candidates, mode="clustering")
 
-        # generate new predicate
-        new_predicate = self.generate_new_predicate(cluster_candidates, mode="clustering")
-        new_clauses_str_list = self.generate_new_clauses_str_list(new_predicate)
+        # convert to strings
+        new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
         return new_clauses_str_list
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred):
@@ -773,8 +774,8 @@ class PIClauseGenerator(object):
         if mode == "clustering":
 
             for pi_index, clause_cluster in enumerate(new_pi_clauses):
-                dtypes = [DataType(dt) for dt in ["object","object"]]
-                new_predicate = self.lang.get_new_invented_predicate(arity=2,pi_dtypes=dtypes)
+                dtypes = [DataType(dt) for dt in ["object", "object"]]
+                new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
                 new_predicate.body = [clause.body for clause in clause_cluster]
                 new_predicates.append(new_predicate)
 
@@ -784,7 +785,8 @@ class PIClauseGenerator(object):
         pi_str_lists = []
 
         for new_predicate in new_predicates:
-            pi_str_lists.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
+            single_pi_str_list = []
+            single_pi_str_list.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
             head_args = "(A,B)" if new_predicate.arity == 2 else "(X)"
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:
@@ -796,18 +798,58 @@ class PIClauseGenerator(object):
                     end_str = "." if atom_index == len(body) - 1 else ","
                     body_str += atom_str + end_str
                 new_clause = head + body_str
-                pi_str_lists.append(new_clause)
-            # pi_str_lists.append(clauses_str_list)
+                single_pi_str_list.append(new_clause)
+            pi_str_lists.append(single_pi_str_list)
         return pi_str_lists
 
-    def eval_pi_clauses(self, pi_clauses, clause_image_scores, clause_scores_full, pos_pred, neg_pred):
-        new_pi_clauses = []
-        is_fully_satisfied = False
+    def eval_pi_clause_single(self, clauses, pi_clauses, pos_pred, neg_pred):
+        C = len(pi_clauses)
+        atoms = logic_utils.get_atoms(self.lang)
+        NSFR = get_nsfr_model(self.args, self.lang, clauses, atoms,
+                              self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
 
-        full_score = np.sum(clause_scores_full[0])
-        clause_score_positive = [scores[1] + scores[3] for scores in clause_scores_full]
+        batch_size = self.args.batch_size_bs
+        pos_img_num = self.pos_loader.dataset.__len__()
+        neg_img_num = self.neg_loader.dataset.__len__()
+        score_positive = torch.zeros((pos_img_num, C)).to(self.device)
+        score_negative = torch.zeros((neg_img_num, C)).to(self.device)
 
-        while not is_fully_satisfied:
-            print("eval pi clauses: break")
+        for image_index in range(self.pos_loader.dataset.__len__()):
+            V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
+            C_score = torch.zeros((C, batch_size)).to(self.device)
+            # clause loop
+            for clause_index, V_T in enumerate(V_T_list):
+                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                C_score[clause_index] = predicted
+            # sum over positive prob
+            score_positive[image_index, :] = C_score.squeeze(1)
 
-        return new_pi_clauses
+        # negative image loop
+        for image_index in range(self.neg_loader.dataset.__len__()):
+            V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
+            C_score = torch.zeros((C, batch_size)).to(self.device)
+            for clause_index, V_T in enumerate(V_T_list):
+                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                C_score[clause_index] = predicted
+                # C
+                # C_score = PI.clause_eval(C_score)
+                # sum over positive prob
+            score_negative[image_index, :] = C_score.squeeze(1)
+
+        all_clause_scores = []
+        for c_index in range(score_positive.shape[1]):
+            clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
+            all_clause_scores.append(clause_scores)
+
+        return all_clause_scores
+
+    def eval_pi_clauses(self, clauses, pi_clauses, pos_pred, neg_pred):
+        print("Eval PI clauses: ", len(pi_clauses))
+
+        passed_pi_clauses = []
+        for pi_clause in pi_clauses:
+            c_score = self.eval_pi_clause_single(clauses, pi_clause, pos_pred, neg_pred)
+
+            passed_pi_clauses.append(pi_clause)
+
+        return passed_pi_clauses

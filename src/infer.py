@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import time
 from torch_utils import softor, weight_sum
 
 
@@ -72,21 +72,35 @@ class InferModule(nn.Module):
         else:
             for t in range(self.infer_step):
                 # R = softor([R, self.r_bk(R)], dim=1, gamma=self.gamma)
-                a = R.detach().to("cpu").numpy().reshape(-1, 1)
+                # a = R.detach().to("cpu").numpy().reshape(-1, 1)
+
+                tic = time.perf_counter()
 
                 r_R = self.r(R)
-                b = r_R.detach().to("cpu").numpy().reshape(-1, 1)
+                # b = r_R.detach().to("cpu").numpy().reshape(-1, 1)
+
+                toc = time.perf_counter()
 
                 r_bk_R = self.r_bk(R)
-                c = r_bk_R.detach().to("cpu").numpy().reshape(-1, 1)
+                # c = r_bk_R.detach().to("cpu").numpy().reshape(-1, 1)
+
+                toc_2 = time.perf_counter()
 
                 r_pi_R = self.r_pi(R)
-                d = r_pi_R.detach().to("cpu").numpy().reshape(-1, 1)
+                # d = r_pi_R.detach().to("cpu").numpy().reshape(-1, 1)
 
+                toc_3 = time.perf_counter()
 
                 R = softor([R, r_R, r_bk_R, r_pi_R], dim=1, gamma=self.gamma)
 
-        z = R.detach().to("cpu").numpy().reshape(-1, 1)
+                toc_4 = time.perf_counter()
+
+                # print(f"Calculate r_R in {toc - tic:0.4f} seconds")
+                # print(f"Calculate r_bk_R in {toc_2 - toc:0.4f} seconds")
+                # print(f"Calculate r_pi_R in {toc_3 - toc_2:0.4f} seconds")
+                # print(f"Calculate R in {toc_4 - toc_3:0.4f} seconds")
+
+        # z = R.detach().to("cpu").numpy().reshape(-1, 1)
         return R
 
     def r(self, x):

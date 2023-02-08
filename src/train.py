@@ -333,21 +333,26 @@ def main(n):
                                                            val_neg_loader)
 
         # generate clauses
+        # time-consuming code
         bs_clauses = clause_generator.generate(init_clauses, val_pos_pred, val_neg_pred,
                                                T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
+
         print("====== ", len(bs_clauses), " clauses are generated!! ======")
 
-        # invent new predicate and generate pi clauses
+        # invent new predicate and generate pi clauses as strings
         gen_pi_clauses_str_list = pi_clause_generator.generate(bs_clauses, val_pos_pred, val_neg_pred)
 
-
-
+        # convert clauses from strings to objects
         gen_pi_clauses = logic_utils.get_pi_clauses_objs(lang, lark_path, lang_base_path,
                                                          args.dataset_type, args.dataset, gen_pi_clauses_str_list)
+
+        # pi_clauses = pi_clause_generator.eval_pi_clauses(clauses, gen_pi_clauses, val_pos_pred, val_neg_pred)
         print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
 
         # update NFSR
+        lang = pi_clause_generator.lang
         atoms = logic_utils.get_atoms(lang)
+        gen_pi_clauses = [c_i for c in gen_pi_clauses for c_i in c]
         clauses = bs_clauses + gen_pi_clauses
         NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, gen_pi_clauses, FC, device, train=True)
         params_nsfr = NSFR.get_params()

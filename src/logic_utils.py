@@ -59,12 +59,17 @@ def get_pi_clauses_objs(lang, lark_path, lang_base_path, dataset_type, dataset, 
     """
     du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
                    dataset_type=dataset_type, dataset=dataset)
-    pi_clauses = du.gen_pi_clauses(lang, clauses_str_list)
-    for pi_c in pi_clauses:
-        print(pi_c)
+    pi_clauses_lists = []
+    for c_list in clauses_str_list:
+        pi_clauses = du.gen_pi_clauses(lang, c_list)
+        pi_clauses_lists.append(pi_clauses)
+
+        for pi_c in pi_clauses:
+            print(pi_c)
+
     # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
     # atoms = generate_atoms(lang)
-    return pi_clauses
+    return pi_clauses_lists
 
 
 def get_searched_clauses(lark_path, lang_base_path, dataset_type, dataset):
@@ -270,6 +275,7 @@ def common_body_pi_clauses(pi_clause_i, pi_clause_j):
 
 
 def search_independent_clauses(clauses):
+    # search clauses with no common bodies
     independent_clauses_all = []
     for i_index, clause_i in enumerate(clauses):
         independent_clauses = []

@@ -2,6 +2,7 @@ import numpy as np
 import torch.nn as nn
 import torch
 from logic_utils import get_index_by_predname
+import time
 
 
 class NSFReasoner(nn.Module):
@@ -41,17 +42,27 @@ class NSFReasoner(nn.Module):
         # obtain the object-centric representation
         # zs = self.pm(x)
         # convert to the valuation tensor
+
+        tic = time.perf_counter()
+
         V_0 = self.fc(x, self.atoms, self.bk)
 
-        a = V_0.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        toc = time.perf_counter()
+
+        # a = V_0.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
 
         # perform T-step forward-chaining reasoning
         V_T = self.im(V_0)
 
-        tuple_list = []
-        for index in range(len(self.atoms)):
-            tuple_list.append((self.atoms[index], V_T[0, index]))
-        b = V_T.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        toc_2 = time.perf_counter()
+
+        # print(f"Calculate V_0 in {toc - tic:0.4f} seconds")
+        # print(f"Calculate V_T in {toc_2 - toc:0.4f} seconds")
+
+        # tuple_list = []
+        # for index in range(len(self.atoms)):
+        #     tuple_list.append((self.atoms[index], V_T[0, index]))
+        # b = V_T.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
         return V_T
 
     def clause_eval(self, x):

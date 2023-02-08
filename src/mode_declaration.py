@@ -113,6 +113,17 @@ def get_mode_declarations_clevr(lang, obj_num):
     return modeb_list
 
 
+def get_pi_mode_declarations(lang):
+    p_object = ModeTerm('+', DataType('object'))
+
+    pi_mode_declarations = []
+    for pi_index, pi in enumerate(lang.invented_preds):
+        pi_str = pi.name + str(pi_index)
+        mode_declarations = ModeDeclaration('body', 1, lang.get_pred_by_name(pi_str), [p_object, p_object])
+        pi_mode_declarations.append(mode_declarations)
+    return pi_mode_declarations
+
+
 def get_mode_declarations_kandinsky(lang, obj_num):
     p_image = ModeTerm('+', DataType('image'))
     m_object = ModeTerm('-', DataType('object'))
@@ -120,7 +131,6 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
     m_area = ModeTerm('-', DataType('area'))
     p_area = ModeTerm('+', DataType('area'))
-
 
     s_color = ModeTerm('#', DataType('color'))
     s_shape = ModeTerm('#', DataType('shape'))
@@ -167,7 +177,9 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
 def get_mode_declarations(args, lang, obj_num):
     if args.dataset_type == 'kandinsky':
-        return get_mode_declarations_kandinsky(lang, obj_num)
+        basic_mode_declarations = get_mode_declarations_kandinsky(lang, obj_num)
+        pi_model_declarations = get_pi_mode_declarations(lang)
+        return basic_mode_declarations + pi_model_declarations
     elif args.dataset_type == 'clevr':
         return get_mode_declarations_clevr(lang, obj_num)
     else:
