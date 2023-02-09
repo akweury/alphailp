@@ -349,15 +349,15 @@ def main(n):
         lang = pi_clause_generator.lang
         atoms = logic_utils.get_atoms(lang)
 
-        pi_clauses = pi_clause_generator.eval_pi_clauses(lang, atoms, clauses, gen_pi_clauses, val_pos_pred, val_neg_pred)
+        pi_clauses, pred_types = pi_clause_generator.eval_pi_clauses(atoms, clauses, gen_pi_clauses, val_pos_pred, val_neg_pred)
         print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
 
         # update System
 
 
-        gen_pi_clauses = [c_i for c in gen_pi_clauses for c_i in c]
-        clauses = bs_clauses + gen_pi_clauses
-        # clauses = bs_clauses + pi_clauses
+        # gen_pi_clauses = [c_i for c in gen_pi_clauses for c_i in c]
+        # clauses = bs_clauses + gen_pi_clauses
+        clauses = bs_clauses + pi_clauses
 
         lang = pi_clause_generator.lang
         atoms = logic_utils.get_atoms(lang)

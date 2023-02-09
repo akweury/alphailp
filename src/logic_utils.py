@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import itertools
 from infer import InferModule, ClauseInferModule
 from tensor_encoder import TensorEncoder
@@ -223,6 +224,18 @@ def get_index_by_predname(pred_str, atoms):
     assert 1, pred_str + ' not found.'
 
 
+def get_indices_by_predname(pred_str, atoms):
+    indices = []
+    for i, atom in enumerate(atoms):
+        if pred_str in atom.pred.name:
+            indices.append(i)
+
+    if len(indices) == 0:
+        raise ValueError(f"Not found predicate with string {pred_str} in atoms.")
+
+    return indices
+
+
 def parse_clauses(lang, clause_strs):
     du = DataUtils(lang)
     return [du.parse_clause(c) for c in clause_strs]
@@ -372,3 +385,84 @@ def search_cluster_candidates(independent_clauses_all, clause_scores_full):
             [cluster["clause"]] + cluster_ind
         )
     return new_pi_clauses
+
+
+def eval_predicates_in_pi_clauses_single(NSFR, bz, pred_names, pos_pred, neg_pred, device):
+    pos_img_num = pos_pred.shape[0]
+    neg_img_num = neg_pred.shape[0]
+
+    # get predicates that need to be evaluated.
+    # pred_names = ['kp']
+    # for pi_c in pi_clauses:
+    #     for body_atom in pi_c.body:
+    #         if "inv_pred" in body_atom.pred.name:
+    #             pred_names.append(body_atom.pred.name)
+
+    C = len(pred_names)
+    score_positive = torch.zeros((pos_img_num, C)).to(device)
+    score_negative = torch.zeros((neg_img_num, C)).to(device)
+
+    for image_index in range(pos_img_num):
+        V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
+        A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+
+        C_score = torch.zeros((C, bz)).to(device)
+        # clause loop
+        # for clause_index, V_T in enumerate(V_T_list):
+        for pred_index, pred_name in enumerate(pred_names):
+            predicted = NSFR.predict(v=V_T_list[0], predname=pred_name).detach()
+            C_score[pred_index] = predicted
+        # sum over positive prob
+        score_positive[image_index, :] = C_score.squeeze(1)
+
+    # negative image loop
+    for image_index in range(neg_img_num):
+        V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
+        C_score = torch.zeros((C, bz)).to(device)
+        for pred_index, pred_name in enumerate(pred_names):
+            predicted = NSFR.predict(v=V_T_list[0], predname=pred_name).detach()
+            C_score[pred_index] = predicted
+            # C
+            # C_score = PI.clause_eval(C_score)
+            # sum over positive prob
+        score_negative[image_index, :] = C_score.squeeze(1)
+
+    all_predicates_scores = []
+    for c_index in range(score_positive.shape[1]):
+        predicate_scores = [score_negative[:, c_index], score_positive[:, c_index]]
+        all_predicates_scores.append(predicate_scores)
+
+    return all_predicates_scores
+
+
+def eval_predicates_sign(c_score):
+    resolution = 2
+
+    clause_sign_list = []
+    clause_high_scores = []
+    clause_score_full_list = []
+    for clause_image_score in c_score:
+        data_map = np.zeros(shape=[resolution, resolution])
+        for index in range(len(clause_image_score[0])):
+            x_index = int(clause_image_score[0][index] * resolution)
+            y_index = int(clause_image_score[1][index] * resolution)
+            data_map[x_index, y_index] += 1
+
+        pos_low_neg_low_area = data_map[0, 0]
+        pos_high_neg_low_area = data_map[0, 1]
+        pos_low_neg_high_area = data_map[1, 0]
+        pos_high_neg_high_area = data_map[1, 1]
+
+        # TODO: find a better score evaluation function
+        clause_score = pos_high_neg_low_area + pos_high_neg_high_area * 0.8
+        clause_high_scores.append(clause_score)
+        clause_score_full_list.append(
+            [pos_low_neg_low_area, pos_high_neg_low_area, pos_low_neg_high_area, pos_high_neg_high_area])
+
+        data_map[0, 0] = 0
+        if np.max(data_map) == data_map[0, 1] and data_map[0, 1] > data_map[1, 1]:
+            clause_sign_list.append(True)
+        else:
+            clause_sign_list.append(False)
+
+    return clause_sign_list, clause_high_scores, clause_score_full_list

@@ -430,6 +430,7 @@ class InventedPredicate(Predicate):
         self.name = name
         self.arity = arity
         self.dtypes = dtypes
+        self.ptype = None
         self.body = None
 
     def __str__(self):

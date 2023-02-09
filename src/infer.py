@@ -238,12 +238,15 @@ class ClauseInferModule(nn.Module):
                 # print("r_bk(R): ", self.r_bk(R).shape)
                 # shape? dim?
                 r_R = self.r(R)
+                A_A = r_R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                 r_bk = self.r_bk(R).unsqueeze(dim=0).expand(self.C, B, self.G)
+                A_B = r_bk.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                 if self.I_pi is not None:
 
                     r_pi = self.r_pi(R).unsqueeze(dim=0).expand(self.C, B, self.G)
-                    c = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+                    A_C = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                     R = softor([R, r_R, r_bk, r_pi], dim=2, gamma=self.gamma)
+                    A_D = R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                 else:
                     R = softor([R, r_R, r_bk], dim=2, gamma=self.gamma)
         return R

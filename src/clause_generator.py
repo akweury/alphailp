@@ -1,4 +1,5 @@
 import os.path
+from operator import itemgetter
 
 from nsfr_utils import update_nsfr_clauses, get_prob, get_nsfr_model
 # from eval_clause import EvalInferModule
@@ -646,7 +647,6 @@ class PIClauseGenerator(object):
 
             # clause loop
             for clause_index, V_T in enumerate(V_T_list):
-                # TODO:predname can be inv_pred...
                 predicted = NSFR.predict(v=V_T, predname='kp').detach()
                 C_score[clause_index] = predicted
             # sum over positive prob
@@ -803,58 +803,141 @@ class PIClauseGenerator(object):
             pi_str_lists.append(single_pi_str_list)
         return pi_str_lists
 
-    def eval_pi_clause_single(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
-        C = len(pi_clauses)
+    # def eval_pi_clause_single(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
+    #
+    #     NSFR = get_nsfr_model(self.args, lang, clauses, atoms,
+    #                           self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
+    #
+    #     batch_size = self.args.batch_size_bs
+    #     pos_img_num = self.pos_loader.dataset.__len__()
+    #     neg_img_num = self.neg_loader.dataset.__len__()
+    #
+    #     # get predicates that need to be evaluated.
+    #     pred_names = ['kp']
+    #     for pi_c in pi_clauses:
+    #         for body_atom in pi_c.body:
+    #             if "inv_pred" in body_atom.pred.name:
+    #                 pred_names.append(body_atom.pred.name)
+    #
+    #     C = len(pred_names)
+    #     score_positive = torch.zeros((pos_img_num, C)).to(self.device)
+    #     score_negative = torch.zeros((neg_img_num, C)).to(self.device)
+    #
+    #     for image_index in range(self.pos_loader.dataset.__len__()):
+    #         V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
+    #         A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+    #
+    #         C_score = torch.zeros((C, batch_size)).to(self.device)
+    #         # clause loop
+    #         # for clause_index, V_T in enumerate(V_T_list):
+    #         for pred_index, pred_name in enumerate(pred_names):
+    #             predicted = NSFR.predict(v=V_T_list[0], predname=pred_name).detach()
+    #             C_score[pred_index] = predicted
+    #         # sum over positive prob
+    #         score_positive[image_index, :] = C_score.squeeze(1)
+    #
+    #     # negative image loop
+    #     for image_index in range(self.neg_loader.dataset.__len__()):
+    #         V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
+    #         C_score = torch.zeros((C, batch_size)).to(self.device)
+    #         for pred_index, pred_name in enumerate(pred_names):
+    #             predicted = NSFR.predict(v=V_T_list[0], predname=pred_name).detach()
+    #             C_score[pred_index] = predicted
+    #             # C
+    #             # C_score = PI.clause_eval(C_score)
+    #             # sum over positive prob
+    #         score_negative[image_index, :] = C_score.squeeze(1)
+    #
+    #     all_clause_scores = []
+    #     for c_index in range(score_positive.shape[1]):
+    #         clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
+    #         all_clause_scores.append(clause_scores)
+    #
+    #     return all_clause_scores
 
-        NSFR = get_nsfr_model(self.args, lang, clauses, atoms,
-                              self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
-
-        batch_size = self.args.batch_size_bs
-        pos_img_num = self.pos_loader.dataset.__len__()
-        neg_img_num = self.neg_loader.dataset.__len__()
-        score_positive = torch.zeros((pos_img_num, C)).to(self.device)
-        score_negative = torch.zeros((neg_img_num, C)).to(self.device)
-
-        for image_index in range(self.pos_loader.dataset.__len__()):
-            V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
-            B = NSFR(pos_pred[image_index].unsqueeze(0)).detach()
-
-            A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-
-            C_score = torch.zeros((C, batch_size)).to(self.device)
-            # clause loop
-            for clause_index, V_T in enumerate(V_T_list):
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                C_score[clause_index] = predicted
-            # sum over positive prob
-            score_positive[image_index, :] = C_score.squeeze(1)
-
-        # negative image loop
-        for image_index in range(self.neg_loader.dataset.__len__()):
-            V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
-            C_score = torch.zeros((C, batch_size)).to(self.device)
-            for clause_index, V_T in enumerate(V_T_list):
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                C_score[clause_index] = predicted
-                # C
-                # C_score = PI.clause_eval(C_score)
-                # sum over positive prob
-            score_negative[image_index, :] = C_score.squeeze(1)
-
-        all_clause_scores = []
-        for c_index in range(score_positive.shape[1]):
-            clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
-            all_clause_scores.append(clause_scores)
-
-        return all_clause_scores
-
-    def eval_pi_clauses(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
+    def eval_pi_clauses(self, atoms, clauses, pi_clauses, pos_pred, neg_pred):
         print("Eval PI clauses: ", len(pi_clauses))
+        output_pi_clauses = []
+        hidden_pi_clauses = []
+        archive_pi_clauses = []
 
-        passed_pi_clauses = []
-        for pi_clause in pi_clauses:
-            c_score = self.eval_pi_clause_single(lang, atoms, clauses, pi_clause, pos_pred, neg_pred)
+        unpassed_pi_clauses_clusters = []
+        passed_pi_clauses_clusters = []
 
-            passed_pi_clauses.append(pi_clause)
+        output_scores = []
+        hidden_scores = []
+        archive_scores = []
+        ip_names = []
+        for pi_index, pi_clause in enumerate(pi_clauses):
+            pred_names = ['kp']
+            for pi_c in pi_clause:
+                for body_atom in pi_c.body:
+                    if "inv_pred" in body_atom.pred.name:
+                        pred_names.append(body_atom.pred.name)
 
-        return passed_pi_clauses
+            NSFR = get_nsfr_model(self.args, self.lang, clauses, atoms,
+                                  self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
+
+            p_score = logic_utils.eval_predicates_in_pi_clauses_single(NSFR, self.args.batch_size_bs,
+                                                                       pred_names, pos_pred, neg_pred, self.device)
+
+            p_signs, p_goodness_scores, p_score_full_list = logic_utils.eval_predicates_sign(p_score)
+
+            pred_type = None
+            if p_goodness_scores[0] == p_goodness_scores[1]:
+                # this is an output predicate
+                pred_type = "output_predicate"
+                output_pi_clauses.append(pi_clause)
+                output_scores.append([pi_index] + p_goodness_scores)
+                ip_names.append([pi_index, ip_names])
+            elif p_goodness_scores[0] <= p_goodness_scores[1]:
+                # this is a hidden predicate
+                pred_type = "hidden_predicate"
+                hidden_pi_clauses.append(pi_clause)
+                hidden_scores.append([pi_index] + p_goodness_scores)
+                ip_names.append([pi_index, ip_names])
+            else:
+                # this is not a good predicate
+                pred_type = "archive_predicate"
+                archive_pi_clauses.append(pi_clause)
+                archive_scores.append([pi_index] + p_goodness_scores)
+                ip_names.append([pi_index, ip_names])
+
+        output_ip = []
+        for output_score in output_scores:
+            output_clause = output_pi_clauses[output_score[0]]
+            passed_pi_clauses_clusters.append(output_clause)
+            ip_name = ip_names[output_score[0]]
+            output_ip.append(ip_name)
+
+        hidden_ip = []
+        goodness_scores_sorted = sorted(hidden_scores, key=itemgetter(2), reverse=True)
+        goodness_scores_sorted_t5 = goodness_scores_sorted[:5]
+        for goodness_score in goodness_scores_sorted_t5:
+            hidden_clause = hidden_pi_clauses[goodness_score[0]]
+            ip_name = ip_names[goodness_score[0]]
+            hidden_ip.append(ip_name)
+            passed_pi_clauses_clusters.append(hidden_clause)
+
+        archive_ip = []
+        for archive_score in archive_scores:
+            archive_clause = archive_pi_clauses[archive_score[0]]
+            unpassed_pi_clauses_clusters.append(archive_clause)
+            ip_name = ip_names[archive_score[0]]
+            archive_ip.append(ip_name)
+
+        ip_indices = []
+        for ip_index, ip in enumerate(self.lang.invented_preds):
+            if ip.name in hidden_ip:
+                ip.ptype = "hidden_predicate"
+            elif ip.name in output_ip:
+                ip.ptype = "output_predicate"
+            else:
+                ip.ptype = "archive_predicate"
+                ip_indices.append(ip_index)
+
+        self.lang.invented_preds = self.lang.invented_preds[ip_indices]
+        passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
+        unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
+
+        return passed_clauses

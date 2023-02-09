@@ -1,8 +1,10 @@
 import numpy as np
 import torch.nn as nn
 import torch
-from logic_utils import get_index_by_predname
 import time
+
+import logic_utils
+from logic_utils import get_index_by_predname
 
 
 class NSFReasoner(nn.Module):
@@ -91,8 +93,21 @@ class NSFReasoner(nn.Module):
         """Extracting a value from the valuation tensor using a given predicate.
         """
         # v: batch * |atoms|
-        target_index = get_index_by_predname(pred_str=predname, atoms=self.atoms)
-        return v[:, target_index]
+        if "inv_pred" in predname:
+            target_indices = logic_utils.get_indices_by_predname(pred_str=predname, atoms=self.atoms)
+            target_all = torch.zeros((len(target_indices), v.size(0)))
+            target_max = torch.zeros((len(target_indices)))
+            for t_counter, t_index in enumerate(target_indices):
+                target_all[t_counter, :] = v[:,t_index]
+                target_max[t_counter]= v[:,t_index].max()
+
+            max_index = torch.argmax(target_max)
+            max_value = torch.max(target_max)
+            return max_value
+
+        if "kp" in predname:
+            target_index = get_index_by_predname(pred_str=predname, atoms=self.atoms)
+            return v[:, target_index]
 
     def predict_multi(self, v, prednames):
         """Extracting values from the valuation tensor using given predicates.
