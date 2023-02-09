@@ -346,15 +346,23 @@ def main(n):
         gen_pi_clauses = logic_utils.get_pi_clauses_objs(lang, lark_path, lang_base_path,
                                                          args.dataset_type, args.dataset, gen_pi_clauses_str_list)
 
-        # pi_clauses = pi_clause_generator.eval_pi_clauses(clauses, gen_pi_clauses, val_pos_pred, val_neg_pred)
-        print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
-
-        # update NFSR
         lang = pi_clause_generator.lang
         atoms = logic_utils.get_atoms(lang)
+
+        pi_clauses = pi_clause_generator.eval_pi_clauses(lang, atoms, clauses, gen_pi_clauses, val_pos_pred, val_neg_pred)
+        print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
+
+        # update System
+
+
         gen_pi_clauses = [c_i for c in gen_pi_clauses for c_i in c]
         clauses = bs_clauses + gen_pi_clauses
+        # clauses = bs_clauses + pi_clauses
+
+        lang = pi_clause_generator.lang
+        atoms = logic_utils.get_atoms(lang)
         NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, gen_pi_clauses, FC, device, train=True)
+
         params_nsfr = NSFR.get_params()
         optimizer_nsfr = torch.optim.RMSprop(params_nsfr, lr=args.lr)
         nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, train_pos_pred, train_neg_pred, val_pos_pred,

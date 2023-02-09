@@ -159,9 +159,11 @@ def get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, dev
     PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
     IM = build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang,
                             m=args.m, infer_step=2, device=device, train=train)
-    CIM = build_clause_infer_module(clauses, bk_clauses, atoms, lang, m=len(clauses), infer_step=2, device=device)
+    CIM = build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang,
+                                    m=len(clauses), infer_step=2, device=device)
 
-    PICIM = build_pi_clause_infer_module(clauses, bk_clauses, atoms, lang, m=len(clauses), infer_step=2, device=device)
+    PICIM = build_pi_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=2,
+                                         device=device)
 
     PI = PIReasoner(perception_module=PM, facts_converter=FC,
                     infer_module=IM, clause_infer_module=CIM,

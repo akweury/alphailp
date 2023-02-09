@@ -646,6 +646,7 @@ class PIClauseGenerator(object):
 
             # clause loop
             for clause_index, V_T in enumerate(V_T_list):
+                # TODO:predname can be inv_pred...
                 predicted = NSFR.predict(v=V_T, predname='kp').detach()
                 C_score[clause_index] = predicted
             # sum over positive prob
@@ -802,10 +803,10 @@ class PIClauseGenerator(object):
             pi_str_lists.append(single_pi_str_list)
         return pi_str_lists
 
-    def eval_pi_clause_single(self, clauses, pi_clauses, pos_pred, neg_pred):
+    def eval_pi_clause_single(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
         C = len(pi_clauses)
-        atoms = logic_utils.get_atoms(self.lang)
-        NSFR = get_nsfr_model(self.args, self.lang, clauses, atoms,
+
+        NSFR = get_nsfr_model(self.args, lang, clauses, atoms,
                               self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
 
         batch_size = self.args.batch_size_bs
@@ -816,6 +817,10 @@ class PIClauseGenerator(object):
 
         for image_index in range(self.pos_loader.dataset.__len__()):
             V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
+            B = NSFR(pos_pred[image_index].unsqueeze(0)).detach()
+
+            A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+
             C_score = torch.zeros((C, batch_size)).to(self.device)
             # clause loop
             for clause_index, V_T in enumerate(V_T_list):
@@ -843,12 +848,12 @@ class PIClauseGenerator(object):
 
         return all_clause_scores
 
-    def eval_pi_clauses(self, clauses, pi_clauses, pos_pred, neg_pred):
+    def eval_pi_clauses(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
         print("Eval PI clauses: ", len(pi_clauses))
 
         passed_pi_clauses = []
         for pi_clause in pi_clauses:
-            c_score = self.eval_pi_clause_single(clauses, pi_clause, pos_pred, neg_pred)
+            c_score = self.eval_pi_clause_single(lang, atoms, clauses, pi_clause, pos_pred, neg_pred)
 
             passed_pi_clauses.append(pi_clause)
 

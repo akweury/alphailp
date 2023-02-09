@@ -176,7 +176,7 @@ class InferModule(nn.Module):
 
 
 class ClauseInferModule(nn.Module):
-    def __init__(self, I, infer_step, gamma=0.01, device=None, train=False, m=1, I_bk=None):
+    def __init__(self, I, infer_step, gamma=0.01, device=None, train=False, m=1, I_bk=None, I_pi=None):
         """
         Infer module using each clause.
         The result is not amalgamated in terms of clauses.
@@ -184,6 +184,7 @@ class ClauseInferModule(nn.Module):
         super(ClauseInferModule, self).__init__()
         self.I = I
         self.I_bk = I_bk
+        self.I_pi = I_pi
         self.infer_step = infer_step
         self.m = m
         self.C = self.I.size(0)
@@ -204,9 +205,12 @@ class ClauseInferModule(nn.Module):
         if not self.I_bk is None:
             self.cs_bk = [ClauseFunction(I_bk[i], gamma=gamma)
                           for i in range(self.I_bk.size(0))]
-
         if not I_bk is None:
             self.W_bk = init_identity_weights(I_bk, device)
+
+        if not self.I_pi is None:
+            self.cs_pi = [ClauseFunction(I_pi[i], gamma=gamma) for i in range(self.I_pi.size(0))]
+            self.W_pi = init_identity_weights(I_pi, device)
 
         assert m == self.C, "Invalid m and C: " + \
                             str(m) + ' and ' + str(self.C)
@@ -233,8 +237,15 @@ class ClauseInferModule(nn.Module):
                 # print("r(R): ", self.r(R).shape)
                 # print("r_bk(R): ", self.r_bk(R).shape)
                 # shape? dim?
-                R = softor([R, self.r(R), self.r_bk(R).unsqueeze(dim=0).expand(self.C, B, self.G)], dim=2,
-                           gamma=self.gamma)
+                r_R = self.r(R)
+                r_bk = self.r_bk(R).unsqueeze(dim=0).expand(self.C, B, self.G)
+                if self.I_pi is not None:
+
+                    r_pi = self.r_pi(R).unsqueeze(dim=0).expand(self.C, B, self.G)
+                    c = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+                    R = softor([R, r_R, r_bk, r_pi], dim=2, gamma=self.gamma)
+                else:
+                    R = softor([R, r_R, r_bk], dim=2, gamma=self.gamma)
         return R
 
     def r(self, x):
@@ -270,6 +281,26 @@ class ClauseInferModule(nn.Module):
         # B * G
         R = softor(H, dim=0, gamma=self.gamma)
         return R
+
+    def r_pi(self, x):
+        x = x[0]
+        B = x.size(0)  # batch size
+        # apply each clause c_i and stack to a tensor C
+        a = x.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        # C * B * G
+
+        value_list = []
+        for i in range(self.I_pi.size(0)):
+            pi_clause_function = self.cs_pi[i]
+            value = pi_clause_function(x)
+            b = value.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+            value_list.append(value)
+
+        C = torch.stack(value_list, 0)
+        # B * G
+        res = softor(C, dim=0, gamma=self.gamma)
+        b = res.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        return res
 
 
 class PIClauseInferModule(nn.Module):
