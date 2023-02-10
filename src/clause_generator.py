@@ -32,7 +32,7 @@ class ClauseGenerator(object):
         max number of atoms in body of clauses
     """
 
-    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations, bk_clauses, device,
+    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations, bk_clauses,
                  no_xil=False):
         self.args = args
         self.NSFR = NSFR
@@ -40,7 +40,7 @@ class ClauseGenerator(object):
         self.lang = lang
         self.mode_declarations = mode_declarations
         self.bk_clauses = bk_clauses
-        self.device = device
+        self.device = args.device
         self.no_xil = no_xil
         self.rgen = RefinementGenerator(lang=lang, mode_declarations=mode_declarations)
         self.pos_loader = pos_data_loader
@@ -125,6 +125,8 @@ class ClauseGenerator(object):
             return beam_search_clauses
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
+
+
 
     def beam_search_clause(self, init_clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
         """
@@ -575,14 +577,14 @@ class PIClauseGenerator(object):
         max number of atoms in body of clauses
     """
 
-    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations, bk_clauses, device,
+    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations, bk_clauses,
                  no_xil=False):
         self.args = args
         self.NSFR = NSFR
         self.PI = PI
         self.lang = lang
         self.bk_clauses = bk_clauses
-        self.device = device
+        self.device = args.device
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
 
@@ -647,6 +649,7 @@ class PIClauseGenerator(object):
 
             # clause loop
             for clause_index, V_T in enumerate(V_T_list):
+                # TODO: eval inv pred
                 predicted = NSFR.predict(v=V_T, predname='kp').detach()
                 C_score[clause_index] = predicted
             # sum over positive prob
@@ -868,6 +871,9 @@ class PIClauseGenerator(object):
         hidden_scores = []
         archive_scores = []
         ip_names = []
+
+        invented_predicates = self.lang.invented_preds
+        # scoring predicates
         for pi_index, pi_clause in enumerate(pi_clauses):
             pred_names = ['kp']
             for pi_c in pi_clause:
@@ -889,26 +895,27 @@ class PIClauseGenerator(object):
                 pred_type = "output_predicate"
                 output_pi_clauses.append(pi_clause)
                 output_scores.append([pi_index] + p_goodness_scores)
-                ip_names.append([pi_index, ip_names])
+                ip_names.append([pi_index, pred_names[1]])
             elif p_goodness_scores[0] <= p_goodness_scores[1]:
                 # this is a hidden predicate
                 pred_type = "hidden_predicate"
                 hidden_pi_clauses.append(pi_clause)
                 hidden_scores.append([pi_index] + p_goodness_scores)
-                ip_names.append([pi_index, ip_names])
+                ip_names.append([pi_index, pred_names[1]])
             else:
                 # this is not a good predicate
                 pred_type = "archive_predicate"
                 archive_pi_clauses.append(pi_clause)
                 archive_scores.append([pi_index] + p_goodness_scores)
-                ip_names.append([pi_index, ip_names])
+                ip_names.append([pi_index, pred_names[1]])
 
+        # filter out predicates
         output_ip = []
         for output_score in output_scores:
             output_clause = output_pi_clauses[output_score[0]]
-            passed_pi_clauses_clusters.append(output_clause)
             ip_name = ip_names[output_score[0]]
             output_ip.append(ip_name)
+            passed_pi_clauses_clusters.append(output_clause)
 
         hidden_ip = []
         goodness_scores_sorted = sorted(hidden_scores, key=itemgetter(2), reverse=True)
@@ -925,18 +932,27 @@ class PIClauseGenerator(object):
             unpassed_pi_clauses_clusters.append(archive_clause)
             ip_name = ip_names[archive_score[0]]
             archive_ip.append(ip_name)
+            unpassed_pi_clauses_clusters.append(archive_clause)
 
         ip_indices = []
         for ip_index, ip in enumerate(self.lang.invented_preds):
             if ip.name in hidden_ip:
                 ip.ptype = "hidden_predicate"
+                ip_indices.append(ip_index)
             elif ip.name in output_ip:
                 ip.ptype = "output_predicate"
+                ip_indices.append(ip_index)
             else:
                 ip.ptype = "archive_predicate"
-                ip_indices.append(ip_index)
 
-        self.lang.invented_preds = self.lang.invented_preds[ip_indices]
+        hidden_predicates_indices = [ip[0] for ip in hidden_ip]
+        hidden_predicates = [self.lang.invented_preds[i] for i in hidden_predicates_indices]
+
+        output_predicates_indices = [ip[0] for ip in output_ip]
+        output_predicates = [self.lang.invented_preds[i] for i in output_predicates_indices]
+
+        self.lang.invented_preds = output_predicates + hidden_predicates
+
         passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
         unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
 

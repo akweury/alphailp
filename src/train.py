@@ -253,6 +253,70 @@ def train_pi(args, PI, optimizer, train_loader, val_loader, test_loader, device,
     return loss
 
 
+def final_evaluation(NSFR, pm_prediction_dict, args):
+    # validation split
+    print("Predicting on validation data set...")
+    acc_val, rec_val, th_val = predict(NSFR, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
+                                       args, args.device, th=0.33, split='val')
+    # training split
+    print("Predicting on training data set...")
+    acc, rec, th = predict(NSFR, pm_prediction_dict["train_pos"], pm_prediction_dict["train_neg"],
+                           args, args.device, th=th_val, split='train')
+    # test split
+    print("Predicting on test data set...")
+    acc_test, rec_test, th_test = predict(NSFR, pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"],
+                                          args, args.device, th=th_val, split='test')
+
+    print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
+    print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
+    print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)
+
+
+def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_loader, train_neg_loader,
+                               test_pos_loader, test_neg_loader):
+    pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
+    pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
+    pm_test_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_test.pth.tar")
+
+    val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, args.device, val_pos_loader, val_neg_loader)
+    train_pos_pred, train_neg_pred = percept.eval_images(args, pm_train_res_file, args.device, train_pos_loader,
+                                                         train_neg_loader)
+    test_pos_pred, test_neg_pred = percept.eval_images(args, pm_test_res_file, args.device, test_pos_loader,
+                                                       test_neg_loader)
+    pm_prediction_dict = {
+        'val_pos': val_pos_pred,
+        'val_neg': val_neg_pred,
+        'train_pos': train_pos_pred,
+        'train_neg': train_neg_pred,
+        'test_pos': test_pos_pred,
+        'test_neg': test_neg_pred
+    }
+
+    return pm_prediction_dict
+
+
+def get_models(args, lang, val_pos_loader, val_neg_loader,
+               clauses, bk_clauses, pi_clauses, atoms, bk):
+    PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
+    VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+    PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+    FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
+                                        pi_valuation_module=PI_VM, device=args.device)
+    # Neuro-Symbolic Forward Reasoner for clause generation
+    NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC)
+    PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC)
+
+    mode_declarations = get_mode_declarations(args, lang, args.n_obj)
+    clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
+                                       mode_declarations,
+                                       bk_clauses, no_xil=args.no_xil)  # torch.device('cpu'))
+
+    pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
+                                            mode_declarations, bk_clauses, no_xil=args.no_xil)  # torch.device('cpu'))
+
+    return clause_generator, pi_clause_generator, FC
+
+
 def main(n):
     args = get_args()
     if args.dataset_type == 'kandinsky':
@@ -279,7 +343,7 @@ def main(n):
     writer = SummaryWriter(str(config.root / "runs" / name), purge_step=0)
 
     # Create RTPT object
-    rtpt = RTPT(name_initials='HS', experiment_name=name,
+    rtpt = RTPT(name_initials='Jing', experiment_name=name,
                 max_iterations=args.epochs)
     # Start the RTPT tracking
     rtpt.start()
@@ -290,6 +354,9 @@ def main(n):
     train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(args)
     train_neg_loader, val_neg_loader, test_neg_loader = nsfr_utils.get_data_neg_loader(args)
 
+    pm_prediction_dict = get_perception_predictions(args, val_pos_loader, val_neg_loader,
+                                                    train_pos_loader, train_neg_loader,
+                                                    test_pos_loader, test_neg_loader)
     #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
 
     # load logical representations
@@ -298,75 +365,50 @@ def main(n):
     lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(lark_path, lang_base_path, args.dataset_type,
                                                                      args.dataset)
     clauses = update_initial_clauses(init_clauses, args.n_obj)
-    print("clauses: ", init_clauses)
+    print("Initial clauses: ", init_clauses)
 
     # loop for predicate invention
     for i in range(args.pi_epochs):
-        PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-        VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
-        PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
-        FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
-                                            pi_valuation_module=PI_VM, device=device)
-        # Neuro-Symbolic Forward Reasoner for clause generation
-        NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, device)
-        PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, device=device)
-
-        mode_declarations = get_mode_declarations(args, lang, args.n_obj)
-        clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
-                                           mode_declarations,
-                                           bk_clauses, device=device, no_xil=args.no_xil)  # torch.device('cpu'))
-
-        pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
-                                                mode_declarations, bk_clauses, device=device,
-                                                no_xil=args.no_xil)  # torch.device('cpu'))
-
-        # use perception model to evaluate image
-
-        pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
-        pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
-        pm_test_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_test.pth.tar")
-
-        val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, device, val_pos_loader, val_neg_loader)
-        train_pos_pred, train_neg_pred = percept.eval_images(args, pm_train_res_file, device, train_pos_loader,
-                                                             train_neg_loader)
-        test_pos_pred, test_neg_pred = percept.eval_images(args, pm_test_res_file, device, val_pos_loader,
-                                                           val_neg_loader)
+        # get models
+        clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
+                                                               clauses, bk_clauses, pi_clauses, atoms, bk)
 
         # generate clauses
         # time-consuming code
-        bs_clauses = clause_generator.generate(init_clauses, val_pos_pred, val_neg_pred,
+        bs_clauses = clause_generator.generate(clauses, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
                                                T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
 
         print("====== ", len(bs_clauses), " clauses are generated!! ======")
 
         # invent new predicate and generate pi clauses as strings
-        gen_pi_clauses_str_list = pi_clause_generator.generate(bs_clauses, val_pos_pred, val_neg_pred)
+        gen_pi_clauses_str_list = pi_clause_generator.generate(bs_clauses, pm_prediction_dict["val_pos"],
+                                                               pm_prediction_dict["val_neg"])
 
         # convert clauses from strings to objects
-        gen_pi_clauses = logic_utils.get_pi_clauses_objs(lang, lark_path, lang_base_path,
-                                                         args.dataset_type, args.dataset, gen_pi_clauses_str_list)
+        pi_clauses = logic_utils.get_pi_clauses_objs(lang, lark_path, lang_base_path, args.dataset_type, args.dataset,
+                                                     gen_pi_clauses_str_list)
 
         lang = pi_clause_generator.lang
         atoms = logic_utils.get_atoms(lang)
 
-        pi_clauses, pred_types = pi_clause_generator.eval_pi_clauses(atoms, clauses, gen_pi_clauses, val_pos_pred, val_neg_pred)
-        print("====== ", len(gen_pi_clauses), "pi clauses are generated!! ======")
+        # generate pi clauses
+        pi_clauses = pi_clause_generator.eval_pi_clauses(atoms, clauses, pi_clauses,
+                                                         pm_prediction_dict["val_pos"],
+                                                         pm_prediction_dict["val_neg"])
+        pi_clauses = pi_clauses[:5]
+
+        print("====== ", len(pi_clauses), "pi clauses are generated!! ======")
 
         # update System
-
-
-        # gen_pi_clauses = [c_i for c in gen_pi_clauses for c_i in c]
-        # clauses = bs_clauses + gen_pi_clauses
         clauses = bs_clauses + pi_clauses
-
         lang = pi_clause_generator.lang
         atoms = logic_utils.get_atoms(lang)
-        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, gen_pi_clauses, FC, device, train=True)
 
+        # train nsfr
+        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, device, train=True)
         params_nsfr = NSFR.get_params()
         optimizer_nsfr = torch.optim.RMSprop(params_nsfr, lr=args.lr)
-        nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, train_pos_pred, train_neg_pred, val_pos_pred,
-                                    val_neg_pred, test_pos_pred, test_neg_pred, device, writer, rtpt)
+        nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, pm_prediction_dict, device, writer, rtpt)
 
         # update PI
         # PI = pi_utils.get_pi_model(args, lang, pi_clauses, atoms, bk, bk_clauses, device=device)
@@ -375,19 +417,8 @@ def main(n):
         # # optimizer = torch.optim.Adam(params, lr=args.lr)
         # pi_loss_list = train_pi(args, PI, optimizer_pi, train_loader, val_loader, test_loader, device, writer, rtpt)
 
-        # validation split
-        print("Predicting on validation data set...")
-        acc_val, rec_val, th_val = predict(NSFR, val_pos_pred, val_neg_pred, args, device, th=0.33, split='val')
-        # training split
-        print("Predicting on training data set...")
-        acc, rec, th = predict(NSFR, train_pos_pred, train_neg_pred, args, device, th=th_val, split='train')
-        # test split
-        print("Predicting on test data set...")
-        acc_test, rec_test, th_test = predict(NSFR, test_pos_pred, test_neg_pred, args, device, th=th_val, split='test')
-
-        print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
-        print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
-        print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)
+        # final evaluation
+        final_evaluation(NSFR, pm_prediction_dict, args)
 
 
 if __name__ == "__main__":

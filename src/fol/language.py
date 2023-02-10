@@ -2,6 +2,7 @@ from .logic import Var
 import itertools
 from .logic import Predicate, NeuralPredicate, InventedPredicate, FuncSymbol, Const
 
+
 class Language(object):
     """Language of first-order logic.
 
@@ -24,6 +25,7 @@ class Language(object):
         self.consts = consts
         self.pi_templates = pi_templates
         self.invented_preds = []
+        self.invented_preds_number = 0
 
     def __str__(self):
         s = "===Predicates===\n"
@@ -147,7 +149,8 @@ class Language(object):
             InventedPredicat: The matched invented predicate with the given name.
         """
         prefix = "inv_pred"
-        new_predicate_id = len(self.invented_preds)
+        new_predicate_id = self.invented_preds_number
+        self.invented_preds_number += 1
         pred_with_id = prefix + str(new_predicate_id)
 
         new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes)

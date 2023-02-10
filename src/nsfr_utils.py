@@ -338,7 +338,8 @@ def get_prob_by_prednames(v_T, NSFR, prednames):
     return predicted
 
 
-def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, device, train=False):
+def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=False):
+    device = args.device
     if args.dataset_type == 'kandinsky':
         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
         # VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)

@@ -154,7 +154,8 @@ class PIReasoner(nn.Module):
         return text
 
 
-def get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, device, train=False):
+def get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=False):
+    device = args.device
     PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
     PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
     IM = build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang,
