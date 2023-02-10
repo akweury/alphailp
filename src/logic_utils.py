@@ -242,7 +242,7 @@ def parse_clauses(lang, clause_strs):
 
 
 def remove_conflict_clauses(clauses):
-    print("check for conflict clauses...")
+    print("\nCheck for conflict clauses...")
     non_conflict_clauses = []
     for clause in clauses:
         is_conflict = False
@@ -266,10 +266,10 @@ def remove_conflict_clauses(clauses):
             non_conflict_clauses.append(clause)
 
     print("end for checking.")
-    print("========= All non-conflict clauses ==========")
+    print(f"\n========= All {len(non_conflict_clauses)} non-conflict clauses ==========")
     for each in non_conflict_clauses:
-        print(each)
-    print("=============================================")
+        print('(Non-Conflict BS Clause) ' + str(each))
+    print("=============================================\n")
 
     return non_conflict_clauses
 

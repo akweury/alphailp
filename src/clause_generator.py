@@ -126,8 +126,6 @@ class ClauseGenerator(object):
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
 
-
-
     def beam_search_clause(self, init_clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
         """
         perform beam-searching from a clause
@@ -254,8 +252,6 @@ class ClauseGenerator(object):
         lang = self.lang
         bs_clauses = []
         while step < T_beam:
-            if step == 4:
-                print("break")
             B_new = {}
             refs = []
             for c in B:
@@ -305,11 +301,11 @@ class ClauseGenerator(object):
                                                    x_label="positive score", y_label="negative score")
             B_new_sorted = sorted(B_new.items(), key=lambda x: x[1][1], reverse=True)
             B_new_sorted = self.select_good_clauses(B_new_sorted)
-            if len(B_new_sorted) > 10:
-                B_new_sorted = B_new_sorted[:10]
+            if len(B_new_sorted) > 5:
+                B_new_sorted = B_new_sorted[:5]
             # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
             for x in B_new_sorted:
-                print(x[1], x[0])
+                print(f'(BS Clause on Step {step} )' + str(x[1]) + ', ' + str(x[0]))
             B = [x[0] for x in B_new_sorted]
             step += 1
             if len(B) == 0:
@@ -373,7 +369,6 @@ class ClauseGenerator(object):
         preds = set([clause.head.pred] + [b.pred for b in clause.body])
         y = False
         for ci, score_i in B.items():
-
             preds_i = set([clause.head.pred] + [b.pred for b in clause.body])
             if preds == preds_i and np.sum(np.abs(np.array([scores]) - np.array([score_i]))) < 1e-2:
                 y = True
@@ -404,9 +399,10 @@ class ClauseGenerator(object):
             C = C.union(self.beam_search_clause_quick(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
             # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
         C = sorted(list(C))
-        print('======= BEAM SEARCHED CLAUSES ======')
+        print('\n======= BEAM SEARCHED CLAUSES ======')
         for c in C:
-            print(c)
+            print('(BS Clause) ' + str(c))
+        print("====== ", len(C), " clauses are generated!! ======")
         return C
 
     def eval_pi_clauses(self, clauses):
@@ -506,7 +502,7 @@ class ClauseGenerator(object):
 
     def eval_clauses_scores(self, clauses, pos_pm_res, neg_pm_res):
         C = len(clauses)
-        print("Eval clauses: ", len(clauses))
+        print(f"Eval clauses on {len(clauses)} images...")
         # update infer module with new clauses
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
         pi_clauses = []
@@ -580,9 +576,9 @@ class PIClauseGenerator(object):
     def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations, bk_clauses,
                  no_xil=False):
         self.args = args
+        self.lang = lang
         self.NSFR = NSFR
         self.PI = PI
-        self.lang = lang
         self.bk_clauses = bk_clauses
         self.device = args.device
         self.pos_loader = pos_data_loader
@@ -622,7 +618,20 @@ class PIClauseGenerator(object):
 
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
-        return new_clauses_str_list
+
+        # convert clauses from strings to objects
+        pi_clauses = logic_utils.get_pi_clauses_objs(self.lang, self.args.lark_path, self.args.lang_base_path,
+                                                     self.args.dataset_type, self.args.dataset, new_clauses_str_list)
+
+        atoms = logic_utils.get_atoms(self.lang)
+
+        # generate pi clauses
+        pi_clauses = self.eval_pi_clauses(atoms, beam_search_clauses, pi_clauses, pos_pred, neg_pred)
+        pi_clauses = pi_clauses[:5]
+
+        print("====== ", len(pi_clauses), "pi clauses are generated!! ======")
+
+        return pi_clauses
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred):
 

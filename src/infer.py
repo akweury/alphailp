@@ -86,19 +86,18 @@ class InferModule(nn.Module):
 
                 toc_2 = time.perf_counter()
 
-                r_pi_R = self.r_pi(R)
-                # d = r_pi_R.detach().to("cpu").numpy().reshape(-1, 1)
+                if self.I_pi is not None:
+                    r_pi_R = self.r_pi(R)
+                    # d = r_pi_R.detach().to("cpu").numpy().reshape(-1, 1)
+                    toc_3 = time.perf_counter()
 
-                toc_3 = time.perf_counter()
-
-                R = softor([R, r_R, r_bk_R, r_pi_R], dim=1, gamma=self.gamma)
-
-                toc_4 = time.perf_counter()
+                    R = softor([R, r_R, r_bk_R, r_pi_R], dim=1, gamma=self.gamma)
+                else:
+                    R = softor([R, r_R, r_bk_R], dim=1, gamma=self.gamma)
 
                 # print(f"Calculate r_R in {toc - tic:0.4f} seconds")
                 # print(f"Calculate r_bk_R in {toc_2 - toc:0.4f} seconds")
                 # print(f"Calculate r_pi_R in {toc_3 - toc_2:0.4f} seconds")
-                # print(f"Calculate R in {toc_4 - toc_3:0.4f} seconds")
 
         # z = R.detach().to("cpu").numpy().reshape(-1, 1)
         return R

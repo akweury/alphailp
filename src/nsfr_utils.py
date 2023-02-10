@@ -18,6 +18,7 @@ def update_initial_clauses(clauses, obj_num):
     assert len(clauses) == 1, "Too many initial clauses."
     clause = clauses[0]
     clause.body = clause.body[:obj_num]
+    print("Initial clauses: ", clause)
     return [clause]
 
 

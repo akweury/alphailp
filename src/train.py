@@ -41,6 +41,8 @@ def get_args():
                         help='cuda device, i.e. 0 or cpu')
     parser.add_argument("--no-cuda", action="store_true",
                         help="Run on CPU instead of GPU (not recommended)")
+    parser.add_argument("--no-pi", action="store_true",
+                        help="Generate Clause without predicate invention.")
     parser.add_argument("--small-data", action="store_true",
                         help="Use small training data.")
     parser.add_argument("--no-xil", action="store_true",
@@ -88,7 +90,7 @@ def discretise_NSFR(NSFR, args, device):
     return get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=False)
 
 
-def predict(NSFR, pos_pred, neg_pred, args, device, th=None, split='train'):
+def predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
     predicted_list = []
     target_list = []
     count = 0
@@ -146,15 +148,15 @@ def predict(NSFR, pos_pred, neg_pred, args, device, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def train_nsfr(args, NSFR, optimizer, train_pos_pred, train_neg_pred, val_pos_pred, val_neg_pred,
-               test_pos_pred, test_neg_pred, device, writer, rtpt):
+def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt):
+    optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
 
     # prepare perception result
-    train_pred = torch.cat((train_pos_pred, train_neg_pred), dim=0)
-    train_label = torch.zeros(1, len(train_pred)).to(device)
-    train_label[0, :len(train_pos_pred)] = 1.0
+    train_pred = torch.cat((pm_prediction_dict['train_pos'], pm_prediction_dict['train_neg']), dim=0)
+    train_label = torch.zeros(1, len(train_pred)).to(args.device)
+    train_label[0, :len(pm_prediction_dict['train_pos'])] = 1.0
 
     for epoch in range(args.epochs):
         loss_i = 0
@@ -181,17 +183,20 @@ def train_nsfr(args, NSFR, optimizer, train_pos_pred, train_neg_pred, val_pos_pr
         if epoch % 20 == 0:
             NSFR.print_program()
             print("Predicting on validation data set...")
-            acc_val, rec_val, th_val = predict(NSFR, val_pos_pred, val_neg_pred, args, device, th=0.33, split='val')
+            acc_val, rec_val, th_val = predict(NSFR, pm_prediction_dict['val_pos'],
+                                               pm_prediction_dict['val_neg'], args, th=0.33, split='val')
             writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
             print("acc_val: ", acc_val)
 
             print("Predicting on training data set...")
-            acc, rec, th = predict(NSFR, train_pos_pred, train_neg_pred, args, device, th=th_val, split='train')
+            acc, rec, th = predict(NSFR, pm_prediction_dict['train_pos'],
+                                   pm_prediction_dict['train_neg'], args, th=th_val, split='train')
             writer.add_scalar("metric/train_acc", acc, global_step=epoch)
             print("acc_train: ", acc)
 
             print("Predicting on test data set...")
-            acc, rec, th = predict(NSFR, test_pos_pred, test_neg_pred, args, device, th=th_val, split='train')
+            acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
+                                   pm_prediction_dict['test_neg'], args, th=th_val, split='train')
             writer.add_scalar("metric/test_acc", acc, global_step=epoch)
             print("acc_test: ", acc)
 
@@ -257,15 +262,15 @@ def final_evaluation(NSFR, pm_prediction_dict, args):
     # validation split
     print("Predicting on validation data set...")
     acc_val, rec_val, th_val = predict(NSFR, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
-                                       args, args.device, th=0.33, split='val')
+                                       args, th=0.33, split='val')
     # training split
     print("Predicting on training data set...")
     acc, rec, th = predict(NSFR, pm_prediction_dict["train_pos"], pm_prediction_dict["train_neg"],
-                           args, args.device, th=th_val, split='train')
+                           args, th=th_val, split='train')
     # test split
     print("Predicting on test data set...")
     acc_test, rec_test, th_test = predict(NSFR, pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"],
-                                          args, args.device, th=th_val, split='test')
+                                          args, th=th_val, split='test')
 
     print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
     print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
@@ -317,6 +322,39 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
     return clause_generator, pi_clause_generator, FC
 
 
+def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt):
+    lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
+                                                                     args.dataset_type, args.dataset)
+    clauses = update_initial_clauses(init_clauses, args.n_obj)
+
+
+    # loop for predicate invention
+    for i in range(args.pi_epochs):
+        # get models
+        clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
+                                                               clauses, bk_clauses, pi_clauses, atoms, bk)
+        # generate clauses # time-consuming code
+        bs_clauses = clause_generator.generate(clauses, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
+                                               T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
+
+        if args.no_pi:
+            clauses = bs_clauses
+        else:
+            # invent new predicate and generate pi clauses
+            pi_clauses = pi_clause_generator.generate(bs_clauses, pm_prediction_dict["val_pos"],
+                                                      pm_prediction_dict["val_neg"])
+            # update System
+            lang = pi_clause_generator.lang
+            atoms = logic_utils.get_atoms(lang)
+
+            clauses = bs_clauses + pi_clauses
+
+        # train NSFR
+        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
+        nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt)
+        final_evaluation(NSFR, pm_prediction_dict, args)
+
+
 def main(n):
     args = get_args()
     if args.dataset_type == 'kandinsky':
@@ -336,7 +374,7 @@ def main(n):
         # multi gpu
         args.device = torch.device('cuda')
     else:
-        args.device = torch.device('cuda:' + args.device)
+        args.device = torch.device('cuda:' + str(args.device))
 
     print('device: ', args.device)
     # run_name = 'predict/' + args.dataset
@@ -361,64 +399,21 @@ def main(n):
 
     # load logical representations
     lark_path = str(config.root / 'src' / 'lark' / 'exp.lark')
+    args.lark_path = lark_path
     lang_base_path = config.root / 'data' / 'lang'
-    lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(lark_path, lang_base_path, args.dataset_type,
-                                                                     args.dataset)
-    clauses = update_initial_clauses(init_clauses, args.n_obj)
-    print("Initial clauses: ", init_clauses)
+    args.lang_base_path = lang_base_path
 
-    # loop for predicate invention
-    for i in range(args.pi_epochs):
-        # get models
-        clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                               clauses, bk_clauses, pi_clauses, atoms, bk)
+    # main program
+    train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt)
 
-        # generate clauses
-        # time-consuming code
-        bs_clauses = clause_generator.generate(clauses, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
-                                               T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
+    # update PI
+    # PI = pi_utils.get_pi_model(args, lang, pi_clauses, atoms, bk, bk_clauses, device=device)
+    # params_pi = PI.get_params()
+    # optimizer_pi = torch.optim.RMSprop(params_pi, lr=args.lr)
+    # # optimizer = torch.optim.Adam(params, lr=args.lr)
+    # pi_loss_list = train_pi(args, PI, optimizer_pi, train_loader, val_loader, test_loader, device, writer, rtpt)
 
-        print("====== ", len(bs_clauses), " clauses are generated!! ======")
-
-        # invent new predicate and generate pi clauses as strings
-        gen_pi_clauses_str_list = pi_clause_generator.generate(bs_clauses, pm_prediction_dict["val_pos"],
-                                                               pm_prediction_dict["val_neg"])
-
-        # convert clauses from strings to objects
-        pi_clauses = logic_utils.get_pi_clauses_objs(lang, lark_path, lang_base_path, args.dataset_type, args.dataset,
-                                                     gen_pi_clauses_str_list)
-
-        lang = pi_clause_generator.lang
-        atoms = logic_utils.get_atoms(lang)
-
-        # generate pi clauses
-        pi_clauses = pi_clause_generator.eval_pi_clauses(atoms, clauses, pi_clauses,
-                                                         pm_prediction_dict["val_pos"],
-                                                         pm_prediction_dict["val_neg"])
-        pi_clauses = pi_clauses[:5]
-
-        print("====== ", len(pi_clauses), "pi clauses are generated!! ======")
-
-        # update System
-        clauses = bs_clauses + pi_clauses
-        lang = pi_clause_generator.lang
-        atoms = logic_utils.get_atoms(lang)
-
-        # train nsfr
-        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, device, train=True)
-        params_nsfr = NSFR.get_params()
-        optimizer_nsfr = torch.optim.RMSprop(params_nsfr, lr=args.lr)
-        nsfr_loss_list = train_nsfr(args, NSFR, optimizer_nsfr, pm_prediction_dict, device, writer, rtpt)
-
-        # update PI
-        # PI = pi_utils.get_pi_model(args, lang, pi_clauses, atoms, bk, bk_clauses, device=device)
-        # params_pi = PI.get_params()
-        # optimizer_pi = torch.optim.RMSprop(params_pi, lr=args.lr)
-        # # optimizer = torch.optim.Adam(params, lr=args.lr)
-        # pi_loss_list = train_pi(args, PI, optimizer_pi, train_loader, val_loader, test_loader, device, writer, rtpt)
-
-        # final evaluation
-        final_evaluation(NSFR, pm_prediction_dict, args)
+    # final evaluation
 
 
 if __name__ == "__main__":

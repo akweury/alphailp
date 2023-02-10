@@ -39,7 +39,7 @@ class YOLOPerceptionModule(nn.Module):
         self.preprocess = YOLOPreprocess(device)
 
     def load_model(self, path, device):
-        print("Loading YOLO model...")
+        # print("Loading YOLO model...")
         yolo_net = attempt_load(weights=path)
         yolo_net.to(device)
         if not self.train_:
