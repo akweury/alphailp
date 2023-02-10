@@ -331,14 +331,14 @@ def main(n):
             name = str(Path('CH') / f"aILP-noXIL_{args.dataset}_{str(n)}")
     print('args ', args)
     if args.no_cuda:
-        device = torch.device('cpu')
+        args.device = torch.device('cpu')
     elif len(args.device.split(',')) > 1:
         # multi gpu
-        device = torch.device('cuda')
+        args.device = torch.device('cuda')
     else:
-        device = torch.device('cuda:' + args.device)
+        args.device = torch.device('cuda:' + args.device)
 
-    print('device: ', device)
+    print('device: ', args.device)
     # run_name = 'predict/' + args.dataset
     writer = SummaryWriter(str(config.root / "runs" / name), purge_step=0)
 
