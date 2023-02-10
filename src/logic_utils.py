@@ -310,9 +310,43 @@ def search_independent_clauses(clauses):
             common_body = common_body_pi_clauses(clause_i, clause_j)
             if len(common_body) > 1:
                 continue
-            independent_clauses.append({clause_j: j_index})
-        independent_clauses_all.append({clause_i: independent_clauses})
+
+            independent_clauses.append(clause_j)
+        # c_cluster = [clause_i] + independent_clauses
+        # TODO: delete uncommon bodies
+        pole_clauses = []
+        for clause_a in independent_clauses:
+            is_sub_clause = False
+            is_pole_clause = True
+            for clause_b in independent_clauses:
+                if clause_a == clause_b:
+                    continue
+                if sub_clause_of(clause_a, clause_b):
+                    is_sub_clause = True
+                elif sub_clause_of(clause_b, clause_a):
+                    is_pole_clause = False
+            if is_pole_clause and is_sub_clause:
+                pole_clauses.append(clause_a)
+        independent_clauses_all.append([clause_i] + pole_clauses)
+
     return independent_clauses_all
+
+
+def sub_clause_of(clause_a, clause_b):
+    """
+    Check if clause a is a sub-clause of clause b
+    Args:
+        clause_a:
+        clause_b:
+
+    Returns:
+
+    """
+    for body_a in clause_a.body:
+        if body_a not in clause_b.body:
+            return False
+
+    return True
 
 
 def sub_lists(l):
@@ -387,10 +421,13 @@ def search_cluster_candidates(independent_clauses_all, clause_scores_full):
     return new_pi_clauses
 
 
-def eval_predicates_in_pi_clauses_single(NSFR, bz, pred_names, pos_pred, neg_pred, device):
+def eval_predicates(NSFR, bz, pred_names, pos_pred, neg_pred, device):
     pos_img_num = pos_pred.shape[0]
     neg_img_num = neg_pred.shape[0]
-
+    eval_pred_num = len(pred_names)
+    clause_num = len(NSFR.clauses)
+    score_positive = torch.zeros((pos_img_num, clause_num, eval_pred_num)).to(device)
+    score_negative = torch.zeros((neg_img_num, clause_num, eval_pred_num)).to(device)
     # get predicates that need to be evaluated.
     # pred_names = ['kp']
     # for pi_c in pi_clauses:
@@ -398,38 +435,39 @@ def eval_predicates_in_pi_clauses_single(NSFR, bz, pred_names, pos_pred, neg_pre
     #         if "inv_pred" in body_atom.pred.name:
     #             pred_names.append(body_atom.pred.name)
 
-    C = len(pred_names)
-    score_positive = torch.zeros((pos_img_num, C)).to(device)
-    score_negative = torch.zeros((neg_img_num, C)).to(device)
-
     for image_index in range(pos_img_num):
         V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
         A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
 
-        C_score = torch.zeros((C, bz)).to(device)
+        C_score = torch.zeros((clause_num, eval_pred_num, bz)).to(device)
         # clause loop
-        # for clause_index, V_T in enumerate(V_T_list):
-        for pred_index, pred_name in enumerate(pred_names):
-            predicted = NSFR.predict(v=V_T_list[0], predname=pred_name).detach()
-            C_score[pred_index] = predicted
+        for clause_index, V_T in enumerate(V_T_list):
+            for pred_index, pred_name in enumerate(pred_names):
+                predicted = NSFR.predict(v=V_T_list[clause_index], predname=pred_name).detach()
+                C_score[clause_index, pred_index, :] = predicted
         # sum over positive prob
         score_positive[image_index, :] = C_score.squeeze(1)
 
     # negative image loop
     for image_index in range(neg_img_num):
         V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
-        C_score = torch.zeros((C, bz)).to(device)
-        for pred_index, pred_name in enumerate(pred_names):
-            predicted = NSFR.predict(v=V_T_list[0], predname=pred_name).detach()
-            C_score[pred_index] = predicted
+
+        C_score = torch.zeros((clause_num, eval_pred_num, bz)).to(device)
+        for clause_index, V_T in enumerate(V_T_list):
+            for pred_index, pred_name in enumerate(pred_names):
+                predicted = NSFR.predict(v=V_T_list[clause_index], predname=pred_name).detach()
+                C_score[clause_index, pred_index, :] = predicted
             # C
             # C_score = PI.clause_eval(C_score)
             # sum over positive prob
         score_negative[image_index, :] = C_score.squeeze(1)
 
     all_predicates_scores = []
-    for c_index in range(score_positive.shape[1]):
-        predicate_scores = [score_negative[:, c_index], score_positive[:, c_index]]
+    for p_index in range(eval_pred_num):
+        predicate_scores = []
+        for c_index in range(clause_num):
+            clause_scores = [score_negative[:, c_index, p_index], score_positive[:, c_index, p_index]]
+            predicate_scores.append(clause_scores)
         all_predicates_scores.append(predicate_scores)
 
     return all_predicates_scores

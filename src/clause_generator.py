@@ -121,8 +121,9 @@ class ClauseGenerator(object):
             set of generated clauses
         """
         if gen_mode == 'beam':
-            beam_search_clauses = self.beam_search(C_0, pos_pred, neg_pred, T_beam=T_beam, N_beam=N_beam, N_max=N_max)
-            return beam_search_clauses
+            beam_search_clauses, p_scores_list = self.beam_search(C_0, pos_pred, neg_pred, T_beam=T_beam, N_beam=N_beam,
+                                                                  N_max=N_max)
+            return beam_search_clauses, p_scores_list
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
 
@@ -249,6 +250,8 @@ class ClauseGenerator(object):
         C = set()
         C_dic = {}
         B_ = []
+        eval_pred_names = ['kp']
+        p_score = None
         lang = self.lang
         bs_clauses = []
         while step < T_beam:
@@ -269,9 +272,16 @@ class ClauseGenerator(object):
             print('Evaluating ', len(refs), 'generated clauses.')
             # evaluate clauses, it should consider both positive images as well as negative images.
             refs_non_conflict = logic_utils.remove_conflict_clauses(refs)
-            clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
-            clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
 
+            self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
+                                       self.NSFR.bk, self.bk_clauses, [], self.NSFR.fc, self.device)
+
+            p_score = logic_utils.eval_predicates(self.NSFR, self.args.batch_size_bs,
+                                                  eval_pred_names, pos_pred, neg_pred, self.device)
+
+            # clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
+            p_clause_signs = self.eval_clause_sign(p_score)
+            clause_signs, clause_score_list, clause_scores_full = p_clause_signs[0]
             # check for duplication
             non_duplicate_clause_index = []
             non_duplicate_full_scores = []
@@ -286,14 +296,14 @@ class ClauseGenerator(object):
             if is_plot_4zone:
                 for i, clause in enumerate(B_new):
                     clause_index = non_duplicate_clause_index[i]
-                    chart_utils.plot_scatter_heat_chart([clause_image_scores[clause_index]],
+                    chart_utils.plot_scatter_heat_chart([p_score[clause_index]],
                                                         config.buffer_path / "img",
                                                         f"heat_ce_all_{len(B_new)}_{i}",
                                                         sub_folder=str(step),
                                                         labels=f"{str(clause) + str(clause_signs[clause_index])}",
                                                         x_label="positive score", y_label="negative score")
 
-                    clause_scores_reverse = [clause_image_scores[clause_index][1], clause_image_scores[clause_index][0]]
+                    clause_scores_reverse = [p_score[clause_index][1], p_score[clause_index][0]]
                     chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
                                                    f"scatter_ce_all_{len(B_new)}_{i}",
                                                    sub_folder=str(step),
@@ -311,7 +321,7 @@ class ClauseGenerator(object):
             if len(B) == 0:
                 break
 
-        return C
+        return C, p_score
 
     def eval_images(self, save_path):
 
@@ -395,50 +405,55 @@ class ClauseGenerator(object):
             a set of generated clauses
         """
         C = set()
+        p_scores_list = []
         for clause in C_0:
-            C = C.union(self.beam_search_clause_quick(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
+            bs_clauses, p_scores = self.beam_search_clause_quick(clause, pos_pred, neg_pred, T_beam, N_beam, N_max)
+            C = C.union(bs_clauses)
+            p_scores_list.append(p_scores)
             # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
         C = sorted(list(C))
         print('\n======= BEAM SEARCHED CLAUSES ======')
         for c in C:
             print('(BS Clause) ' + str(c))
         print("====== ", len(C), " clauses are generated!! ======")
-        return C
+        return C, p_scores_list
 
     def eval_pi_clauses(self, clauses):
         return None
 
-    def eval_clause_sign(self, clause_image_scores):
+    def eval_clause_sign(self, p_scores):
         resolution = 2
 
-        clause_sign_list = []
-        clause_score_list = []
-        clause_score_full_list = []
-        for clause_image_score in clause_image_scores:
-            data_map = np.zeros(shape=[resolution, resolution])
-            for index in range(len(clause_image_score[0])):
-                x_index = int(clause_image_score[0][index] * resolution)
-                y_index = int(clause_image_score[1][index] * resolution)
-                data_map[x_index, y_index] += 1
+        p_clauses_signs = []
+        for p_score in p_scores:
+            clause_sign_list = []
+            clause_score_list = []
+            clause_score_full_list = []
+            for clause_image_score in p_score:
+                data_map = np.zeros(shape=[resolution, resolution])
+                for index in range(len(clause_image_score[0])):
+                    x_index = int(clause_image_score[0][index] * resolution)
+                    y_index = int(clause_image_score[1][index] * resolution)
+                    data_map[x_index, y_index] += 1
 
-            pos_low_neg_low_area = data_map[0, 0]
-            pos_high_neg_low_area = data_map[0, 1]
-            pos_low_neg_high_area = data_map[1, 0]
-            pos_high_neg_high_area = data_map[1, 1]
+                pos_low_neg_low_area = data_map[0, 0]
+                pos_high_neg_low_area = data_map[0, 1]
+                pos_low_neg_high_area = data_map[1, 0]
+                pos_high_neg_high_area = data_map[1, 1]
 
-            # TODO: find a better score evaluation function
-            clause_score = pos_high_neg_low_area - pos_high_neg_high_area
-            clause_score_list.append(clause_score)
-            clause_score_full_list.append(
-                [pos_low_neg_low_area, pos_high_neg_low_area, pos_low_neg_high_area, pos_high_neg_high_area])
+                # TODO: find a better score evaluation function
+                clause_score = pos_high_neg_low_area - pos_high_neg_high_area
+                clause_score_list.append(clause_score)
+                clause_score_full_list.append(
+                    [pos_low_neg_low_area, pos_high_neg_low_area, pos_low_neg_high_area, pos_high_neg_high_area])
 
-            data_map[0, 0] = 0
-            if np.max(data_map) == data_map[0, 1] and data_map[0, 1] > data_map[1, 1]:
-                clause_sign_list.append(True)
-            else:
-                clause_sign_list.append(False)
-
-        return clause_sign_list, clause_score_list, clause_score_full_list
+                data_map[0, 0] = 0
+                if np.max(data_map) == data_map[0, 1] and data_map[0, 1] > data_map[1, 1]:
+                    clause_sign_list.append(True)
+                else:
+                    clause_sign_list.append(False)
+            p_clauses_signs.append([clause_sign_list, clause_score_list, clause_score_full_list])
+        return p_clauses_signs
 
     def eval_clauses(self, clauses, pos_pm_res, neg_pm_res):
         C = len(clauses)
@@ -584,37 +599,17 @@ class PIClauseGenerator(object):
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
 
-    def generate(self, beam_search_clauses, pos_pred, neg_pred):
-        """
-        call clause generation function with or without beam-searching
-        Inputs
-        ------
-        C_0 : Set[.logic.Clause]
-            a set of initial clauses
-        Returns
-        -------
-        C : Set[.logic.Clause]
-            set of generated clauses
-        """
-        # remove conflict clauses
-        bs_clauses_non_conflict = logic_utils.remove_conflict_clauses(list(beam_search_clauses))
-        # evaluate for all the clauses
-        clause_image_scores = self.eval_multi_clauses(bs_clauses_non_conflict, pos_pred,
-                                                      neg_pred)  # time-consuming line
-        clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
-        PI_new = {}
-        for i, ref in enumerate(bs_clauses_non_conflict):
-            # check duplication
-            PI_new[ref] = clause_scores_full[i]
-        # PI_clauses_sorted = sorted(PI_new.items(), key=lambda x: x[1][1], reverse=True)
+    def generate(self, beam_search_clauses, p_scores_list, pos_pred, neg_pred):
 
-        # invent new predicate
-        pi_clauses_candidates = [c for c in PI_new]
-        independent_clauses_all = logic_utils.search_independent_clauses(pi_clauses_candidates)
-        cluster_candidates = logic_utils.search_cluster_candidates(independent_clauses_all, clause_scores_full)
+        # evaluate for all the clauses
+        # clause_image_scores = self.eval_multi_clauses(beam_search_clauses, pos_pred, neg_pred)  # time-consuming line
+        # clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
+
+        clause_clusters = logic_utils.search_independent_clauses(beam_search_clauses)
+        clause_candidates = logic_utils.search_cluster_candidates(clause_clusters, p_scores_list)
 
         # generate new clauses
-        new_predicates = self.generate_new_predicate(cluster_candidates, mode="clustering")
+        new_predicates = self.generate_new_predicate(clause_candidates, mode="clustering")
 
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
@@ -893,8 +888,8 @@ class PIClauseGenerator(object):
             NSFR = get_nsfr_model(self.args, self.lang, clauses, atoms,
                                   self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
 
-            p_score = logic_utils.eval_predicates_in_pi_clauses_single(NSFR, self.args.batch_size_bs,
-                                                                       pred_names, pos_pred, neg_pred, self.device)
+            p_score = logic_utils.eval_predicates(NSFR, self.args.batch_size_bs,
+                                                  pred_names, pos_pred, neg_pred, self.device)
 
             p_signs, p_goodness_scores, p_score_full_list = logic_utils.eval_predicates_sign(p_score)
 

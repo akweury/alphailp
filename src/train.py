@@ -22,6 +22,7 @@ from clause_generator import ClauseGenerator, PIClauseGenerator
 import facts_converter
 from percept import YOLOPerceptionModule
 from valuation import YOLOValuationModule, PIValuationModule
+import chart_utils
 
 
 def get_args():
@@ -148,11 +149,11 @@ def predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt):
+def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
-
+    test_acc_list = np.zeros(shape=(1, args.epochs))
     # prepare perception result
     train_pred = torch.cat((pm_prediction_dict['train_pos'], pm_prediction_dict['train_neg']), dim=0)
     train_label = torch.zeros(1, len(train_pred)).to(args.device)
@@ -179,6 +180,13 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt):
         rtpt.step(subtitle=f"loss={loss_i:2.2f}")
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
         print("loss: ", loss_i)
+
+        print("Predicting on test data set...")
+        acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
+                               pm_prediction_dict['test_neg'], args, th=0.33, split='train')
+        test_acc_list[0, epoch] = acc
+        chart_utils.plot_line_chart(test_acc_list, str(exp_output_path), labels="Test_Accuracy",
+                                    title=f"Test Accuracy ({args.dataset})", cla_leg=True)
         # NSFR.print_program()
         if epoch % 20 == 0:
             NSFR.print_program()
@@ -188,7 +196,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt):
             writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
             print("acc_val: ", acc_val)
 
-            print("Predicting on training data set...")
+            print("Predi$\alpha$ILPcting on training data set...")
             acc, rec, th = predict(NSFR, pm_prediction_dict['train_pos'],
                                    pm_prediction_dict['train_neg'], args, th=th_val, split='train')
             writer.add_scalar("metric/train_acc", acc, global_step=epoch)
@@ -322,11 +330,12 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
     return clause_generator, pi_clause_generator, FC
 
 
-def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt):
+def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path):
+    NSFR = None
     lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                      args.dataset_type, args.dataset)
-    clauses = update_initial_clauses(init_clauses, args.n_obj)
 
+    clauses = update_initial_clauses(init_clauses, args.n_obj)
 
     # loop for predicate invention
     for i in range(args.pi_epochs):
@@ -334,25 +343,26 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
-        bs_clauses = clause_generator.generate(clauses, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
-                                               T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
+        bs_clauses, p_scores_list = clause_generator.generate(clauses, pm_prediction_dict["val_pos"],
+                                                              pm_prediction_dict["val_neg"],
+                                                              T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
 
         if args.no_pi:
             clauses = bs_clauses
         else:
             # invent new predicate and generate pi clauses
-            pi_clauses = pi_clause_generator.generate(bs_clauses, pm_prediction_dict["val_pos"],
+            pi_clauses = pi_clause_generator.generate(bs_clauses, p_scores_list, pm_prediction_dict["val_pos"],
                                                       pm_prediction_dict["val_neg"])
-            # update System
+            # add new predicates
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
 
             clauses = bs_clauses + pi_clauses
 
-        # train NSFR
-        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
-        nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt)
-        final_evaluation(NSFR, pm_prediction_dict, args)
+            # train NSFR
+            NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
+            nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
+    return NSFR
 
 
 def main(n):
@@ -377,6 +387,10 @@ def main(n):
         args.device = torch.device('cuda:' + str(args.device))
 
     print('device: ', args.device)
+
+    if args.no_pi:
+        args.pi_epochs = 1
+
     # run_name = 'predict/' + args.dataset
     writer = SummaryWriter(str(config.root / "runs" / name), purge_step=0)
 
@@ -403,9 +417,13 @@ def main(n):
     lang_base_path = config.root / 'data' / 'lang'
     args.lang_base_path = lang_base_path
 
-    # main program
-    train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt)
+    exp_output_path = config.buffer_path / args.dataset
+    if not os.path.exists(exp_output_path):
+        os.mkdir(exp_output_path)
 
+    # main program
+    NSFR = train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path)
+    final_evaluation(NSFR, pm_prediction_dict, args)
     # update PI
     # PI = pi_utils.get_pi_model(args, lang, pi_clauses, atoms, bk, bk_clauses, device=device)
     # params_pi = PI.get_params()
