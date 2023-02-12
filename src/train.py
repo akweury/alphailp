@@ -332,6 +332,7 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
 
 def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path):
     NSFR = None
+    FC = None
     lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                      args.dataset_type, args.dataset)
 
@@ -339,6 +340,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
     # loop for predicate invention
     for i in range(args.pi_epochs):
+        pi_clauses = []
         # get models
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                clauses, bk_clauses, pi_clauses, atoms, bk)
@@ -359,9 +361,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
             clauses = bs_clauses + pi_clauses
 
-        # train NSFR
-        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
-        nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
+    NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
+    nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
     return NSFR
 
 
