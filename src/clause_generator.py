@@ -625,7 +625,11 @@ class PIClauseGenerator(object):
         passed_pi_clauses, passed_pi_predicates = self.extract_pi(passed_pi_languages)
 
         print("====== ", len(passed_pi_predicates), " predicates are generated!! ======")
+        for pred in passed_pi_predicates:
+            print(pred)
         print("====== ", len(passed_pi_clauses), "pi clauses are generated!! ======")
+        for c in passed_pi_clauses:
+            print(c)
 
         self.lang.invented_preds = passed_pi_predicates
 
