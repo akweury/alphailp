@@ -276,22 +276,22 @@ class ClauseGenerator(object):
             self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
                                        self.NSFR.bk, self.bk_clauses, [], self.NSFR.fc, self.device)
 
-            p_score = logic_utils.eval_predicates(self.NSFR, self.args.batch_size_bs,
-                                                  eval_pred_names, pos_pred, neg_pred, self.device)
+            p_score = logic_utils.eval_predicates(self.NSFR, self.args,
+                                                  eval_pred_names, pos_pred, neg_pred)
 
             # clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
-            p_clause_signs = self.eval_clause_sign(p_score)
+            p_clause_signs = logic_utils.eval_clause_sign(p_score)
             clause_signs, clause_score_list, clause_scores_full = p_clause_signs[0]
             # check for duplication
             non_duplicate_clause_index = []
             non_duplicate_full_scores = []
             for i, ref in enumerate(refs_non_conflict):
                 # check duplication
-                if not self.is_in_beam(B_new, ref, clause_scores_full[i]):
-                    B_new[ref] = clause_scores_full[i]
-                    C_dic[ref] = clause_scores_full[i]
+                if not self.is_in_beam(B_new, ref, clause_scores_full[0, i, :]):
+                    B_new[ref] = clause_scores_full[0, i, :]
+                    C_dic[ref] = clause_scores_full[0, i, :]
                     non_duplicate_clause_index.append(i)
-                    non_duplicate_full_scores.append(clause_scores_full[i])
+                    non_duplicate_full_scores.append(clause_scores_full[0, i, :])
             is_plot_4zone = False
             if is_plot_4zone:
                 for i, clause in enumerate(B_new):
@@ -380,7 +380,7 @@ class ClauseGenerator(object):
         y = False
         for ci, score_i in B.items():
             preds_i = set([clause.head.pred] + [b.pred for b in clause.body])
-            if preds == preds_i and np.sum(np.abs(np.array([scores]) - np.array([score_i]))) < 1e-2:
+            if preds == preds_i and torch.sum(torch.abs(scores - score_i)) < 1e-2:
                 y = True
                 # print("duplicated: ", clause, ci)
                 break
@@ -425,15 +425,15 @@ class ClauseGenerator(object):
         resolution = 2
 
         p_clauses_signs = []
-        for p_score in p_scores:
+        for p_score in p_scores.values():
             clause_sign_list = []
             clause_score_list = []
             clause_score_full_list = []
             for clause_image_score in p_score:
                 data_map = np.zeros(shape=[resolution, resolution])
-                for index in range(len(clause_image_score[0])):
-                    x_index = int(clause_image_score[0][index] * resolution)
-                    y_index = int(clause_image_score[1][index] * resolution)
+                for index in range(len(clause_image_score[0][0])):
+                    x_index = int(clause_image_score[0][0, index] * resolution)
+                    y_index = int(clause_image_score[1][0, index] * resolution)
                     data_map[x_index, y_index] += 1
 
                 pos_low_neg_low_area = data_map[0, 0]
@@ -569,7 +569,7 @@ class ClauseGenerator(object):
 
         for clause, scores in B_new_sorted:
             last_3 = scores[1:]
-            if np.max(last_3) == last_3[0] and last_3[0] > last_3[2]:
+            if torch.max(last_3) == last_3[0] and last_3[0] > last_3[2]:
                 good_clauses.append((clause, scores))
         return good_clauses
 
@@ -606,27 +606,30 @@ class PIClauseGenerator(object):
         # clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
 
         clause_clusters = logic_utils.search_independent_clauses(beam_search_clauses)
-        clause_candidates = logic_utils.search_cluster_candidates(clause_clusters, p_scores_list)
+        # clause_candidates = logic_utils.eval_clause_clusters(clause_clusters, p_scores_list)
 
         # generate new clauses
-        new_predicates = self.generate_new_predicate(clause_candidates, mode="clustering")
+        new_predicates = self.generate_new_predicate(clause_clusters, mode="clustering")
 
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
         # convert clauses from strings to objects
-        pi_clauses = logic_utils.get_pi_clauses_objs(self.lang, self.args.lark_path, self.args.lang_base_path,
-                                                     self.args.dataset_type, self.args.dataset, new_clauses_str_list)
-
-        atoms = logic_utils.get_atoms(self.lang)
+        pi_languages = logic_utils.get_pi_clauses_objs(self.args, new_clauses_str_list,
+                                                       new_predicates)
 
         # generate pi clauses
-        pi_clauses = self.eval_pi_clauses(atoms, beam_search_clauses, pi_clauses, pos_pred, neg_pred)
-        pi_clauses = pi_clauses[:5]
+        passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
+        passed_pi_languages = passed_pi_languages[:5]
 
-        print("====== ", len(pi_clauses), "pi clauses are generated!! ======")
+        passed_pi_clauses, passed_pi_predicates = self.extract_pi(passed_pi_languages)
 
-        return pi_clauses
+        print("====== ", len(passed_pi_predicates), " predicates are generated!! ======")
+        print("====== ", len(passed_pi_clauses), "pi clauses are generated!! ======")
+
+        self.lang.invented_preds = passed_pi_predicates
+
+        return passed_pi_clauses
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred):
 
@@ -862,8 +865,8 @@ class PIClauseGenerator(object):
     #
     #     return all_clause_scores
 
-    def eval_pi_clauses(self, atoms, clauses, pi_clauses, pos_pred, neg_pred):
-        print("Eval PI clauses: ", len(pi_clauses))
+    def eval_pi_language(self, bs_clauses, pi_languages, pos_pred, neg_pred):
+        print("Eval PI Languages: ", len(pi_languages))
         output_pi_clauses = []
         hidden_pi_clauses = []
         archive_pi_clauses = []
@@ -876,88 +879,107 @@ class PIClauseGenerator(object):
         archive_scores = []
         ip_names = []
 
-        invented_predicates = self.lang.invented_preds
+        pi_language_scores = torch.zeros(len(pi_languages))
+
         # scoring predicates
-        for pi_index, pi_clause in enumerate(pi_clauses):
+        for pi_index, pi_language in enumerate(pi_languages):
+            print(f"eval pi language {pi_index}/{len(pi_languages)}")
+            lang, pi_clause = pi_language[0], pi_language[1]
             pred_names = ['kp']
             for pi_c in pi_clause:
                 for body_atom in pi_c.body:
                     if "inv_pred" in body_atom.pred.name:
                         pred_names.append(body_atom.pred.name)
-
-            NSFR = get_nsfr_model(self.args, self.lang, clauses, atoms,
+            clauses = bs_clauses + pi_clause
+            atoms = logic_utils.get_atoms(lang)
+            NSFR = get_nsfr_model(self.args, lang, clauses, atoms,
                                   self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
 
-            p_score = logic_utils.eval_predicates(NSFR, self.args.batch_size_bs,
-                                                  pred_names, pos_pred, neg_pred, self.device)
+            p_score = logic_utils.eval_predicates(NSFR, self.args, pred_names, pos_pred, neg_pred)
+            p_clause_signs = logic_utils.eval_clause_sign(p_score)
+            p_signs, p_goodness_scores, p_score_full_list = p_clause_signs[0]
+            # = logic_utils.eval_predicates_sign(p_score)
+            pi_language_scores[pi_index] = p_goodness_scores[1, :].max()
 
-            p_signs, p_goodness_scores, p_score_full_list = logic_utils.eval_predicates_sign(p_score)
+        pi_language_scores_sorted, pi_language_scores_sorted_indices = torch.sort(pi_language_scores, descending=True)
+        passed_languages = []
+        for index in pi_language_scores_sorted_indices:
+            passed_languages.append(pi_languages[index])
 
-            pred_type = None
-            if p_goodness_scores[0] == p_goodness_scores[1]:
-                # this is an output predicate
-                pred_type = "output_predicate"
-                output_pi_clauses.append(pi_clause)
-                output_scores.append([pi_index] + p_goodness_scores)
-                ip_names.append([pi_index, pred_names[1]])
-            elif p_goodness_scores[0] <= p_goodness_scores[1]:
-                # this is a hidden predicate
-                pred_type = "hidden_predicate"
-                hidden_pi_clauses.append(pi_clause)
-                hidden_scores.append([pi_index] + p_goodness_scores)
-                ip_names.append([pi_index, pred_names[1]])
-            else:
-                # this is not a good predicate
-                pred_type = "archive_predicate"
-                archive_pi_clauses.append(pi_clause)
-                archive_scores.append([pi_index] + p_goodness_scores)
-                ip_names.append([pi_index, pred_names[1]])
+        return passed_languages
+        #     pred_type = None
+        #     if p_goodness_scores[0] == p_goodness_scores[1]:
+        #         # this is an output predicate
+        #         pred_type = "output_predicate"
+        #         output_pi_clauses.append(pi_clause)
+        #         output_scores.append([pi_index] + p_goodness_scores)
+        #         ip_names.append([pi_index, pred_names[1]])
+        #     elif p_goodness_scores[0] <= p_goodness_scores[1]:
+        #         # this is a hidden predicate
+        #         pred_type = "hidden_predicate"
+        #         hidden_pi_clauses.append(pi_clause)
+        #         hidden_scores.append([pi_index] + p_goodness_scores)
+        #         ip_names.append([pi_index, pred_names[1]])
+        #     else:
+        #         # this is not a good predicate
+        #         pred_type = "archive_predicate"
+        #         archive_pi_clauses.append(pi_clause)
+        #         archive_scores.append([pi_index] + p_goodness_scores)
+        #         ip_names.append([pi_index, pred_names[1]])
+        #
+        # # filter out predicates
+        # output_ip = []
+        # for output_score in output_scores:
+        #     output_clause = output_pi_clauses[output_score[0]]
+        #     ip_name = ip_names[output_score[0]]
+        #     output_ip.append(ip_name)
+        #     passed_pi_clauses_clusters.append(output_clause)
+        #
+        # hidden_ip = []
+        # goodness_scores_sorted = sorted(hidden_scores, key=itemgetter(2), reverse=True)
+        # goodness_scores_sorted_t5 = goodness_scores_sorted[:5]
+        # for goodness_score in goodness_scores_sorted_t5:
+        #     hidden_clause = hidden_pi_clauses[goodness_score[0]]
+        #     ip_name = ip_names[goodness_score[0]]
+        #     hidden_ip.append(ip_name)
+        #     passed_pi_clauses_clusters.append(hidden_clause)
+        #
+        # archive_ip = []
+        # for archive_score in archive_scores:
+        #     archive_clause = archive_pi_clauses[archive_score[0]]
+        #     unpassed_pi_clauses_clusters.append(archive_clause)
+        #     ip_name = ip_names[archive_score[0]]
+        #     archive_ip.append(ip_name)
+        #     unpassed_pi_clauses_clusters.append(archive_clause)
+        #
+        # ip_indices = []
+        # for ip_index, ip in enumerate(self.lang.invented_preds):
+        #     if ip.name in hidden_ip:
+        #         ip.ptype = "hidden_predicate"
+        #         ip_indices.append(ip_index)
+        #     elif ip.name in output_ip:
+        #         ip.ptype = "output_predicate"
+        #         ip_indices.append(ip_index)
+        #     else:
+        #         ip.ptype = "archive_predicate"
+        #
+        # hidden_predicates_indices = [ip[0] for ip in hidden_ip]
+        # hidden_predicates = [self.lang.invented_preds[i] for i in hidden_predicates_indices]
+        #
+        # output_predicates_indices = [ip[0] for ip in output_ip]
+        # output_predicates = [self.lang.invented_preds[i] for i in output_predicates_indices]
+        #
+        # self.lang.invented_preds = output_predicates + hidden_predicates
+        #
+        # passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
+        # unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
 
-        # filter out predicates
-        output_ip = []
-        for output_score in output_scores:
-            output_clause = output_pi_clauses[output_score[0]]
-            ip_name = ip_names[output_score[0]]
-            output_ip.append(ip_name)
-            passed_pi_clauses_clusters.append(output_clause)
+    def extract_pi(self, passed_pi_languages):
 
-        hidden_ip = []
-        goodness_scores_sorted = sorted(hidden_scores, key=itemgetter(2), reverse=True)
-        goodness_scores_sorted_t5 = goodness_scores_sorted[:5]
-        for goodness_score in goodness_scores_sorted_t5:
-            hidden_clause = hidden_pi_clauses[goodness_score[0]]
-            ip_name = ip_names[goodness_score[0]]
-            hidden_ip.append(ip_name)
-            passed_pi_clauses_clusters.append(hidden_clause)
-
-        archive_ip = []
-        for archive_score in archive_scores:
-            archive_clause = archive_pi_clauses[archive_score[0]]
-            unpassed_pi_clauses_clusters.append(archive_clause)
-            ip_name = ip_names[archive_score[0]]
-            archive_ip.append(ip_name)
-            unpassed_pi_clauses_clusters.append(archive_clause)
-
-        ip_indices = []
-        for ip_index, ip in enumerate(self.lang.invented_preds):
-            if ip.name in hidden_ip:
-                ip.ptype = "hidden_predicate"
-                ip_indices.append(ip_index)
-            elif ip.name in output_ip:
-                ip.ptype = "output_predicate"
-                ip_indices.append(ip_index)
-            else:
-                ip.ptype = "archive_predicate"
-
-        hidden_predicates_indices = [ip[0] for ip in hidden_ip]
-        hidden_predicates = [self.lang.invented_preds[i] for i in hidden_predicates_indices]
-
-        output_predicates_indices = [ip[0] for ip in output_ip]
-        output_predicates = [self.lang.invented_preds[i] for i in output_predicates_indices]
-
-        self.lang.invented_preds = output_predicates + hidden_predicates
-
-        passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
-        unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
-
-        return passed_clauses
+        pi_clauses = []
+        pi_predicates = []
+        for index, passed_pi_language in enumerate(passed_pi_languages):
+            passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
+            pi_clauses += passed_pi_clauses
+            pi_predicates += passed_lang.invented_preds
+        return pi_clauses, pi_predicates

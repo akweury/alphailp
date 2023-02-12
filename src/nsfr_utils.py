@@ -356,6 +356,7 @@ def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, t
                             train=train)
     CIM = build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang,
                                     m=len(clauses), infer_step=3, device=device)
+
     # Neuro-Symbolic Forward Reasoner
     NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM, clause_infer_module=CIM, atoms=atoms,
                        bk=bk, clauses=clauses)

@@ -118,8 +118,8 @@ def predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
         target_list.append(train_label[:, i].detach().to("cpu"))
         count += V_T.size(0)  # batch size
 
-    predicted = torch.cat(predicted_list, dim=0).detach().cpu().numpy()
-    target_set = torch.cat(target_list, dim=0).to(torch.int64).detach().cpu().numpy()
+    predicted = torch.tensor(predicted_list).detach().cpu().numpy()
+    target_set = torch.tensor(target_list).to(torch.int64).detach().cpu().numpy()
 
     if th == None:
         fpr, tpr, thresholds = roc_curve(target_set, predicted, pos_label=1)
@@ -156,8 +156,8 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
     test_acc_list = np.zeros(shape=(1, args.epochs))
     # prepare perception result
     train_pred = torch.cat((pm_prediction_dict['train_pos'], pm_prediction_dict['train_neg']), dim=0)
-    train_label = torch.zeros(1, len(train_pred)).to(args.device)
-    train_label[0, :len(pm_prediction_dict['train_pos'])] = 1.0
+    train_label = torch.zeros(len(train_pred)).to(args.device)
+    train_label[:len(pm_prediction_dict['train_pos'])] = 1.0
 
     for epoch in range(args.epochs):
         loss_i = 0
@@ -170,7 +170,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
 
             # NSFR.print_valuation_batch(V_T)
             predicted = get_prob(V_T, NSFR, args)
-            loss = bce(predicted, train_label[:, i])
+            loss = bce(predicted, train_label[i])
             loss_i += loss.item()
             loss.backward()
             # TODO: problem: performs good in positive but bad in negative
@@ -359,9 +359,9 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
             clauses = bs_clauses + pi_clauses
 
-            # train NSFR
-            NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
-            nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
+        # train NSFR
+        NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
+        nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
     return NSFR
 
 

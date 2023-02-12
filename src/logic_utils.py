@@ -52,25 +52,33 @@ def get_atoms(lang):
 #     return new_lang
 
 
-def get_pi_clauses_objs(lang, lark_path, lang_base_path, dataset_type, dataset, clauses_str_list):
+def get_pi_clauses_objs(args, clauses_str_list, new_predicates):
     """Load the language of first-order logic from files.
 
     Read the language, clauses, background knowledge from files.
     Atoms are generated from the language.
     """
-    du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
-                   dataset_type=dataset_type, dataset=dataset)
-    pi_clauses_lists = []
-    for c_list in clauses_str_list:
+    du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
+                   dataset_type=args.dataset_type, dataset=args.dataset)
+    pi_languages = []
+    for c_index, c_list in enumerate(clauses_str_list):
+        # create a new language with new pi clauses in c_list
+        lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
+                                                                         args.dataset_type, args.dataset)
+        # add predicates to new language
+        lang.invented_preds.append(new_predicates[c_index])
+
+        # add pi clauses to new language
         pi_clauses = du.gen_pi_clauses(lang, c_list)
-        pi_clauses_lists.append(pi_clauses)
+
+        pi_languages.append([lang, pi_clauses])
 
         for pi_c in pi_clauses:
-            print(pi_c)
+            print(f"(PI Clause Cluster {c_index} )" + str(pi_c))
 
     # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
     # atoms = generate_atoms(lang)
-    return pi_clauses_lists
+    return pi_languages
 
 
 def get_searched_clauses(lark_path, lang_base_path, dataset_type, dataset):
@@ -361,15 +369,23 @@ def sub_lists(l):
     return comb
 
 
-def search_cluster_candidates(independent_clauses_all, clause_scores_full):
-    print("search_cluster_candidates")
+def eval_clause_clusters(clause_clusters, clause_scores_full):
+    """
+    Scoring each clause cluster, ranking them, return them.
+    Args:
+        clause_clusters:
+        clause_scores_full:
+
+    Returns:
+
+    """
     cluster_candidates = []
-    for c_index, clause_dict in enumerate(independent_clauses_all):
-        clause = list(clause_dict.keys())[0]
+    for c_index, clause_cluster in enumerate(clause_clusters):
+        clause = list(clause_cluster.keys())[0]
         clause_full_score = clause_scores_full[c_index]
         total_score = np.sum(clause_full_score)
-        complementary_clauses = [list(ic_dict.keys())[0] for ic_dict in list(clause_dict.values())[0]]
-        complementary_clauses_index = [list(ic_dict.values())[0] for ic_dict in list(clause_dict.values())[0]]
+        complementary_clauses = [list(ic_dict.keys())[0] for ic_dict in list(clause_cluster.values())[0]]
+        complementary_clauses_index = [list(ic_dict.values())[0] for ic_dict in list(clause_cluster.values())[0]]
         complementary_clauses_full_score = [clause_scores_full[index] for index in complementary_clauses_index]
 
         complementary_clauses_full_score_no_repeat = []
@@ -384,10 +400,12 @@ def search_cluster_candidates(independent_clauses_all, clause_scores_full):
                     else:
                         complementary_clauses_full_score_no_repeat.append(full_scores_j)
                         complementary_clauses_no_repeat.append(complementary_clauses[j])
+
         sum_pos_clause = clause_full_score[1] + clause_full_score[3]
         sum_pos_clause_ind = [fs[1] + fs[3] for fs in complementary_clauses_full_score_no_repeat]
+
         if (sum_pos_clause + np.sum(sum_pos_clause_ind)) == total_score:
-            cluster_candidates.append(clause_dict)
+            cluster_candidates.append(clause_cluster)
         elif (sum_pos_clause + np.sum(sum_pos_clause_ind)) >= total_score:
             sum_ind = total_score - sum_pos_clause
             # find a subset of sum_pos_clause_ind, so that the sum of the subset equal to sum_ind
@@ -405,29 +423,28 @@ def search_cluster_candidates(independent_clauses_all, clause_scores_full):
             for subset_i, subset in enumerate(subsets):
                 if np.sum(list(subset)) == sum_ind:
                     indices = subset_index[subset_i]
-                    clauses_set = [clause_dict[clause][c_i] for c_i in indices]
+                    clauses_set = [clause_cluster[clause][c_i] for c_i in indices]
                     cluster_candidates.append({
-                        "clause": clause,
-                        "clause_score": sum_pos_clause,
-                        "clause_set": clauses_set,
+                        "clause": clause, "clause_score": sum_pos_clause, "clause_set": clauses_set,
                         "clause_set_score": subset,
                     })
     new_pi_clauses = []
+
     for cluster in cluster_candidates:
         cluster_ind = [list(c.keys())[0] for c in cluster["clause_set"]]
-        new_pi_clauses.append(
-            [cluster["clause"]] + cluster_ind
-        )
+        new_pi_clauses.append([cluster["clause"]] + cluster_ind)
     return new_pi_clauses
 
 
-def eval_predicates(NSFR, bz, pred_names, pos_pred, neg_pred, device):
+def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
+    bz = args.batch_size
+    device = args.device
     pos_img_num = pos_pred.shape[0]
     neg_img_num = neg_pred.shape[0]
     eval_pred_num = len(pred_names)
     clause_num = len(NSFR.clauses)
-    score_positive = torch.zeros((pos_img_num, clause_num, eval_pred_num)).to(device)
-    score_negative = torch.zeros((neg_img_num, clause_num, eval_pred_num)).to(device)
+    score_positive = torch.zeros((bz, pos_img_num, clause_num, eval_pred_num)).to(device)
+    score_negative = torch.zeros((bz, neg_img_num, clause_num, eval_pred_num)).to(device)
     # get predicates that need to be evaluated.
     # pred_names = ['kp']
     # for pi_c in pi_clauses:
@@ -439,36 +456,33 @@ def eval_predicates(NSFR, bz, pred_names, pos_pred, neg_pred, device):
         V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
         A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
 
-        C_score = torch.zeros((clause_num, eval_pred_num, bz)).to(device)
+        C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
         # clause loop
         for clause_index, V_T in enumerate(V_T_list):
             for pred_index, pred_name in enumerate(pred_names):
-                predicted = NSFR.predict(v=V_T_list[clause_index], predname=pred_name).detach()
-                C_score[clause_index, pred_index, :] = predicted
+                predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
+                C_score[:, clause_index, pred_index] = predicted
         # sum over positive prob
-        score_positive[image_index, :] = C_score.squeeze(1)
+        score_positive[:, image_index, :] = C_score
 
     # negative image loop
     for image_index in range(neg_img_num):
         V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
 
-        C_score = torch.zeros((clause_num, eval_pred_num, bz)).to(device)
+        C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
         for clause_index, V_T in enumerate(V_T_list):
             for pred_index, pred_name in enumerate(pred_names):
-                predicted = NSFR.predict(v=V_T_list[clause_index], predname=pred_name).detach()
-                C_score[clause_index, pred_index, :] = predicted
+                predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
+                C_score[:, clause_index, pred_index] = predicted
             # C
             # C_score = PI.clause_eval(C_score)
             # sum over positive prob
-        score_negative[image_index, :] = C_score.squeeze(1)
+        score_negative[:, image_index, :] = C_score
 
-    all_predicates_scores = []
-    for p_index in range(eval_pred_num):
-        predicate_scores = []
-        for c_index in range(clause_num):
-            clause_scores = [score_negative[:, c_index, p_index], score_positive[:, c_index, p_index]]
-            predicate_scores.append(clause_scores)
-        all_predicates_scores.append(predicate_scores)
+    # axis: batch_size, pred_names, clauses, pos_neg_labels, images
+    score_positive = score_positive.permute(0, 3, 2, 1).unsqueeze(2)
+    score_negative = score_negative.permute(0, 3, 2, 1).unsqueeze(2)
+    all_predicates_scores = torch.cat((score_negative, score_positive), 2)
 
     return all_predicates_scores
 
@@ -481,9 +495,9 @@ def eval_predicates_sign(c_score):
     clause_score_full_list = []
     for clause_image_score in c_score:
         data_map = np.zeros(shape=[resolution, resolution])
-        for index in range(len(clause_image_score[0])):
-            x_index = int(clause_image_score[0][index] * resolution)
-            y_index = int(clause_image_score[1][index] * resolution)
+        for index in range(len(clause_image_score[0][0])):
+            x_index = int(clause_image_score[0][0][index] * resolution)
+            y_index = int(clause_image_score[1][0][index] * resolution)
             data_map[x_index, y_index] += 1
 
         pos_low_neg_low_area = data_map[0, 0]
@@ -504,3 +518,40 @@ def eval_predicates_sign(c_score):
             clause_sign_list.append(False)
 
     return clause_sign_list, clause_high_scores, clause_score_full_list
+
+
+def eval_clause_sign(p_scores):
+    # p_scores axis: batch_size, pred_names, clauses, pos_neg_labels, images
+    p_scores = p_scores[0]
+    resolution = 2
+    p_scores = p_scores.permute(0, 2, 3, 1)
+    p_scores_discrete = (p_scores * resolution).int()
+    four_zone_scores = torch.zeros((p_scores.size(0), p_scores.size(1), 4))
+
+    total_image_pairs = p_scores.size(2)
+
+    # zero score pairs
+    four_zone_scores[:, :, 0] = total_image_pairs - p_scores_discrete.sum(dim=3).count_nonzero(dim=2)
+
+    # high pos, low neg
+    four_zone_scores[:, :, 1] = total_image_pairs - (
+            p_scores_discrete[:, :, :, 0] - p_scores_discrete[:, :, :, 1] + 1).count_nonzero(dim=2)
+
+    # low pos, high neg
+    four_zone_scores[:, :, 2] = total_image_pairs - (
+            p_scores_discrete[:, :, :, 0] - p_scores_discrete[:, :, :, 1] - 1).count_nonzero(dim=2)
+
+    # high pos, high neg
+    four_zone_scores[:, :, 3] = total_image_pairs - (p_scores_discrete.sum(dim=3) - 2).count_nonzero(dim=2)
+
+    clause_score = four_zone_scores[:, :, 1] - four_zone_scores[:, :, 3]
+
+    four_zone_scores[:, :, 0] = 0
+
+    clause_sign_list = (four_zone_scores.max(dim=-1)[1] - 1) == 0
+    p_clauses_signs = []
+
+    # TODO: find a better score evaluation function
+    p_clauses_signs.append([clause_sign_list, clause_score, four_zone_scores])
+
+    return p_clauses_signs

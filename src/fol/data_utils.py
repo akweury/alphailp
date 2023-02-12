@@ -64,6 +64,7 @@ class DataUtils(object):
     def gen_pi_clauses(self, lang, clause_str_list):
         """Read lines and parse to Atom objects.
         """
+
         clauses = []
         for clause_str in clause_str_list:
             tree = self.lp_clause.parse(clause_str)
