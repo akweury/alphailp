@@ -52,7 +52,7 @@ def get_atoms(lang):
 #     return new_lang
 
 
-def get_pi_clauses_objs(args, clauses_str_list, new_predicates):
+def get_pi_clauses_objs(args, cg_lang, clauses_str_list, new_predicates):
     """Load the language of first-order logic from files.
 
     Read the language, clauses, background knowledge from files.
@@ -65,6 +65,8 @@ def get_pi_clauses_objs(args, clauses_str_list, new_predicates):
         # create a new language with new pi clauses in c_list
         lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                          args.dataset_type, args.dataset)
+        lang.invented_preds += cg_lang.invented_preds
+        lang.invented_preds_number = cg_lang.invented_preds_number
         # add predicates to new language
         lang.invented_preds.append(new_predicates[c_index])
 

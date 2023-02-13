@@ -337,30 +337,33 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                                                                      args.dataset_type, args.dataset)
 
     clauses = update_initial_clauses(init_clauses, args.n_obj)
-
+    bs_clauses = []
     # loop for predicate invention
     for i in range(args.pi_epochs):
-        pi_clauses = []
+        init_clauses = update_initial_clauses(init_clauses, args.n_obj)
+        # pi_clauses = []
         # get models
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                               clauses, bk_clauses, pi_clauses, atoms, bk)
+                                                               init_clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
         bs_clauses, p_scores_list = clause_generator.generate(clauses, pm_prediction_dict["val_pos"],
-                                                              pm_prediction_dict["val_neg"],
+                                                              pm_prediction_dict["val_neg"], pi_clauses,
                                                               T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
 
         if args.no_pi:
             clauses = bs_clauses
         else:
             # invent new predicate and generate pi clauses
-            pi_clauses = pi_clause_generator.generate(bs_clauses, p_scores_list, pm_prediction_dict["val_pos"],
-                                                      pm_prediction_dict["val_neg"])
+            new_pi_clauses = pi_clause_generator.generate(bs_clauses, p_scores_list, pm_prediction_dict["val_pos"],
+                                                          pm_prediction_dict["val_neg"])
             # add new predicates
+            pi_clauses += new_pi_clauses
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
 
-            clauses = bs_clauses + pi_clauses
+            # clauses = bs_clauses + pi_clauses
 
+    clauses = bs_clauses + pi_clauses
     NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
     nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
     return NSFR

@@ -98,7 +98,7 @@ class ClauseGenerator(object):
             else:
                 return False
 
-    def generate(self, C_0, pos_pred, neg_pred, gen_mode='beam', T_beam=7, N_beam=20, N_max=100):
+    def generate(self, C_0, pos_pred, neg_pred, pi_clauses, gen_mode='beam', T_beam=7, N_beam=20, N_max=100):
         """
         call clause generation function with or without beam-searching
         Inputs
@@ -121,8 +121,8 @@ class ClauseGenerator(object):
             set of generated clauses
         """
         if gen_mode == 'beam':
-            beam_search_clauses, p_scores_list = self.beam_search(C_0, pos_pred, neg_pred, T_beam=T_beam, N_beam=N_beam,
-                                                                  N_max=N_max)
+            beam_search_clauses, p_scores_list = self.beam_search(C_0, pos_pred, neg_pred, pi_clauses,
+                                                                  T_beam=T_beam, N_beam=N_beam, N_max=N_max)
             return beam_search_clauses, p_scores_list
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
@@ -242,7 +242,8 @@ class ClauseGenerator(object):
     #                 return True
     #     return False
 
-    def beam_search_clause_quick(self, init_clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
+    def beam_search_clause_quick(self, init_clause, pos_pred, neg_pred, pi_clauses, T_beam=7, N_beam=20, N_max=100,
+                                 th=0.98):
 
         step = 0
         init_step = 0
@@ -274,7 +275,7 @@ class ClauseGenerator(object):
             refs_non_conflict = logic_utils.remove_conflict_clauses(refs)
 
             self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
-                                       self.NSFR.bk, self.bk_clauses, [], self.NSFR.fc, self.device)
+                                       self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
 
             p_score = logic_utils.eval_predicates(self.NSFR, self.args,
                                                   eval_pred_names, pos_pred, neg_pred)
@@ -386,7 +387,7 @@ class ClauseGenerator(object):
                 break
         return y
 
-    def beam_search(self, C_0, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100):
+    def beam_search(self, C_0, pos_pred, neg_pred, pi_clauses, T_beam=7, N_beam=20, N_max=100):
         """
         generate clauses by beam-searching from initial clauses
         Inputs
@@ -407,7 +408,8 @@ class ClauseGenerator(object):
         C = set()
         p_scores_list = []
         for clause in C_0:
-            bs_clauses, p_scores = self.beam_search_clause_quick(clause, pos_pred, neg_pred, T_beam, N_beam, N_max)
+            bs_clauses, p_scores = self.beam_search_clause_quick(clause, pos_pred, neg_pred, pi_clauses, T_beam, N_beam,
+                                                                 N_max)
             C = C.union(bs_clauses)
             p_scores_list.append(p_scores)
             # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
@@ -615,12 +617,12 @@ class PIClauseGenerator(object):
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
         # convert clauses from strings to objects
-        pi_languages = logic_utils.get_pi_clauses_objs(self.args, new_clauses_str_list,
+        pi_languages = logic_utils.get_pi_clauses_objs(self.args,self.lang, new_clauses_str_list,
                                                        new_predicates)
 
         # generate pi clauses
         passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
-        passed_pi_languages = passed_pi_languages[:5]
+        # passed_pi_languages = passed_pi_languages[:5]
 
         passed_pi_clauses, passed_pi_predicates = self.extract_pi(passed_pi_languages)
 
@@ -986,4 +988,4 @@ class PIClauseGenerator(object):
             passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
             pi_clauses += passed_pi_clauses
             pi_predicates += passed_lang.invented_preds
-        return pi_clauses, pi_predicates
+        return list(set(pi_clauses)), list(set(pi_predicates))
