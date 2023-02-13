@@ -139,25 +139,23 @@ class YOLOAreaValuationFunction(nn.Module):
         dir_vec = c_2 - c_1
         dir_vec[1] = -dir_vec[1]
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
-        phi_clock_shift = (90 - int(phi)) % 360
+        phi_clock_shift = (90 - phi.long()) % 360
         zone_id = phi_clock_shift // 90 % 4
 
         # This is a threshold, but it can be decided automatically.
-        if rho < 0.12:
-            zone_shift = 0
-        else:
-            zone_shift = 4
-        zone_id = zone_id + zone_shift
+        zone_id[rho >= 0.12] = zone_id[rho >= 0.12] + 4
+
         area_pred = torch.zeros(area.shape).to(area.device)
-        area_pred[zone_id] = 1
+        for i in range(area_pred.shape[0]):
+            area_pred[i, zone_id[i]] = 1
 
         # area_pred = self.area_net(rho, phi)
 
-        return (area * area_pred).sum()
+        return (area * area_pred).sum(dim=1)
 
     def cart2pol(self, x, y):
-        rho = torch.sqrt(x ** 2 + y ** 2)[0]
-        phi = torch.atan2(y, x)[0]
+        rho = torch.sqrt(x ** 2 + y ** 2)
+        phi = torch.atan2(y, x)
         phi = torch.rad2deg(phi)
         return (rho, phi)
 

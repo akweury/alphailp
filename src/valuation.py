@@ -132,7 +132,7 @@ class YOLOValuationModule(nn.Module):
         if term.dtype.name == 'object':
             return zs[:, term_index]
         elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'area':
-            return self.attrs[term]
+            return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1)
         elif term.dtype.name == 'image':
             return None
         else:

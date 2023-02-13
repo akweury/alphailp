@@ -268,11 +268,11 @@ class ClauseGenerator(object):
                 refs.extend(refs_i)
                 if self._is_valid(c) and not self._is_confounded(c):
                     C = C.union(set([c]))
-                    print("Added: ", c)
+                    print(f"(BS step {step + 1}/{T_beam}) Added: ", c)
 
             print('Evaluating ', len(refs), 'generated clauses.')
             # evaluate clauses, it should consider both positive images as well as negative images.
-            refs_non_conflict = logic_utils.remove_conflict_clauses(refs)
+            refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses)
 
             self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
                                        self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
@@ -315,8 +315,8 @@ class ClauseGenerator(object):
             if len(B_new_sorted) > 5:
                 B_new_sorted = B_new_sorted[:5]
             # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
-            for x in B_new_sorted:
-                print(f'(BS Clause on Step {step} )' + str(x[1]) + ', ' + str(x[0]))
+            # for x in B_new_sorted:
+            # print(f'(BS Clause on Step {step} )' + str(x[1]) + ', ' + str(x[0]))
             B = [x[0] for x in B_new_sorted]
             step += 1
             if len(B) == 0:
@@ -378,10 +378,12 @@ class ClauseGenerator(object):
         """
 
         preds = set([clause.head.pred] + [b.pred for b in clause.body])
+        c_terms = set(clause.head.terms + [t for b in clause.body for t in b.terms])
         y = False
         for ci, score_i in B.items():
-            preds_i = set([clause.head.pred] + [b.pred for b in clause.body])
-            if preds == preds_i and torch.sum(torch.abs(scores - score_i)) < 1e-2:
+            preds_i = set([ci.head.pred] + [b.pred for b in ci.body])
+            ci_terms = set(ci.head.terms + [t for b in ci.body for t in b.terms])
+            if preds == preds_i and c_terms == ci_terms:
                 y = True
                 # print("duplicated: ", clause, ci)
                 break
@@ -617,12 +619,12 @@ class PIClauseGenerator(object):
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
         # convert clauses from strings to objects
-        pi_languages = logic_utils.get_pi_clauses_objs(self.args,self.lang, new_clauses_str_list,
+        pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list,
                                                        new_predicates)
 
         # generate pi clauses
         passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
-        # passed_pi_languages = passed_pi_languages[:5]
+        passed_pi_languages = passed_pi_languages[:5]
 
         passed_pi_clauses, passed_pi_predicates = self.extract_pi(passed_pi_languages)
 
@@ -804,14 +806,14 @@ class PIClauseGenerator(object):
         for new_predicate in new_predicates:
             single_pi_str_list = []
             single_pi_str_list.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
-            head_args = "(A,B)" if new_predicate.arity == 2 else "(X)"
+            head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:
                 body_str = ""
                 for atom_index in range(len(body)):
                     atom_str = str(body[atom_index])
-                    atom_str = atom_str.replace("O1", "A")
-                    atom_str = atom_str.replace("O2", "B")
+                    # atom_str = atom_str.replace("O1", "A")
+                    # atom_str = atom_str.replace("O2", "B")
                     end_str = "." if atom_index == len(body) - 1 else ","
                     body_str += atom_str + end_str
                 new_clause = head + body_str
@@ -873,18 +875,6 @@ class PIClauseGenerator(object):
 
     def eval_pi_language(self, bs_clauses, pi_languages, pos_pred, neg_pred):
         print("Eval PI Languages: ", len(pi_languages))
-        output_pi_clauses = []
-        hidden_pi_clauses = []
-        archive_pi_clauses = []
-
-        unpassed_pi_clauses_clusters = []
-        passed_pi_clauses_clusters = []
-
-        output_scores = []
-        hidden_scores = []
-        archive_scores = []
-        ip_names = []
-
         pi_language_scores = torch.zeros(len(pi_languages))
 
         # scoring predicates
@@ -986,6 +976,12 @@ class PIClauseGenerator(object):
         pi_predicates = []
         for index, passed_pi_language in enumerate(passed_pi_languages):
             passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
-            pi_clauses += passed_pi_clauses
-            pi_predicates += passed_lang.invented_preds
-        return list(set(pi_clauses)), list(set(pi_predicates))
+            for c in passed_pi_clauses:
+                if c not in pi_clauses:
+                    pi_clauses.append(c)
+                else:
+                    print(f"duplicate pi clause {c}")
+            for p in passed_lang.invented_preds:
+                if p not in pi_predicates:
+                    pi_predicates.append(p)
+        return pi_clauses, pi_predicates
