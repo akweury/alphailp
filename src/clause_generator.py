@@ -314,7 +314,6 @@ class ClauseGenerator(object):
             if len(B_new_good) > 10:
                 B_new_good = random.sample(B_new_good, 10)
 
-
             #     B_new_sorted = B_new_sorted[:5]
             # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
             # for x in B_new_sorted:
@@ -624,6 +623,8 @@ class PIClauseGenerator(object):
         pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list,
                                                        new_predicates)
 
+        pos_pred = pos_pred.to(self.args.device)
+        neg_pred = neg_pred.to(self.args.device)
         # generate pi clauses
         passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
         passed_pi_languages = passed_pi_languages[:5]

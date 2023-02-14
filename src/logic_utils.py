@@ -635,7 +635,7 @@ def eval_clause_sign(p_scores):
 
     img_total = p_scores.size(2)
 
-    # zero score pairs
+    # low pos, low neg
     four_zone_scores[:, :, 0] = img_total - ps_discrete.sum(dim=3).count_nonzero(dim=2)
 
     # high pos, low neg
