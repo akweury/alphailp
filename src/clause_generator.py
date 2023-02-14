@@ -1,6 +1,6 @@
 import os.path
 from operator import itemgetter
-
+import random
 from nsfr_utils import update_nsfr_clauses, get_prob, get_nsfr_model
 # from eval_clause import EvalInferModule
 from refinement import RefinementGenerator
@@ -277,8 +277,7 @@ class ClauseGenerator(object):
             self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
                                        self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
 
-            p_score = logic_utils.eval_predicates(self.NSFR, self.args,
-                                                  eval_pred_names, pos_pred, neg_pred)
+            p_score = logic_utils.eval_predicates(self.NSFR, self.args, eval_pred_names, pos_pred, neg_pred)
 
             # clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
             p_clause_signs = logic_utils.eval_clause_sign(p_score)
@@ -288,11 +287,11 @@ class ClauseGenerator(object):
             non_duplicate_full_scores = []
             for i, ref in enumerate(refs_non_conflict):
                 # check duplication
-                if not self.is_in_beam(B_new, ref, clause_scores_full[0, i, :]):
-                    B_new[ref] = clause_scores_full[0, i, :]
-                    C_dic[ref] = clause_scores_full[0, i, :]
+                if not self.is_in_beam(B_new, ref, clause_scores_full[:, i, :]):
+                    B_new[ref] = clause_scores_full[:, i, :]
+                    C_dic[ref] = clause_scores_full[:, i, :]
                     non_duplicate_clause_index.append(i)
-                    non_duplicate_full_scores.append(clause_scores_full[0, i, :])
+                    non_duplicate_full_scores.append(clause_scores_full[:, i, :])
             is_plot_4zone = False
             if is_plot_4zone:
                 for i, clause in enumerate(B_new):
@@ -310,14 +309,17 @@ class ClauseGenerator(object):
                                                    sub_folder=str(step),
                                                    labels=f"{str(clause) + str(clause_signs[clause_index])}",
                                                    x_label="positive score", y_label="negative score")
-            B_new_sorted = sorted(B_new.items(), key=lambda x: x[1][1], reverse=True)
-            B_new_sorted = self.select_good_clauses(B_new_sorted)
-            if len(B_new_sorted) > 5:
-                B_new_sorted = B_new_sorted[:5]
+            # B_new_sorted = sorted(B_new.items(), key=lambda x: x[0, 1], reverse=True)
+            B_new_good = self.select_good_clauses(B_new)
+            if len(B_new_good) > 10:
+                B_new_good = random.sample(B_new_good, 10)
+
+
+            #     B_new_sorted = B_new_sorted[:5]
             # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
             # for x in B_new_sorted:
             # print(f'(BS Clause on Step {step} )' + str(x[1]) + ', ' + str(x[0]))
-            B = [x[0] for x in B_new_sorted]
+            B = [x[0] for x in B_new_good]
             step += 1
             if len(B) == 0:
                 break
@@ -571,9 +573,9 @@ class ClauseGenerator(object):
     def select_good_clauses(self, B_new_sorted):
         good_clauses = []
 
-        for clause, scores in B_new_sorted:
-            last_3 = scores[1:]
-            if torch.max(last_3) == last_3[0] and last_3[0] > last_3[2]:
+        for clause, scores in B_new_sorted.items():
+            last_3 = scores[:, 1:]
+            if torch.max(last_3, dim=-1)[0] == last_3[:, 0] and last_3[:, 0] > last_3[:, 2]:
                 good_clauses.append((clause, scores))
         return good_clauses
 

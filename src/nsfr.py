@@ -89,25 +89,28 @@ class NSFReasoner(nn.Module):
 
         return zs
 
-    def predict(self, v, predname):
+    def predict(self, v, prednames):
         """Extracting a value from the valuation tensor using a given predicate.
         """
         # v: batch * |atoms|
-        if "inv_pred" in predname:
-            target_indices = logic_utils.get_indices_by_predname(pred_str=predname, atoms=self.atoms)
-            target_all = torch.zeros((len(target_indices), v.size(0)))
-            target_max = torch.zeros((len(target_indices)))
+        values = torch.zeros(len(prednames), v.size(0), v.size(1), 1)
+        if len(prednames) > 1:
+            target_indices = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
+            # target_all = torch.zeros((len(target_indices), v.size(0)))
+            # target_max = torch.zeros((len(target_indices)))
             for t_counter, t_index in enumerate(target_indices):
-                target_all[t_counter, :] = v[0, t_index]
-                target_max[t_counter] = v[0, t_index].max()
+                # target_all[t_counter] = v[:, :, t_index]
+                # target_max[t_counter] = v[:, :, t_index]
+                # max_value = torch.max(target_max)
+                values[t_counter] = v[:, :, t_index].max(dim=-1, keepdim=True)[0]
 
-            max_index = torch.argmax(target_max)
-            max_value = torch.max(target_max)
-            return max_value
+        else:
+            target_index_list = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
+            for t_i, target_indices in enumerate(target_index_list):
+                target_values = v[:, :, target_indices].detach()
+                values[t_i] = target_values
 
-        if "kp" in predname:
-            target_index = get_index_by_predname(pred_str=predname, atoms=self.atoms)
-            return v[0, target_index]
+        return values
 
     def predict_multi(self, v, prednames):
         """Extracting values from the valuation tensor using given predicates.

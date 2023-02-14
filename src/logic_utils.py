@@ -228,21 +228,13 @@ def generate_bk(lang):
 
 
 def get_index_by_predname(pred_str, atoms):
-    for i, atom in enumerate(atoms):
-        if atom.pred.name == pred_str:
-            return i
-    assert 1, pred_str + ' not found.'
-
-
-def get_indices_by_predname(pred_str, atoms):
     indices = []
-    for i, atom in enumerate(atoms):
-        if pred_str in atom.pred.name:
-            indices.append(i)
-
-    if len(indices) == 0:
-        raise ValueError(f"Not found predicate with string {pred_str} in atoms.")
-
+    for p_i, p_str in enumerate(pred_str):
+        p_indices = []
+        for i, atom in enumerate(atoms):
+            if atom.pred.name == p_str:
+                p_indices.append(i)
+        indices.append(p_indices)
     return indices
 
 
@@ -485,25 +477,26 @@ def eval_clause_clusters(clause_clusters, clause_scores_full):
 
 
 def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
-    bz = args.batch_size
-    device = args.device
-    pos_img_num = pos_pred.shape[0]
-    neg_img_num = neg_pred.shape[0]
-    eval_pred_num = len(pred_names)
-    clause_num = len(NSFR.clauses)
-    # score_positive = torch.zeros((bz, pos_img_num, clause_num, eval_pred_num)).to(device)
-    score_negative = torch.zeros((bz, neg_img_num, clause_num, eval_pred_num)).to(device)
-    # get predicates that need to be evaluated.
-    # pred_names = ['kp']
-    # for pi_c in pi_clauses:
-    #     for body_atom in pi_c.body:
-    #         if "inv_pred" in body_atom.pred.name:
-    #             pred_names.append(body_atom.pred.name)
+    # bz = args.batch_size
+    # device = args.device
+    # pos_img_num = pos_pred.shape[0]
+    # neg_img_num = neg_pred.shape[0]
+    # eval_pred_num = len(pred_names)
+    # clause_num = len(NSFR.clauses)
+    # # score_positive = torch.zeros((bz, pos_img_num, clause_num, eval_pred_num)).to(device)
+    # # score_negative = torch.zeros((bz, neg_img_num, clause_num, eval_pred_num)).to(device)
 
-    V_T_list = NSFR.clause_eval_quick(pos_pred).detach()
-    score_positive = NSFR.predict(v=V_T_list, predname=pred_names).detach()
-    A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-    # score_positive = torch.zeros((bz, pos_img_num, clause_num, eval_pred_num)).to(device)
+    V_T_pos = NSFR.clause_eval_quick(pos_pred).detach()
+    V_T_neg = NSFR.clause_eval_quick(neg_pred).detach()
+    score_positive = NSFR.predict(v=V_T_pos, prednames=pred_names)
+    score_negative = NSFR.predict(v=V_T_neg, prednames=pred_names)
+
+    # axis: batch_size, pred_names, pos_neg_labels, clauses, images
+    # score_positive = score_positive.permute(0, 3, 2, 1).unsqueeze(2)
+    # score_negative = score_negative.permute(0, 3, 2, 1).unsqueeze(2)
+    all_predicates_scores = torch.cat((score_negative, score_positive), 3)
+
+    return all_predicates_scores
 
     # C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
     # clause loop
@@ -513,41 +506,39 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     # C_score[:, clause_index, pred_index] = predicted
     # sum over positive prob
 
+    # for image_index in range(pos_img_num):
+    #     V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
+    #     A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+    #
+    #     C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
+    #     # clause loop
+    #     for clause_index, V_T in enumerate(V_T_list):
+    #         for pred_index, pred_name in enumerate(pred_names):
+    #             predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
+    #             C_score[:, clause_index, pred_index] = predicted
+    #     # sum over positive prob
+    #     score_positive[:, image_index, :] = C_score
+    #
+    # # negative image loop
+    # for image_index in range(neg_img_num):
+    #     V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
+    #
+    #     C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
+    #     for clause_index, V_T in enumerate(V_T_list):
+    #         for pred_index, pred_name in enumerate(pred_names):
+    #             predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
+    #             C_score[:, clause_index, pred_index] = predicted
+    #         # C
+    #         # C_score = PI.clause_eval(C_score)
+    #         # sum over positive prob
+    #     score_negative[:, image_index, :] = C_score
+    #
+    # # axis: batch_size, pred_names, pos_neg_labels, clauses, images
+    # score_positive = score_positive.permute(0, 3, 2, 1).unsqueeze(2)
+    # score_negative = score_negative.permute(0, 3, 2, 1).unsqueeze(2)
+    # all_predicates_scores = torch.cat((score_negative, score_positive), 2)
 
-
-    for image_index in range(pos_img_num):
-        V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
-        A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-
-        C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
-        # clause loop
-        for clause_index, V_T in enumerate(V_T_list):
-            for pred_index, pred_name in enumerate(pred_names):
-                predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
-                C_score[:, clause_index, pred_index] = predicted
-        # sum over positive prob
-        score_positive[:, image_index, :] = C_score
-
-    # negative image loop
-    for image_index in range(neg_img_num):
-        V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
-
-        C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
-        for clause_index, V_T in enumerate(V_T_list):
-            for pred_index, pred_name in enumerate(pred_names):
-                predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
-                C_score[:, clause_index, pred_index] = predicted
-            # C
-            # C_score = PI.clause_eval(C_score)
-            # sum over positive prob
-        score_negative[:, image_index, :] = C_score
-
-    # axis: batch_size, pred_names, pos_neg_labels, clauses, images
-    score_positive = score_positive.permute(0, 3, 2, 1).unsqueeze(2)
-    score_negative = score_negative.permute(0, 3, 2, 1).unsqueeze(2)
-    all_predicates_scores = torch.cat((score_negative, score_positive), 2)
-
-    return all_predicates_scores
+    # return all_predicates_scores
 
 
 def eval_predicates_slow(NSFR, args, pred_names, pos_pred, neg_pred):
@@ -635,35 +626,32 @@ def eval_predicates_sign(c_score):
 
 
 def eval_clause_sign(p_scores):
+    p_clauses_signs = []
+
     # p_scores axis: batch_size, pred_names, clauses, pos_neg_labels, images
-    p_scores = p_scores[0]
     resolution = 2
-    p_scores = p_scores.permute(0, 2, 3, 1)
-    p_scores_discrete = (p_scores * resolution).int()
+    ps_discrete = (p_scores * resolution).int()
     four_zone_scores = torch.zeros((p_scores.size(0), p_scores.size(1), 4))
 
-    total_image_pairs = p_scores.size(2)
+    img_total = p_scores.size(2)
 
     # zero score pairs
-    four_zone_scores[:, :, 0] = total_image_pairs - p_scores_discrete.sum(dim=3).count_nonzero(dim=2)
+    four_zone_scores[:, :, 0] = img_total - ps_discrete.sum(dim=3).count_nonzero(dim=2)
 
     # high pos, low neg
-    four_zone_scores[:, :, 1] = total_image_pairs - (
-            p_scores_discrete[:, :, :, 0] - p_scores_discrete[:, :, :, 1] + 1).count_nonzero(dim=2)
+    four_zone_scores[:, :, 1] = img_total - (ps_discrete[:, :, :, 0] - ps_discrete[:, :, :, 1] + 1).count_nonzero(dim=2)
 
     # low pos, high neg
-    four_zone_scores[:, :, 2] = total_image_pairs - (
-            p_scores_discrete[:, :, :, 0] - p_scores_discrete[:, :, :, 1] - 1).count_nonzero(dim=2)
+    four_zone_scores[:, :, 2] = img_total - (ps_discrete[:, :, :, 0] - ps_discrete[:, :, :, 1] - 1).count_nonzero(dim=2)
 
     # high pos, high neg
-    four_zone_scores[:, :, 3] = total_image_pairs - (p_scores_discrete.sum(dim=3) - 2).count_nonzero(dim=2)
+    four_zone_scores[:, :, 3] = img_total - (ps_discrete.sum(dim=3) - 2).count_nonzero(dim=2)
 
     clause_score = four_zone_scores[:, :, 1] - four_zone_scores[:, :, 3]
 
     four_zone_scores[:, :, 0] = 0
 
     clause_sign_list = (four_zone_scores.max(dim=-1)[1] - 1) == 0
-    p_clauses_signs = []
 
     # TODO: find a better score evaluation function
     p_clauses_signs.append([clause_sign_list, clause_score, four_zone_scores])
