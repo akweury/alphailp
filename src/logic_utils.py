@@ -283,39 +283,39 @@ def remove_conflict_clauses(clauses, pi_clauses):
     non_conflict_clauses = []
     for clause in clauses:
         is_conflict = False
-        for i in range(len(clause.body)):
-            for j in range(len(clause.body)):
-                if i == j:
-                    continue
-                if "at_area" in clause.body[i].pred.name and "at_area" in clause.body[j].pred.name:
-                    if clause.body[i].terms == clause.body[j].terms:
-                        is_conflict = True
-                        # print(f'conflict clause: {clause}')
+        with_pi = False
+        if len(pi_clauses) > 0:
+            for cb in clause.body:
+                if "inv_pred" in cb.pred.name:
+                    with_pi = True
+            if not with_pi:
+                is_conflict = True
+        if with_pi or len(pi_clauses) == 0:
+            for i in range(len(clause.body)):
+                for j in range(len(clause.body)):
+                    if i == j:
+                        continue
+                    if "at_area" in clause.body[i].pred.name and "at_area" in clause.body[j].pred.name:
+                        if clause.body[i].terms == clause.body[j].terms:
+                            is_conflict = True
+                            break
+                            # print(f'conflict clause: {clause}')
 
-                    elif conflict_pred(clause.body[i].pred.name,
-                                       clause.body[j].pred.name,
-                                       list(clause.body[i].terms),
-                                       list(clause.body[j].terms)):
-                        is_conflict = True
-                        # print(f'conflict clause: {clause}')
+                        elif conflict_pred(clause.body[i].pred.name,
+                                           clause.body[j].pred.name,
+                                           list(clause.body[i].terms),
+                                           list(clause.body[j].terms)):
+                            is_conflict = True
+                            break
+                            # print(f'conflict clause: {clause}')
 
-                if "inv_pred" in clause.body[j].pred.name and not is_conflict:
-                    pi_name = clause.body[j].pred.name
-                    pi_bodies = get_pi_bodies_by_name(pi_clauses, pi_name)
-                    is_conflict = is_conflict_bodies(pi_bodies, clause.body)
+                    if "inv_pred" in clause.body[j].pred.name and not is_conflict:
+                        pi_name = clause.body[j].pred.name
+                        pi_bodies = get_pi_bodies_by_name(pi_clauses, pi_name)
+                        is_conflict = is_conflict_bodies(pi_bodies, clause.body)
+                        if is_conflict:
+                            break
 
-                    # if not is_conflict:
-                    #     print("inv not is conflict")
-                    #     print(f"pi bodies: {pi_bodies}")
-                    #     print(f"clause bodies: {clause.body}")
-                # if "inv_pred" in clause.body[i].pred.name and not is_conflict:
-                #     pi_name = clause.body[i].pred.name
-                #     pi_bodies = get_pi_bodies_by_name(pi_clauses, pi_name)
-                #     is_conflict = is_conflict_bodies(pi_bodies, clause.body)
-                # if not is_conflict:
-                #     print(is_conflict)
-                #     print(f"else case i: {clause.body[i].pred.name}")
-                #     print(f"else case j: {clause.body[j].pred.name}\n")
         if not is_conflict:
             non_conflict_clauses.append(clause)
 
@@ -494,7 +494,7 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     # axis: batch_size, pred_names, pos_neg_labels, clauses, images
     # score_positive = score_positive.permute(0, 3, 2, 1).unsqueeze(2)
     # score_negative = score_negative.permute(0, 3, 2, 1).unsqueeze(2)
-    all_predicates_scores = torch.cat((score_negative, score_positive), 3)
+    all_predicates_scores = torch.cat((score_negative, score_positive), 2)
 
     return all_predicates_scores
 
@@ -631,25 +631,25 @@ def eval_clause_sign(p_scores):
     # p_scores axis: batch_size, pred_names, clauses, pos_neg_labels, images
     resolution = 2
     ps_discrete = (p_scores * resolution).int()
-    four_zone_scores = torch.zeros((p_scores.size(0), p_scores.size(1), 4))
+    four_zone_scores = torch.zeros((p_scores.size(0), 4))
 
-    img_total = p_scores.size(2)
+    img_total = p_scores.size(1)
 
     # low pos, low neg
-    four_zone_scores[:, :, 0] = img_total - ps_discrete.sum(dim=3).count_nonzero(dim=2)
+    four_zone_scores[:, 0] = img_total - ps_discrete.sum(dim=2).count_nonzero(dim=1)
 
     # high pos, low neg
-    four_zone_scores[:, :, 1] = img_total - (ps_discrete[:, :, :, 0] - ps_discrete[:, :, :, 1] + 1).count_nonzero(dim=2)
+    four_zone_scores[:, 1] = img_total - (ps_discrete[:, :, 0] - ps_discrete[:, :, 1] + 1).count_nonzero(dim=1)
 
     # low pos, high neg
-    four_zone_scores[:, :, 2] = img_total - (ps_discrete[:, :, :, 0] - ps_discrete[:, :, :, 1] - 1).count_nonzero(dim=2)
+    four_zone_scores[:, 2] = img_total - (ps_discrete[:, :, 0] - ps_discrete[:, :, 1] - 1).count_nonzero(dim=1)
 
     # high pos, high neg
-    four_zone_scores[:, :, 3] = img_total - (ps_discrete.sum(dim=3) - 2).count_nonzero(dim=2)
+    four_zone_scores[:, 3] = img_total - (ps_discrete.sum(dim=2) - 2).count_nonzero(dim=1)
 
-    clause_score = four_zone_scores[:, :, 1] - four_zone_scores[:, :, 3]
+    clause_score = four_zone_scores[:, 1] + four_zone_scores[:, 3]
 
-    four_zone_scores[:, :, 0] = 0
+    four_zone_scores[:, 0] = 0
 
     clause_sign_list = (four_zone_scores.max(dim=-1)[1] - 1) == 0
 
@@ -666,17 +666,9 @@ def is_conflict_bodies(pi_bodies, clause_bodies):
     #     for j, bs_2 in enumerate(pi_bodies):
     #         if i == j:
     #             continue
-    #         is_conflict = check_conflict_body(b_1, b_2)
+    #         is_conflict = check_conflict_body(bs_1, bs_2)
     #         if is_conflict:
     #             return True
-    # if "at_area" in b_1.pred.name and "at_area" in b_2.pred.name:
-    #     if b_1.terms == b_2.terms:
-    #         return True
-    #     elif conflict_pred(b_1.pred.name,
-    #                        b_2.pred.name,
-    #                        list(b_1.terms),
-    #                        list(b_2.terms)):
-    #         return True
 
     # check for pi_bodies and clause_bodies confliction
     for i, p_b in enumerate(pi_bodies):

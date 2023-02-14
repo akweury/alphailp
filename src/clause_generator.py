@@ -287,11 +287,11 @@ class ClauseGenerator(object):
             non_duplicate_full_scores = []
             for i, ref in enumerate(refs_non_conflict):
                 # check duplication
-                if not self.is_in_beam(B_new, ref, clause_scores_full[:, i, :]):
-                    B_new[ref] = clause_scores_full[:, i, :]
-                    C_dic[ref] = clause_scores_full[:, i, :]
+                if not self.is_in_beam(B_new, ref, clause_scores_full[i, :]):
+                    B_new[ref] = clause_scores_full[i, :]
+                    C_dic[ref] = clause_scores_full[i, :]
                     non_duplicate_clause_index.append(i)
-                    non_duplicate_full_scores.append(clause_scores_full[:, i, :])
+                    non_duplicate_full_scores.append(clause_scores_full[i, :])
             is_plot_4zone = False
             if is_plot_4zone:
                 for i, clause in enumerate(B_new):
@@ -573,8 +573,8 @@ class ClauseGenerator(object):
         good_clauses = []
 
         for clause, scores in B_new_sorted.items():
-            last_3 = scores[:, 1:]
-            if torch.max(last_3, dim=-1)[0] == last_3[:, 0] and last_3[:, 0] > last_3[:, 2]:
+            last_3 = scores[1:]
+            if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
                 good_clauses.append((clause, scores))
         return good_clauses
 
@@ -882,28 +882,34 @@ class PIClauseGenerator(object):
 
         # scoring predicates
         for pi_index, pi_language in enumerate(pi_languages):
-            print(f"eval pi language {pi_index}/{len(pi_languages)}")
+
             lang, pi_clause = pi_language[0], pi_language[1]
-            pred_names = ['kp']
-            for pi_c in pi_clause:
-                for body_atom in pi_c.body:
-                    if "inv_pred" in body_atom.pred.name:
-                        pred_names.append(body_atom.pred.name)
-            clauses = bs_clauses + pi_clause
+
+
+            pred_names = ['kp', pi_clause[1].head.pred.name]
+            # clauses = pi_clause
             atoms = logic_utils.get_atoms(lang)
-            NSFR = get_nsfr_model(self.args, lang, clauses, atoms,
+            NSFR = get_nsfr_model(self.args, lang, pi_clause, atoms,
                                   self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
 
             p_score = logic_utils.eval_predicates(NSFR, self.args, pred_names, pos_pred, neg_pred)
             p_clause_signs = logic_utils.eval_clause_sign(p_score)
             p_signs, p_goodness_scores, p_score_full_list = p_clause_signs[0]
             # = logic_utils.eval_predicates_sign(p_score)
-            pi_language_scores[pi_index] = p_goodness_scores[1, :].max()
+            pi_language_scores[pi_index] = p_goodness_scores[1]
 
+            print(f"- Eval pi language {pi_index + 1}/{len(pi_languages)}")
+            for pi_c in pi_clause:
+                print(pi_c)
+            print(f"- language score: {pi_language_scores[pi_index]}")
         pi_language_scores_sorted, pi_language_scores_sorted_indices = torch.sort(pi_language_scores, descending=True)
         passed_languages = []
         for index in pi_language_scores_sorted_indices:
-            passed_languages.append(pi_languages[index])
+            if pi_language_scores[index] == pos_pred.size(0):
+                passed_languages.append(pi_languages[index])
+            else:
+                print(f"insufficient language: {pi_languages[index][1]}")
+                print(f"insufficient score: {pi_language_scores[index]}")
 
         return passed_languages
         #     pred_type = None

@@ -243,8 +243,9 @@ class ClauseInferModule(nn.Module):
                 if self.I_pi is not None:
 
                     r_pi = self.r_pi(R).unsqueeze(dim=0).expand(self.C, B, self.G)
-                    A_C = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                     R = softor([R, r_R, r_bk, r_pi], dim=2, gamma=self.gamma)
+
+                    A_C = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                     A_D = R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                 else:
                     R = softor([R, r_R, r_bk], dim=2, gamma=self.gamma)

@@ -333,6 +333,8 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
 def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path):
     NSFR = None
     FC = None
+    val_pos = pm_prediction_dict["val_pos"].to(args.device)
+    val_neg = pm_prediction_dict["val_neg"].to(args.device)
     lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                      args.dataset_type, args.dataset)
 
@@ -346,16 +348,14 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                init_clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
-        bs_clauses, p_scores_list = clause_generator.generate(clauses, pm_prediction_dict["val_pos"],
-                                                              pm_prediction_dict["val_neg"], pi_clauses,
+        bs_clauses, p_scores_list = clause_generator.generate(clauses, val_pos, val_neg, pi_clauses,
                                                               T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
 
         if args.no_pi:
             clauses = bs_clauses
         else:
             # invent new predicate and generate pi clauses
-            new_pi_clauses = pi_clause_generator.generate(bs_clauses, p_scores_list, pm_prediction_dict["val_pos"],
-                                                          pm_prediction_dict["val_neg"])
+            new_pi_clauses = pi_clause_generator.generate(bs_clauses, p_scores_list, val_pos, val_neg)
             # add new predicates
             pi_clauses += new_pi_clauses
             lang = pi_clause_generator.lang

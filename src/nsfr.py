@@ -93,22 +93,21 @@ class NSFReasoner(nn.Module):
         """Extracting a value from the valuation tensor using a given predicate.
         """
         # v: batch * |atoms|
-        values = torch.zeros(len(prednames), v.size(0), v.size(1), 1)
+        values = torch.zeros(v.size(0), v.size(1), 1)
         if len(prednames) > 1:
             target_indices = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
             # target_all = torch.zeros((len(target_indices), v.size(0)))
             # target_max = torch.zeros((len(target_indices)))
-            for t_counter, t_index in enumerate(target_indices):
+
                 # target_all[t_counter] = v[:, :, t_index]
                 # target_max[t_counter] = v[:, :, t_index]
                 # max_value = torch.max(target_max)
-                values[t_counter] = v[:, :, t_index].max(dim=-1, keepdim=True)[0]
+            values[0] = v[0, :, target_indices[0]].max(dim=-1, keepdim=True)[0]
+            values[1:] = v[1:,:, target_indices[1]].max(dim=-1, keepdim=True)[0]
 
         else:
             target_index_list = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
-            for t_i, target_indices in enumerate(target_index_list):
-                target_values = v[:, :, target_indices].detach()
-                values[t_i] = target_values
+            values = v[:, :, target_index_list[0]].detach()
 
         return values
 
