@@ -18,6 +18,12 @@ import logic_utils
 from fol.language import Language, DataType
 
 
+def check_accuracy(clause_scores_full):
+    accuracy = clause_scores_full[:, 1] / 20
+
+    return accuracy
+
+
 class ClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -282,6 +288,11 @@ class ClauseGenerator(object):
             # clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
             p_clause_signs = logic_utils.eval_clause_sign(p_score)
             clause_signs, clause_score_list, clause_scores_full = p_clause_signs[0]
+            clause_accuracy = check_accuracy(clause_scores_full)
+            if clause_accuracy.max() == 1.0:
+                print("target clause has been found.")
+            else:
+                print(f"max clause accuracy: {clause_accuracy.max()}")
             # check for duplication
             non_duplicate_clause_index = []
             non_duplicate_full_scores = []
@@ -610,11 +621,10 @@ class PIClauseGenerator(object):
         # clause_image_scores = self.eval_multi_clauses(beam_search_clauses, pos_pred, neg_pred)  # time-consuming line
         # clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
 
-        clause_clusters = logic_utils.search_independent_clauses(beam_search_clauses)
         # clause_candidates = logic_utils.eval_clause_clusters(clause_clusters, p_scores_list)
 
         # generate new clauses
-        new_predicates = self.generate_new_predicate(clause_clusters, mode="clustering")
+        new_predicates = self.generate_new_predicate(beam_search_clauses)
 
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
@@ -627,14 +637,14 @@ class PIClauseGenerator(object):
         neg_pred = neg_pred.to(self.args.device)
         # generate pi clauses
         passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
-        passed_pi_languages = passed_pi_languages[:5]
+        # passed_pi_languages = passed_pi_languages[:5]
 
         passed_pi_clauses, passed_pi_predicates = self.extract_pi(passed_pi_languages)
 
-        print("====== ", len(passed_pi_predicates), " predicates are generated!! ======")
+        print("====== ", len(passed_pi_predicates), " PI predicates are generated!! ======")
         for pred in passed_pi_predicates:
             print(pred)
-        print("====== ", len(passed_pi_clauses), "pi clauses are generated!! ======")
+        print("====== ", len(passed_pi_clauses), " PI clauses are generated!! ======")
         for c in passed_pi_clauses:
             print(c)
 
@@ -786,20 +796,31 @@ class PIClauseGenerator(object):
 
         return clause_sign_list, clause_score_list, clause_score_full_list
 
-    def generate_new_predicate(self, new_pi_clauses, mode):
+    def generate_new_predicate(self, beam_search_clauses):
         new_predicate = None
         # positive_clauses_exchange = [(c[1], c[0]) for c in positive_clauses]
         # no_hn_ = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0 and c[0][3] == 0]
         # no_hnlp = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0]
         # score clauses properly
-        new_predicates = []
-        if mode == "clustering":
 
-            for pi_index, clause_cluster in enumerate(new_pi_clauses):
-                dtypes = [DataType(dt) for dt in ["object", "object"]]
-                new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
-                new_predicate.body = [clause.body for clause in clause_cluster]
-                new_predicates.append(new_predicate)
+        new_predicates = []
+
+        # simple predicates
+        for bs_index, bs_clause in enumerate(beam_search_clauses):
+            if bs_clause.body <= 3:
+                continue
+            dtypes = [DataType(dt) for dt in ["object", "object"]]
+            new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+            new_predicate.body = [bs_clause.body]
+            new_predicates.append(new_predicate)
+
+        # cluster predicates
+        pi_clause_clusters = logic_utils.search_independent_clauses(beam_search_clauses)
+        for pi_index, clause_cluster in enumerate(pi_clause_clusters):
+            dtypes = [DataType(dt) for dt in ["object", "object"]]
+            new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+            new_predicate.body = [clause.body for clause in clause_cluster]
+            new_predicates.append(new_predicate)
 
         return new_predicates
 
@@ -884,7 +905,6 @@ class PIClauseGenerator(object):
         for pi_index, pi_language in enumerate(pi_languages):
 
             lang, pi_clause = pi_language[0], pi_language[1]
-
 
             pred_names = ['kp', pi_clause[1].head.pred.name]
             # clauses = pi_clause

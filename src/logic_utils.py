@@ -375,7 +375,8 @@ def search_independent_clauses(clauses):
                     is_pole_clause = False
             if is_pole_clause and is_sub_clause:
                 pole_clauses.append(clause_a)
-        independent_clauses_all.append([clause_i] + pole_clauses)
+        if len(pole_clauses) < 4:
+            independent_clauses_all.append([clause_i] + pole_clauses)
 
     return independent_clauses_all
 
