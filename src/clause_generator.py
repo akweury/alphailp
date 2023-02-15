@@ -807,7 +807,7 @@ class PIClauseGenerator(object):
 
         # simple predicates
         for bs_index, bs_clause in enumerate(beam_search_clauses):
-            if bs_clause.body <= 3:
+            if len(bs_clause.body) <= 3:
                 continue
             dtypes = [DataType(dt) for dt in ["object", "object"]]
             new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
