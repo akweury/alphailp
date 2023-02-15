@@ -16,6 +16,7 @@ from percept import YOLOPerceptionModule
 import config
 import logic_utils
 from fol.language import Language, DataType
+import fol.logic as logic
 
 
 def check_accuracy(clause_scores_full):
@@ -276,18 +277,21 @@ class ClauseGenerator(object):
                     C = C.union(set([c]))
                     print(f"(BS step {step + 1}/{T_beam}) Added: ", c)
 
-            print('Evaluating ', len(refs), 'generated clauses.')
             # evaluate clauses, it should consider both positive images as well as negative images.
             refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses)
 
+            for r_i, ref in enumerate(refs_non_conflict):
+                print(f"(BS step {step + 1}/{T_beam}) Non Conflict clause {r_i + 1}/{len(refs_non_conflict)}: {ref}")
+            print('Evaluating ', len(refs_non_conflict), 'generated clauses.')
+            # refs_non_conflict = logic_utils.reorder_terms(refs_non_conflict)
             self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
                                        self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
 
-            p_score = logic_utils.eval_predicates(self.NSFR, self.args, eval_pred_names, pos_pred, neg_pred)
+            clause_signs, clause_score_list, clause_scores_full = \
+                logic_utils.eval_predicates(self.NSFR, self.args, eval_pred_names, pos_pred, neg_pred)
 
             # clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
-            p_clause_signs = logic_utils.eval_clause_sign(p_score)
-            clause_signs, clause_score_list, clause_scores_full = p_clause_signs[0]
+
             clause_accuracy = check_accuracy(clause_scores_full)
             if clause_accuracy.max() == 1.0:
                 print("target clause has been found.")
@@ -304,26 +308,27 @@ class ClauseGenerator(object):
                     non_duplicate_clause_index.append(i)
                     non_duplicate_full_scores.append(clause_scores_full[i, :])
             is_plot_4zone = False
-            if is_plot_4zone:
-                for i, clause in enumerate(B_new):
-                    clause_index = non_duplicate_clause_index[i]
-                    chart_utils.plot_scatter_heat_chart([p_score[clause_index]],
-                                                        config.buffer_path / "img",
-                                                        f"heat_ce_all_{len(B_new)}_{i}",
-                                                        sub_folder=str(step),
-                                                        labels=f"{str(clause) + str(clause_signs[clause_index])}",
-                                                        x_label="positive score", y_label="negative score")
-
-                    clause_scores_reverse = [p_score[clause_index][1], p_score[clause_index][0]]
-                    chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
-                                                   f"scatter_ce_all_{len(B_new)}_{i}",
-                                                   sub_folder=str(step),
-                                                   labels=f"{str(clause) + str(clause_signs[clause_index])}",
-                                                   x_label="positive score", y_label="negative score")
+            # if is_plot_4zone:
+            #     for i, clause in enumerate(B_new):
+            #         clause_index = non_duplicate_clause_index[i]
+            #         chart_utils.plot_scatter_heat_chart([p_score[clause_index]],
+            #                                             config.buffer_path / "img",
+            #                                             f"heat_ce_all_{len(B_new)}_{i}",
+            #                                             sub_folder=str(step),
+            #                                             labels=f"{str(clause) + str(clause_signs[clause_index])}",
+            #                                             x_label="positive score", y_label="negative score")
+            #
+            #         clause_scores_reverse = [p_score[clause_index][1], p_score[clause_index][0]]
+            #         chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
+            #                                        f"scatter_ce_all_{len(B_new)}_{i}",
+            #                                        sub_folder=str(step),
+            #                                        labels=f"{str(clause) + str(clause_signs[clause_index])}",
+            #                                        x_label="positive score", y_label="negative score")
             # B_new_sorted = sorted(B_new.items(), key=lambda x: x[0, 1], reverse=True)
             B_new_good = self.select_good_clauses(B_new)
-            if len(B_new_good) > 10:
-                B_new_good = random.sample(B_new_good, 10)
+
+            # if len(B_new_good) > 10:
+            #     B_new_good = random.sample(B_new_good, 10)
 
             #     B_new_sorted = B_new_sorted[:5]
             # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
@@ -333,6 +338,8 @@ class ClauseGenerator(object):
             step += 1
             if len(B) == 0:
                 break
+
+        # C = logic_utils.remove_extended_clauses(C, p_score)
 
         return C, p_score
 
@@ -615,7 +622,7 @@ class PIClauseGenerator(object):
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
 
-    def generate(self, beam_search_clauses, p_scores_list, pos_pred, neg_pred):
+    def generate(self, beam_search_clauses, pos_pred, neg_pred):
 
         # evaluate for all the clauses
         # clause_image_scores = self.eval_multi_clauses(beam_search_clauses, pos_pred, neg_pred)  # time-consuming line
@@ -625,7 +632,8 @@ class PIClauseGenerator(object):
 
         # generate new clauses
         new_predicates = self.generate_new_predicate(beam_search_clauses)
-
+        # new_predicates = logic_utils.remove_unaligned_predicates(new_predicates)
+        new_predicates = logic_utils.remove_duplicate_predicates(new_predicates)
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
@@ -810,17 +818,63 @@ class PIClauseGenerator(object):
             if len(bs_clause.body) <= 3:
                 continue
             dtypes = [DataType(dt) for dt in ["object", "object"]]
+
+            # self invent
             new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+            non_inv_pred = False
+            for b in bs_clause.body:
+                if "inv_pred" in b.pred.name:
+                    non_inv_pred = True
+                    continue
+            if non_inv_pred:
+                continue
             new_predicate.body = [bs_clause.body]
             new_predicates.append(new_predicate)
 
+            # # symmetric invent
+            # new_sym_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+            # symmetry_bodies = []
+            # for b in bs_clause.body:
+            #     if "at_area" in b.pred.name:
+            #         sym_b_pred = logic.Predicate(b.pred.name, 2, dtypes)
+            #         sym_b_terms = (logic.Var(b.terms[1].name), logic.Var(b.terms[0].name))
+            #         sym_b = logic.Atom(sym_b_pred, sym_b_terms)
+            #         symmetry_bodies.append(sym_b)
+            #     else:
+            #         symmetry_bodies.append(b)
+            # new_sym_predicate.body = [symmetry_bodies]
+            # new_predicates.append(new_sym_predicate)
+
+            # # cluster invent
+            # new_clu_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+            # new_clu_predicate.body = new_sym_predicate.body + new_predicate.body
+            # new_predicates.append(new_clu_predicate)
+
         # cluster predicates
         pi_clause_clusters = logic_utils.search_independent_clauses(beam_search_clauses)
+
         for pi_index, clause_cluster in enumerate(pi_clause_clusters):
             dtypes = [DataType(dt) for dt in ["object", "object"]]
             new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
             new_predicate.body = [clause.body for clause in clause_cluster]
             new_predicates.append(new_predicate)
+
+            # symmetric invent
+            new_sym_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+            symmetry_bodies = []
+            for b_list in new_predicate.body:
+                symmetry_b = []
+                for b in b_list:
+                    if "at_area" in b.pred.name:
+                        sym_b_pred = logic.Predicate(b.pred.name, 2, dtypes)
+                        sym_b_terms = (logic.Var(b.terms[1].name), logic.Var(b.terms[0].name))
+                        sym_b = logic.Atom(sym_b_pred, sym_b_terms)
+                        symmetry_b.append(sym_b)
+                    else:
+                        symmetry_b.append(b)
+                symmetry_bodies.append(symmetry_b)
+            new_sym_predicate.body = symmetry_bodies + new_predicate.body
+            new_predicates.append(new_sym_predicate)
 
         return new_predicates
 
@@ -829,7 +883,7 @@ class PIClauseGenerator(object):
 
         for new_predicate in new_predicates:
             single_pi_str_list = []
-            single_pi_str_list.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
+            # single_pi_str_list.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
             head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:
@@ -843,6 +897,9 @@ class PIClauseGenerator(object):
                 new_clause = head + body_str
                 single_pi_str_list.append(new_clause)
             pi_str_lists.append(single_pi_str_list)
+        for p_i, p_list in enumerate(pi_str_lists):
+            for p in p_list:
+                print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
         return pi_str_lists
 
     # def eval_pi_clause_single(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
@@ -906,17 +963,17 @@ class PIClauseGenerator(object):
 
             lang, pi_clause = pi_language[0], pi_language[1]
 
-            pred_names = ['kp', pi_clause[1].head.pred.name]
+            pred_names = [pi_clause[0].head.pred.name]
             # clauses = pi_clause
             atoms = logic_utils.get_atoms(lang)
             NSFR = get_nsfr_model(self.args, lang, pi_clause, atoms,
                                   self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
 
-            p_score = logic_utils.eval_predicates(NSFR, self.args, pred_names, pos_pred, neg_pred)
-            p_clause_signs = logic_utils.eval_clause_sign(p_score)
-            p_signs, p_goodness_scores, p_score_full_list = p_clause_signs[0]
+            p_signs, p_goodness_scores, p_score_full_list = logic_utils.eval_predicates(NSFR, self.args, pred_names, pos_pred, neg_pred)
+
+
             # = logic_utils.eval_predicates_sign(p_score)
-            pi_language_scores[pi_index] = p_goodness_scores[1]
+            pi_language_scores[pi_index] = p_goodness_scores[0]
 
             print(f"- Eval pi language {pi_index + 1}/{len(pi_languages)}")
             for pi_c in pi_clause:

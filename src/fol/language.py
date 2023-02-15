@@ -136,7 +136,8 @@ class Language(object):
         """
         invented_pred = [invented_pred for invented_pred in self.invented_preds if
                          invented_pred.name == invented_pred_name]
-        assert len(invented_pred) == 1, 'Too many or less match in ' + invented_pred_name
+        if not len(invented_pred) == 1:
+            raise ValueError('Too many or less match in ' + invented_pred_name)
         return invented_pred[0]
 
     def get_new_invented_predicate(self, arity, pi_dtypes):

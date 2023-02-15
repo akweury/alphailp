@@ -280,8 +280,22 @@ def change_pi_body_names(pi_clauses):
 
 def remove_conflict_clauses(clauses, pi_clauses):
     # print("\nCheck for conflict clauses...")
+    clause_ordered = []
+
+    for c_i, clause in enumerate(clauses):
+        ordered = True
+        for b_i, b in enumerate(clause.body):
+            if "at_area" in b.pred.name or "inv_pred" in b.pred.name:
+                if not b.terms[0].name == "O1" or not b.terms[1].name == "O2":
+                    ordered = False
+            if "color" in b.pred.name or "shape" in b.pred.name:
+                if not b.terms[0].name == "O1":
+                    ordered = False
+        if ordered:
+            clause_ordered.append(clause)
+
     non_conflict_clauses = []
-    for clause in clauses:
+    for clause in clause_ordered:
         is_conflict = False
         with_pi = False
         if len(pi_clauses) > 0:
@@ -292,6 +306,8 @@ def remove_conflict_clauses(clauses, pi_clauses):
                 is_conflict = True
         if with_pi or len(pi_clauses) == 0:
             for i in range(len(clause.body)):
+                if is_conflict:
+                    break
                 for j in range(len(clause.body)):
                     if i == j:
                         continue
@@ -315,6 +331,14 @@ def remove_conflict_clauses(clauses, pi_clauses):
                         is_conflict = is_conflict_bodies(pi_bodies, clause.body)
                         if is_conflict:
                             break
+                    if "inv_pred" in clause.body[i].pred.name and not is_conflict:
+                        pi_name = clause.body[i].pred.name
+                        pi_bodies = get_pi_bodies_by_name(pi_clauses, pi_name)
+                        is_conflict = is_conflict_bodies(pi_bodies, clause.body)
+                        if is_conflict:
+                            break
+                    if "at_are_6" in clause.body[i].pred.name or "at_are_6" in clause.body[j].pred.name:
+                        print("conflict")
 
         if not is_conflict:
             non_conflict_clauses.append(clause)
@@ -364,21 +388,30 @@ def search_independent_clauses(clauses):
         # TODO: delete uncommon bodies
         pole_clauses = []
         for clause_a in independent_clauses:
-            is_sub_clause = False
             is_pole_clause = True
             for clause_b in independent_clauses:
                 if clause_a == clause_b:
                     continue
-                if sub_clause_of(clause_a, clause_b):
-                    is_sub_clause = True
-                elif sub_clause_of(clause_b, clause_a):
+                if sub_clause_of(clause_b, clause_a):
                     is_pole_clause = False
-            if is_pole_clause and is_sub_clause:
+            if is_pole_clause:
                 pole_clauses.append(clause_a)
         if len(pole_clauses) < 4:
             independent_clauses_all.append([clause_i] + pole_clauses)
 
-    return independent_clauses_all
+    non_repeat_clauses = []
+    for c_a in independent_clauses_all:
+        c_a.sort()
+    for a_i, c_a in enumerate(independent_clauses_all):
+        is_repeat = False
+        for b_i, c_b in enumerate(independent_clauses_all[a_i + 1:]):
+            if c_a == c_b:
+                is_repeat = True
+                break
+        if not is_repeat:
+            non_repeat_clauses.append(c_a)
+
+    return non_repeat_clauses
 
 
 def sub_clause_of(clause_a, clause_b):
@@ -492,12 +525,19 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     score_positive = NSFR.predict(v=V_T_pos, prednames=pred_names)
     score_negative = NSFR.predict(v=V_T_neg, prednames=pred_names)
 
+    if score_positive.size(2) > 1:
+        score_positive = score_positive.max(dim=2, keepdim=True)[0]
+    if score_negative.size(2) > 1:
+        score_negative = score_negative.max(dim=2, keepdim=True)[0]
     # axis: batch_size, pred_names, pos_neg_labels, clauses, images
     # score_positive = score_positive.permute(0, 3, 2, 1).unsqueeze(2)
     # score_negative = score_negative.permute(0, 3, 2, 1).unsqueeze(2)
     all_predicates_scores = torch.cat((score_negative, score_positive), 2)
 
-    return all_predicates_scores
+    p_clause_signs = eval_clause_sign(all_predicates_scores)
+    clause_signs, clause_score_list, clause_scores_full = p_clause_signs[0]
+
+    return clause_signs, clause_score_list, clause_scores_full
 
     # C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
     # clause loop
@@ -674,8 +714,6 @@ def is_conflict_bodies(pi_bodies, clause_bodies):
     # check for pi_bodies and clause_bodies confliction
     for i, p_b in enumerate(pi_bodies):
         for j, c_b in enumerate(clause_bodies):
-            if i == j:
-                continue
             is_conflict = check_conflict_body(p_b, c_b)
             if is_conflict:
                 return True
@@ -693,7 +731,7 @@ def is_conflict_bodies(pi_bodies, clause_bodies):
 
 def check_conflict_body(b1, b2):
     if "at_area" in b1.pred.name and "at_area" in b2.pred.name:
-        if b1.terms == b2.terms:
+        if list(b1.terms) == list(b2.terms):
             return True
         elif conflict_pred(b1.pred.name,
                            b2.pred.name,
@@ -701,3 +739,47 @@ def check_conflict_body(b1, b2):
                            list(b2.terms)):
             return True
     return False
+
+
+def remove_duplicate_predicates(new_predicates):
+    non_duplicate_pred = []
+    for a_i, p_a in enumerate(new_predicates):
+        is_duplicate = False
+        for b_i, p_b in enumerate(new_predicates[a_i:]):
+            if p_a.name == p_b.name:
+                continue
+            p_a.body.sort()
+            p_b.body.sort()
+            if p_a == p_b:
+                is_duplicate = True
+        if not is_duplicate:
+            non_duplicate_pred.append(p_a)
+    return non_duplicate_pred
+
+
+def remove_unaligned_predicates(new_predicates):
+    non_duplicate_pred = []
+    for a_i, p_a in enumerate(new_predicates):
+        b_lens = [len(b) - len(p_a.body[0]) for b in p_a.body]
+        if sum(b_lens) == 0:
+            non_duplicate_pred.append(p_a)
+    return non_duplicate_pred
+
+
+def remove_extended_clauses(clauses, p_score):
+    clauses = list(clauses)
+    non_duplicate_pred = []
+    long_clauses_indices = []
+    for a_i, c_a in enumerate(clauses):
+        for b_i, c_b in enumerate(clauses):
+            if a_i == b_i:
+                continue
+            if set(c_a.body) <= set(c_b.body):
+                if b_i not in long_clauses_indices:
+                    long_clauses_indices.append(b_i)
+
+    short_clauses_indices = list(set([i for i in range(len(clauses))]) - set(long_clauses_indices))
+    clauses = [clauses[i] for i in short_clauses_indices]
+    # p_score = [p_score[i] for i in short_clauses_indices]
+
+    return set(clauses)
