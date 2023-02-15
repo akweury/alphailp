@@ -632,7 +632,7 @@ class PIClauseGenerator(object):
 
         # generate new clauses
         new_predicates = self.generate_new_predicate(beam_search_clauses)
-        # new_predicates = logic_utils.remove_unaligned_predicates(new_predicates)
+        new_predicates = logic_utils.remove_unaligned_predicates(new_predicates)
         new_predicates = logic_utils.remove_duplicate_predicates(new_predicates)
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
@@ -814,6 +814,7 @@ class PIClauseGenerator(object):
         new_predicates = []
 
         # simple predicates
+        # TODO: try to remove this kind of pi
         for bs_index, bs_clause in enumerate(beam_search_clauses):
             if len(bs_clause.body) <= 3:
                 continue
