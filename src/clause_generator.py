@@ -281,8 +281,8 @@ class ClauseGenerator(object):
             # evaluate clauses, it should consider both positive images as well as negative images.
             refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses)
 
-            for r_i, ref in enumerate(refs_non_conflict):
-                print(f"(BS step {step + 1}/{T_beam}) Non Conflict clause {r_i + 1}/{len(refs_non_conflict)}: {ref}")
+            # for r_i, ref in enumerate(refs_non_conflict):
+            #     print(f"(BS step {step + 1}/{T_beam}) Non Conflict clause {r_i + 1}/{len(refs_non_conflict)}: {ref}")
             print('Evaluating ', len(refs_non_conflict), 'generated clauses.')
             # refs_non_conflict = logic_utils.reorder_terms(refs_non_conflict)
             self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
@@ -908,9 +908,9 @@ class PIClauseGenerator(object):
                 new_clause = head + body_str
                 single_pi_str_list.append(new_clause)
             pi_str_lists.append(single_pi_str_list)
-        for p_i, p_list in enumerate(pi_str_lists):
-            for p in p_list:
-                print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
+        # for p_i, p_list in enumerate(pi_str_lists):
+            # for p in p_list:
+            #     print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
         return pi_str_lists
 
     # def eval_pi_clause_single(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
@@ -986,18 +986,19 @@ class PIClauseGenerator(object):
             # = logic_utils.eval_predicates_sign(p_score)
             pi_language_scores[pi_index] = p_goodness_scores[0]
 
-            print(f"- Eval pi language {pi_index + 1}/{len(pi_languages)}")
-            for pi_c in pi_clause:
-                print(pi_c)
-            print(f"- language score: {pi_language_scores[pi_index]}")
+            # print(f"- Eval pi language {pi_index + 1}/{len(pi_languages)}")
+            # for pi_c in pi_clause:
+            #     print(pi_c)
+            # print(f"- language score: {pi_language_scores[pi_index]}")
         pi_language_scores_sorted, pi_language_scores_sorted_indices = torch.sort(pi_language_scores, descending=True)
         passed_languages = []
         for index in pi_language_scores_sorted_indices:
             if pi_language_scores[index] == pos_pred.size(0):
                 passed_languages.append(pi_languages[index])
             else:
-                print(f"insufficient language: {pi_languages[index][1]}")
-                print(f"insufficient score: {pi_language_scores[index]}")
+                A = 12
+                # print(f"insufficient language: {pi_languages[index][1]}")
+                # print(f"insufficient score: {pi_language_scores[index]}")
 
         return passed_languages
         #     pred_type = None
