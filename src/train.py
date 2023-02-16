@@ -159,7 +159,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
     train_label[:len(pm_prediction_dict['train_pos'])] = 1.0
 
     for epoch in range(args.epochs):
-        loss_i = 0
+
         # for i, sample in tqdm(enumerate(train_pred, start=0)):
         #     # infer and predict the target probability
         #     sample = sample.unsqueeze(0)
@@ -176,7 +176,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         #     optimizer.step()
 
         # infer and predict the target probability
-
+        loss_i = 0
         V_T = NSFR(train_pred).unsqueeze(0)
 
         # watch out for PI values
@@ -193,7 +193,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         loss_list.append(loss_i)
         rtpt.step(subtitle=f"loss={loss_i:2.2f}")
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
-        print(f"(epoch {epoch}/{args.epochs - 1}) loss: ", loss_i)
+        print(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss.item()}")
 
         if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
             break
