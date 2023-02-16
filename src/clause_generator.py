@@ -19,7 +19,7 @@ from fol.language import Language, DataType
 import fol.logic as logic
 
 
-def check_accuracy(clause_scores_full,pair_num):
+def check_accuracy(clause_scores_full, pair_num):
     accuracy = clause_scores_full[:, 1] / pair_num
 
     return accuracy
@@ -283,7 +283,7 @@ class ClauseGenerator(object):
 
             # for r_i, ref in enumerate(refs_non_conflict):
             #     print(f"(BS step {step + 1}/{T_beam}) Non Conflict clause {r_i + 1}/{len(refs_non_conflict)}: {ref}")
-            print('Evaluating ', len(refs_non_conflict), 'generated clauses.')
+            print('\nEvaluating ', len(refs_non_conflict), 'generated clauses.')
             # refs_non_conflict = logic_utils.reorder_terms(refs_non_conflict)
             self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
                                        self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
@@ -295,14 +295,14 @@ class ClauseGenerator(object):
 
             clause_accuracy = check_accuracy(clause_scores_full, pos_pred.size(0))
             if clause_accuracy.max() == 1.0:
-                print("target clause has been found.")
+                print(f"(BS Step {step}/{T_beam}) target clause has been found.")
                 target_has_been_found = True
                 c_indices = [np.argmax(clause_accuracy)]
                 for c_i in c_indices:
                     print(refs_non_conflict[c_i])
                 break
             else:
-                print(f"max clause accuracy: {clause_accuracy.max()}")
+                print(f"(BS Step {step}/{T_beam}) max clause accuracy: {clause_accuracy.max()}")
                 c_indices = [np.argmax(clause_accuracy)]
                 for c_i in c_indices:
                     print(refs_non_conflict[c_i])
@@ -845,24 +845,24 @@ class PIClauseGenerator(object):
         #     new_predicate.body = [bs_clause.body]
         #     new_predicates.append(new_predicate)
 
-            # # symmetric invent
-            # new_sym_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
-            # symmetry_bodies = []
-            # for b in bs_clause.body:
-            #     if "at_area" in b.pred.name:
-            #         sym_b_pred = logic.Predicate(b.pred.name, 2, dtypes)
-            #         sym_b_terms = (logic.Var(b.terms[1].name), logic.Var(b.terms[0].name))
-            #         sym_b = logic.Atom(sym_b_pred, sym_b_terms)
-            #         symmetry_bodies.append(sym_b)
-            #     else:
-            #         symmetry_bodies.append(b)
-            # new_sym_predicate.body = [symmetry_bodies]
-            # new_predicates.append(new_sym_predicate)
+        # # symmetric invent
+        # new_sym_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+        # symmetry_bodies = []
+        # for b in bs_clause.body:
+        #     if "at_area" in b.pred.name:
+        #         sym_b_pred = logic.Predicate(b.pred.name, 2, dtypes)
+        #         sym_b_terms = (logic.Var(b.terms[1].name), logic.Var(b.terms[0].name))
+        #         sym_b = logic.Atom(sym_b_pred, sym_b_terms)
+        #         symmetry_bodies.append(sym_b)
+        #     else:
+        #         symmetry_bodies.append(b)
+        # new_sym_predicate.body = [symmetry_bodies]
+        # new_predicates.append(new_sym_predicate)
 
-            # # cluster invent
-            # new_clu_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
-            # new_clu_predicate.body = new_sym_predicate.body + new_predicate.body
-            # new_predicates.append(new_clu_predicate)
+        # # cluster invent
+        # new_clu_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+        # new_clu_predicate.body = new_sym_predicate.body + new_predicate.body
+        # new_predicates.append(new_clu_predicate)
 
         # cluster predicates
         pi_clause_clusters = logic_utils.search_independent_clauses(beam_search_clauses)
@@ -912,8 +912,8 @@ class PIClauseGenerator(object):
                 single_pi_str_list.append(new_clause)
             pi_str_lists.append(single_pi_str_list)
         # for p_i, p_list in enumerate(pi_str_lists):
-            # for p in p_list:
-            #     print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
+        # for p in p_list:
+        #     print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
         return pi_str_lists
 
     # def eval_pi_clause_single(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
@@ -974,7 +974,6 @@ class PIClauseGenerator(object):
 
         # scoring predicates
         for pi_index, pi_language in enumerate(pi_languages):
-
             lang, pi_clause = pi_language[0], pi_language[1]
 
             pred_names = [pi_clause[0].head.pred.name]
