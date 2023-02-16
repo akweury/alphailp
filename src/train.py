@@ -109,20 +109,34 @@ def predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
     test_size = pm_pred.shape[0]
     bz = 1
     predicted_all = torch.zeros(pm_pred.size()[0])
-    target_set = train_label.to(torch.int64).detach().cpu().numpy()
-    for i in range(int(test_size / args.batch_size_train)):
-        x_data = pm_pred[i * bz:(i + 1) * bz]
-        y_label = train_label[i * bz:(i + 1) * bz]
-        V_T = NSFR(x_data).unsqueeze(0)
-        predicted = get_prob(V_T, NSFR, args)
-        predicted = predicted.squeeze(2)
-        predicted = predicted.squeeze(0)
-        predicted = predicted
-        # train_label = train_label.detach().to(torch.int64).to("cpu").numpy()
-        count += V_T.size(0)  # batch size
-        predicted_all[i * bz:(i + 1) * bz] = predicted
+    target_set = train_label.to(torch.int64)
 
-    predicted_all = predicted_all.detach().to("cpu").numpy()
+    for i, sample in tqdm(enumerate(pm_pred, start=0)):
+        # to cuda
+        sample = sample.unsqueeze(0)
+        # infer and predict the target probability
+        V_T = NSFR(sample).unsqueeze(0)
+        predicted = get_prob(V_T, NSFR, args).squeeze(1).squeeze(1)
+        predicted_list.append(predicted.detach())
+        target_list.append(target_set[i])
+        count += V_T.size(0)  # batch size
+
+    predicted_all = torch.cat(predicted_list, dim=0).detach().cpu().numpy()
+    target_set = torch.tensor(target_list).to(torch.int64).detach().cpu().numpy()
+
+    # for i in range(int(test_size / args.batch_size_train)):
+    #     x_data = pm_pred[i * bz:(i + 1) * bz]
+    #     y_label = train_label[i * bz:(i + 1) * bz]
+    #     V_T = NSFR(x_data).unsqueeze(0)
+    #     predicted = get_prob(V_T, NSFR, args)
+    #     predicted = predicted.squeeze(2)
+    #     predicted = predicted.squeeze(0)
+    #     predicted = predicted
+    #     # train_label = train_label.detach().to(torch.int64).to("cpu").numpy()
+    #     count += V_T.size(0)  # batch size
+    #     predicted_all[i * bz:(i + 1) * bz] = predicted
+    #
+    # predicted_all = predicted_all.detach().to("cpu").numpy()
 
     if th == None:
         fpr, tpr, thresholds = roc_curve(target_set, predicted_all, pos_label=1)
