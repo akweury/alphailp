@@ -825,23 +825,23 @@ class PIClauseGenerator(object):
         new_predicates = []
 
         # simple predicates
-        # TODO: try to remove this kind of pi
-        for bs_index, bs_clause in enumerate(beam_search_clauses):
-            if len(bs_clause.body) <= 3:
-                continue
-            dtypes = [DataType(dt) for dt in ["object", "object"]]
-
-            # self invent
-            new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
-            non_inv_pred = False
-            for b in bs_clause.body:
-                if "inv_pred" in b.pred.name:
-                    non_inv_pred = True
-                    continue
-            if non_inv_pred:
-                continue
-            new_predicate.body = [bs_clause.body]
-            new_predicates.append(new_predicate)
+        # # TODO: try to remove this kind of pi
+        # for bs_index, bs_clause in enumerate(beam_search_clauses):
+        #     if len(bs_clause.body) <= 3:
+        #         continue
+        #     dtypes = [DataType(dt) for dt in ["object", "object"]]
+        #
+        #     # self invent
+        #     new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+        #     non_inv_pred = False
+        #     for b in bs_clause.body:
+        #         if "inv_pred" in b.pred.name:
+        #             non_inv_pred = True
+        #             continue
+        #     if non_inv_pred:
+        #         continue
+        #     new_predicate.body = [bs_clause.body]
+        #     new_predicates.append(new_predicate)
 
             # # symmetric invent
             # new_sym_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
