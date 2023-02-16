@@ -66,7 +66,7 @@ def get_args():
                         help="The number of objects to be focused.")
     parser.add_argument("--epochs", type=int, default=21,
                         help="The number of epochs.")
-    parser.add_argument("--pi_epochs", type=int, default=3,
+    parser.add_argument("--pi_epochs", type=int, default=1,
                         help="The number of epochs for predicate invention.")
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="The learning rate.")
@@ -99,27 +99,25 @@ def predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
     # NSFR.print_program()
 
     pm_pred = torch.cat((pos_pred, neg_pred), dim=0)
-    train_label = torch.zeros(1, len(pm_pred))
-    train_label[0, :len(pos_pred)] = 1.0
+    train_label = torch.zeros(len(pm_pred))
+    train_label[:len(pos_pred)] = 1.0
+    # TODO: check this segment code.
 
-    for i, sample in tqdm(enumerate(pm_pred, start=0)):
-        # to cuda
+    V_T = NSFR(pm_pred).unsqueeze(0)
+    # NSFR.print_valuation_batch(V_T)
+    predicted = get_prob(V_T, NSFR, args)
+    predicted = predicted.squeeze(2)
+    predicted = predicted.squeeze(0)
+    # loss = bce(predicted, train_label[:, i])
+    # loss_i += loss.item()
+    # loss.backward()
 
-        sample = sample.unsqueeze(0)
-        V_T = NSFR(sample)
-        # NSFR.print_valuation_batch(V_T)
-        predicted = get_prob(V_T, NSFR, args)
+    predicted = predicted.detach().to("cpu").numpy()
+    train_label = train_label.detach().to(torch.int64).to("cpu").numpy()
+    count += V_T.size(0)  # batch size
 
-        # loss = bce(predicted, train_label[:, i])
-        # loss_i += loss.item()
-        # loss.backward()
-
-        predicted_list.append(predicted.detach().to("cpu"))
-        target_list.append(train_label[:, i].detach().to("cpu"))
-        count += V_T.size(0)  # batch size
-
-    predicted = torch.tensor(predicted_list).detach().cpu().numpy()
-    target_set = torch.tensor(target_list).to(torch.int64).detach().cpu().numpy()
+    predicted = torch.tensor(predicted).detach().cpu().numpy()
+    target_set = torch.tensor(train_label).to(torch.int64).detach().cpu().numpy()
 
     if th == None:
         fpr, tpr, thresholds = roc_curve(target_set, predicted, pos_label=1)
@@ -153,6 +151,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
+    stopping_threshold = 1e-3
     test_acc_list = np.zeros(shape=(1, args.epochs))
     # prepare perception result
     train_pred = torch.cat((pm_prediction_dict['train_pos'], pm_prediction_dict['train_neg']), dim=0)
@@ -161,25 +160,43 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
 
     for epoch in range(args.epochs):
         loss_i = 0
-        for i, sample in tqdm(enumerate(train_pred, start=0)):
-            # infer and predict the target probability
-            sample = sample.unsqueeze(0)
-            V_T = NSFR(sample)
-            # watch out for PI values
-            a = V_T.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        # for i, sample in tqdm(enumerate(train_pred, start=0)):
+        #     # infer and predict the target probability
+        #     sample = sample.unsqueeze(0)
+        #     V_T = NSFR(sample)
+        #     # watch out for PI values
+        #     a = V_T.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        #
+        #     # NSFR.print_valuation_batch(V_T)
+        #     predicted = get_prob(V_T, NSFR, args)
+        #     loss = bce(predicted, train_label[i])
+        #     loss_i += loss.item()
+        #     loss.backward()
+        #     # TODO: problem: performs good in positive but bad in negative
+        #     optimizer.step()
 
-            # NSFR.print_valuation_batch(V_T)
-            predicted = get_prob(V_T, NSFR, args)
-            loss = bce(predicted, train_label[i])
-            loss_i += loss.item()
-            loss.backward()
-            # TODO: problem: performs good in positive but bad in negative
-            optimizer.step()
+        # infer and predict the target probability
+
+        V_T = NSFR(train_pred).unsqueeze(0)
+
+        # watch out for PI values
+        # NSFR.print_valuation_batch(V_T)
+        predicted = get_prob(V_T, NSFR, args)
+        predicted = predicted.squeeze(2)
+        predicted = predicted.squeeze(0)
+        loss = bce(predicted, train_label)
+        loss_i += loss.item()
+        loss.backward()
+        # TODO: problem: performs good in positive but bad in negative
+        optimizer.step()
 
         loss_list.append(loss_i)
         rtpt.step(subtitle=f"loss={loss_i:2.2f}")
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
         print("loss: ", loss_i)
+
+        if epoch > 5 and loss_list[epoch] - loss_list[epoch - 1] < stopping_threshold:
+            break
 
         print("Predicting on test data set...")
         acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
@@ -348,11 +365,15 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                init_clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
-        bs_clauses, p_scores_list = clause_generator.generate(clauses, val_pos, val_neg, pi_clauses,
-                                                              T_beam=args.t_beam, N_beam=args.n_beam, N_max=args.n_max)
+        bs_clauses, p_scores_list, thbf = clause_generator.generate(clauses, val_pos, val_neg, pi_clauses,
+                                                                    T_beam=args.t_beam, N_beam=args.n_beam,
+                                                                    N_max=args.n_max)
 
         if args.no_pi:
             clauses = bs_clauses
+        if thbf:
+            clauses = bs_clauses
+            break
         else:
             # invent new predicate and generate pi clauses
             new_pi_clauses = pi_clause_generator.generate(bs_clauses, val_pos, val_neg)

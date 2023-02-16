@@ -105,14 +105,14 @@ class InferModule(nn.Module):
     def r(self, x):
         B = x.size(0)  # batch size
         # apply each clause c_i and stack to a tensor C
-        b = x.detach().to("cpu").numpy().reshape(-1, 1)
+
         clause_function_value_lists = []
         for i in range(self.I.size(0)):
             clause_function = self.cs[i]
             # TODO: Think about the clause function of pi clauses
             valuation_vector = clause_function(x)
 
-            a = valuation_vector.detach().to("cpu").numpy().reshape(-1, 1)
+            # a = valuation_vector.detach().to("cpu").numpy().reshape(-1, 1)
             clause_function_value_lists.append(valuation_vector)
         # C * B * G
         C = torch.stack(clause_function_value_lists, 0)
@@ -132,45 +132,45 @@ class InferModule(nn.Module):
         # taking soft or to compose a logic program with m clauses
         # B * G
         R = softor(H, dim=0, gamma=self.gamma)
-        c = R.detach().to("cpu").numpy().reshape(-1, 1)
+        # c = R.detach().to("cpu").numpy().reshape(-1, 1)
         return R
 
     def r_bk(self, x):
         B = x.size(0)  # batch size
         # apply each clause c_i and stack to a tensor C
-        a = x.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        # a = x.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
         # C * B * G
 
         value_list = []
         for i in range(self.I_bk.size(0)):
             bk_clause_function = self.cs_bk[i]
             value = bk_clause_function(x)
-            b = value.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+            # b = value.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
             value_list.append(value)
 
         C = torch.stack(value_list, 0)
         # B * G
         res = softor(C, dim=0, gamma=self.gamma)
-        b = res.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        # b = res.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
         return res
 
     def r_pi(self, x):
         B = x.size(0)  # batch size
         # apply each clause c_i and stack to a tensor C
-        a = x.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        # a = x.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
         # C * B * G
 
         value_list = []
         for i in range(self.I_pi.size(0)):
             pi_clause_function = self.cs_pi[i]
             value = pi_clause_function(x)
-            b = value.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+            # b = value.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
             value_list.append(value)
 
         C = torch.stack(value_list, 0)
         # B * G
         res = softor(C, dim=0, gamma=self.gamma)
-        b = res.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+        # b = res.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
         return res
 
 

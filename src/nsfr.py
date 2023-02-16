@@ -89,11 +89,11 @@ class NSFReasoner(nn.Module):
 
         return zs
 
-    def predict(self, v, prednames):
+    def predict(self, v, prednames, device):
         """Extracting a value from the valuation tensor using a given predicate.
         """
         # v: batch * |atoms|
-        values = torch.zeros(v.size(0), v.size(1), 1)
+        values = torch.zeros(v.size(0), v.size(1), 1).to(device)
         if len(prednames) > 1:
             target_indices = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
             # target_all = torch.zeros((len(target_indices), v.size(0)))
@@ -107,7 +107,7 @@ class NSFReasoner(nn.Module):
 
         else:
             target_index_list = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
-            values = v[:, :, target_index_list[0]].detach()
+            values = v[:, :, target_index_list[0]]
 
         return values
 

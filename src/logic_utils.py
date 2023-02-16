@@ -520,10 +520,10 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     # # score_positive = torch.zeros((bz, pos_img_num, clause_num, eval_pred_num)).to(device)
     # # score_negative = torch.zeros((bz, neg_img_num, clause_num, eval_pred_num)).to(device)
 
-    V_T_pos = NSFR.clause_eval_quick(pos_pred).detach()
-    V_T_neg = NSFR.clause_eval_quick(neg_pred).detach()
-    score_positive = NSFR.predict(v=V_T_pos, prednames=pred_names)
-    score_negative = NSFR.predict(v=V_T_neg, prednames=pred_names)
+    V_T_pos = NSFR.clause_eval_quick(pos_pred)
+    V_T_neg = NSFR.clause_eval_quick(neg_pred)
+    score_positive = NSFR.predict(V_T_pos, pred_names, args.device)
+    score_negative = NSFR.predict(V_T_neg, pred_names, args.device)
 
     if score_positive.size(2) > 1:
         score_positive = score_positive.max(dim=2, keepdim=True)[0]

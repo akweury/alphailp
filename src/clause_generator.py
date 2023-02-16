@@ -128,9 +128,9 @@ class ClauseGenerator(object):
             set of generated clauses
         """
         if gen_mode == 'beam':
-            beam_search_clauses, p_scores_list = self.beam_search(C_0, pos_pred, neg_pred, pi_clauses,
-                                                                  T_beam=T_beam, N_beam=N_beam, N_max=N_max)
-            return beam_search_clauses, p_scores_list
+            beam_search_clauses, p_scores_list, thbf = self.beam_search(C_0, pos_pred, neg_pred, pi_clauses,
+                                                                        T_beam=T_beam, N_beam=N_beam, N_max=N_max)
+            return beam_search_clauses, p_scores_list, thbf
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
 
@@ -262,6 +262,7 @@ class ClauseGenerator(object):
         p_score = None
         lang = self.lang
         bs_clauses = []
+        target_has_been_found = False
         while step < T_beam:
             B_new = {}
             refs = []
@@ -295,6 +296,12 @@ class ClauseGenerator(object):
             clause_accuracy = check_accuracy(clause_scores_full)
             if clause_accuracy.max() == 1.0:
                 print("target clause has been found.")
+                target_has_been_found = True
+                c_indices = [np.argmax(clause_accuracy)]
+                for c_i in c_indices:
+                    print(refs_non_conflict[c_i])
+
+                break
             else:
                 print(f"max clause accuracy: {clause_accuracy.max()}")
             # check for duplication
@@ -326,7 +333,7 @@ class ClauseGenerator(object):
             #                                        x_label="positive score", y_label="negative score")
             # B_new_sorted = sorted(B_new.items(), key=lambda x: x[0, 1], reverse=True)
             B_new_good = self.select_good_clauses(B_new)
-
+            #
             # if len(B_new_good) > 10:
             #     B_new_good = random.sample(B_new_good, 10)
 
@@ -341,7 +348,7 @@ class ClauseGenerator(object):
 
         # C = logic_utils.remove_extended_clauses(C, p_score)
 
-        return C, p_score
+        return C, p_score, target_has_been_found
 
     def eval_images(self, save_path):
 
@@ -428,9 +435,11 @@ class ClauseGenerator(object):
         """
         C = set()
         p_scores_list = []
+        thbf = False
         for clause in C_0:
-            bs_clauses, p_scores = self.beam_search_clause_quick(clause, pos_pred, neg_pred, pi_clauses, T_beam, N_beam,
-                                                                 N_max)
+            bs_clauses, p_scores, thbf = self.beam_search_clause_quick(clause, pos_pred, neg_pred, pi_clauses, T_beam,
+                                                                       N_beam,
+                                                                       N_max)
             C = C.union(bs_clauses)
             p_scores_list.append(p_scores)
             # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
@@ -439,7 +448,7 @@ class ClauseGenerator(object):
         for c in C:
             print('(BS Clause) ' + str(c))
         print("====== ", len(C), " clauses are generated!! ======")
-        return C, p_scores_list
+        return C, p_scores_list, thbf
 
     def eval_pi_clauses(self, clauses):
         return None
@@ -972,8 +981,8 @@ class PIClauseGenerator(object):
             NSFR = get_nsfr_model(self.args, lang, pi_clause, atoms,
                                   self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
 
-            p_signs, p_goodness_scores, p_score_full_list = logic_utils.eval_predicates(NSFR, self.args, pred_names, pos_pred, neg_pred)
-
+            p_signs, p_goodness_scores, p_score_full_list = logic_utils.eval_predicates(NSFR, self.args, pred_names,
+                                                                                        pos_pred, neg_pred)
 
             # = logic_utils.eval_predicates_sign(p_score)
             pi_language_scores[pi_index] = p_goodness_scores[0]

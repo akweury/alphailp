@@ -322,7 +322,7 @@ def get_prob(v_T, NSFR, args):
             predicted = NSFR.predict_multi(
                 v=v_T, prednames=['kp1', 'kp2', 'kp3', 'kp4', 'kp5', 'kp6', 'kp7'])
     """
-    return NSFR.predict(v=v_T, predname='kp')
+    return NSFR.predict(v=v_T, prednames=['kp'], device=args.device)
     # return predicted
 
 
