@@ -31,6 +31,8 @@ def get_args():
                         help="Batch size to infer with")
     parser.add_argument("--batch-size-bs", type=int,
                         default=1, help="Batch size in beam search")
+    parser.add_argument("--batch-size-train", type=int,
+                        default=10, help="Batch size in nsfr train")
     parser.add_argument("--e", type=int, default=6,
                         help="The maximum number of objects in one image")
     parser.add_argument("--dataset", choices=["twopairs", "threepairs", "red-triangle", "closeby", "closeby-learn",
@@ -103,47 +105,49 @@ def predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
     train_label[:len(pos_pred)] = 1.0
     # TODO: check this segment code.
 
-    V_T = NSFR(pm_pred).unsqueeze(0)
-    # NSFR.print_valuation_batch(V_T)
-    predicted = get_prob(V_T, NSFR, args)
-    predicted = predicted.squeeze(2)
-    predicted = predicted.squeeze(0)
-    # loss = bce(predicted, train_label[:, i])
-    # loss_i += loss.item()
-    # loss.backward()
+    test_size = pm_pred.shape[0]
+    bz = args.batch_size_train
+    predicted_all = torch.zeros(pm_pred.size()[0])
+    target_set = train_label.to(torch.int64).detach().cpu().numpy()
+    for i in range(int(test_size / args.batch_size_train)):
+        x_data = pm_pred[i * bz:(i + 1) * bz]
+        y_label = train_label[i * bz:(i + 1) * bz]
+        V_T = NSFR(x_data).unsqueeze(0)
+        predicted = get_prob(V_T, NSFR, args)
+        predicted = predicted.squeeze(2)
+        predicted = predicted.squeeze(0)
+        predicted = predicted
+        # train_label = train_label.detach().to(torch.int64).to("cpu").numpy()
+        count += V_T.size(0)  # batch size
+        predicted_all[i * bz:(i + 1) * bz] = predicted
 
-    predicted = predicted.detach().to("cpu").numpy()
-    train_label = train_label.detach().to(torch.int64).to("cpu").numpy()
-    count += V_T.size(0)  # batch size
-
-    predicted = torch.tensor(predicted).detach().cpu().numpy()
-    target_set = torch.tensor(train_label).to(torch.int64).detach().cpu().numpy()
+    predicted_all = predicted_all.detach().to("cpu").numpy()
 
     if th == None:
-        fpr, tpr, thresholds = roc_curve(target_set, predicted, pos_label=1)
+        fpr, tpr, thresholds = roc_curve(target_set, predicted_all, pos_label=1)
         accuracy_scores = []
         print('ths', thresholds)
         for thresh in thresholds:
             accuracy_scores.append(accuracy_score(
-                target_set, [m > thresh for m in predicted]))
+                target_set, [m > thresh for m in predicted_all]))
 
         accuracies = np.array(accuracy_scores)
         max_accuracy = accuracies.max()
         max_accuracy_threshold = thresholds[accuracies.argmax()]
         rec_score = recall_score(
-            target_set, [m > thresh for m in predicted], average=None)
+            target_set, [m > thresh for m in predicted_all], average=None)
 
         print('target_set: ', target_set, target_set.shape)
-        print('predicted: ', predicted, predicted.shape)
+        print('predicted: ', predicted_all, predicted.shape)
         print('accuracy: ', max_accuracy)
         print('threshold: ', max_accuracy_threshold)
         print('recall: ', rec_score)
 
         return max_accuracy, rec_score, max_accuracy_threshold
     else:
-        accuracy = accuracy_score(target_set, [m > th for m in predicted])
+        accuracy = accuracy_score(target_set, [m > th for m in predicted_all])
         rec_score = recall_score(
-            target_set, [m > th for m in predicted], average=None)
+            target_set, [m > th for m in predicted_all], average=None)
         return accuracy, rec_score, th
 
 
@@ -177,23 +181,26 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
 
         # infer and predict the target probability
         loss_i = 0
-        V_T = NSFR(train_pred).unsqueeze(0)
+        train_size = train_pred.shape[0]
+        bz = args.batch_size_train
+        for i in range(int(train_size / args.batch_size_train)):
+            x_data = train_pred[i * bz:(i + 1) * bz]
+            y_label = train_label[i * bz:(i + 1) * bz]
+            V_T = NSFR(x_data).unsqueeze(0)
 
-        # watch out for PI values
-        # NSFR.print_valuation_batch(V_T)
-        predicted = get_prob(V_T, NSFR, args)
-        predicted = predicted.squeeze(2)
-        predicted = predicted.squeeze(0)
-        loss = bce(predicted, train_label)
-        loss_i += loss.item()
-        loss.backward()
-        # TODO: problem: performs good in positive but bad in negative
-        optimizer.step()
-
+            predicted = get_prob(V_T, NSFR, args)
+            predicted = predicted.squeeze(2)
+            predicted = predicted.squeeze(0)
+            loss = bce(predicted, y_label)
+            loss_i += loss.item()
+            loss.backward()
+            # TODO: problem: performs good in positive but bad in negative
+            optimizer.step()
+        loss_i = loss_i / (i + 1)
         loss_list.append(loss_i)
         rtpt.step(subtitle=f"loss={loss_i:2.2f}")
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
-        print(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss.item()}")
+        print(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss_i}")
 
         if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
             break
