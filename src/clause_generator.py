@@ -276,7 +276,7 @@ class ClauseGenerator(object):
                 refs.extend(refs_i)
                 if self._is_valid(c) and not self._is_confounded(c):
                     C = C.union(set([c]))
-                    print(f"(BS step {step + 1}/{T_beam}) Added: ", c)
+                    # print(f"(BS step {step + 1}/{T_beam}) Added: ", c)
 
             # evaluate clauses, it should consider both positive images as well as negative images.
             refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses)
