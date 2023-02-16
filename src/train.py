@@ -106,7 +106,7 @@ def predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
     # TODO: check this segment code.
 
     test_size = pm_pred.shape[0]
-    bz = args.batch_size_train
+    bz = 1
     predicted_all = torch.zeros(pm_pred.size()[0])
     target_set = train_label.to(torch.int64).detach().cpu().numpy()
     for i in range(int(test_size / args.batch_size_train)):

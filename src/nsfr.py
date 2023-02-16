@@ -45,18 +45,18 @@ class NSFReasoner(nn.Module):
         # zs = self.pm(x)
         # convert to the valuation tensor
 
-        tic = time.perf_counter()
+        # tic = time.perf_counter()
 
         V_0 = self.fc(x, self.atoms, self.bk)
 
-        toc = time.perf_counter()
+        # toc = time.perf_counter()
 
         # a = V_0.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
 
         # perform T-step forward-chaining reasoning
         V_T = self.im(V_0)
 
-        toc_2 = time.perf_counter()
+        # toc_2 = time.perf_counter()
 
         # print(f"Calculate V_0 in {toc - tic:0.4f} seconds")
         # print(f"Calculate V_T in {toc_2 - toc:0.4f} seconds")
