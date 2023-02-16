@@ -19,8 +19,8 @@ from fol.language import Language, DataType
 import fol.logic as logic
 
 
-def check_accuracy(clause_scores_full):
-    accuracy = clause_scores_full[:, 1] / 20
+def check_accuracy(clause_scores_full,pair_num):
+    accuracy = clause_scores_full[:, 1] / pair_num
 
     return accuracy
 
@@ -293,14 +293,14 @@ class ClauseGenerator(object):
 
             # clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
 
-            clause_accuracy = check_accuracy(clause_scores_full)
+            clause_accuracy = check_accuracy(clause_scores_full, pos_pred.size(0))
             if clause_accuracy.max() == 1.0:
                 print("target clause has been found.")
                 target_has_been_found = True
                 c_indices = [np.argmax(clause_accuracy)]
                 for c_i in c_indices:
                     print(refs_non_conflict[c_i])
-                # break
+                break
             else:
                 print(f"max clause accuracy: {clause_accuracy.max()}")
             # check for duplication
