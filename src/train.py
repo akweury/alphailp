@@ -220,12 +220,12 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
             break
 
-        print("Predicting on test data set...")
-        acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
-                               pm_prediction_dict['test_neg'], args, th=0.33, split='train')
-        test_acc_list[0, epoch] = acc
-        chart_utils.plot_line_chart(test_acc_list, str(exp_output_path), labels="Test_Accuracy",
-                                    title=f"Test Accuracy ({args.dataset})", cla_leg=True)
+        # print("Predicting on test data set...")
+        # acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
+        #                        pm_prediction_dict['test_neg'], args, th=0.33, split='train')
+        # test_acc_list[0, epoch] = acc
+        # chart_utils.plot_line_chart(test_acc_list, str(exp_output_path), labels="Test_Accuracy",
+        #                             title=f"Test Accuracy ({args.dataset})", cla_leg=True)
         # NSFR.print_program()
         if epoch % 20 == 0:
             NSFR.print_program()
