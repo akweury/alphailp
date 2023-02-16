@@ -369,11 +369,11 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                                                                     T_beam=args.t_beam, N_beam=args.n_beam,
                                                                     N_max=args.n_max)
 
+        if thbf:
+            break
+
         if args.no_pi:
             clauses = bs_clauses
-        if thbf:
-            clauses = bs_clauses
-            break
         else:
             # invent new predicate and generate pi clauses
             new_pi_clauses = pi_clause_generator.generate(bs_clauses, val_pos, val_neg)
