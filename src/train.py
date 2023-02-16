@@ -27,7 +27,7 @@ import chart_utils
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--batch-size", type=int, default=24,
+    parser.add_argument("--batch-size", type=int, default=1,
                         help="Batch size to infer with")
     parser.add_argument("--batch-size-bs", type=int,
                         default=1, help="Batch size in beam search")
@@ -35,7 +35,8 @@ def get_args():
                         default=10, help="Batch size in nsfr train")
     parser.add_argument("--e", type=int, default=6,
                         help="The maximum number of objects in one image")
-    parser.add_argument("--dataset", choices=["twopairs", "threepairs", "red-triangle", "closeby", "closeby-learn",
+    parser.add_argument("--dataset", default="red-triangle",
+                        choices=["twopairs", "threepairs", "red-triangle", "closeby", "closeby-learn",
                                               "online", "online-pair", "nine-circles", "clevr-hans0", "clevr-hans1",
                                               "clevr-hans2"], help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
@@ -205,32 +206,32 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
             break
 
-        # print("Predicting on test data set...")
-        # acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
-        #                        pm_prediction_dict['test_neg'], args, th=0.33, split='train')
-        # test_acc_list[0, epoch] = acc
-        # chart_utils.plot_line_chart(test_acc_list, str(exp_output_path), labels="Test_Accuracy",
-        #                             title=f"Test Accuracy ({args.dataset})", cla_leg=True)
-        # # NSFR.print_program()
-        # if epoch % 20 == 0:
-        #     NSFR.print_program()
-        #     print("Predicting on validation data set...")
-        #     acc_val, rec_val, th_val = predict(NSFR, pm_prediction_dict['val_pos'],
-        #                                        pm_prediction_dict['val_neg'], args, th=0.33, split='val')
-        #     writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
-        #     print("acc_val: ", acc_val)
-        #
-        #     print("Predi$\alpha$ILPcting on training data set...")
-        #     acc, rec, th = predict(NSFR, pm_prediction_dict['train_pos'],
-        #                            pm_prediction_dict['train_neg'], args, th=th_val, split='train')
-        #     writer.add_scalar("metric/train_acc", acc, global_step=epoch)
-        #     print("acc_train: ", acc)
-        #
-        #     print("Predicting on test data set...")
-        #     acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
-        #                            pm_prediction_dict['test_neg'], args, th=th_val, split='train')
-        #     writer.add_scalar("metric/test_acc", acc, global_step=epoch)
-        #     print("acc_test: ", acc)
+        print("Predicting on test data set...")
+        acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
+                               pm_prediction_dict['test_neg'], args, th=0.33, split='train')
+        test_acc_list[0, epoch] = acc
+        chart_utils.plot_line_chart(test_acc_list, str(exp_output_path), labels="Test_Accuracy",
+                                    title=f"Test Accuracy ({args.dataset})", cla_leg=True)
+        # NSFR.print_program()
+        if epoch % 20 == 0:
+            NSFR.print_program()
+            print("Predicting on validation data set...")
+            acc_val, rec_val, th_val = predict(NSFR, pm_prediction_dict['val_pos'],
+                                               pm_prediction_dict['val_neg'], args, th=0.33, split='val')
+            writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
+            print("acc_val: ", acc_val)
+
+            print("Predi$\alpha$ILPcting on training data set...")
+            acc, rec, th = predict(NSFR, pm_prediction_dict['train_pos'],
+                                   pm_prediction_dict['train_neg'], args, th=th_val, split='train')
+            writer.add_scalar("metric/train_acc", acc, global_step=epoch)
+            print("acc_train: ", acc)
+
+            print("Predicting on test data set...")
+            acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
+                                   pm_prediction_dict['test_neg'], args, th=th_val, split='train')
+            writer.add_scalar("metric/test_acc", acc, global_step=epoch)
+            print("acc_test: ", acc)
 
     return loss
 
