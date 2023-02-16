@@ -447,8 +447,8 @@ class ClauseGenerator(object):
             # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
         C = sorted(list(C))
         print('\n======= BEAM SEARCHED CLAUSES ======')
-        for c in C:
-            print('(BS Clause) ' + str(c))
+        # for c in C:
+        #     print('(BS Clause) ' + str(c))
         print("====== ", len(C), " clauses are generated!! ======")
         return C, p_scores_list, thbf
 
@@ -663,8 +663,8 @@ class PIClauseGenerator(object):
         passed_pi_clauses, passed_pi_predicates = self.extract_pi(passed_pi_languages)
 
         print("====== ", len(passed_pi_predicates), " PI predicates are generated!! ======")
-        for pred in passed_pi_predicates:
-            print(pred)
+        # for pred in passed_pi_predicates:
+        #     print(pred)
         print("====== ", len(passed_pi_clauses), " PI clauses are generated!! ======")
         for c in passed_pi_clauses:
             print(c)
