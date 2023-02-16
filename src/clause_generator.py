@@ -300,8 +300,7 @@ class ClauseGenerator(object):
                 c_indices = [np.argmax(clause_accuracy)]
                 for c_i in c_indices:
                     print(refs_non_conflict[c_i])
-
-                break
+                # break
             else:
                 print(f"max clause accuracy: {clause_accuracy.max()}")
             # check for duplication
