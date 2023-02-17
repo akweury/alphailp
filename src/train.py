@@ -37,8 +37,8 @@ def get_args():
                         help="The maximum number of objects in one image")
     parser.add_argument("--dataset", default="red-triangle",
                         choices=["twopairs", "threepairs", "red-triangle", "closeby", "closeby-learn",
-                                              "online", "online-pair", "nine-circles", "clevr-hans0", "clevr-hans1",
-                                              "clevr-hans2"], help="Use kandinsky patterns dataset")
+                                 "online", "online-pair", "nine-circles", "clevr-hans0", "clevr-hans1",
+                                 "clevr-hans2"], help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
                         help="kandinsky or clevr")
     parser.add_argument('--device', default='cpu',
@@ -391,7 +391,6 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                                                                     T_beam=args.t_beam, N_beam=args.n_beam,
                                                                     N_max=args.n_max)
 
-
         if thbf:
             break
 
@@ -400,6 +399,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         else:
             # invent new predicate and generate pi clauses
             new_pi_clauses = pi_clause_generator.generate(bs_clauses, val_pos, val_neg)
+            if len(new_pi_clauses) == 0:
+                args.n_beam += 5
             # add new predicates
             pi_clauses += new_pi_clauses
             bk_clauses += new_pi_clauses

@@ -288,9 +288,9 @@ def remove_conflict_clauses(clauses, pi_clauses):
             if "at_area" in b.pred.name or "inv_pred" in b.pred.name:
                 if not b.terms[0].name == "O1" or not b.terms[1].name == "O2":
                     ordered = False
-            if "color" in b.pred.name or "shape" in b.pred.name:
-                if not b.terms[0].name == "O1":
-                    ordered = False
+            # if "color" in b.pred.name or "shape" in b.pred.name:
+            #     if not b.terms[0].name == "O1":
+            #         ordered = False
         if ordered:
             clause_ordered.append(clause)
 

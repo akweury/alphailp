@@ -606,10 +606,10 @@ class ClauseGenerator(object):
 
         for clause, scores in B_new_sorted.items():
             last_3 = scores[1:]
-            if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
-                good_clauses.append((clause, scores))
-            # if last_3[0] + last_3[2] == self.pos_loader.dataset.__len__():
+            # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
             #     good_clauses.append((clause, scores))
+            if last_3[0] + last_3[2] == self.pos_loader.dataset.__len__():
+                good_clauses.append((clause, scores))
         return good_clauses
 
 
