@@ -999,8 +999,8 @@ class PIClauseGenerator(object):
                 passed_languages.append(pi_languages[index])
             else:
                 A = 12
-                # print(f"insufficient language: {pi_languages[index][1]}")
-                # print(f"insufficient score: {pi_language_scores[index]}")
+                # print(f"unnecessary language: {pi_languages[index][1]}")
+                # print(f"unnecessary score: {pi_language_scores[index]}")
 
         return passed_languages
         #     pred_type = None
