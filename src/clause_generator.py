@@ -613,6 +613,19 @@ class ClauseGenerator(object):
         return good_clauses
 
 
+def count_arity_from_clause_cluster(clause_cluster):
+    arity_list = []
+    for clause in clause_cluster:
+        for b in clause.body:
+            if b.terms[0].name not in arity_list and "O" in b.terms[0].name:
+                arity_list.append(b.terms[0].name)
+            if b.terms[1].name not in arity_list and "O" in b.terms[1].name:
+                arity_list.append(b.terms[1].name)
+    # arity = len(arity_list)
+    arity_list.sort()
+    return arity_list
+
+
 class PIClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -871,27 +884,28 @@ class PIClauseGenerator(object):
         pi_clause_clusters = logic_utils.search_independent_clauses(beam_search_clauses)
 
         for pi_index, clause_cluster in enumerate(pi_clause_clusters):
-            dtypes = [DataType(dt) for dt in ["object", "object"]]
-            new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
+            args = count_arity_from_clause_cluster(clause_cluster)
+            dtypes = [DataType("object")] * len(args)
+            new_predicate = self.lang.get_new_invented_predicate(arity=len(args), pi_dtypes=dtypes, args=args)
             new_predicate.body = [clause.body for clause in clause_cluster]
             new_predicates.append(new_predicate)
 
-            # symmetric invent
-            new_sym_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
-            symmetry_bodies = []
-            for b_list in new_predicate.body:
-                symmetry_b = []
-                for b in b_list:
-                    if "at_area" in b.pred.name:
-                        sym_b_pred = logic.Predicate(b.pred.name, 2, dtypes)
-                        sym_b_terms = (logic.Var(b.terms[1].name), logic.Var(b.terms[0].name))
-                        sym_b = logic.Atom(sym_b_pred, sym_b_terms)
-                        symmetry_b.append(sym_b)
-                    else:
-                        symmetry_b.append(b)
-                symmetry_bodies.append(symmetry_b)
-            new_sym_predicate.body = symmetry_bodies + new_predicate.body
-            new_predicates.append(new_sym_predicate)
+            # # symmetric invent
+            # new_sym_predicate = self.lang.get_new_invented_predicate(arity=arity, pi_dtypes=dtypes)
+            # symmetry_bodies = []
+            # for b_list in new_predicate.body:
+            #     symmetry_b = []
+            #     for b in b_list:
+            #         if "at_area" in b.pred.name:
+            #             sym_b_pred = logic.Predicate(b.pred.name, arity, dtypes)
+            #             sym_b_terms = (logic.Var(b.terms[1].name), logic.Var(b.terms[0].name))
+            #             sym_b = logic.Atom(sym_b_pred, sym_b_terms)
+            #             symmetry_b.append(sym_b)
+            #         else:
+            #             symmetry_b.append(b)
+            #     symmetry_bodies.append(symmetry_b)
+            # new_sym_predicate.body = symmetry_bodies + new_predicate.body
+            # new_predicates.append(new_sym_predicate)
 
         return new_predicates
 
@@ -901,7 +915,16 @@ class PIClauseGenerator(object):
         for new_predicate in new_predicates:
             single_pi_str_list = []
             # single_pi_str_list.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
-            head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
+            # head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
+            if new_predicate.arity == 1:
+                head_args = "(X)"
+            else:
+                head_args = "("
+                for arg in new_predicate.args:
+                    head_args += arg + ","
+                head_args = head_args[:-1]
+                head_args += ")"
+
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:
                 body_str = ""

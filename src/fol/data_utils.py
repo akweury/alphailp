@@ -151,6 +151,10 @@ class DataUtils(object):
                     preds["2-ary"] = new_pred
                 elif new_pred.arity == 3:
                     preds["3-ary"] = new_pred
+                elif new_pred.arity == 4:
+                    preds["4-ary"] = new_pred
+                elif new_pred.arity == 5:
+                    preds["5-ary"] = new_pred
         return preds
 
     def load_consts(self, path):
@@ -197,7 +201,7 @@ class DataUtils(object):
 
         # pred_with_id = pred + f"_{i}"
         pred_with_id = pred
-        invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes)
+        invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes, args=None)
 
         return invented_pred
 
