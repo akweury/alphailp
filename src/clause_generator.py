@@ -130,6 +130,10 @@ class ClauseGenerator(object):
         if gen_mode == 'beam':
             beam_search_clauses, p_scores_list, thbf = self.beam_search(C_0, pos_pred, neg_pred, pi_clauses,
                                                                         T_beam=T_beam, N_beam=N_beam, N_max=N_max)
+
+            if len(beam_search_clauses) == 0:
+                raise ValueError('No beam search clause has been found.')
+
             return beam_search_clauses, p_scores_list, thbf
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)

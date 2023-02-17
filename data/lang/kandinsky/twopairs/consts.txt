@@ -1,4 +1,4 @@
-object:obj0,obj1,obj2,obj3,obj4,obj5
+object:O1,O2,O3,O4,O5
 color:red,yellow,blue
 shape:square,circle,triangle
 image:img
