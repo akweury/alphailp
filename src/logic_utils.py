@@ -519,9 +519,18 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     # clause_num = len(NSFR.clauses)
     # # score_positive = torch.zeros((bz, pos_img_num, clause_num, eval_pred_num)).to(device)
     # # score_negative = torch.zeros((bz, neg_img_num, clause_num, eval_pred_num)).to(device)
+    loss_i = 0
+    train_size = pos_pred.shape[0]
+    bz = args.batch_size_train
+    V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
+    V_T_neg = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
+    for i in range(int(train_size / args.batch_size_train)):
+        V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_pred[i * bz:(i + 1) * bz])
+        V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_pred[i * bz:(i + 1) * bz])
 
-    V_T_pos = NSFR.clause_eval_quick(pos_pred)
-    V_T_neg = NSFR.clause_eval_quick(neg_pred)
+    #
+    # V_T_pos = NSFR.clause_eval_quick(pos_pred)
+    # V_T_neg = NSFR.clause_eval_quick(neg_pred)
     score_positive = NSFR.predict(V_T_pos, pred_names, args.device)
     score_negative = NSFR.predict(V_T_neg, pred_names, args.device)
 
