@@ -170,7 +170,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
-    stopping_threshold = 1e-4
+    stopping_threshold = 1e-6
     test_acc_list = np.zeros(shape=(1, args.epochs))
     # prepare perception result
     train_pred = torch.cat((pm_prediction_dict['train_pos'], pm_prediction_dict['train_neg']), dim=0)
