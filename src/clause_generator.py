@@ -300,7 +300,6 @@ class ClauseGenerator(object):
                 c_indices = [np.argmax(clause_accuracy)]
                 for c_i in c_indices:
                     print(refs_non_conflict[c_i])
-                break
             else:
                 print(f"(BS Step {step}/{T_beam}) max clause accuracy: {clause_accuracy.max()}")
                 c_indices = [np.argmax(clause_accuracy)]
