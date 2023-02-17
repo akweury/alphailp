@@ -65,7 +65,7 @@ def get_args():
                         help="The maximum number of clauses.")
     parser.add_argument("--m", type=int, default=1,
                         help="The size of the logic program.")
-    parser.add_argument("--n-obj", type=int, default=2,
+    parser.add_argument("--n-obj", type=int, default=4,
                         help="The number of objects to be focused.")
     parser.add_argument("--epochs", type=int, default=21,
                         help="The number of epochs.")
