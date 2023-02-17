@@ -67,7 +67,7 @@ def get_args():
                         help="The size of the logic program.")
     parser.add_argument("--n-obj", type=int, default=4,
                         help="The number of objects to be focused.")
-    parser.add_argument("--epochs", type=int, default=21,
+    parser.add_argument("--epochs", type=int, default=101,
                         help="The number of epochs.")
     parser.add_argument("--pi_epochs", type=int, default=3,
                         help="The number of epochs for predicate invention.")
