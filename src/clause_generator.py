@@ -617,6 +617,8 @@ def count_arity_from_clause_cluster(clause_cluster):
     arity_list = []
     for clause in clause_cluster:
         for b in clause.body:
+            if "in" in b.pred.name:
+                continue
             if b.terms[0].name not in arity_list and "O" in b.terms[0].name:
                 arity_list.append(b.terms[0].name)
             if b.terms[1].name not in arity_list and "O" in b.terms[1].name:
