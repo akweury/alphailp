@@ -461,8 +461,9 @@ class Atom(object):
     """
 
     def __init__(self, pred, terms):
-        assert pred.arity == len(
-            terms), 'Invalid arguments for predicate symbol ' + pred.name
+        if pred.arity != len(terms):
+            print(f"pred:{pred}, terms:{terms}, arity:{pred.arity}")
+            raise ValueError(f'Invalid arguments for predicate symbol {pred.name}')
         self.pred = pred
         self.terms = terms
         self.neg_state = False
