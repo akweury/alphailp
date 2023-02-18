@@ -430,5 +430,5 @@ class ClauseFunction(nn.Module):
         I_i_tild = self.I_i.repeat(batch_size, 1, 1, 1)
 
         # B * G
-        C = softor(torch.prod(torch.gather(V_tild, 1, I_i_tild), 3), dim=2, gamma=self.gamma)
+        C = softor(torch.prod(torch.gather(V_tild, 1, I_i_tild.to(torch.int64)), 3), dim=2, gamma=self.gamma)
         return C
