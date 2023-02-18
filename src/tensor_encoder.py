@@ -71,7 +71,7 @@ class TensorEncoder(object):
         I (tensor): The index tensor (G, C, S, L).
         """
         I = torch.zeros((self.C, self.G, self.S, self.L),
-                        dtype=torch.long).to(self.device)
+                        dtype=torch.int16).to(self.device)
         for ci, clause in enumerate(self.clauses):
             #print("CLAUSE: ", clause)
             I_c = self.build_I_c(clause)
@@ -89,7 +89,7 @@ class TensorEncoder(object):
         """
         # G * S * L
         I_c = torch.zeros((self.G, self.S, self.L),
-                          dtype=torch.long).to(self.device)
+                          dtype=torch.int16).to(self.device)
         #print("CLAUSE: ", clause)
         for fi, fact in enumerate(self.facts):
             #if (clause.head, fact) in self.head_unifier_dic:
@@ -141,7 +141,7 @@ class TensorEncoder(object):
         """
         # S * L
         I_c_b = torch.zeros(
-            (self.S, self.L), dtype=torch.long).to(self.device)
+            (self.S, self.L), dtype=torch.int16).to(self.device)
 
         # extract all vars in the body atoms
         var_list = []
@@ -158,7 +158,7 @@ class TensorEncoder(object):
             I_c_b[0] = self.pad_by_true(x_b)
 
             for i in range(1, self.S):
-                I_c_b[i] = torch.zeros(self.L, dtype=torch.long).to(
+                I_c_b[i] = torch.zeros(self.L, dtype=torch.int16).to(
                     self.device)  # fill by FALSE
         else:
             # the body has existentially quantified variable!!
@@ -178,7 +178,7 @@ class TensorEncoder(object):
             # the rest of the tensor is filled 0, which is the index of FALSE
             for i in range(n_substs, self.S):
                 I_c_b[i] = torch.zeros(
-                    self.L, dtype=torch.long).to(self.device)
+                    self.L, dtype=torch.int16).to(self.device)
         return I_c_b
 
     def pad_by_true(self, x):
@@ -196,7 +196,7 @@ class TensorEncoder(object):
             return x
         else:
             diff = self.L - x.size(0)
-            x_pad = torch.ones(diff, dtype=torch.long).to(self.device)
+            x_pad = torch.ones(diff, dtype=torch.int16).to(self.device)
             return torch.cat([x, x_pad])
 
     # taking constant modes to reduce the number of substitutions
@@ -256,7 +256,7 @@ class TensorEncoder(object):
     def facts_to_index(self, atoms):
         """Convert given ground atoms into the indices.
         """
-        return torch.tensor([self.get_fact_index(nf) for nf in atoms], dtype=torch.long).to(self.device)
+        return torch.tensor([self.get_fact_index(nf) for nf in atoms], dtype=torch.int16).to(self.device)
 
     def get_fact_index(self, fact):
         """Convert a fact to the index in the ordered set of all facts.
