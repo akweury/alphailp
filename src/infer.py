@@ -237,16 +237,16 @@ class ClauseInferModule(nn.Module):
                 # print("r_bk(R): ", self.r_bk(R).shape)
                 # shape? dim?
                 r_R = self.r(R)
-                A_A = r_R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+                # A_A = r_R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                 r_bk = self.r_bk(R).unsqueeze(dim=0).expand(self.C, B, self.G)
-                A_B = r_bk.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+                # A_B = r_bk.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                 if self.I_pi is not None:
 
                     r_pi = self.r_pi(R).unsqueeze(dim=0).expand(self.C, B, self.G)
                     R = softor([R, r_R, r_bk, r_pi], dim=2, gamma=self.gamma)
 
-                    A_C = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-                    A_D = R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+                    # A_C = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+                    # A_D = R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
                 else:
                     R = softor([R, r_R, r_bk], dim=2, gamma=self.gamma)
         return R
@@ -430,5 +430,7 @@ class ClauseFunction(nn.Module):
         I_i_tild = self.I_i.repeat(batch_size, 1, 1, 1)
 
         # B * G
-        C = softor(torch.prod(torch.gather(V_tild, 1, I_i_tild.to(torch.int64)), 3), dim=2, gamma=self.gamma)
+        gather_res = torch.gather(V_tild, 1, I_i_tild.to(torch.int64))
+        prod_res = torch.prod(gather_res, 3)
+        C = softor(prod_res, dim=2, gamma=self.gamma)
         return C

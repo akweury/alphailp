@@ -36,8 +36,8 @@ def get_args():
     parser.add_argument("--e", type=int, default=6,
                         help="The maximum number of objects in one image")
     parser.add_argument("--dataset", default="red-triangle",
-                        choices=["twopairs", "threepairs", "red-triangle", "closeby", "closeby-learn",
-                                 "online", "online-pair", "nine-circles", "clevr-hans0", "clevr-hans1",
+                        choices=["twopairs", "threepairs", "diagonals", "red-triangle", "closeby", "closeby-learn",
+                                 "online", "online-pair", "nine-circles", "clevr-hans0", "clevr-hans1", "vertical",
                                  "clevr-hans2"], help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
                         help="kandinsky or clevr")
@@ -65,7 +65,7 @@ def get_args():
                         help="The maximum number of clauses.")
     parser.add_argument("--m", type=int, default=1,
                         help="The size of the logic program.")
-    parser.add_argument("--n-obj", type=int, default=4,
+    parser.add_argument("--n-obj", type=int, default=5,
                         help="The number of objects to be focused.")
     parser.add_argument("--epochs", type=int, default=101,
                         help="The number of epochs.")

@@ -292,8 +292,9 @@ class ClauseGenerator(object):
             self.NSFR = get_nsfr_model(self.args, self.lang, refs_non_conflict, self.NSFR.atoms,
                                        self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
 
-            clause_signs, clause_score_list, clause_scores_full = \
-                logic_utils.eval_predicates(self.NSFR, self.args, eval_pred_names, pos_pred, neg_pred)
+            clause_signs, clause_score_list, clause_scores_full = logic_utils.eval_predicates(self.NSFR, self.args,
+                                                                                              eval_pred_names, pos_pred,
+                                                                                              neg_pred)
 
             # clause_image_scores = self.eval_clauses_scores(refs_non_conflict, pos_pred, neg_pred)
 
@@ -443,8 +444,7 @@ class ClauseGenerator(object):
         thbf = False
         for clause in C_0:
             bs_clauses, p_scores, thbf = self.beam_search_clause_quick(clause, pos_pred, neg_pred, pi_clauses, T_beam,
-                                                                       N_beam,
-                                                                       N_max)
+                                                                       N_beam, N_max)
             C = C.union(bs_clauses)
             p_scores_list.append(p_scores)
             # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
@@ -617,7 +617,7 @@ def count_arity_from_clause_cluster(clause_cluster):
     arity_list = []
     for clause in clause_cluster:
         for b in clause.body:
-            if "in" in b.pred.name:
+            if "in" == b.pred.name:
                 continue
             if b.terms[0].name not in arity_list and "O" in b.terms[0].name:
                 arity_list.append(b.terms[0].name)
