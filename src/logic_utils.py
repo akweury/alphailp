@@ -282,20 +282,20 @@ def remove_conflict_clauses(clauses, pi_clauses):
     # print("\nCheck for conflict clauses...")
     clause_ordered = []
 
-    for c_i, clause in enumerate(clauses):
-        ordered = True
-        for b_i, b in enumerate(clause.body):
-            if "at_area" in b.pred.name or "inv_pred" in b.pred.name:
-                if not b.terms[0].name == "O1" or not b.terms[1].name == "O2":
-                    ordered = False
-            # if "color" in b.pred.name or "shape" in b.pred.name:
-            #     if not b.terms[0].name == "O1":
-            #         ordered = False
-        if ordered:
-            clause_ordered.append(clause)
+    # for c_i, clause in enumerate(clauses):
+    #     ordered = True
+    #     for b_i, b in enumerate(clause.body):
+    #         if "at_area" in b.pred.name or "inv_pred" in b.pred.name:
+    #             if not b.terms[0].name == "O1" or not b.terms[1].name == "O2":
+    #                 ordered = False
+    #         # if "color" in b.pred.name or "shape" in b.pred.name:
+    #         #     if not b.terms[0].name == "O1":
+    #         #         ordered = False
+    #     if ordered:
+    #         clause_ordered.append(clause)
 
     non_conflict_clauses = []
-    for clause in clause_ordered:
+    for clause in clauses:
         is_conflict = False
         with_pi = False
         if len(pi_clauses) > 0:
@@ -544,9 +544,9 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     all_predicates_scores = torch.cat((score_negative, score_positive), 2)
 
     p_clause_signs = eval_clause_sign(all_predicates_scores)
-    clause_signs, clause_score_list, clause_scores_full = p_clause_signs[0]
+    clause_score_list, clause_scores_full = p_clause_signs[0]
 
-    return clause_signs, clause_score_list, clause_scores_full
+    return clause_score_list, clause_scores_full
 
     # C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
     # clause loop
@@ -699,12 +699,12 @@ def eval_clause_sign(p_scores):
 
     clause_score = four_zone_scores[:, 1] + four_zone_scores[:, 3]
 
-    four_zone_scores[:, 0] = 0
+    # four_zone_scores[:, 0] = 0
 
-    clause_sign_list = (four_zone_scores.max(dim=-1)[1] - 1) == 0
+    # clause_sign_list = (four_zone_scores.max(dim=-1)[1] - 1) == 0
 
     # TODO: find a better score evaluation function
-    p_clauses_signs.append([clause_sign_list, clause_score, four_zone_scores])
+    p_clauses_signs.append([clause_score, four_zone_scores])
 
     return p_clauses_signs
 
