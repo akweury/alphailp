@@ -6,6 +6,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
+import config
+
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
 
@@ -166,3 +168,15 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
         plt.show()
     if cla_leg:
         plt.cla()
+
+
+def plot_4_zone(is_plot_4zone, B_new, p_score, step):
+    if is_plot_4zone:
+        for i, clause in enumerate(B_new):
+            plot_scatter_heat_chart([p_score[i]],
+                                    config.buffer_path / "img",
+                                    f"heat_ce_all_{len(B_new)}_{i}",
+                                    sub_folder=str(step),
+                                    labels=f"{str(clause)}",
+                                    x_label="positive score", y_label="negative score")
+

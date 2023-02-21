@@ -7,6 +7,8 @@ from fol.logic import *
 from fol.data_utils import DataUtils
 from fol.language import DataType
 
+import config
+
 p_ = Predicate('.', 1, [DataType('spec')])
 false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
 true = Atom(p_, [Const('__T__', dtype=DataType('spec'))])
@@ -61,14 +63,14 @@ def get_pi_clauses_objs(args, cg_lang, clauses_str_list, new_predicates):
     du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
                    dataset_type=args.dataset_type, dataset=args.dataset)
     pi_languages = []
-    for c_index, c_list in enumerate(clauses_str_list):
+    for c_index, [c_list, c_score] in enumerate(clauses_str_list):
         # create a new language with new pi clauses in c_list
         lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                          args.dataset_type, args.dataset)
         lang.invented_preds += cg_lang.invented_preds
         lang.invented_preds_number = cg_lang.invented_preds_number
         # add predicates to new language
-        lang.invented_preds.append(new_predicates[c_index])
+        lang.invented_preds.append(new_predicates[c_index][0])
 
         # add pi clauses to new language
         pi_clauses = du.gen_pi_clauses(lang, c_list)
@@ -365,53 +367,127 @@ def conflict_pred(p1, p2, t1, t2):
 
 
 def common_body_pi_clauses(pi_clause_i, pi_clause_j):
-    i_body = set([atom.pred.name for atom in pi_clause_i.body])
-    j_body = set([atom.pred.name for atom in pi_clause_j.body])
-    common_body = set.intersection(i_body, j_body)
+    i_body = []
+    for atom in pi_clause_i.body:
+        atom_str = str(atom)
+        i_body.append(atom_str)
+    j_body = []
+    for atom in pi_clause_j.body:
+        atom_str = str(atom)
+        j_body.append(atom_str)
+
+    common_body = set.intersection(set(i_body), set(j_body))
+    # i_body = set([(atom.pred.name, str(atom.terms)) for atom in pi_clause_i.body])
+    # j_body = set([(atom.pred.name, str(atom.terms)) for atom in pi_clause_j.body])
+    # common_body = set.intersection(i_body, j_body)
     return common_body
 
 
-def search_independent_clauses(clauses):
+def remove_sub_clusters(clusters):
+    clusters_reduced = []
+    if len(clusters) > 0:
+        for cluster_i, c_score in clusters:
+            is_minimum = True
+            i_indices = [c[0] for c in cluster_i]
+            for cluster_j, c_score_j in clusters:
+                if cluster_i == cluster_j:
+                    continue
+                has_sublist = True
+                for [j_index, j_clause, j_score] in cluster_j:
+                    if j_index not in i_indices:
+                        has_sublist = False
+                if has_sublist:
+                    is_minimum = False
+                    break
+            if is_minimum:
+                clusters_reduced.append([cluster_i, c_score])
+
+    return clusters_reduced
+
+
+def search_independent_clauses(clauses, total_score):
+    clauses_with_score = []
+    for clause_i, [clause, c_scores] in enumerate(clauses):
+        clauses_with_score.append([clause_i, clause, c_scores])
     # search clauses with no common bodies
     independent_clauses_all = []
-    for i_index, clause_i in enumerate(clauses):
-        independent_clauses = []
-        for j_index, clause_j in enumerate(clauses):
-            if clause_j == clause_i:
-                continue
-            common_body = common_body_pi_clauses(clause_i, clause_j)
-            if len(common_body) > 1:
-                continue
+    for i_index, [i, clause_i, score_i] in enumerate(clauses_with_score):
+        clause_cluster = [[i, clause_i, score_i]]
+        for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
+            if not len(common_body_pi_clauses(clause_j, clause_i)) > 2:
+                clause_cluster.append([j, clause_j, score_j])
+        clause_cluster = sorted(clause_cluster, key=lambda x: x[1])
+        if clause_cluster not in independent_clauses_all:
+            independent_clauses_all.append(clause_cluster)
 
-            independent_clauses.append(clause_j)
-        # c_cluster = [clause_i] + independent_clauses
-        # TODO: delete uncommon bodies
-        pole_clauses = []
-        for clause_a in independent_clauses:
-            is_pole_clause = True
-            for clause_b in independent_clauses:
-                if clause_a == clause_b:
-                    continue
-                if sub_clause_of(clause_b, clause_a):
-                    is_pole_clause = False
-            if is_pole_clause:
-                pole_clauses.append(clause_a)
-        if len(pole_clauses) < 4:
-            independent_clauses_all.append([clause_i] + pole_clauses)
+    clause_clusters = []
+    for independent_cluster in independent_clauses_all:
+        sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=5)
+        clause_clusters += sub_clusters
 
-    non_repeat_clauses = []
-    for c_a in independent_clauses_all:
-        c_a.sort()
-    for a_i, c_a in enumerate(independent_clauses_all):
-        is_repeat = False
-        for b_i, c_b in enumerate(independent_clauses_all[a_i + 1:]):
-            if c_a == c_b:
-                is_repeat = True
-                break
-        if not is_repeat:
-            non_repeat_clauses.append(c_a)
+    necessary_clusters = []
+    sufficient_clusters = []
+    ns_clusters = []
+    other_clusters = []
+    for cc_i, clause_cluster in enumerate(clause_clusters):
+        if cc_i % 10000 == 0:
+            print(f"eval clause cluster: {cc_i + 1}/{len(clause_clusters)}")
+        score_neg = torch.zeros((1, total_score, 1))
+        score_pos = torch.zeros((1, total_score, 1))
+        for [c_i, c, c_score] in clause_cluster:
+            score_neg = torch.cat((score_neg[0, :, :], c_score[:, 0:1]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(
+                0)
+            score_pos = torch.cat((score_pos[0, :, :], c_score[:, 1:]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(0)
+        score_max = torch.cat((score_neg, score_pos), dim=2)
+        p_clause_signs = eval_clause_sign(score_max)
+        cluster_clause_score = p_clause_signs[0][1].reshape(4)
+        if cluster_clause_score[1] == total_score:
+            ns_clusters.append([clause_cluster, cluster_clause_score])
+        elif cluster_clause_score[1] + cluster_clause_score[3] == total_score:
+            necessary_clusters.append([clause_cluster, cluster_clause_score])
+        elif cluster_clause_score[0] + cluster_clause_score[1] == total_score:
+            sufficient_clusters.append([clause_cluster, cluster_clause_score])
+        else:
+            other_clusters.append([clause_cluster, cluster_clause_score])
 
-    return non_repeat_clauses
+    necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
+    ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
+
+    # # remove subclauses
+    # non_sub_clauses = []
+    # for independent_cluster in independent_clauses_all:
+    #     pole_clauses = []
+    #     for clause_a in independent_cluster:
+    #         is_pole_clause = True
+    #         for clause_b in independent_cluster:
+    #             if clause_a == clause_b:
+    #                 continue
+    #             if sub_clause_of(clause_b, clause_a):
+    #                 is_pole_clause = False
+    #         if is_pole_clause:
+    #             pole_clauses.append(clause_a)
+    #     non_sub_clauses.append(pole_clauses)
+    #
+    # # remove duplicate clauses
+    # non_repeat_clauses = []
+    # for c_a in independent_clauses_all:
+    #     c_a.sort()
+    # for a_i, c_a in enumerate(independent_clauses_all):
+    #     is_repeat = False
+    #     for b_i, c_b in enumerate(independent_clauses_all[a_i + 1:]):
+    #         if c_a == c_b:
+    #             is_repeat = True
+    #             print("duplicate clauses:")
+    #             print(c_a)
+    #             print(c_b)
+    #             break
+    #     if not is_repeat:
+    #         non_repeat_clauses.append(c_a)
+    # for cluster, c_score in necessary_clusters_reduced:
+    #     if c_score[3] != total_score:
+    #         print(c_score)
+    #         print(cluster)
+    return necessary_clusters_no_sub, ns_clusters_no_sub
 
 
 def sub_clause_of(clause_a, clause_b):
@@ -431,12 +507,14 @@ def sub_clause_of(clause_a, clause_b):
     return True
 
 
-def sub_lists(l):
+def sub_lists(l, min_len=0, max_len=None):
     # initializing empty list
     comb = []
 
     # Iterating till length of list
-    for i in range(len(l) + 1):
+    if max_len is None:
+        max_len = len(l) + 1
+    for i in range(min_len, max_len):
         # Generating sub list
         comb += [list(j) for j in itertools.combinations(l, i)]
     # Returning list
@@ -546,7 +624,7 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     p_clause_signs = eval_clause_sign(all_predicates_scores)
     clause_score_list, clause_scores_full = p_clause_signs[0]
 
-    return clause_score_list, clause_scores_full
+    return all_predicates_scores, clause_scores_full
 
     # C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
     # clause loop
@@ -752,9 +830,9 @@ def check_conflict_body(b1, b2):
 
 def remove_duplicate_predicates(new_predicates):
     non_duplicate_pred = []
-    for a_i, p_a in enumerate(new_predicates):
+    for a_i, [p_a, a_score] in enumerate(new_predicates):
         is_duplicate = False
-        for b_i, p_b in enumerate(new_predicates[a_i:]):
+        for b_i, [p_b, b_score] in enumerate(new_predicates[a_i:]):
             if p_a.name == p_b.name:
                 continue
             p_a.body.sort()
@@ -762,16 +840,16 @@ def remove_duplicate_predicates(new_predicates):
             if p_a == p_b:
                 is_duplicate = True
         if not is_duplicate:
-            non_duplicate_pred.append(p_a)
+            non_duplicate_pred.append([p_a, a_score])
     return non_duplicate_pred
 
 
 def remove_unaligned_predicates(new_predicates):
     non_duplicate_pred = []
-    for a_i, p_a in enumerate(new_predicates):
+    for a_i, [p_a, p_score] in enumerate(new_predicates):
         b_lens = [len(b) - len(p_a.body[0]) for b in p_a.body]
         if sum(b_lens) == 0:
-            non_duplicate_pred.append(p_a)
+            non_duplicate_pred.append([p_a, p_score])
     return non_duplicate_pred
 
 
@@ -792,3 +870,86 @@ def remove_extended_clauses(clauses, p_score):
     # p_score = [p_score[i] for i in short_clauses_indices]
 
     return set(clauses)
+
+
+def get_terms_from_atom(atom):
+    terms = []
+    for t in atom.terms:
+        if t.name not in terms and "O" in t.name:
+            terms.append(t.name)
+    return terms
+
+
+def check_accuracy(clause_scores_full, pair_num):
+    accuracy = clause_scores_full[:, 1] / pair_num
+
+    return accuracy
+
+
+def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step):
+    target_has_been_found = False
+    clause_accuracy = check_accuracy(clause_scores, total_score)
+    print(
+        f"(BS Step {step}) sn_c: {len(clause_dict['sn'])}, n_c: {len(clause_dict['nc'])}, s_c: {len(clause_dict['sc'])}.")
+    if clause_accuracy.max() == 1.0:
+        print(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}")
+        target_has_been_found = True
+        c_indices = [np.argmax(clause_accuracy)]
+        for c_i in c_indices:
+            print(clauses[c_i])
+
+    else:
+        print(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}")
+        c_indices = [np.argmax(clause_accuracy)]
+        for c_i in c_indices:
+            print(clauses[c_i])
+    return target_has_been_found
+
+
+def extract_clauses_from_bs_clauses(bs_clauses):
+    if len(bs_clauses) == 0:
+        raise ValueError
+    clauses = []
+    for bs_clause in bs_clauses:
+        clauses.append(bs_clause[0])
+    return clauses
+
+
+def remove_trivial_clauses(refs_non_conflict):
+    non_trivial_clauses = []
+    for ref in refs_non_conflict:
+        preds = get_pred_names_from_clauses(ref)
+
+        if not is_trivial_preds(preds):
+            non_trivial_clauses.append(ref)
+    return non_trivial_clauses
+
+
+def get_pred_names_from_clauses(clause):
+    preds = []
+    for atom in clause.body:
+        pred = atom.pred.name
+        if "in" == pred:
+            continue
+        terms = [t.name for t in atom.terms]
+        if pred not in preds:
+            preds.append([pred, terms])
+    return preds
+
+
+def is_trivial_preds(preds_terms):
+    term_0 = preds_terms[0][1]
+    for [pred, terms] in preds_terms:
+        if terms != term_0:
+            return False
+    preds = [pt[0] for pt in preds_terms]
+
+    for trivial_set in config.trivial_preds_dict:
+        is_trivial = True
+        for pred in trivial_set:
+            if pred not in preds:
+                is_trivial = False
+        if is_trivial:
+            return True
+
+    return False

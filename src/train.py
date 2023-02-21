@@ -218,7 +218,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
         print(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss_i}")
 
-        if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
+        if epoch > 5 and np.abs(loss_list[epoch - 1] - loss_list[epoch]) < stopping_threshold:
             break
 
         # print("Predicting on test data set...")
@@ -378,29 +378,26 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                      args.dataset_type, args.dataset)
 
-    clauses = update_initial_clauses(init_clauses, args.n_obj)
-    bs_clauses = []
+    init_clauses = update_initial_clauses(init_clauses, args.n_obj)
+    clauses = []
     # loop for predicate invention
-    for i in range(args.pi_epochs):
-        init_clauses = update_initial_clauses(init_clauses, args.n_obj)
-        # pi_clauses = []
-        # get models
+    # found_ns = False
+    for i in range(args.t_beam):
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                init_clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
-        bs_clauses, p_scores_list, thbf = clause_generator.generate(clauses, val_pos, val_neg, pi_clauses,
-                                                                    T_beam=args.t_beam, N_beam=args.n_beam,
-                                                                    N_max=args.n_max)
-
-        if thbf:
+        bs_clauses = clause_generator.generate(init_clauses,
+                                               val_pos, val_neg,pi_clauses, args,T_beam=args.t_beam,
+                                               N_beam=args.n_beam,N_max=args.n_max, min_step=i+1)
+        if len(bs_clauses['sn']) > 0:
+            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
             break
-
         if args.no_pi:
             clauses = bs_clauses
         else:
             # invent new predicate and generate pi clauses
-            new_pi_clauses = pi_clause_generator.generate(bs_clauses, val_pos, val_neg)
-            if len(new_pi_clauses) == 0:
+            new_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, val_pos, val_neg)
+            if len(clauses) == 0:
                 args.n_beam += 5
             # add new predicates
             pi_clauses += new_pi_clauses
@@ -408,9 +405,6 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
 
-            # clauses = bs_clauses + pi_clauses
-
-    clauses = bs_clauses + pi_clauses
     NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
     nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
     return NSFR

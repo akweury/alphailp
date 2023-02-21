@@ -19,12 +19,6 @@ from fol.language import Language, DataType
 import fol.logic as logic
 
 
-def check_accuracy(clause_scores_full, pair_num):
-    accuracy = clause_scores_full[:, 1] / pair_num
-
-    return accuracy
-
-
 class ClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -105,7 +99,9 @@ class ClauseGenerator(object):
             else:
                 return False
 
-    def generate(self, C_0, pos_pred, neg_pred, pi_clauses, gen_mode='beam', T_beam=7, N_beam=20, N_max=100):
+    def generate(self, C_0, pos_pred, neg_pred, pi_clauses, args, gen_mode='beam', T_beam=7, N_beam=20,
+                 N_max=100,
+                 min_step=None):
         """
         call clause generation function with or without beam-searching
         Inputs
@@ -128,13 +124,13 @@ class ClauseGenerator(object):
             set of generated clauses
         """
         if gen_mode == 'beam':
-            beam_search_clauses, p_scores_list, thbf = self.beam_search(C_0, pos_pred, neg_pred, pi_clauses,
-                                                                        T_beam=T_beam, N_beam=N_beam, N_max=N_max)
+            bs_clauses = self.beam_search(C_0, pos_pred, neg_pred, pi_clauses, args, T_beam=T_beam, N_beam=N_beam,
+                                          N_max=N_max, min_step=min_step)
 
-            if len(beam_search_clauses) == 0:
+            if len(bs_clauses) == 0:
                 raise ValueError('No beam search clause has been found.')
 
-            return beam_search_clauses, p_scores_list, thbf
+            return bs_clauses
         elif gen_mode == 'naive':
             return self.naive(C_0, T_beam=T_beam, N_max=N_max)
 
@@ -253,116 +249,38 @@ class ClauseGenerator(object):
     #                 return True
     #     return False
 
-    def beam_search_clause_quick(self, init_clause, pos_pred, neg_pred, pi_clauses, T_beam=7, N_beam=20, N_max=100,
-                                 th=0.98):
-
-        step = 0
-        init_step = 0
-        B = [init_clause]
-        C = set()
-        C_dic = {}
+    def extend_clauses(self, clauses):
+        refs = []
         B_ = []
+        for c in clauses:
+            refs_i = self.rgen.refinement_clause(c)
+            # remove invalid clauses
+            ###refs_i = [x for x in refs_i if self._is_valid(x)]
+            # remove already appeared refs
+            refs_i = list(set(refs_i).difference(set(B_)))
+            B_.extend(refs_i)
+            refs.extend(refs_i)
+            # if self._is_valid(c) and not self._is_confounded(c):
+            #     C = C.union(set([c]))
+        return refs
+
+    def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, T_beam=7, N_beam=20,
+                                 N_max=100, th=0.98, min_step=1):
         eval_pred_names = ['kp']
-        p_score = None
-        lang = self.lang
-        bs_clauses = []
-        target_has_been_found = False
-        while step < T_beam:
-
-            # extend clauses
-            # B_new = {}
-            refs = []
-            for c in B:
-                refs_i = self.rgen.refinement_clause(c)
-                # remove invalid clauses
-                ###refs_i = [x for x in refs_i if self._is_valid(x)]
-                # remove already appeared refs
-                refs_i = list(set(refs_i).difference(set(B_)))
-                B_.extend(refs_i)
-                refs.extend(refs_i)
-                if self._is_valid(c) and not self._is_confounded(c):
-                    C = C.union(set([c]))
-                    # print(f"(BS step {step + 1}/{T_beam}) Added: ", c)
-
-            # remove conflict clauses
-            refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses)
-            # remove duplicate clauses
-            # non_duplicate_clause_index = []
-            # non_duplicate_full_scores = []
-            new_clauses = []
-            for i, ref in enumerate(refs_non_conflict):
-                # check duplication
-                if not self.is_in_beam(new_clauses, ref):
-                    new_clauses.append(ref)
-                    # B_new[ref] = clause_scores_full[i, :]
-                    # C_dic[ref] = clause_scores_full[i, :]
-                    # non_duplicate_clause_index.append(i)
-                    # non_duplicate_full_scores.append(clause_scores_full[i, :])
-
-            # evaluate clauses
-            print('\nEvaluating ', len(new_clauses), 'generated clauses.')
-            self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
-                                       self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
-            clause_score_list, clause_scores_full = logic_utils.eval_predicates(self.NSFR, self.args,
-                                                                                eval_pred_names, pos_pred,
-                                                                                neg_pred)
-            # classify clauses
-            sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses = self.classify_clauses(
-                new_clauses, clause_scores_full)
-            B_new_good = necessary_clauses + unclassified_clauses + sufficient_clauses
-            B = [x[0] for x in B_new_good]
+        clause_dict = {"sn": [], "nc": [], "sc": [], "uc": []}
+        # extend clauses
+        step = 0
+        refs = init_clauses
+        while (len(clause_dict["sc"]) == 0 and len(clause_dict["sn"]) == 0 and step < T_beam) or step <= min_step:
+            print(f"\nstep {step}/{min_step}")
+            refs = self.extend_clauses(refs)
+            refs = self.remove_conflict_clauses(refs, pi_clauses)
+            clause_dict = self.eval_clauses_scores(refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
             step += 1
-            if len(B) == 0:
-                break
 
+        self.print_clauses(clause_dict['sc'], clause_dict['sn'])
 
-
-            # print best clauses that have been found...
-            clause_accuracy = check_accuracy(clause_scores_full, pos_pred.size(0))
-            if clause_accuracy.max() == 1.0:
-                print(f"(BS Step {step}/{T_beam}) target clause has been found.")
-                target_has_been_found = True
-                c_indices = [np.argmax(clause_accuracy)]
-                for c_i in c_indices:
-                    print(new_clauses[c_i])
-                break
-            else:
-                print(f"(BS Step {step}/{T_beam}) max clause accuracy: {clause_accuracy.max()}")
-                c_indices = [np.argmax(clause_accuracy)]
-                for c_i in c_indices:
-                    print(new_clauses[c_i])
-
-            is_plot_4zone = False
-            # if is_plot_4zone:
-            #     for i, clause in enumerate(B_new):
-            #         clause_index = non_duplicate_clause_index[i]
-            #         chart_utils.plot_scatter_heat_chart([p_score[clause_index]],
-            #                                             config.buffer_path / "img",
-            #                                             f"heat_ce_all_{len(B_new)}_{i}",
-            #                                             sub_folder=str(step),
-            #                                             labels=f"{str(clause) + str(clause_signs[clause_index])}",
-            #                                             x_label="positive score", y_label="negative score")
-            #
-            #         clause_scores_reverse = [p_score[clause_index][1], p_score[clause_index][0]]
-            #         chart_utils.plot_scatter_chart([clause_scores_reverse], config.buffer_path / "img",
-            #                                        f"scatter_ce_all_{len(B_new)}_{i}",
-            #                                        sub_folder=str(step),
-            #                                        labels=f"{str(clause) + str(clause_signs[clause_index])}",
-            #                                        x_label="positive score", y_label="negative score")
-            # B_new_sorted = sorted(B_new.items(), key=lambda x: x[0, 1], reverse=True)
-
-            #
-            # if len(B_new_good) > 10:
-            #     B_new_good = random.sample(B_new_good, 10)
-
-            #     B_new_sorted = B_new_sorted[:5]
-            # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
-            # for x in B_new_sorted:
-            # print(f'(BS Clause on Step {step} )' + str(x[1]) + ', ' + str(x[0]))
-
-        # C = logic_utils.remove_extended_clauses(C, p_score)
-
-        return C, p_score, target_has_been_found
+        return clause_dict
 
     def eval_images(self, save_path):
 
@@ -429,7 +347,8 @@ class ClauseGenerator(object):
                 break
         return y
 
-    def beam_search(self, C_0, pos_pred, neg_pred, pi_clauses, T_beam=7, N_beam=20, N_max=100):
+    def beam_search(self, C_0, pos_pred, neg_pred, pi_clauses, args, T_beam=7, N_beam=20, N_max=100,
+                    min_step=None):
         """
         generate clauses by beam-searching from initial clauses
         Inputs
@@ -447,21 +366,22 @@ class ClauseGenerator(object):
         C : Set[.logic.Clause]
             a set of generated clauses
         """
-        C = set()
-        p_scores_list = []
-        thbf = False
-        for clause in C_0:
-            bs_clauses, p_scores, thbf = self.beam_search_clause_quick(clause, pos_pred, neg_pred, pi_clauses, T_beam,
-                                                                       N_beam, N_max)
-            C = C.union(bs_clauses)
-            p_scores_list.append(p_scores)
-            # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
-        C = sorted(list(C))
+        # if args.no_pi:
+        C = set(C_0)
+        # else:
+        #     C = set()
+        # p_scores_list = []
+        bs_clauses = self.beam_search_clause_quick(C_0, pos_pred, neg_pred, pi_clauses, args, T_beam, N_beam, N_max,
+                                                   min_step=min_step)
+        # C = bs_clauses
+
+        # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
+        # C = sorted(list(C))
         print('\n======= BEAM SEARCHED CLAUSES ======')
         # for c in C:
         #     print('(BS Clause) ' + str(c))
-        print("====== ", len(C), " clauses are generated!! ======")
-        return C, p_scores_list, thbf
+        print("====== ", len(bs_clauses), " clauses are generated!! ======")
+        return bs_clauses
 
     def eval_pi_clauses(self, clauses):
         return None
@@ -560,56 +480,56 @@ class ClauseGenerator(object):
 
         return all_clauses_scores
 
-    def eval_clauses_scores(self, clauses, pos_pm_res, neg_pm_res):
-        C = len(clauses)
-        print(f"Eval clauses on {len(clauses)} images...")
-        # update infer module with new clauses
-        # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
-        pi_clauses = []
-        batch_size = self.args.batch_size_bs
-        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms,
-                              self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
-        # TODO: Compute loss for validation data , score is bce loss
-        pos_img_num = self.pos_loader.dataset.__len__()
-        neg_img_num = self.neg_loader.dataset.__len__()
+    # def eval_clauses_scores(self, clauses, pos_pm_res, neg_pm_res):
+    #     C = len(clauses)
+    #     print(f"Eval clauses on {len(clauses)} images...")
+    #     # update infer module with new clauses
+    #     # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
+    #     pi_clauses = []
+    #     batch_size = self.args.batch_size_bs
+    #     NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms,
+    #                           self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
+    #     # TODO: Compute loss for validation data , score is bce loss
+    #     pos_img_num = self.pos_loader.dataset.__len__()
+    #     neg_img_num = self.neg_loader.dataset.__len__()
+    #
+    #     positive_score = torch.zeros((pos_img_num, C)).to(self.device)
+    #     negative_score = torch.zeros((neg_img_num, C)).to(self.device)
+    #
+    #     for i in range(self.pos_loader.dataset.__len__()):
+    #         V_T_list = NSFR.clause_eval_quick(pos_pm_res[i].unsqueeze(0)).detach()
+    #         C_score = torch.zeros((C, batch_size)).to(self.device)
+    #         for j, V_T in enumerate(V_T_list):
+    #             predicted = NSFR.predict(v=V_T, predname='kp').detach()
+    #             C_score[j] = predicted
+    #         # C_score = PI.clause_eval(C_score)
+    #         # sum over positive prob
+    #         C_score = C_score.sum(dim=1)
+    #         positive_score[i, :] = C_score
+    #     a = positive_score.detach().to("cpu").numpy()
+    #
+    #     for i in range(self.neg_loader.dataset.__len__()):
+    #         V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
+    #         C_score = torch.zeros((C, batch_size)).to(self.device)
+    #         for j, V_T in enumerate(V_T_list):
+    #             predicted = NSFR.predict(v=V_T, predname='kp').detach()
+    #             C_score[j] = predicted
+    #         # C_score = PI.clause_eval(C_score)
+    #         # sum over positive prob
+    #         # C_score = PI.clause_eval(C_score)
+    #         # sum over positive prob
+    #         C_score = C_score.sum(dim=1)
+    #         negative_score[i] = C_score
+    #     b = negative_score.detach().to("cpu").numpy()
+    #
+    #     positive_clauses = []
+    #     all_clause_scores = []
+    #     for c_index in range(positive_score.shape[1]):
+    #         clause_scores = [negative_score[:, c_index], positive_score[:, c_index]]
+    #         all_clause_scores.append(clause_scores)
+    #     return all_clause_scores
 
-        positive_score = torch.zeros((pos_img_num, C)).to(self.device)
-        negative_score = torch.zeros((neg_img_num, C)).to(self.device)
-
-        for i in range(self.pos_loader.dataset.__len__()):
-            V_T_list = NSFR.clause_eval_quick(pos_pm_res[i].unsqueeze(0)).detach()
-            C_score = torch.zeros((C, batch_size)).to(self.device)
-            for j, V_T in enumerate(V_T_list):
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                C_score[j] = predicted
-            # C_score = PI.clause_eval(C_score)
-            # sum over positive prob
-            C_score = C_score.sum(dim=1)
-            positive_score[i, :] = C_score
-        a = positive_score.detach().to("cpu").numpy()
-
-        for i in range(self.neg_loader.dataset.__len__()):
-            V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
-            C_score = torch.zeros((C, batch_size)).to(self.device)
-            for j, V_T in enumerate(V_T_list):
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
-                C_score[j] = predicted
-            # C_score = PI.clause_eval(C_score)
-            # sum over positive prob
-            # C_score = PI.clause_eval(C_score)
-            # sum over positive prob
-            C_score = C_score.sum(dim=1)
-            negative_score[i] = C_score
-        b = negative_score.detach().to("cpu").numpy()
-
-        positive_clauses = []
-        all_clause_scores = []
-        for c_index in range(positive_score.shape[1]):
-            clause_scores = [negative_score[:, c_index], positive_score[:, c_index]]
-            all_clause_scores.append(clause_scores)
-        return all_clause_scores
-
-    def classify_clauses(self, clauses, clause_scores):
+    def classify_clauses(self, clauses, four_scores, all_scores):
         sufficient_necessary_clauses = []
         necessary_clauses = []
         sufficient_clauses = []
@@ -617,21 +537,59 @@ class ClauseGenerator(object):
         for c_i, clause in enumerate(clauses):
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
             #     good_clauses.append((clause, scores))
-            score = clause_scores[c_i]
+            score = four_scores[c_i]
             if score[1] == self.pos_loader.dataset.__len__():
-                sufficient_necessary_clauses.append((clause, score))
+                sufficient_necessary_clauses.append((clause, all_scores[c_i]))
             if score[1] + score[3] == self.pos_loader.dataset.__len__():
-                necessary_clauses.append((clause, score))
+                necessary_clauses.append((clause, all_scores[c_i]))
             elif score[0] + score[1] == self.pos_loader.dataset.__len__():
-                sufficient_clauses.append((clause, score))
+                sufficient_clauses.append((clause, all_scores[c_i]))
             else:
-                unclassified_clauses.append((clause, score))
+                unclassified_clauses.append((clause, all_scores[c_i]))
         return sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses
+
+    def remove_conflict_clauses(self, refs, pi_clauses):
+        # remove conflict clauses
+        refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses)
+        refs_non_trivial = logic_utils.remove_trivial_clauses(refs_non_conflict)
+        # remove duplicate clauses
+        new_clauses = []
+        for i, ref in enumerate(refs_non_trivial):
+            # check duplication
+            if not self.is_in_beam(new_clauses, ref):
+                new_clauses.append(ref)
+        return new_clauses
+
+    def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, ):
+        # evaluate clauses
+        print('\nEvaluating ', len(new_clauses), 'generated clauses.')
+        self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
+                                   self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
+        all_predicates_scores, clause_scores_full = logic_utils.eval_predicates(self.NSFR, self.args,
+                                                                                eval_pred_names, pos_pred,
+                                                                                neg_pred)
+
+        # classify clauses
+        sn_c, nc, sc, uc = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores)
+        clause_dict = {"sn": sn_c, "nc": nc, "sc": sc, "uc": uc}
+
+        # print best clauses that have been found...
+        logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full, pos_pred.size(0), step)
+        chart_utils.plot_4_zone(False, new_clauses, clause_scores_full, step)
+        return clause_dict
+
+    def print_clauses(self, sc, sn):
+        if len(sc) > 0:
+            for c in sc:
+                print(f"sufficient clause: {c[0]}")
+        if len(sn) > 0:
+            for c in sn:
+                print(f"sufficient and necessary clause: {c[0]}")
 
 
 def count_arity_from_clause_cluster(clause_cluster):
     arity_list = []
-    for clause in clause_cluster:
+    for [c_i, clause, c_score] in clause_cluster:
         for b in clause.body:
             if "in" == b.pred.name:
                 continue
@@ -670,7 +628,7 @@ class PIClauseGenerator(object):
         self.neg_loader = neg_data_loader
 
     def generate(self, beam_search_clauses, pos_pred, neg_pred):
-
+        found_ns = False
         # evaluate for all the clauses
         # clause_image_scores = self.eval_multi_clauses(beam_search_clauses, pos_pred, neg_pred)  # time-consuming line
         # clause_signs, clause_scores, clause_scores_full = self.eval_clause_sign(clause_image_scores)
@@ -678,23 +636,33 @@ class PIClauseGenerator(object):
         # clause_candidates = logic_utils.eval_clause_clusters(clause_clusters, p_scores_list)
 
         # generate new clauses
-        new_predicates = self.generate_new_predicate(beam_search_clauses)
+        sufficient_clauses = beam_search_clauses["sc"]
+        n_clause_clusters, ns_clause_clusters = logic_utils.search_independent_clauses(sufficient_clauses,
+                                                                                       pos_pred.shape[0])
+        if len(ns_clause_clusters) > 0:
+            found_ns = True
+            new_predicates = self.generate_new_predicate(ns_clause_clusters)
+
+        elif len(ns_clause_clusters) > 0:
+            new_predicates = self.generate_new_predicate(n_clause_clusters)
+        else:
+            new_predicates = []
+
         new_predicates = logic_utils.remove_unaligned_predicates(new_predicates)
         new_predicates = logic_utils.remove_duplicate_predicates(new_predicates)
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
         # convert clauses from strings to objects
-        pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list,
-                                                       new_predicates)
+        pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
 
-        pos_pred = pos_pred.to(self.args.device)
-        neg_pred = neg_pred.to(self.args.device)
+        # pos_pred = pos_pred.to(self.args.device)
+        # neg_pred = neg_pred.to(self.args.device)
         # generate pi clauses
-        passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
-        # passed_pi_languages = passed_pi_languages[:5]
-
-        passed_pi_clauses, passed_pi_predicates = self.extract_pi(passed_pi_languages)
+        # passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
+        # # passed_pi_languages = passed_pi_languages[:5]
+        #
+        passed_pi_clauses, passed_pi_predicates = self.extract_pi(pi_languages)
 
         print("====== ", len(passed_pi_predicates), " PI predicates are generated!! ======")
         # for pred in passed_pi_predicates:
@@ -705,7 +673,7 @@ class PIClauseGenerator(object):
 
         self.lang.invented_preds = passed_pi_predicates
 
-        return passed_pi_clauses
+        return passed_pi_clauses, found_ns
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred):
 
@@ -851,7 +819,7 @@ class PIClauseGenerator(object):
 
         return clause_sign_list, clause_score_list, clause_score_full_list
 
-    def generate_new_predicate(self, beam_search_clauses):
+    def generate_new_predicate(self, clause_clusters):
         new_predicate = None
         # positive_clauses_exchange = [(c[1], c[0]) for c in positive_clauses]
         # no_hn_ = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0 and c[0][3] == 0]
@@ -859,54 +827,25 @@ class PIClauseGenerator(object):
         # score clauses properly
 
         new_predicates = []
-
-        # simple predicates
-        # # TODO: try to remove this kind of pi
-        # for bs_index, bs_clause in enumerate(beam_search_clauses):
-        #     if len(bs_clause.body) <= 3:
-        #         continue
-        #     dtypes = [DataType(dt) for dt in ["object", "object"]]
-        #
-        #     # self invent
-        #     new_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
-        #     non_inv_pred = False
-        #     for b in bs_clause.body:
-        #         if "inv_pred" in b.pred.name:
-        #             non_inv_pred = True
-        #             continue
-        #     if non_inv_pred:
-        #         continue
-        #     new_predicate.body = [bs_clause.body]
-        #     new_predicates.append(new_predicate)
-
-        # # symmetric invent
-        # new_sym_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
-        # symmetry_bodies = []
-        # for b in bs_clause.body:
-        #     if "at_area" in b.pred.name:
-        #         sym_b_pred = logic.Predicate(b.pred.name, 2, dtypes)
-        #         sym_b_terms = (logic.Var(b.terms[1].name), logic.Var(b.terms[0].name))
-        #         sym_b = logic.Atom(sym_b_pred, sym_b_terms)
-        #         symmetry_bodies.append(sym_b)
-        #     else:
-        #         symmetry_bodies.append(b)
-        # new_sym_predicate.body = [symmetry_bodies]
-        # new_predicates.append(new_sym_predicate)
-
-        # # cluster invent
-        # new_clu_predicate = self.lang.get_new_invented_predicate(arity=2, pi_dtypes=dtypes)
-        # new_clu_predicate.body = new_sym_predicate.body + new_predicate.body
-        # new_predicates.append(new_clu_predicate)
-
         # cluster predicates
-        pi_clause_clusters = logic_utils.search_independent_clauses(beam_search_clauses)
-
-        for pi_index, clause_cluster in enumerate(pi_clause_clusters):
+        for pi_index, [clause_cluster, cluster_score] in enumerate(clause_clusters):
             args = count_arity_from_clause_cluster(clause_cluster)
             dtypes = [DataType("object")] * len(args)
             new_predicate = self.lang.get_new_invented_predicate(arity=len(args), pi_dtypes=dtypes, args=args)
-            new_predicate.body = [clause.body for clause in clause_cluster]
-            new_predicates.append(new_predicate)
+            new_predicate.body = []
+            for [c_i, clause, c_score] in clause_cluster:
+                atoms = []
+                for atom in clause.body:
+                    terms = logic_utils.get_terms_from_atom(atom)
+                    terms = sorted(terms)
+                    if "X" in terms:
+                        terms.remove("X")
+                    obsolete_term = [t for t in terms if t not in args]
+                    if len(obsolete_term) == 0:
+                        atoms.append(atom)
+                new_predicate.body.append(atoms)
+            if len(new_predicate.body) > 1:
+                new_predicates.append([new_predicate, cluster_score])
 
             # # symmetric invent
             # new_sym_predicate = self.lang.get_new_invented_predicate(arity=arity, pi_dtypes=dtypes)
@@ -930,18 +869,16 @@ class PIClauseGenerator(object):
     def generate_new_clauses_str_list(self, new_predicates):
         pi_str_lists = []
 
-        for new_predicate in new_predicates:
+        for [new_predicate, p_score] in new_predicates:
             single_pi_str_list = []
             # single_pi_str_list.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
             # head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
-            if new_predicate.arity == 1:
-                head_args = "(X)"
-            else:
-                head_args = "("
-                for arg in new_predicate.args:
-                    head_args += arg + ","
-                head_args = head_args[:-1]
-                head_args += ")"
+
+            head_args = "("
+            for arg in new_predicate.args:
+                head_args += arg + ","
+            head_args = head_args[:-1]
+            head_args += ")"
 
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:
@@ -954,7 +891,7 @@ class PIClauseGenerator(object):
                     body_str += atom_str + end_str
                 new_clause = head + body_str
                 single_pi_str_list.append(new_clause)
-            pi_str_lists.append(single_pi_str_list)
+            pi_str_lists.append([single_pi_str_list, p_score])
         # for p_i, p_list in enumerate(pi_str_lists):
         # for p in p_list:
         #     print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
