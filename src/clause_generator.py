@@ -262,23 +262,28 @@ class ClauseGenerator(object):
         return refs
 
     def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, min_step=1):
-        print(f"======== beam search iteration {min_step} ========")
+        print(f"\n======== beam search iteration {min_step} ========")
         eval_pred_names = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": []}
         # extend clauses
         step = 0
+        break_step = 5
         refs = init_clauses
         # while (len(clause_dict["sc"]) == 0 and len(clause_dict["sn"]) == 0 and step < T_beam) or step <= min_step:
         while step <= min_step:
-            print(f"\nstep {step}/{min_step}")
 
+            if step == break_step:
+                print("break")
+
+            print(f"\nstep {step}/{min_step}")
             refs = self.extend_clauses(refs)
             refs = self.remove_conflict_clauses(refs, pi_clauses)
             clause_dict = self.eval_clauses_scores(refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
-            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
-            step += 1
             if (len(clause_dict["sn"]) > 0):
                 break
+            refs = self.update_refs(clause_dict)
+            step += 1
+
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"])
 
         return clause_dict
@@ -529,7 +534,7 @@ class ClauseGenerator(object):
         # evaluate clauses
         if len(new_clauses) == 0:
             return {"sn": [], "nc": [], "sc": [], "uc": []}
-        print('\nEvaluating ', len(new_clauses), 'generated clauses.')
+        print('Evaluating ', len(new_clauses), 'generated clauses.')
         self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
                                    self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
         all_predicates_scores, clause_scores_full = logic_utils.eval_predicates(self.NSFR, self.args,
@@ -558,6 +563,17 @@ class ClauseGenerator(object):
                 print(f"necessary clause: {c[0]}")
 
         print('============= Beam search End ===================\n')
+
+    def update_refs(self, clause_dict):
+        refs = []
+        if len(clause_dict['nc']) > 0:
+            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
+
+        elif len(clause_dict['sc']) > 0:
+            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
+        elif len(clause_dict['uc']) > 0:
+            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
+        return refs
 
 
 def count_arity_from_clause_cluster(clause_cluster):
