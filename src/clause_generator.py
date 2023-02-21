@@ -635,12 +635,8 @@ class PIClauseGenerator(object):
         if len(beam_search_clauses['uc']) < 20:
             new_predicates += self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
 
-        new_predicates = logic_utils.remove_3_zone_only_predicates(new_predicates)
-        new_predicates = logic_utils.keep_1_zone_max_predicates(new_predicates)
-        # new_predicates = logic_utils.remove_same_four_score_predicates(new_predicates)
+        new_predicates = self.prune_predicates(new_predicates)
 
-        new_predicates = logic_utils.remove_unaligned_predicates(new_predicates)
-        new_predicates = logic_utils.remove_duplicate_predicates(new_predicates)
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
@@ -1069,4 +1065,26 @@ class PIClauseGenerator(object):
             new_predicates = self.generate_new_predicate(n_clause_clusters)
         else:
             new_predicates = []
+        return new_predicates
+
+    def prune_predicates(self, new_predicates):
+
+        no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates)
+        if len(no_3_zone_only) > 0:
+            new_predicates = no_3_zone_only
+
+        first_zone_max = logic_utils.keep_1_zone_max_predicates(new_predicates)
+        if len(first_zone_max) > 0:
+            new_predicates = first_zone_max
+
+        # new_predicates = logic_utils.remove_same_four_score_predicates(new_predicates)
+
+        no_unaligned = logic_utils.remove_unaligned_predicates(new_predicates)
+        if len(no_unaligned) > 0:
+            new_predicates = no_unaligned
+
+        no_duplicate = logic_utils.remove_duplicate_predicates(new_predicates)
+        if len(no_duplicate) > 0:
+            new_predicates = no_duplicate
+
         return new_predicates

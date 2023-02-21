@@ -525,8 +525,8 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     for cc_i, clause_cluster in enumerate(clause_clusters):
         if len(clause_clusters) < 10000:
             pass
-        elif cc_i % 10000 == 0:
-            print(f"eval clause cluster: {cc_i + 1}/{len(clause_clusters)}")
+        elif cc_i % 10000 == 0 or cc_i == len(clause_clusters) - 1:
+            print(f"eval clause cluster: {cc_i}/{len(clause_clusters) - 1}")
         score_neg = torch.zeros((1, total_score, 1))
         score_pos = torch.zeros((1, total_score, 1))
         for [c_i, c, c_score] in clause_cluster:
