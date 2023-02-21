@@ -1077,8 +1077,6 @@ class PIClauseGenerator(object):
         if len(first_zone_max) > 0:
             new_predicates = first_zone_max
 
-        # new_predicates = logic_utils.remove_same_four_score_predicates(new_predicates)
-
         no_unaligned = logic_utils.remove_unaligned_predicates(new_predicates)
         if len(no_unaligned) > 0:
             new_predicates = no_unaligned
@@ -1087,4 +1085,7 @@ class PIClauseGenerator(object):
         if len(no_duplicate) > 0:
             new_predicates = no_duplicate
 
+        no_same_four = logic_utils.remove_same_four_score_predicates(new_predicates)
+        if len(new_predicates) > 20:
+            new_predicates = no_same_four
         return new_predicates
