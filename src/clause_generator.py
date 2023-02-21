@@ -624,18 +624,21 @@ class PIClauseGenerator(object):
         # clause_candidates = logic_utils.eval_clause_clusters(clause_clusters, p_scores_list)
 
         # generate new clauses
-        new_predicates = []
+        sc_new_predicates = []
+        uc_new_predicates = []
 
         # cluster sufficient clauses
         if len(beam_search_clauses['sc']) < 100:
-            new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
-            print(f"new pi from sc: {len(new_predicates)}")
+            sc_new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
+            print(f"new pi from sc: {len(sc_new_predicates)}")
 
         # cluster necessary clauses
         if len(beam_search_clauses['uc']) < 20:
-            new_predicates += self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
+            uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
 
-        new_predicates = self.prune_predicates(new_predicates)
+        sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
+        uc_new_predicates = self.prune_predicates(uc_new_predicates)
+        new_predicates = sc_new_predicates + uc_new_predicates
 
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
@@ -1067,7 +1070,7 @@ class PIClauseGenerator(object):
             new_predicates = []
         return new_predicates
 
-    def prune_predicates(self, new_predicates):
+    def prune_predicates(self, new_predicates, keep_all=False):
 
         no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates)
         if len(no_3_zone_only) > 0:
@@ -1086,6 +1089,6 @@ class PIClauseGenerator(object):
             new_predicates = no_duplicate
 
         no_same_four = logic_utils.remove_same_four_score_predicates(new_predicates)
-        if len(new_predicates) > 20:
-            new_predicates = no_same_four
+        if not keep_all and len(new_predicates) > 20:
+            new_predicates = []
         return new_predicates
