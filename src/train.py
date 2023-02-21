@@ -396,7 +396,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 clauses = bs_clauses
             else:
                 # invent new predicate and generate pi clauses
-                new_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, val_pos, val_neg)
+                new_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, val_pos, val_neg, args)
                 # add new predicates
                 pi_clauses += new_pi_clauses
                 bk_clauses += new_pi_clauses

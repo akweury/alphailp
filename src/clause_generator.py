@@ -615,7 +615,7 @@ class PIClauseGenerator(object):
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
 
-    def generate(self, beam_search_clauses, pos_pred, neg_pred):
+    def generate(self, beam_search_clauses, pos_pred, neg_pred, args):
         found_ns = False
         # evaluate for all the clauses
         # clause_image_scores = self.eval_multi_clauses(beam_search_clauses, pos_pred, neg_pred)  # time-consuming line
@@ -628,12 +628,12 @@ class PIClauseGenerator(object):
 
         # cluster sufficient clauses
         if len(beam_search_clauses['sc']) < 100:
-            new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0])
+            new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
             print(f"new pi from sc: {len(new_predicates)}")
 
         # cluster necessary clauses
         if len(beam_search_clauses['uc']) < 20:
-            new_predicates += self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0])
+            new_predicates += self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
 
         new_predicates = logic_utils.remove_3_zone_only_predicates(new_predicates)
         new_predicates = logic_utils.keep_1_zone_max_predicates(new_predicates)
@@ -1058,9 +1058,9 @@ class PIClauseGenerator(object):
                     pi_predicates.append(p)
         return pi_clauses, pi_predicates
 
-    def cluster_invention(self, clause_candidates, total_score):
+    def cluster_invention(self, clause_candidates, total_score, args):
         n_clause_clusters, ns_clause_clusters = logic_utils.search_independent_clauses_parallel(clause_candidates,
-                                                                                                total_score)
+                                                                                                total_score, args)
         if len(ns_clause_clusters) > 0:
             found_ns = True
             new_predicates = self.generate_new_predicate(ns_clause_clusters)

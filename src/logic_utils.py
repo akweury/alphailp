@@ -491,7 +491,7 @@ def search_independent_clauses(clauses, total_score):
     return necessary_clusters, ns_clusters
 
 
-def search_independent_clauses_parallel(clauses, total_score):
+def search_independent_clauses_parallel(clauses, total_score, args):
     print("searching for independent clauses...")
     clauses_with_score = []
     for clause_i, [clause, c_scores] in enumerate(clauses):
@@ -501,7 +501,7 @@ def search_independent_clauses_parallel(clauses, total_score):
     for i_index, [i, clause_i, score_i] in enumerate(clauses_with_score):
         clause_cluster = [[i, clause_i, score_i]]
         for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
-            if not len(common_body_pi_clauses(clause_j, clause_i)) > 2:
+            if not len(common_body_pi_clauses(clause_j, clause_i)) > args.n_obj:
                 clause_cluster.append([j, clause_j, score_j])
         clause_cluster = sorted(clause_cluster, key=lambda x: x[1])
         if clause_cluster not in independent_clauses_all:
