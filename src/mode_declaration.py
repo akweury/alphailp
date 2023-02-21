@@ -119,7 +119,7 @@ def get_pi_mode_declarations(lang):
     pi_mode_declarations = []
     for pi_index, pi in enumerate(lang.invented_preds):
         pi_str = pi.name
-        objects = [p_object]*pi.arity
+        objects = [p_object] * pi.arity
         mode_declarations = ModeDeclaration('body', 1, lang.get_invented_pred_by_name(pi_str), objects)
         pi_mode_declarations.append(mode_declarations)
     return pi_mode_declarations
@@ -153,14 +153,14 @@ def get_mode_declarations_kandinsky(lang, obj_num):
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_6'), [s_area]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_7'), [s_area]),
 
-        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_0'), [p_object, p_object]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_1'), [p_object, p_object]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_2'), [p_object, p_object]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_3'), [p_object, p_object]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_4'), [p_object, p_object]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_5'), [p_object, p_object]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_6'), [p_object, p_object]),
-        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_7'), [p_object, p_object]),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_0'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_1'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_2'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_3'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_4'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_5'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_6'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('at_area_7'), [p_object, p_object], ordered=False),
 
         # ModeDeclaration('body', 1, lang.get_pred_by_name('inv_1'), [p_object, p_object]),
 

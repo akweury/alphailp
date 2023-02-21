@@ -451,8 +451,8 @@ def search_independent_clauses(clauses, total_score):
         else:
             other_clusters.append([clause_cluster, cluster_clause_score])
 
-    necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
-    ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
+    # necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
+    # ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
 
     # # remove subclauses
     # non_sub_clauses = []
@@ -488,7 +488,7 @@ def search_independent_clauses(clauses, total_score):
     #     if c_score[3] != total_score:
     #         print(c_score)
     #         print(cluster)
-    return necessary_clusters_no_sub, ns_clusters_no_sub
+    return necessary_clusters, ns_clusters
 
 
 def search_independent_clauses_parallel(clauses, total_score):
@@ -509,7 +509,7 @@ def search_independent_clauses_parallel(clauses, total_score):
 
     clause_clusters = []
     for independent_cluster in independent_clauses_all:
-        sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=5)
+        sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=7)
         clause_clusters += sub_clusters
 
     # TODO: find a parallel solution or prune trick
@@ -545,10 +545,10 @@ def search_independent_clauses_parallel(clauses, total_score):
         else:
             other_clusters.append([clause_cluster, cluster_clause_score])
 
-    necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
-    ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
+    # necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
+    # ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
 
-    return necessary_clusters_no_sub, ns_clusters_no_sub
+    return necessary_clusters, ns_clusters
 
 
 def sub_clause_of(clause_a, clause_b):
@@ -687,6 +687,9 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
 
     return all_predicates_scores, clause_scores_full
 
+
+def get_four_scores(predicate_scores):
+    return eval_clause_sign(predicate_scores)[0][1]
     # C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
     # clause loop
     # for clause_index, V_T in enumerate(V_T_list):
@@ -1022,4 +1025,24 @@ def remove_3_zone_only_predicates(new_predicates):
     for predicate in new_predicates:
         if torch.sum(predicate[1][:3]) > 0:
             passed_predicates.append(predicate)
+    return passed_predicates
+
+
+def keep_1_zone_max_predicates(new_predicates):
+    passed_predicates = []
+    for predicate in new_predicates:
+        if torch.max(predicate[1]) == predicate[1][1]:
+            passed_predicates.append(predicate)
+    return passed_predicates
+
+
+def remove_same_four_score_predicates(new_predicates):
+    passed_predicates = []
+    passed_scores = []
+    for predicate in new_predicates:
+        if predicate[1].tolist() not in passed_scores:
+            passed_scores.append(predicate[1].tolist())
+            passed_predicates.append(predicate)
+        else:
+            print(predicate)
     return passed_predicates

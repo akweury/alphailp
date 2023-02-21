@@ -262,7 +262,7 @@ class ClauseGenerator(object):
         return refs
 
     def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, min_step=1):
-        print("======== beam search ========")
+        print(f"======== beam search iteration {min_step} ========")
         eval_pred_names = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": []}
         # extend clauses
@@ -277,7 +277,7 @@ class ClauseGenerator(object):
             clause_dict = self.eval_clauses_scores(refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
             step += 1
-            if (len(clause_dict["sn"])>0):
+            if (len(clause_dict["sn"]) > 0):
                 break
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"])
 
@@ -505,7 +505,7 @@ class ClauseGenerator(object):
             score = four_scores[c_i]
             if score[1] == self.pos_loader.dataset.__len__():
                 sufficient_necessary_clauses.append((clause, all_scores[c_i]))
-            elif score[0] + score[1] == self.pos_loader.dataset.__len__():
+            if score[0] + score[1] == self.pos_loader.dataset.__len__():
                 sufficient_clauses.append((clause, all_scores[c_i]))
             if score[1] + score[3] == self.pos_loader.dataset.__len__():
                 necessary_clauses.append((clause, all_scores[c_i]))
@@ -527,6 +527,8 @@ class ClauseGenerator(object):
 
     def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, ):
         # evaluate clauses
+        if len(new_clauses) == 0:
+            return {"sn": [], "nc": [], "sc": [], "uc": []}
         print('\nEvaluating ', len(new_clauses), 'generated clauses.')
         self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
                                    self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
@@ -616,10 +618,13 @@ class PIClauseGenerator(object):
             print(f"new pi from sc: {len(new_predicates)}")
 
         # cluster necessary clauses
-        if len(beam_search_clauses['uc']) < 100:
+        if len(beam_search_clauses['uc']) < 20:
             new_predicates += self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0])
 
         new_predicates = logic_utils.remove_3_zone_only_predicates(new_predicates)
+        new_predicates = logic_utils.keep_1_zone_max_predicates(new_predicates)
+        # new_predicates = logic_utils.remove_same_four_score_predicates(new_predicates)
+
         new_predicates = logic_utils.remove_unaligned_predicates(new_predicates)
         new_predicates = logic_utils.remove_duplicate_predicates(new_predicates)
         # convert to strings
