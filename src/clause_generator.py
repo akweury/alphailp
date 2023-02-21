@@ -281,7 +281,8 @@ class ClauseGenerator(object):
             clause_dict = self.eval_clauses_scores(refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
             if (len(clause_dict["sn"]) > 0):
                 break
-            refs = self.update_refs(clause_dict)
+            # refs = self.update_refs(clause_dict)
+            refs = self.select_all_refs(clause_dict)
             step += 1
 
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"])
@@ -568,11 +569,17 @@ class ClauseGenerator(object):
         refs = []
         if len(clause_dict['nc']) > 0:
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
-
         elif len(clause_dict['sc']) > 0:
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
         elif len(clause_dict['uc']) > 0:
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
+        return refs
+
+    def select_all_refs(self, clause_dict):
+        refs = []
+        refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
+        refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
+        refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
         return refs
 
 
