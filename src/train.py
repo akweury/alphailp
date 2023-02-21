@@ -35,11 +35,7 @@ def get_args():
                         default=10, help="Batch size in nsfr train")
     parser.add_argument("--e", type=int, default=6,
                         help="The maximum number of objects in one image")
-    parser.add_argument("--dataset", default="red-triangle",
-                        choices=["twopairs", "threepairs", "diagonals", "red-triangle", "closeby", "closeby-learn",
-                                 "online", "online-pair", "online-pair-3", "nine-circles", "clevr-hans0", "clevr-hans1",
-                                 "vertical",
-                                 "clevr-hans2"], help="Use kandinsky patterns dataset")
+    parser.add_argument("--dataset", default="red-triangle", help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
                         help="kandinsky or clevr")
     parser.add_argument('--device', default='cpu',
