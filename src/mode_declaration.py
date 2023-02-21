@@ -164,10 +164,10 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
         # ModeDeclaration('body', 1, lang.get_pred_by_name('inv_1'), [p_object, p_object]),
 
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('same_color_pair'), [p_object, p_object], ordered=False),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('same_shape_pair'), [p_object, p_object], ordered=False),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('diff_color_pair'), [p_object, p_object], ordered=False),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('diff_shape_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 2, lang.get_pred_by_name('same_color_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 2, lang.get_pred_by_name('same_shape_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('diff_color_pair'), [p_object, p_object], ordered=False),
+        ModeDeclaration('body', 1, lang.get_pred_by_name('diff_shape_pair'), [p_object, p_object], ordered=False),
 
         # ModeDeclaration('body', 1, lang.get_pred_by_name('closeby'), [p_object, p_object], ordered=False),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('online'), [p_object, p_object, p_object, p_object, p_object], ordered=False),
