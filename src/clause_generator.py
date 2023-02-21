@@ -550,14 +550,12 @@ class ClauseGenerator(object):
         if len(sn) > 0:
             for c in sn:
                 print(f"sufficient and necessary clause: {c[0]}")
-        elif len(sc) > 0:
+        if len(sc) > 0:
             for c in sc:
                 print(f"sufficient clause: {c[0]}")
-        elif len(nc) > 0:
+        if len(nc) > 0:
             for c in nc:
                 print(f"necessary clause: {c[0]}")
-        else:
-            print("no nc/sc/snc clause.")
 
         print('============= Beam search End ===================\n')
 
