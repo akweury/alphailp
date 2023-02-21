@@ -521,12 +521,6 @@ def search_independent_clauses_parallel(clauses, total_score):
     ns_clusters = []
     other_clusters = []
     # TODO: parallel programming
-    bz = 100
-
-    for i in range(int(len(clause_clusters) / bz)):
-        clause_cluster_batch = clause_clusters[i * bz:(i + 1) * bz]
-        score_neg = torch.zeros((bz, total_score, 1))
-        score_pos = torch.zeros((bz, total_score, 1))
 
     for cc_i, clause_cluster in enumerate(clause_clusters):
         if len(clause_clusters) < 10000:
@@ -974,9 +968,10 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step):
 
 
 def extract_clauses_from_bs_clauses(bs_clauses):
-    if len(bs_clauses) == 0:
-        raise ValueError
     clauses = []
+    if len(bs_clauses) == 0:
+        return clauses
+
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
     return clauses

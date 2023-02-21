@@ -277,7 +277,8 @@ class ClauseGenerator(object):
             clause_dict = self.eval_clauses_scores(refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
             step += 1
-
+            if (len(clause_dict["sn"])>0):
+                break
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"])
 
         return clause_dict
