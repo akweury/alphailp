@@ -99,108 +99,105 @@ class ClauseGenerator(object):
             else:
                 return False
 
-    def generate(self, C_0, pos_pred, neg_pred, pi_clauses, args, gen_mode='beam', T_beam=7, N_beam=20,
-                 N_max=100,
-                 min_step=None):
-        """
-        call clause generation function with or without beam-searching
-        Inputs
-        ------
-        C_0 : Set[.logic.Clause]
-            a set of initial clauses
-        gen_mode : string
-            a generation mode
-            'beam' - with beam-searching
-            'naive' - without beam-searching
-        T_beam : int
-            number of steps in beam-searching
-        N_beam : int
-            size of the beam
-        N_max : int
-            maximum number of clauses to be generated
-        Returns
-        -------
-        C : Set[.logic.Clause]
-            set of generated clauses
-        """
-        if gen_mode == 'beam':
-            bs_clauses = self.beam_search(C_0, pos_pred, neg_pred, pi_clauses, args, T_beam=T_beam, N_beam=N_beam,
-                                          N_max=N_max, min_step=min_step)
+    # def generate(self, C_0, pos_pred, neg_pred, pi_clauses, args, gen_mode='beam', T_beam=7, N_beam=20, N_max=100,
+    #              min_step=None):
+    #     """
+    #     call clause generation function with or without beam-searching
+    #     Inputs
+    #     ------
+    #     C_0 : Set[.logic.Clause]
+    #         a set of initial clauses
+    #     gen_mode : string
+    #         a generation mode
+    #         'beam' - with beam-searching
+    #         'naive' - without beam-searching
+    #     T_beam : int
+    #         number of steps in beam-searching
+    #     N_beam : int
+    #         size of the beam
+    #     N_max : int
+    #         maximum number of clauses to be generated
+    #     Returns
+    #     -------
+    #     C : Set[.logic.Clause]
+    #         set of generated clauses
+    #     """
+    #     bs_clauses = self.beam_search_clause_quick(C_0, pos_pred, neg_pred, pi_clauses, args, T_beam, N_beam, N_max,
+    #                                                min_step=min_step)
+    #     print('\n======= BEAM SEARCHED CLAUSES ======')
+    #     print("====== ", len(bs_clauses), " clauses are generated!! ======")
+    #     if len(bs_clauses) == 0:
+    #         raise ValueError('No beam search clause has been found.')
+    #
+    #     return bs_clauses
 
-            if len(bs_clauses) == 0:
-                raise ValueError('No beam search clause has been found.')
-
-            return bs_clauses
-        elif gen_mode == 'naive':
-            return self.naive(C_0, T_beam=T_beam, N_max=N_max)
-
-    def beam_search_clause(self, init_clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
-        """
-        perform beam-searching from a clause
-        Inputs
-        ------
-        clause : Clause
-            initial clause
-        T_beam : int
-            number of steps in beam-searching
-        N_beam : int
-            size of the beam
-        N_max : int
-            maximum number of clauses to be generated
-        Returns
-        -------
-        C : Set[.logic.Clause]
-            a set of generated clauses
-        """
-        step = 0
-        init_step = 0
-        B = [init_clause]
-        C = set()
-        C_dic = {}
-        B_ = []
-        lang = self.lang
-
-        while step < T_beam:
-            # print('Beam step: ', str(step),  'Beam: ', len(B))
-            B_new = {}
-            refs = []
-            for c in B:
-                refs_i = self.rgen.refinement_clause(c)
-                # remove invalid clauses
-                ###refs_i = [x for x in refs_i if self._is_valid(x)]
-                # remove already appeared refs
-                refs_i = list(set(refs_i).difference(set(B_)))
-                B_.extend(refs_i)
-                refs.extend(refs_i)
-                if self._is_valid(c) and not self._is_confounded(c):
-                    C = C.union(set([c]))
-                    print("Added: ", c)
-
-            print('Evaluating ', len(refs), 'generated clauses.')
-            # evaluate clauses, it should consider both positive images as well as negative images.
-            loss_list = self.eval_clauses(refs, pos_pred, neg_pred)
-            for i, ref in enumerate(refs):
-                # check duplication
-                if not self.is_in_beam(B_new, ref):
-                    B_new[ref] = loss_list[i]
-                    C_dic[ref] = loss_list[i]
-
-                # if len(C) >= N_max:
-                #    break
-            B_new_sorted = sorted(B_new.items(), key=lambda x: x[1], reverse=True)
-
-            # top N_beam refiements
-            B_new_sorted = B_new_sorted[:N_beam]
-            # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
-            for x in B_new_sorted:
-                print(x[1], x[0])
-            B = [x[0] for x in B_new_sorted]
-            step += 1
-            if len(B) == 0:
-                break
-            # if len(C) >= N_max:
-            #    break
-        return C
+    # def beam_search_clause(self, init_clause, pos_pred, neg_pred, T_beam=7, N_beam=20, N_max=100, th=0.98):
+    #     """
+    #     perform beam-searching from a clause
+    #     Inputs
+    #     ------
+    #     clause : Clause
+    #         initial clause
+    #     T_beam : int
+    #         number of steps in beam-searching
+    #     N_beam : int
+    #         size of the beam
+    #     N_max : int
+    #         maximum number of clauses to be generated
+    #     Returns
+    #     -------
+    #     C : Set[.logic.Clause]
+    #         a set of generated clauses
+    #     """
+    #     step = 0
+    #     init_step = 0
+    #     B = [init_clause]
+    #     C = set()
+    #     C_dic = {}
+    #     B_ = []
+    #     lang = self.lang
+    #
+    #     while step < T_beam:
+    #         # print('Beam step: ', str(step),  'Beam: ', len(B))
+    #         B_new = {}
+    #         refs = []
+    #         for c in B:
+    #             refs_i = self.rgen.refinement_clause(c)
+    #             # remove invalid clauses
+    #             ###refs_i = [x for x in refs_i if self._is_valid(x)]
+    #             # remove already appeared refs
+    #             refs_i = list(set(refs_i).difference(set(B_)))
+    #             B_.extend(refs_i)
+    #             refs.extend(refs_i)
+    #             if self._is_valid(c) and not self._is_confounded(c):
+    #                 C = C.union(set([c]))
+    #                 print("Added: ", c)
+    #
+    #         print('Evaluating ', len(refs), 'generated clauses.')
+    #         # evaluate clauses, it should consider both positive images as well as negative images.
+    #         loss_list = self.eval_clauses(refs, pos_pred, neg_pred)
+    #         for i, ref in enumerate(refs):
+    #             # check duplication
+    #             if not self.is_in_beam(B_new, ref):
+    #                 B_new[ref] = loss_list[i]
+    #                 C_dic[ref] = loss_list[i]
+    #
+    #             # if len(C) >= N_max:
+    #             #    break
+    #         B_new_sorted = sorted(B_new.items(), key=lambda x: x[1], reverse=True)
+    #
+    #         # top N_beam refiements
+    #         B_new_sorted = B_new_sorted[:N_beam]
+    #         # B_new_sorted = [x for x in B_new_sorted if x[1] > th]
+    #         for x in B_new_sorted:
+    #             print(x[1], x[0])
+    #         B = [x[0] for x in B_new_sorted]
+    #         step += 1
+    #         if len(B) == 0:
+    #             break
+    #         # if len(C) >= N_max:
+    #         #    break
+    #     return C
 
     # def remove_conflict_clauses(self, clauses):
     #     print("check for conflict clauses...")
@@ -264,21 +261,24 @@ class ClauseGenerator(object):
             #     C = C.union(set([c]))
         return refs
 
-    def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, T_beam=7, N_beam=20,
-                                 N_max=100, th=0.98, min_step=1):
+    def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, min_step=1):
+        print("======== beam search ========")
         eval_pred_names = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": []}
         # extend clauses
         step = 0
         refs = init_clauses
-        while (len(clause_dict["sc"]) == 0 and len(clause_dict["sn"]) == 0 and step < T_beam) or step <= min_step:
+        # while (len(clause_dict["sc"]) == 0 and len(clause_dict["sn"]) == 0 and step < T_beam) or step <= min_step:
+        while step <= min_step:
             print(f"\nstep {step}/{min_step}")
+
             refs = self.extend_clauses(refs)
             refs = self.remove_conflict_clauses(refs, pi_clauses)
             clause_dict = self.eval_clauses_scores(refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
+            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
             step += 1
 
-        self.print_clauses(clause_dict['sc'], clause_dict['sn'])
+        self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"])
 
         return clause_dict
 
@@ -346,42 +346,6 @@ class ClauseGenerator(object):
                 # print("duplicated: ", clause, ci)
                 break
         return y
-
-    def beam_search(self, C_0, pos_pred, neg_pred, pi_clauses, args, T_beam=7, N_beam=20, N_max=100,
-                    min_step=None):
-        """
-        generate clauses by beam-searching from initial clauses
-        Inputs
-        ------
-        C_0 : Set[.logic.Clause]
-            set of initial clauses
-        T_beam : int
-            number of steps in beam-searching
-        N_beam : int
-            size of the beam
-        N_max : int
-            maximum number of clauses to be generated
-        Returns
-        -------
-        C : Set[.logic.Clause]
-            a set of generated clauses
-        """
-        # if args.no_pi:
-        C = set(C_0)
-        # else:
-        #     C = set()
-        # p_scores_list = []
-        bs_clauses = self.beam_search_clause_quick(C_0, pos_pred, neg_pred, pi_clauses, args, T_beam, N_beam, N_max,
-                                                   min_step=min_step)
-        # C = bs_clauses
-
-        # C = C.union(self.beam_search_clause(clause, pos_pred, neg_pred, T_beam, N_beam, N_max))
-        # C = sorted(list(C))
-        print('\n======= BEAM SEARCHED CLAUSES ======')
-        # for c in C:
-        #     print('(BS Clause) ' + str(c))
-        print("====== ", len(bs_clauses), " clauses are generated!! ======")
-        return bs_clauses
 
     def eval_pi_clauses(self, clauses):
         return None
@@ -540,10 +504,10 @@ class ClauseGenerator(object):
             score = four_scores[c_i]
             if score[1] == self.pos_loader.dataset.__len__():
                 sufficient_necessary_clauses.append((clause, all_scores[c_i]))
-            if score[1] + score[3] == self.pos_loader.dataset.__len__():
-                necessary_clauses.append((clause, all_scores[c_i]))
             elif score[0] + score[1] == self.pos_loader.dataset.__len__():
                 sufficient_clauses.append((clause, all_scores[c_i]))
+            if score[1] + score[3] == self.pos_loader.dataset.__len__():
+                necessary_clauses.append((clause, all_scores[c_i]))
             else:
                 unclassified_clauses.append((clause, all_scores[c_i]))
         return sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses
@@ -578,13 +542,21 @@ class ClauseGenerator(object):
         chart_utils.plot_4_zone(False, new_clauses, clause_scores_full, step)
         return clause_dict
 
-    def print_clauses(self, sc, sn):
-        if len(sc) > 0:
-            for c in sc:
-                print(f"sufficient clause: {c[0]}")
+    def print_clauses(self, sc, sn, nc):
+        print('\n======= BEAM SEARCHED CLAUSES ======')
         if len(sn) > 0:
             for c in sn:
                 print(f"sufficient and necessary clause: {c[0]}")
+        elif len(sc) > 0:
+            for c in sc:
+                print(f"sufficient clause: {c[0]}")
+        elif len(nc) > 0:
+            for c in nc:
+                print(f"necessary clause: {c[0]}")
+        else:
+            print("no nc/sc/snc clause.")
+
+        print('============= Beam search End ===================\n')
 
 
 def count_arity_from_clause_cluster(clause_cluster):
@@ -593,10 +565,9 @@ def count_arity_from_clause_cluster(clause_cluster):
         for b in clause.body:
             if "in" == b.pred.name:
                 continue
-            if b.terms[0].name not in arity_list and "O" in b.terms[0].name:
-                arity_list.append(b.terms[0].name)
-            if b.terms[1].name not in arity_list and "O" in b.terms[1].name:
-                arity_list.append(b.terms[1].name)
+            for t in b.terms:
+                if t.name not in arity_list and "O" in t.name:
+                    arity_list.append(t.name)
     # arity = len(arity_list)
     arity_list.sort()
     return arity_list
@@ -636,18 +607,18 @@ class PIClauseGenerator(object):
         # clause_candidates = logic_utils.eval_clause_clusters(clause_clusters, p_scores_list)
 
         # generate new clauses
-        sufficient_clauses = beam_search_clauses["sc"]
-        n_clause_clusters, ns_clause_clusters = logic_utils.search_independent_clauses(sufficient_clauses,
-                                                                                       pos_pred.shape[0])
-        if len(ns_clause_clusters) > 0:
-            found_ns = True
-            new_predicates = self.generate_new_predicate(ns_clause_clusters)
+        new_predicates = []
 
-        elif len(ns_clause_clusters) > 0:
-            new_predicates = self.generate_new_predicate(n_clause_clusters)
-        else:
-            new_predicates = []
+        # cluster sufficient clauses
+        if len(beam_search_clauses['sc']) < 100:
+            new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0])
+            print(f"new pi from sc: {len(new_predicates)}")
 
+        # cluster necessary clauses
+        if len(beam_search_clauses['uc']) < 100:
+            new_predicates += self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0])
+
+        new_predicates = logic_utils.remove_3_zone_only_predicates(new_predicates)
         new_predicates = logic_utils.remove_unaligned_predicates(new_predicates)
         new_predicates = logic_utils.remove_duplicate_predicates(new_predicates)
         # convert to strings
@@ -670,8 +641,8 @@ class PIClauseGenerator(object):
         print("====== ", len(passed_pi_clauses), " PI clauses are generated!! ======")
         for c in passed_pi_clauses:
             print(c)
-
-        self.lang.invented_preds = passed_pi_predicates
+        if len(passed_pi_predicates) > 0:
+            self.lang.invented_preds = passed_pi_predicates
 
         return passed_pi_clauses, found_ns
 
@@ -1066,3 +1037,16 @@ class PIClauseGenerator(object):
                 if p not in pi_predicates:
                     pi_predicates.append(p)
         return pi_clauses, pi_predicates
+
+    def cluster_invention(self, clause_candidates, total_score):
+        n_clause_clusters, ns_clause_clusters = logic_utils.search_independent_clauses_parallel(clause_candidates,
+                                                                                                total_score)
+        if len(ns_clause_clusters) > 0:
+            found_ns = True
+            new_predicates = self.generate_new_predicate(ns_clause_clusters)
+
+        elif len(n_clause_clusters) > 0:
+            new_predicates = self.generate_new_predicate(n_clause_clusters)
+        else:
+            new_predicates = []
+        return new_predicates

@@ -429,6 +429,7 @@ def search_independent_clauses(clauses, total_score):
     sufficient_clusters = []
     ns_clusters = []
     other_clusters = []
+    # TODO: parallel programming
     for cc_i, clause_cluster in enumerate(clause_clusters):
         if cc_i % 10000 == 0:
             print(f"eval clause cluster: {cc_i + 1}/{len(clause_clusters)}")
@@ -487,6 +488,72 @@ def search_independent_clauses(clauses, total_score):
     #     if c_score[3] != total_score:
     #         print(c_score)
     #         print(cluster)
+    return necessary_clusters_no_sub, ns_clusters_no_sub
+
+
+def search_independent_clauses_parallel(clauses, total_score):
+    print("searching for independent clauses...")
+    clauses_with_score = []
+    for clause_i, [clause, c_scores] in enumerate(clauses):
+        clauses_with_score.append([clause_i, clause, c_scores])
+    # search clauses with no common bodies
+    independent_clauses_all = []
+    for i_index, [i, clause_i, score_i] in enumerate(clauses_with_score):
+        clause_cluster = [[i, clause_i, score_i]]
+        for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
+            if not len(common_body_pi_clauses(clause_j, clause_i)) > 2:
+                clause_cluster.append([j, clause_j, score_j])
+        clause_cluster = sorted(clause_cluster, key=lambda x: x[1])
+        if clause_cluster not in independent_clauses_all:
+            independent_clauses_all.append(clause_cluster)
+
+    clause_clusters = []
+    for independent_cluster in independent_clauses_all:
+        sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=5)
+        clause_clusters += sub_clusters
+
+    # TODO: find a parallel solution or prune trick
+    # if len(clause_clusters) > 100000:
+    #     clause_clusters = clause_clusters[:100000]
+
+    necessary_clusters = []
+    sufficient_clusters = []
+    ns_clusters = []
+    other_clusters = []
+    # TODO: parallel programming
+    bz = 100
+
+    for i in range(int(len(clause_clusters) / bz)):
+        clause_cluster_batch = clause_clusters[i * bz:(i + 1) * bz]
+        score_neg = torch.zeros((bz, total_score, 1))
+        score_pos = torch.zeros((bz, total_score, 1))
+
+    for cc_i, clause_cluster in enumerate(clause_clusters):
+        if len(clause_clusters) < 10000:
+            pass
+        elif cc_i % 10000 == 0:
+            print(f"eval clause cluster: {cc_i + 1}/{len(clause_clusters)}")
+        score_neg = torch.zeros((1, total_score, 1))
+        score_pos = torch.zeros((1, total_score, 1))
+        for [c_i, c, c_score] in clause_cluster:
+            score_neg = torch.cat((score_neg[0, :, :], c_score[:, 0:1]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(
+                0)
+            score_pos = torch.cat((score_pos[0, :, :], c_score[:, 1:]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(0)
+        score_max = torch.cat((score_neg, score_pos), dim=2)
+        p_clause_signs = eval_clause_sign(score_max)
+        cluster_clause_score = p_clause_signs[0][1].reshape(4)
+        if cluster_clause_score[1] == total_score:
+            ns_clusters.append([clause_cluster, cluster_clause_score])
+        elif cluster_clause_score[1] + cluster_clause_score[3] == total_score:
+            necessary_clusters.append([clause_cluster, cluster_clause_score])
+        elif cluster_clause_score[0] + cluster_clause_score[1] == total_score:
+            sufficient_clusters.append([clause_cluster, cluster_clause_score])
+        else:
+            other_clusters.append([clause_cluster, cluster_clause_score])
+
+    necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
+    ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
+
     return necessary_clusters_no_sub, ns_clusters_no_sub
 
 
@@ -953,3 +1020,11 @@ def is_trivial_preds(preds_terms):
             return True
 
     return False
+
+
+def remove_3_zone_only_predicates(new_predicates):
+    passed_predicates = []
+    for predicate in new_predicates:
+        if torch.sum(predicate[1][:3]) > 0:
+            passed_predicates.append(predicate)
+    return passed_predicates

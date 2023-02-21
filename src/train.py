@@ -382,28 +382,27 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     clauses = []
     # loop for predicate invention
     # found_ns = False
-    for i in range(args.t_beam):
-        clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                               init_clauses, bk_clauses, pi_clauses, atoms, bk)
-        # generate clauses # time-consuming code
-        bs_clauses = clause_generator.generate(init_clauses,
-                                               val_pos, val_neg,pi_clauses, args,T_beam=args.t_beam,
-                                               N_beam=args.n_beam,N_max=args.n_max, min_step=i+1)
-        if len(bs_clauses['sn']) > 0:
-            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
-            break
-        if args.no_pi:
-            clauses = bs_clauses
-        else:
-            # invent new predicate and generate pi clauses
-            new_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, val_pos, val_neg)
-            if len(clauses) == 0:
-                args.n_beam += 5
-            # add new predicates
-            pi_clauses += new_pi_clauses
-            bk_clauses += new_pi_clauses
-            lang = pi_clause_generator.lang
-            atoms = logic_utils.get_atoms(lang)
+    while len(clauses) == 0:
+        for i in range(args.t_beam):
+            clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
+                                                                   init_clauses, bk_clauses, pi_clauses, atoms, bk)
+            # generate clauses # time-consuming code
+            bs_clauses = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg, pi_clauses, args,
+                                                                   min_step=i)
+            if len(bs_clauses['sn']) > 0:
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
+                break
+            if args.no_pi:
+                clauses = bs_clauses
+            else:
+                # invent new predicate and generate pi clauses
+                new_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, val_pos, val_neg)
+                # add new predicates
+                pi_clauses += new_pi_clauses
+                bk_clauses += new_pi_clauses
+                lang = pi_clause_generator.lang
+                atoms = logic_utils.get_atoms(lang)
+        args.t_beam += 1
 
     NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
     nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
