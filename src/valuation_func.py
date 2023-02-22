@@ -136,8 +136,8 @@ class YOLOAreaValuationFunction(nn.Module):
 
         round_divide = 4
         area_angle = int(360 / round_divide)
-        area_angle_half = area_angle * 0.5
-        # area_angle_half = 0
+        # area_angle_half = area_angle * 0.5
+        area_angle_half = 0
         dir_vec = c_2 - c_1
         dir_vec[1] = -dir_vec[1]
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
