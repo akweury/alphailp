@@ -388,6 +388,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             if len(bs_clauses['sn']) > 0:
                 clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
                 break
+            elif len(bs_clauses['sn_95']) > 0:
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_95'])
             if args.no_pi:
                 clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
                 clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'])

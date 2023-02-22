@@ -264,7 +264,7 @@ class ClauseGenerator(object):
     def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, min_step=1):
         print(f"\n======== beam search iteration {min_step} ========")
         eval_pred_names = ['kp']
-        clause_dict = {"sn": [], "nc": [], "sc": [], "uc": []}
+        clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_95": []}
         # extend clauses
         step = 0
         break_step = 5
@@ -280,6 +280,8 @@ class ClauseGenerator(object):
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses)
             clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
             if (len(clause_dict["sn"]) > 0):
+                break
+            elif (len(clause_dict["sn_95"]) > 0):
                 break
             refs = self.update_refs(clause_dict)
             # refs = self.select_all_refs(clause_dict)
@@ -505,19 +507,22 @@ class ClauseGenerator(object):
         necessary_clauses = []
         sufficient_clauses = []
         unclassified_clauses = []
+        sn_95_clauses = []
         for c_i, clause in enumerate(clauses):
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
             #     good_clauses.append((clause, scores))
             score = four_scores[c_i]
             if score[1] == self.pos_loader.dataset.__len__():
                 sufficient_necessary_clauses.append((clause, all_scores[c_i]))
+            if score[1] / self.pos_loader.dataset.__len__() > 0.95:
+                sn_95_clauses.append((clause, all_scores[c_i]))
             if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 8:
                 sufficient_clauses.append((clause, all_scores[c_i]))
             if score[1] + score[3] == self.pos_loader.dataset.__len__():
                 necessary_clauses.append((clause, all_scores[c_i]))
             else:
                 unclassified_clauses.append((clause, all_scores[c_i]))
-        return sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses
+        return sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses, sn_95_clauses
 
     def remove_conflict_clauses(self, refs, pi_clauses):
         # remove conflict clauses
@@ -534,7 +539,7 @@ class ClauseGenerator(object):
     def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, ):
         # evaluate clauses
         if len(new_clauses) == 0:
-            return {"sn": [], "nc": [], "sc": [], "uc": []}
+            return {"sn": [], "nc": [], "sc": [], "uc": [], "sn_95": []}
         print('Evaluating ', len(new_clauses), 'generated clauses.')
         self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
                                    self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
@@ -543,7 +548,7 @@ class ClauseGenerator(object):
                                                                                 neg_pred)
 
         # classify clauses
-        sn_c, nc, sc, uc = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores)
+        sn_c, nc, sc, uc, sn_95_c = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores)
         clause_dict = {"sn": sn_c, "nc": nc, "sc": sc, "uc": uc}
 
         # print best clauses that have been found...
@@ -1065,12 +1070,13 @@ class PIClauseGenerator(object):
         return pi_clauses, pi_predicates
 
     def cluster_invention(self, clause_candidates, total_score, args):
-        n_clause_clusters, ns_clause_clusters, ns_85_clause_clusters = logic_utils.search_independent_clauses_parallel(clause_candidates,
-                                                                                                total_score, args)
+        n_clause_clusters, ns_clause_clusters, ns_85_clause_clusters = logic_utils.search_independent_clauses_parallel(
+            clause_candidates,
+            total_score, args)
         if len(ns_clause_clusters) > 0:
             found_ns = True
             new_predicates = self.generate_new_predicate(ns_clause_clusters)
-        elif len(ns_85_clause_clusters)>0:
+        elif len(ns_85_clause_clusters) > 0:
             new_predicates = self.generate_new_predicate(ns_85_clause_clusters)
         elif len(n_clause_clusters) > 0:
             new_predicates = self.generate_new_predicate(n_clause_clusters)
