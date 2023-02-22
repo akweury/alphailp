@@ -238,7 +238,7 @@ class DataUtils(object):
         """
         preds = self.load_preds(str(self.base_path / 'preds.txt'))
         preds += self.load_neural_preds(str(self.base_path / 'neural_preds.txt'))
-        pi_templates = self.load_invented_preds(str(self.base_path / 'invent_preds.txt'))
+        pi_templates = self.load_invented_preds(str(self.base_path / 'neural_preds.txt'))
         # preds += pi_templates
         consts = self.load_consts(str(self.base_path / 'consts.txt'))
         lang = Language(preds, [], consts, pi_templates)
