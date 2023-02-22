@@ -549,7 +549,7 @@ class ClauseGenerator(object):
 
         # classify clauses
         sn_c, nc, sc, uc, sn_95_c = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores)
-        clause_dict = {"sn": sn_c, "nc": nc, "sc": sc, "uc": uc}
+        clause_dict = {"sn": sn_c, "nc": nc, "sc": sc, "uc": uc, "sn_95": sn_95_c}
 
         # print best clauses that have been found...
         logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full, pos_pred.size(0), step)
