@@ -539,7 +539,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         cluster_clause_score = p_clause_signs[0][1].reshape(4)
         if cluster_clause_score[1] == total_score:
             ns_clusters.append([clause_cluster, cluster_clause_score])
-        elif cluster_clause_score[1] / total_score > 0.80:
+        elif cluster_clause_score[1] / total_score > 0.82:
             ns_85_clusters.append([clause_cluster, cluster_clause_score])
         elif cluster_clause_score[1] + cluster_clause_score[3] == total_score:
             necessary_clusters.append([clause_cluster, cluster_clause_score])
