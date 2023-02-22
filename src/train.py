@@ -70,6 +70,8 @@ def get_args():
                         help="The number of epochs for predicate invention.")
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="The learning rate.")
+    parser.add_argument("--sn_th", type=float, default=0.9,
+                        help="The accept threshold for sufficient and necessary clauses.")
     parser.add_argument("--n-data", type=float, default=200,
                         help="The number of data to be used.")
     parser.add_argument("--pre-searched", action="store_true",
@@ -388,8 +390,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             if len(bs_clauses['sn']) > 0:
                 clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
                 break
-            elif len(bs_clauses['sn_95']) > 0:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_95'])
+            elif len(bs_clauses['sn_good']) > 0:
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'])
                 break
             if args.no_pi:
                 clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
