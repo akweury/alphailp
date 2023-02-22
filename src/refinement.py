@@ -72,7 +72,7 @@ class RefinementGenerator(object):
         if not self._check_recall(clause, modeb):
             # the input modeb has been used as many as its recall (maximum number  to be called) already
             return []
-        unused_args = logic_utils.get_clause_unused_args(clause)
+        # unused_args = logic_utils.get_clause_unused_args(clause)
         terms_list = self.generate_term_combinations(clause, modeb)
         non_redundant_term_list = []
         C_refined = []
@@ -81,26 +81,26 @@ class RefinementGenerator(object):
                 # terms: (O0, X)
                 if not modeb.ordered:
                     terms = sorted(terms)
-                non_redundant_term = []
-                placeholder_counter = 0
-                for term in terms:
-                    if term in unused_args and "O" in term.name:
-                        non_redundant_term.append(f"placeholder{placeholder_counter}")
-                        placeholder_counter += 1
-                    else:
-                        non_redundant_term.append(term)
-                if non_redundant_term not in non_redundant_term_list:
-                    non_redundant_term_list.append(non_redundant_term)
+                # non_redundant_term = []
+                # placeholder_counter = 0
+                # for term in terms:
+                #     if term in unused_args and "O" in term.name:
+                #         non_redundant_term.append(f"placeholder{placeholder_counter}")
+                #         placeholder_counter += 1
+                #     else:
+                #         non_redundant_term.append(term)
+                # if non_redundant_term not in non_redundant_term_list:
+                #     non_redundant_term_list.append(non_redundant_term)
 
-        for terms in non_redundant_term_list:
-            for t_i, term in enumerate(terms):
-                if "placeholder" in str(term):
-                    a_index = int(term.split("placeholder")[1])
-                    terms[t_i] = unused_args[a_index]
-            new_atom = Atom(modeb.pred, terms)
-            if not new_atom in clause.body:
-                new_clause = Clause(clause.head, clause.body + [new_atom])
-                C_refined.append(new_clause)
+        # for terms in non_redundant_term_list:
+        #     for t_i, term in enumerate(terms):
+        #         if "placeholder" in str(term):
+        #             a_index = int(term.split("placeholder")[1])
+        #             terms[t_i] = unused_args[a_index]
+                new_atom = Atom(modeb.pred, terms)
+                if not new_atom in clause.body:
+                    new_clause = Clause(clause.head, clause.body + [new_atom])
+                    C_refined.append(new_clause)
         # self._increment_recall(modeb)
         return list(set(C_refined))
 

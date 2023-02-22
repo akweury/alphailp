@@ -21,8 +21,6 @@ import fol.logic as logic
 import datetime
 
 
-
-
 class ClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -570,13 +568,16 @@ class ClauseGenerator(object):
                 print(f"sufficient and necessary clause: {c[0]}")
         if len(sn_good) > 0:
             for c in sn_good:
-                print(f"sufficient and necessary clause with {args.sn_th}% accuracy: {c[0]}")
+                score = logic_utils.get_four_scores(c[1].unsqueeze(0))
+                print(f"sufficient and necessary clause with {args.sn_th}% accuracy: {c[0]}, {score}")
         if len(sc) > 0:
             for c in sc:
-                print(f"sufficient clause: {c[0]}")
+                score = logic_utils.get_four_scores(c[1].unsqueeze(0))
+                print(f"sufficient clause: {c[0]}, {score}")
         if len(nc) > 0:
             for c in nc:
-                print(f"necessary clause: {c[0]}")
+                score = logic_utils.get_four_scores(c[1].unsqueeze(0))
+                print(f"necessary clause: {c[0]}, {score}")
 
         print('============= Beam search End ===================\n')
 
