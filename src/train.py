@@ -389,7 +389,10 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
                 break
             if args.no_pi:
-                clauses = bs_clauses
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'])
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'])
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'])
             else:
                 # invent new predicate and generate pi clauses
                 new_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, val_pos, val_neg, args)
