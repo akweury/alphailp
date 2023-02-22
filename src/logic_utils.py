@@ -551,7 +551,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
 
     # necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
     # ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
-
+    ns_85_clusters = sorted(ns_85_clusters, key=lambda x: x[1][1], reverse=True)[:2]
     return necessary_clusters, ns_clusters, ns_85_clusters
 
 
