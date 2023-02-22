@@ -134,10 +134,10 @@ class YOLOAreaValuationFunction(nn.Module):
         c_1 = self.to_center(z_1)
         c_2 = self.to_center(z_2)
 
-        round_divide = 8
+        round_divide = 4
         area_angle = int(360 / round_divide)
-        # area_angle_half = area_angle * 0.5
-        area_angle_half = 0
+        area_angle_half = area_angle * 0.5
+        # area_angle_half = 0
         dir_vec = c_2 - c_1
         dir_vec[1] = -dir_vec[1]
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
@@ -145,7 +145,7 @@ class YOLOAreaValuationFunction(nn.Module):
         zone_id = (phi_clock_shift + area_angle_half) // area_angle % round_divide
 
         # This is a threshold, but it can be decided automatically.
-        # zone_id[rho >= 0.12] = zone_id[rho >= 0.12] + round_divide
+        zone_id[rho >= 0.12] = zone_id[rho >= 0.12] + round_divide
 
         area_pred = torch.zeros(area.shape).to(area.device)
         for i in range(area_pred.shape[0]):

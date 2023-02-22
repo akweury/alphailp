@@ -276,9 +276,9 @@ class ClauseGenerator(object):
                 print("break")
 
             print(f"\nstep {step}/{min_step}")
-            refs = self.extend_clauses(refs)
-            refs = self.remove_conflict_clauses(refs, pi_clauses)
-            clause_dict = self.eval_clauses_scores(refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
+            extended_refs = self.extend_clauses(refs)
+            removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses)
+            clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
             if (len(clause_dict["sn"]) > 0):
                 break
             # refs = self.update_refs(clause_dict)
