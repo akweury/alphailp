@@ -281,8 +281,8 @@ class ClauseGenerator(object):
             clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step)
             if (len(clause_dict["sn"]) > 0):
                 break
-            # refs = self.update_refs(clause_dict)
-            refs = self.select_all_refs(clause_dict)
+            refs = self.update_refs(clause_dict)
+            # refs = self.select_all_refs(clause_dict)
             step += 1
 
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"])
@@ -511,7 +511,7 @@ class ClauseGenerator(object):
             score = four_scores[c_i]
             if score[1] == self.pos_loader.dataset.__len__():
                 sufficient_necessary_clauses.append((clause, all_scores[c_i]))
-            if score[0] + score[1] == self.pos_loader.dataset.__len__():
+            if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 8:
                 sufficient_clauses.append((clause, all_scores[c_i]))
             if score[1] + score[3] == self.pos_loader.dataset.__len__():
                 necessary_clauses.append((clause, all_scores[c_i]))
