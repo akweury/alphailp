@@ -82,8 +82,8 @@ class RefinementGenerator(object):
                 if not modeb.ordered:
                     terms = sorted(terms)
                 non_redundant_term = []
+                placeholder_counter = 0
                 for term in terms:
-                    placeholder_counter = 0
                     if term in unused_args and "O" in term.name:
                         non_redundant_term.append(f"placeholder{placeholder_counter}")
                         placeholder_counter += 1
