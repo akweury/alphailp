@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score, recall_score, roc_curve
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from rtpt import RTPT
-
+import datetime
 import config
 import pi_utils
 import nsfr_utils
@@ -23,6 +23,8 @@ import facts_converter
 from percept import YOLOPerceptionModule
 from valuation import YOLOValuationModule, PIValuationModule
 import chart_utils
+date_now = datetime.datetime.today().date()
+time_now = datetime.datetime.now().strftime("%H_%M_%S")
 
 
 def get_args():

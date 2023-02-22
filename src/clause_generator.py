@@ -18,6 +18,11 @@ import logic_utils
 from fol.language import Language, DataType
 import fol.logic as logic
 
+import datetime
+
+date_now = datetime.datetime.today().date()
+time_now = datetime.datetime.now().strftime("%H_%M_%S")
+
 
 class ClauseGenerator(object):
     """
@@ -275,10 +280,11 @@ class ClauseGenerator(object):
             if step == break_step:
                 print("break")
 
-            print(f"\nstep {step}/{min_step}")
+            print(f"\n({date_now} {time_now}) Step {step}/{min_step}")
             extended_refs = self.extend_clauses(refs)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses)
-            clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, args)
+            clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step,
+                                                   args)
             if (len(clause_dict["sn"]) > 0):
                 break
             elif (len(clause_dict["sn_good"]) > 0):
@@ -536,7 +542,7 @@ class ClauseGenerator(object):
                 new_clauses.append(ref)
         return new_clauses
 
-    def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step,args ):
+    def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, args):
         # evaluate clauses
         if len(new_clauses) == 0:
             return {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
@@ -548,7 +554,8 @@ class ClauseGenerator(object):
                                                                                 neg_pred)
 
         # classify clauses
-        sn_c, nc, sc, uc, sn_good_c = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores, args)
+        sn_c, nc, sc, uc, sn_good_c = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores,
+                                                            args)
         clause_dict = {"sn": sn_c, "nc": nc, "sc": sc, "uc": uc, "sn_good": sn_good_c}
 
         # print best clauses that have been found...

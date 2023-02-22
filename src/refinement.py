@@ -1,6 +1,7 @@
 import itertools
 from fol.logic import Atom, Clause, FuncTerm, Var
 from fol.logic_ops import subs
+import logic_utils
 
 
 # TODOL refine_from_modeb, generate_by_refinement
@@ -19,8 +20,7 @@ class RefinementGenerator(object):
     def __init__(self, lang, mode_declarations):
         self.lang = lang
         self.mode_declarations = mode_declarations
-        self.vi = 0 # counter for new variable generation
-
+        self.vi = 0  # counter for new variable generation
 
     def _init_recall_counter_dic(self, mode_declarations):
         dic = {}
@@ -33,11 +33,10 @@ class RefinementGenerator(object):
         in terms of the recall.
         """
         return clause.count_by_predicate(mode_declaration.pred) < mode_declaration.recall
-        #return self.recall_counter_dic[str(mode_declaration)] < mode_declaration.recall
+        # return self.recall_counter_dic[str(mode_declaration)] < mode_declaration.recall
 
     def _increment_recall(self, mode_declaration):
         self.recall_counter_dic[str(mode_declaration)] += 1
-
 
     def get_max_obj_id(self, clause):
         object_vars = clause.all_vars_by_dtype('object')
@@ -47,24 +46,20 @@ class RefinementGenerator(object):
         else:
             return max(object_ids)
 
-
     def __generate_new_variable(self, n):
         # We assume that we have only object variables as new variables
         # O1, O2, ....
-        #new_var = Var('O' + str(self.object_counter))
-        #new_var = Var("__Y" + str(self.vi) + "__")
-        #self.vi += 1
-        #return new_var
-        #new_var = Var('O' + str(n+1))
-        #self.object_counter += 1
+        # new_var = Var('O' + str(self.object_counter))
+        # new_var = Var("__Y" + str(self.vi) + "__")
+        # self.vi += 1
+        # return new_var
+        # new_var = Var('O' + str(n+1))
+        # self.object_counter += 1
         return new_var
-
-
 
     def generate_new_variable(self, clause):
         obj_id = self.get_max_obj_id(clause)
-        return Var('O' + str(obj_id+1))
-
+        return Var('O' + str(obj_id + 1))
 
     def refine_from_modeb(self, clause, modeb):
         """Generate clauses by adding atoms to body using mode declaration.
@@ -89,7 +84,7 @@ class RefinementGenerator(object):
                 if not new_atom in clause.body:
                     new_clause = Clause(clause.head, clause.body + [new_atom])
                     C_refined.append(new_clause)
-        #self._increment_recall(modeb)
+        # self._increment_recall(modeb)
         return list(set(C_refined))
 
     def generate_term_combinations(self, clause, modeb):
@@ -100,29 +95,49 @@ class RefinementGenerator(object):
         Args:
             modeb (ModeDeclaration): A mode declaration for body.
         """
+        used_args = logic_utils.get_clause_used_args(clause)
         assignments_list = []
+        term_num = 0
         for mt in modeb.mode_terms:
+            if mt.dtype.name == "object":
+                term_num += 1
+        for mt in modeb.mode_terms:
+
+            used_assignments = []
+            assignments = []
             if mt.mode == '+':
                 # var_candidates = clause.var_all()
                 assignments = clause.all_vars_by_dtype(mt.dtype)
+                used_assignments = []
+                for a in assignments:
+                    if a.name in used_args:
+                        used_assignments.append(a)
+
+                if len(used_assignments) < term_num:
+                    for assignment in assignments:
+                        if assignment.name not in used_assignments:
+                            used_assignments.append(assignment)
+                        if len(used_assignments) == term_num:
+                            break
             elif mt.mode == '-':
                 # get new variable
                 # How to think as candidates? maybe [O3] etc.
                 # we get only object variable e.g. O3
                 # new_var = self.generate_new_variable()
-                assignments = [self.generate_new_variable(clause)]
+                used_assignments = [self.generate_new_variable(clause)]
             elif mt.mode == '#':
                 # consts = self.lang.get_by_dtype(mt.mode.dtype)
-                assignments = self.lang.get_by_dtype(mt.dtype)
-            assignments_list.append(assignments)
+                used_assignments = self.lang.get_by_dtype(mt.dtype)
+
+            assignments_list.append(used_assignments)
         # generate all combinations by cartesian product
         # e.g. [[O2], [red,blue,yellow]]
         # -> [[O2,red],[O2,blue],[O2,yellow]]
         ##print(assignments_list)
         ##print(list(itertools.product(*assignments_list)))
         ##print(clause, modeb, assignments_list)
-        #print(clause, modeb)
-        #print(assignments_list)
+        # print(clause, modeb)
+        # print(assignments_list)
         if modeb.ordered:
             return itertools.product(*assignments_list)
         else:
@@ -132,12 +147,10 @@ class RefinementGenerator(object):
         C_refined = []
         for modeb in self.mode_declarations:
             new_clauses = self.refine_from_modeb(clause, modeb)
-            #new_clauses = [c for c in new_clauses if self._is_valid(c)]
+            # new_clauses = [c for c in new_clauses if self._is_valid(c)]
             C_refined.extend(new_clauses)
             ##print(C_refined)
         return list(set(C_refined))
-
-
 
     def refinement(self, clauses):
         """Perform refinement for given set of clauses.

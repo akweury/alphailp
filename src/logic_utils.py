@@ -1050,3 +1050,13 @@ def remove_same_four_score_predicates(new_predicates):
         else:
             print(predicate)
     return passed_predicates
+
+
+def get_clause_used_args(clause):
+    unused_args = []
+    for body in clause.body:
+        if body.pred.name != "in":
+            for term in body.terms:
+                if term.name != "X" and term.name not in unused_args:
+                    unused_args.append(term.name)
+    return unused_args
