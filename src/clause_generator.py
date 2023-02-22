@@ -20,8 +20,7 @@ import fol.logic as logic
 
 import datetime
 
-date_now = datetime.datetime.today().date()
-time_now = datetime.datetime.now().strftime("%H_%M_%S")
+
 
 
 class ClauseGenerator(object):
@@ -279,7 +278,8 @@ class ClauseGenerator(object):
 
             if step == break_step:
                 print("break")
-
+            date_now = datetime.datetime.today().date()
+            time_now = datetime.datetime.now().strftime("%H_%M_%S")
             print(f"\n({date_now} {time_now}) Step {step}/{min_step}")
             extended_refs = self.extend_clauses(refs)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses)

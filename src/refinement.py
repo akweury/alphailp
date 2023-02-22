@@ -72,18 +72,35 @@ class RefinementGenerator(object):
         if not self._check_recall(clause, modeb):
             # the input modeb has been used as many as its recall (maximum number  to be called) already
             return []
+        unused_args = logic_utils.get_clause_unused_args(clause)
         terms_list = self.generate_term_combinations(clause, modeb)
-
+        non_redundant_term_list = []
         C_refined = []
         for terms in terms_list:
             if len(terms) == len(list(set(terms))):
                 # terms: (O0, X)
                 if not modeb.ordered:
                     terms = sorted(terms)
-                new_atom = Atom(modeb.pred, terms)
-                if not new_atom in clause.body:
-                    new_clause = Clause(clause.head, clause.body + [new_atom])
-                    C_refined.append(new_clause)
+                non_redundant_term = []
+                for term in terms:
+                    placeholder_counter = 0
+                    if term in unused_args and "O" in term.name:
+                        non_redundant_term.append(f"placeholder{placeholder_counter}")
+                        placeholder_counter += 1
+                    else:
+                        non_redundant_term.append(term)
+                if non_redundant_term not in non_redundant_term_list:
+                    non_redundant_term_list.append(non_redundant_term)
+
+        for terms in non_redundant_term_list:
+            for t_i, term in enumerate(terms):
+                if "placeholder" in str(term):
+                    a_index = int(term.split("placeholder")[1])
+                    terms[t_i] = unused_args[a_index]
+            new_atom = Atom(modeb.pred, terms)
+            if not new_atom in clause.body:
+                new_clause = Clause(clause.head, clause.body + [new_atom])
+                C_refined.append(new_clause)
         # self._increment_recall(modeb)
         return list(set(C_refined))
 
@@ -95,41 +112,27 @@ class RefinementGenerator(object):
         Args:
             modeb (ModeDeclaration): A mode declaration for body.
         """
-        used_args = logic_utils.get_clause_used_args(clause)
         assignments_list = []
         term_num = 0
         for mt in modeb.mode_terms:
             if mt.dtype.name == "object":
                 term_num += 1
         for mt in modeb.mode_terms:
-
-            used_assignments = []
             assignments = []
             if mt.mode == '+':
                 # var_candidates = clause.var_all()
                 assignments = clause.all_vars_by_dtype(mt.dtype)
-                used_assignments = []
-                for a in assignments:
-                    if a.name in used_args:
-                        used_assignments.append(a)
-
-                if len(used_assignments) < term_num:
-                    for assignment in assignments:
-                        if assignment.name not in used_assignments:
-                            used_assignments.append(assignment)
-                        if len(used_assignments) == term_num:
-                            break
             elif mt.mode == '-':
                 # get new variable
                 # How to think as candidates? maybe [O3] etc.
                 # we get only object variable e.g. O3
                 # new_var = self.generate_new_variable()
-                used_assignments = [self.generate_new_variable(clause)]
+                assignments = [self.generate_new_variable(clause)]
             elif mt.mode == '#':
                 # consts = self.lang.get_by_dtype(mt.mode.dtype)
-                used_assignments = self.lang.get_by_dtype(mt.dtype)
+                assignments = self.lang.get_by_dtype(mt.dtype)
 
-            assignments_list.append(used_assignments)
+            assignments_list.append(assignments)
         # generate all combinations by cartesian product
         # e.g. [[O2], [red,blue,yellow]]
         # -> [[O2,red],[O2,blue],[O2,yellow]]
