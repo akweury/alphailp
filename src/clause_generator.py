@@ -569,7 +569,7 @@ class ClauseGenerator(object):
         refs = []
         if len(clause_dict['nc']) > 0:
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
-        elif len(clause_dict['sc']) > 0:
+        if len(clause_dict['sc']) > 0:
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
         elif len(clause_dict['uc']) > 0:
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
