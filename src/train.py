@@ -33,7 +33,7 @@ def get_args():
                         default=1, help="Batch size in beam search")
     parser.add_argument("--batch-size-train", type=int,
                         default=10, help="Batch size in nsfr train")
-    parser.add_argument("--e", type=int, default=6,
+    parser.add_argument("--e", type=int, default=10,
                         help="The maximum number of objects in one image")
     parser.add_argument("--dataset", default="red-triangle", help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
