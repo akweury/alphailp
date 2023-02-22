@@ -216,7 +216,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
         print(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss_i}")
 
-        if epoch > 5 and np.abs(loss_list[epoch - 1] - loss_list[epoch]) < stopping_threshold:
+        if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
             break
 
         # print("Predicting on test data set...")
