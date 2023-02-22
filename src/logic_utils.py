@@ -519,6 +519,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     necessary_clusters = []
     sufficient_clusters = []
     ns_clusters = []
+    ns_85_clusters = []
     other_clusters = []
     # TODO: parallel programming
 
@@ -538,6 +539,8 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         cluster_clause_score = p_clause_signs[0][1].reshape(4)
         if cluster_clause_score[1] == total_score:
             ns_clusters.append([clause_cluster, cluster_clause_score])
+        elif cluster_clause_score[1] / total_score > 0.80:
+            ns_85_clusters.append([clause_cluster, cluster_clause_score])
         elif cluster_clause_score[1] + cluster_clause_score[3] == total_score:
             necessary_clusters.append([clause_cluster, cluster_clause_score])
         elif cluster_clause_score[0] + cluster_clause_score[1] == total_score and cluster_clause_score[1] > \
@@ -549,7 +552,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     # necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
     # ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
 
-    return necessary_clusters, ns_clusters
+    return necessary_clusters, ns_clusters, ns_85_clusters
 
 
 def sub_clause_of(clause_a, clause_b):

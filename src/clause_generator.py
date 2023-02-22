@@ -1065,12 +1065,13 @@ class PIClauseGenerator(object):
         return pi_clauses, pi_predicates
 
     def cluster_invention(self, clause_candidates, total_score, args):
-        n_clause_clusters, ns_clause_clusters = logic_utils.search_independent_clauses_parallel(clause_candidates,
+        n_clause_clusters, ns_clause_clusters, ns_85_clause_clusters = logic_utils.search_independent_clauses_parallel(clause_candidates,
                                                                                                 total_score, args)
         if len(ns_clause_clusters) > 0:
             found_ns = True
             new_predicates = self.generate_new_predicate(ns_clause_clusters)
-
+        elif len(ns_85_clause_clusters)>0:
+            new_predicates = self.generate_new_predicate(ns_85_clause_clusters)
         elif len(n_clause_clusters) > 0:
             new_predicates = self.generate_new_predicate(n_clause_clusters)
         else:
