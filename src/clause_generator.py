@@ -293,7 +293,7 @@ class ClauseGenerator(object):
             # refs = self.select_all_refs(clause_dict)
             step += 1
 
-        self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"])
+        self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"], clause_dict["sn_good"], args)
 
         return clause_dict
 
@@ -563,11 +563,14 @@ class ClauseGenerator(object):
         chart_utils.plot_4_zone(False, new_clauses, clause_scores_full, step)
         return clause_dict
 
-    def print_clauses(self, sc, sn, nc):
+    def print_clauses(self, sc, sn, nc, sn_good, args):
         print('\n======= BEAM SEARCHED CLAUSES ======')
         if len(sn) > 0:
             for c in sn:
                 print(f"sufficient and necessary clause: {c[0]}")
+        if len(sn_good) > 0:
+            for c in sn_good:
+                print(f"sufficient and necessary clause with {args.sn_th}% accuracy: {c[0]}")
         if len(sc) > 0:
             for c in sc:
                 print(f"sufficient clause: {c[0]}")
