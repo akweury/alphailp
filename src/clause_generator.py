@@ -861,7 +861,7 @@ class PIClauseGenerator(object):
                     if len(obsolete_term) == 0:
                         atoms.append(atom)
                 new_predicate.body.append(atoms)
-            if len(new_predicate.body) > 1:
+            if len(new_predicate.body) >= 1:
                 new_predicates.append([new_predicate, cluster_score])
 
             # # symmetric invent

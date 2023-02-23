@@ -14,4 +14,4 @@ def create_log_file(exp_output_path):
 def add_lines(line_str, log_file):
     print(line_str)
     with open(log_file, "a") as f:
-        f.write(line_str)
+        f.write(line_str + "\n")
