@@ -265,7 +265,7 @@ class ClauseGenerator(object):
 
     def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, min_step=1):
         log_utils.add_lines(f"\n======== beam search iteration {min_step} ========", args.log_file)
-        eval_pred_names = ['kp']
+        eval_pred = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
         # extend clauses
         step = 0
@@ -281,8 +281,7 @@ class ClauseGenerator(object):
 
             extended_refs = self.extend_clauses(refs)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses, args)
-            clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step,
-                                                   args)
+            clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred, pos_pred, neg_pred, step, args)
             if (len(clause_dict["sn"]) > 0):
                 break
             elif (len(clause_dict["sn_good"]) > 0):
@@ -529,14 +528,19 @@ class ClauseGenerator(object):
             score = four_scores[c_i]
             if score[1] == self.pos_loader.dataset.__len__():
                 sufficient_necessary_clauses.append((clause, all_scores[c_i]))
+                log_utils.add_lines(f'(sn) {clause}, {four_scores[c_i]}', args.log_file)
             if score[1] / self.pos_loader.dataset.__len__() > args.sn_th:
                 sn_good_clauses.append((clause, all_scores[c_i]))
+                log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
             if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 8:
                 sufficient_clauses.append((clause, all_scores[c_i]))
+                log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
             if score[1] + score[3] == self.pos_loader.dataset.__len__():
                 necessary_clauses.append((clause, all_scores[c_i]))
+                log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
             else:
                 unclassified_clauses.append((clause, all_scores[c_i]))
+                log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
         return sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses, sn_good_clauses
 
     def remove_conflict_clauses(self, refs, pi_clauses, args):
@@ -549,10 +553,10 @@ class ClauseGenerator(object):
             # check duplication
             if not self.is_in_beam(new_clauses, ref):
                 new_clauses.append(ref)
-            else:
-                log_utils.add_lines(f"(already in beam) {ref}", args.log_file)
-        for c in new_clauses:
-            log_utils.add_lines(f"(beam searched clause) {c}", args.log_file)
+            # else:
+            #     log_utils.add_lines(f"(already in beam) {ref}", args.log_file)
+        # for c in new_clauses:
+        #     log_utils.add_lines(f"(beam searched clause) {c}", args.log_file)
         return new_clauses
 
     def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, args):
@@ -697,9 +701,9 @@ class PIClauseGenerator(object):
             nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
         # cluster necessary clauses
-        if len(beam_search_clauses['uc']) < 20:
-            uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
-            log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
+        # if len(beam_search_clauses['uc']) < 20:
+        #     uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
+        #     log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
 
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
         uc_new_predicates = self.prune_predicates(uc_new_predicates)
@@ -1143,26 +1147,26 @@ class PIClauseGenerator(object):
         no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates)
         if len(no_3_zone_only) > 0:
             new_predicates = no_3_zone_only
-        else:
-            new_predicates = new_predicates[:5]
+        # else:
+        #     new_predicates = new_predicates[:5]
 
         first_zone_max = logic_utils.keep_1_zone_max_predicates(new_predicates)
         if len(first_zone_max) > 0:
             new_predicates = first_zone_max
-        else:
-            new_predicates = new_predicates[:5]
+        # else:
+        #     new_predicates = new_predicates[:5]
 
         no_unaligned = logic_utils.remove_unaligned_predicates(new_predicates)
         if len(no_unaligned) > 0:
             new_predicates = no_unaligned
-        else:
-            new_predicates = new_predicates[:5]
+        # else:
+        #     new_predicates = new_predicates[:5]
 
         no_duplicate = logic_utils.remove_duplicate_predicates(new_predicates)
         if len(no_duplicate) > 0:
             new_predicates = no_duplicate
-        else:
-            new_predicates = new_predicates[:5]
+        # else:
+        #     new_predicates = new_predicates[:5]
 
         no_same_four = logic_utils.remove_same_four_score_predicates(new_predicates)
         if not keep_all and len(new_predicates) > 20:
