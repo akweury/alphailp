@@ -347,7 +347,7 @@ class ClauseGenerator(object):
     def is_in_beam(self, B, clause):
         """If score is the same, same predicates => duplication
         """
-
+        # TODO: simplify this segment.
         preds = set([clause.head.pred] + [b.pred for b in clause.body])
         c_terms = set(clause.head.terms + [t for b in clause.body for t in b.terms])
         y = False
@@ -654,11 +654,11 @@ class PIClauseGenerator(object):
         uc_new_predicates = []
 
         # cluster sufficient clauses
-        if len(beam_search_clauses['sc']) < 100:
+        if len(beam_search_clauses['sc']) < 100 and len(beam_search_clauses['sc'] > 0):
             sc_new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
 
-        if len(beam_search_clauses['nc']) < 100:
+        elif len(beam_search_clauses['nc']) < 100:
             nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
         # cluster necessary clauses
