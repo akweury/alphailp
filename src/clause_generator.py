@@ -673,6 +673,7 @@ class PIClauseGenerator(object):
 
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
         uc_new_predicates = self.prune_predicates(uc_new_predicates)
+        nc_new_predicates = self.prune_predicates(nc_new_predicates)
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
