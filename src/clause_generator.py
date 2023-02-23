@@ -629,7 +629,7 @@ class ClauseGenerator(object):
             bs_clause_pred = set([beam_clause.head.pred] + [b.pred for b in beam_clause.body])
             # bs_body_sorted = sorted(beam_clause.body)
             # bs_clause_terms = beam_clause.head.terms + [t for b in bs_body_sorted for t in b.terms]
-            if clause_preds == bs_clause_pred and scores[c_i] == scores[bc_i]:
+            if clause_preds == bs_clause_pred and torch.equal(scores[c_i], scores[bc_i]):
                 y = True
                 # print("duplicated: ", clause, ci)
                 break
