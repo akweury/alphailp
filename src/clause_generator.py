@@ -348,13 +348,15 @@ class ClauseGenerator(object):
         """If score is the same, same predicates => duplication
         """
         # TODO: simplify this segment.
-        preds = set([clause.head.pred] + [b.pred for b in clause.body])
-        c_terms = set(clause.head.terms + [t for b in clause.body for t in b.terms])
+        clause_preds = set([clause.head.pred] + [b.pred for b in clause.body])
+        clause_body_sorted = sorted(clause.body)
+        clause_terms = clause.head.terms + [t for b in clause_body_sorted for t in b.terms]
         y = False
-        for ci in B:
-            preds_i = set([ci.head.pred] + [b.pred for b in ci.body])
-            ci_terms = set(ci.head.terms + [t for b in ci.body for t in b.terms])
-            if preds == preds_i and c_terms == ci_terms:
+        for beam_clause in B:
+            bs_clause_pred = set([beam_clause.head.pred] + [b.pred for b in beam_clause.body])
+            bs_body_sorted = sorted(beam_clause.body)
+            bs_clause_terms = beam_clause.head.terms + [t for b in bs_body_sorted for t in b.terms]
+            if clause_preds == bs_clause_pred and clause_terms == bs_clause_terms:
                 y = True
                 # print("duplicated: ", clause, ci)
                 break
