@@ -514,7 +514,16 @@ class ClauseGenerator(object):
         sufficient_clauses = []
         unclassified_clauses = []
         sn_good_clauses = []
-        for c_i, clause in enumerate(clauses):
+
+        new_clauses = []
+        for i, ref in enumerate(clauses):
+            # check duplication
+            if not self.is_in_beam_same_score(new_clauses, ref, i, four_scores):
+                new_clauses.append(ref)
+            else:
+                log_utils.add_lines(f"(same score clause) {ref}", args.log_file)
+
+        for c_i, clause in enumerate(new_clauses):
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
             #     good_clauses.append((clause, scores))
             score = four_scores[c_i]
@@ -606,6 +615,25 @@ class ClauseGenerator(object):
         refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
         refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
         return refs
+
+    def is_in_beam_same_score(self, B, clause, c_i, scores):
+
+        """If score is the same, same predicates => duplication
+        """
+        # TODO: simplify this segment.
+        clause_preds = set([clause.head.pred] + [b.pred for b in clause.body])
+        # clause_body_sorted = sorted(clause.body)
+        # clause_terms = clause.head.terms + [t for b in clause_body_sorted for t in b.terms]
+        y = False
+        for bc_i, beam_clause in enumerate(B):
+            bs_clause_pred = set([beam_clause.head.pred] + [b.pred for b in beam_clause.body])
+            # bs_body_sorted = sorted(beam_clause.body)
+            # bs_clause_terms = beam_clause.head.terms + [t for b in bs_body_sorted for t in b.terms]
+            if clause_preds == bs_clause_pred and scores[c_i] == scores[bc_i]:
+                y = True
+                # print("duplicated: ", clause, ci)
+                break
+        return y
 
 
 def count_arity_from_clause_cluster(clause_cluster):
