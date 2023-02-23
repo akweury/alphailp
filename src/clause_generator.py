@@ -532,10 +532,10 @@ class ClauseGenerator(object):
             if score[1] / self.pos_loader.dataset.__len__() > args.sn_th:
                 sn_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-            if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 2:
+            elif score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 2:
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
-            if score[1] + score[3] == self.pos_loader.dataset.__len__():
+            elif score[1] + score[3] == self.pos_loader.dataset.__len__():
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
             else:
@@ -697,9 +697,9 @@ class PIClauseGenerator(object):
             sc_new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
 
-        elif len(beam_search_clauses['nc']) < 100:
-            nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
-            log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
+        # elif len(beam_search_clauses['nc']) < 100:
+        #     nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
+        #     log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
         # cluster necessary clauses
         # if len(beam_search_clauses['uc']) < 20:
         #     uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
@@ -1128,16 +1128,18 @@ class PIClauseGenerator(object):
         return pi_clauses, pi_predicates
 
     def cluster_invention(self, clause_candidates, total_score, args):
-        n_clause_clusters, ns_clause_clusters, ns_85_clause_clusters = logic_utils.search_independent_clauses_parallel(
+        n_clu, sn_clu, s_clu, sn_th_clu, nc_th_clu, sc_th_clu = logic_utils.search_independent_clauses_parallel(
             clause_candidates,
             total_score, args)
-        if len(ns_clause_clusters) > 0:
+        if len(sn_clu) > 0:
             found_ns = True
-            new_predicates = self.generate_new_predicate(ns_clause_clusters)
-        elif len(ns_85_clause_clusters) > 0:
-            new_predicates = self.generate_new_predicate(ns_85_clause_clusters)
-        elif len(n_clause_clusters) > 0:
-            new_predicates = self.generate_new_predicate(n_clause_clusters)
+            new_predicates = self.generate_new_predicate(sn_clu)
+        elif len(sn_th_clu) > 0:
+            new_predicates = self.generate_new_predicate(sn_th_clu)
+        elif len(n_clu) > 0:
+            new_predicates = self.generate_new_predicate(n_clu)
+        elif len(nc_th_clu) > 0:
+            new_predicates = self.generate_new_predicate(nc_th_clu)
         else:
             new_predicates = []
         return new_predicates
