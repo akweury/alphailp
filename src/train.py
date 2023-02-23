@@ -23,6 +23,8 @@ import facts_converter
 from percept import YOLOPerceptionModule
 from valuation import YOLOValuationModule, PIValuationModule
 import chart_utils
+import log_utils
+
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
 
@@ -216,7 +218,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         loss_list.append(loss_i)
         rtpt.step(subtitle=f"loss={loss_i:2.2f}")
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
-        print(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss_i}")
+        log_utils.add_lines(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss_i}", args.log_file)
 
         if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
             break
@@ -230,23 +232,24 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         # NSFR.print_program()
         if epoch % 20 == 0:
             NSFR.print_program()
-            print("Predicting on validation data set...")
+            log_utils.add_lines("Predicting on validation data set...", args.log_file)
+
             acc_val, rec_val, th_val = predict(NSFR, pm_prediction_dict['val_pos'],
                                                pm_prediction_dict['val_neg'], args, th=0.33, split='val')
             writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
-            print("acc_val: ", acc_val)
+            log_utils.add_lines(f"acc_val:{acc_val} ", args.log_file)
+            log_utils.add_lines("Predi$\alpha$ILPcting on training data set...", args.log_file)
 
-            print("Predi$\alpha$ILPcting on training data set...")
             acc, rec, th = predict(NSFR, pm_prediction_dict['train_pos'],
                                    pm_prediction_dict['train_neg'], args, th=th_val, split='train')
             writer.add_scalar("metric/train_acc", acc, global_step=epoch)
-            print("acc_train: ", acc)
+            log_utils.add_lines(f"acc_train: {acc}", args.log_file)
+            log_utils.add_lines(f"Predicting on test data set...", args.log_file)
 
-            print("Predicting on test data set...")
             acc, rec, th = predict(NSFR, pm_prediction_dict['test_pos'],
                                    pm_prediction_dict['test_neg'], args, th=th_val, split='train')
             writer.add_scalar("metric/test_acc", acc, global_step=epoch)
-            print("acc_test: ", acc)
+            log_utils.add_lines(f"acc_test: {acc}", args.log_file)
 
     return loss
 
@@ -284,45 +287,47 @@ def train_pi(args, PI, optimizer, train_loader, val_loader, test_loader, device,
         loss_list.append(loss_i)
         rtpt.step(subtitle=f"loss={loss_i:2.2f}")
         writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
-        print("loss: ", loss_i)
+        log_utils.add_lines(f"loss: {loss_i}", args.log_file)
+
         # NSFR.print_program()
         if epoch % 20 == 0:
             PI.print_program()
-            print("Predicting on validation data set...")
+            log_utils.add_lines(f"Predicting on validation data set...", args.log_file)
+
             acc_val, rec_val, th_val = predict(PI, val_loader, args, device, th=0.33, split='val')
             writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
-            print("acc_val: ", acc_val)
+            log_utils.add_lines(f"acc_val: {acc_val}", args.log_file)
+            log_utils.add_lines(f"Predicting on training data set...", args.log_file)
 
-            print("Predicting on training data set...")
             acc, rec, th = predict(PI, train_loader, args, device, th=th_val, split='train')
             writer.add_scalar("metric/train_acc", acc, global_step=epoch)
-            print("acc_train: ", acc)
+            log_utils.add_lines(f"acc_train: {acc}", args.log_file)
+            log_utils.add_lines(f"Predicting on test data set...", args.log_file)
 
-            print("Predicting on test data set...")
             acc, rec, th = predict(PI, test_loader, args, device, th=th_val, split='train')
             writer.add_scalar("metric/test_acc", acc, global_step=epoch)
-            print("acc_test: ", acc)
+            log_utils.add_lines(f"acc_test: {acc}", args.log_file)
 
     return loss
 
 
 def final_evaluation(NSFR, pm_prediction_dict, args):
     # validation split
-    print("Predicting on validation data set...")
+    log_utils.add_lines(f"Predicting on validation data set...", args.log_file)
     acc_val, rec_val, th_val = predict(NSFR, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
                                        args, th=0.33, split='val')
     # training split
-    print("Predicting on training data set...")
+    log_utils.add_lines(f"Predicting on training data set...", args.log_file)
     acc, rec, th = predict(NSFR, pm_prediction_dict["train_pos"], pm_prediction_dict["train_neg"],
                            args, th=th_val, split='train')
     # test split
-    print("Predicting on test data set...")
+    log_utils.add_lines(f"Predicting on test data set...", args.log_file)
     acc_test, rec_test, th_test = predict(NSFR, pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"],
                                           args, th=th_val, split='test')
 
-    print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
-    print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
-    print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)
+    log_utils.add_lines(f"training acc: {acc}, threshold: {th}, recall: {rec}", args.log_file)
+    log_utils.add_lines(f"val acc: {acc_val}, threshold: {th_val}, recall: {rec_val}", args.log_file)
+    log_utils.add_lines(f"test acc: {acc_test}, threshold: {th_test}, recall: {rec_test}", args.log_file)
 
 
 def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_loader, train_neg_loader,
@@ -427,7 +432,14 @@ def main(n):
             name = str(Path('CH') / Path(f"/aILP_{args.dataset}_{str(n)}"))
         else:
             name = str(Path('CH') / f"aILP-noXIL_{args.dataset}_{str(n)}")
-    print('args ', args)
+
+    exp_output_path = config.buffer_path / args.dataset
+    if not os.path.exists(exp_output_path):
+        os.mkdir(exp_output_path)
+    log_file = log_utils.create_log_file(exp_output_path)
+    args.log_file = log_file
+    log_utils.add_lines(f"args: {args}", log_file)
+
     if args.no_cuda:
         args.device = torch.device('cpu')
     elif len(args.device.split(',')) > 1:
@@ -436,7 +448,7 @@ def main(n):
     else:
         args.device = torch.device('cuda:' + str(args.device))
 
-    print('device: ', args.device)
+    log_utils.add_lines(f"device: {args.device}", log_file)
 
     if args.no_pi:
         args.pi_epochs = 1
@@ -466,10 +478,6 @@ def main(n):
     args.lark_path = lark_path
     lang_base_path = config.root / 'data' / 'lang'
     args.lang_base_path = lang_base_path
-
-    exp_output_path = config.buffer_path / args.dataset
-    if not os.path.exists(exp_output_path):
-        os.mkdir(exp_output_path)
 
     # main program
     NSFR = train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path)

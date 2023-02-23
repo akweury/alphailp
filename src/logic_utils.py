@@ -8,6 +8,7 @@ from fol.data_utils import DataUtils
 from fol.language import DataType
 
 import config
+import log_utils
 
 p_ = Predicate('.', 1, [DataType('spec')])
 false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
@@ -954,23 +955,23 @@ def check_accuracy(clause_scores_full, pair_num):
     return accuracy
 
 
-def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step):
+def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, args):
     target_has_been_found = False
     clause_accuracy = check_accuracy(clause_scores, total_score)
-    print(
-        f"(BS Step {step}) sn_c: {len(clause_dict['sn'])}, n_c: {len(clause_dict['nc'])}, s_c: {len(clause_dict['sc'])}.")
+    log_utils.add_lines(
+        f"(BS Step {step}) sn_c: {len(clause_dict['sn'])}, n_c: {len(clause_dict['nc'])}, s_c: {len(clause_dict['sc'])}.",
+        args.log_file)
     if clause_accuracy.max() == 1.0:
-        print(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}")
+        log_utils.add_lines(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}", args.log_file)
         target_has_been_found = True
         c_indices = [np.argmax(clause_accuracy)]
         for c_i in c_indices:
-            print(clauses[c_i])
-
+            log_utils.add_lines(clauses[c_i], args.log_file)
     else:
-        print(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}")
+        log_utils.add_lines(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}", args.log_file)
         c_indices = [np.argmax(clause_accuracy)]
         for c_i in c_indices:
-            print(f"{clauses[c_i]}, {clause_scores[c_i]}")
+            log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
     return target_has_been_found
 
 

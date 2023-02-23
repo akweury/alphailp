@@ -17,7 +17,7 @@ import config
 import logic_utils
 from fol.language import Language, DataType
 import fol.logic as logic
-
+import log_utils
 import datetime
 
 
@@ -264,7 +264,7 @@ class ClauseGenerator(object):
         return refs
 
     def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, min_step=1):
-        print(f"\n======== beam search iteration {min_step} ========")
+        log_utils.add_lines(f"\n======== beam search iteration {min_step} ========", args.log_file)
         eval_pred_names = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
         # extend clauses
@@ -274,11 +274,11 @@ class ClauseGenerator(object):
         # while (len(clause_dict["sc"]) == 0 and len(clause_dict["sn"]) == 0 and step < T_beam) or step <= min_step:
         while step <= min_step:
 
-            if step == break_step:
-                print("break")
+            # log
             date_now = datetime.datetime.today().date()
             time_now = datetime.datetime.now().strftime("%H_%M_%S")
-            print(f"\n({date_now} {time_now}) Step {step}/{min_step}")
+            log_utils.add_lines(f"\n({date_now} {time_now}) Step {step}/{min_step}", args.log_file)
+
             extended_refs = self.extend_clauses(refs)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses)
             clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step,
@@ -544,7 +544,7 @@ class ClauseGenerator(object):
         # evaluate clauses
         if len(new_clauses) == 0:
             return {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
-        print('Evaluating ', len(new_clauses), 'generated clauses.')
+        log_utils.add_lines(f"Evaluating: {len(new_clauses)} generated clauses.", args.log_file)
         self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
                                    self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
         all_predicates_scores, clause_scores_full = logic_utils.eval_predicates(self.NSFR, self.args,
@@ -557,29 +557,31 @@ class ClauseGenerator(object):
         clause_dict = {"sn": sn_c, "nc": nc, "sc": sc, "uc": uc, "sn_good": sn_good_c}
 
         # print best clauses that have been found...
-        logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full, pos_pred.size(0), step)
+        logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full, pos_pred.size(0), step, args)
         chart_utils.plot_4_zone(False, new_clauses, clause_scores_full, step)
         return clause_dict
 
     def print_clauses(self, sc, sn, nc, sn_good, args):
-        print('\n======= BEAM SEARCHED CLAUSES ======')
+        log_utils.add_lines('\n======= BEAM SEARCHED CLAUSES ======', args.log_file)
+
         if len(sn) > 0:
             for c in sn:
-                print(f"sufficient and necessary clause: {c[0]}")
+                log_utils.add_lines(f"sufficient and necessary clause: {c[0]}", args.log_file)
         if len(sn_good) > 0:
             for c in sn_good:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
-                print(f"sufficient and necessary clause with {args.sn_th}% accuracy: {c[0]}, {score}")
+                log_utils.add_lines(f"sufficient and necessary clause with {args.sn_th}% accuracy: {c[0]}, {score}",
+                                    args.log_file)
         if len(sc) > 0:
             for c in sc:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
-                print(f"sufficient clause: {c[0]}, {score}")
+                log_utils.add_lines(f"sufficient clause: {c[0]}, {score}", args.log_file)
         if len(nc) > 0:
             for c in nc:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
-                print(f"necessary clause: {c[0]}, {score}")
+                log_utils.add_lines(f"necessary clause: {c[0]}, {score}", args.log_file)
 
-        print('============= Beam search End ===================\n')
+        log_utils.add_lines('============= Beam search End ===================\n', args.log_file)
 
     def update_refs(self, clause_dict):
         refs = []
@@ -648,16 +650,21 @@ class PIClauseGenerator(object):
 
         # generate new clauses
         sc_new_predicates = []
+        nc_new_predicates = []
         uc_new_predicates = []
 
         # cluster sufficient clauses
         if len(beam_search_clauses['sc']) < 100:
             sc_new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
-            print(f"new pi from sc: {len(sc_new_predicates)}")
+            log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}", args.log_file)
 
+        if len(beam_search_clauses['nc']) < 100:
+            nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
+            log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}", args.log_file)
         # cluster necessary clauses
         if len(beam_search_clauses['uc']) < 20:
             uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
+            log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}", args.log_file)
 
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
         uc_new_predicates = self.prune_predicates(uc_new_predicates)
@@ -675,23 +682,20 @@ class PIClauseGenerator(object):
         # passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
         # # passed_pi_languages = passed_pi_languages[:5]
         #
-        passed_pi_clauses, passed_pi_predicates = self.extract_pi(pi_languages)
-
-        print("====== ", len(passed_pi_predicates), " PI predicates are generated!! ======")
-        # for pred in passed_pi_predicates:
-        #     print(pred)
-        print("====== ", len(passed_pi_clauses), " PI clauses are generated!! ======")
+        passed_pi_clauses, passed_pi_predicates = self.extract_pi(pi_languages, args)
+        log_utils.add_lines(f"======  {len(passed_pi_predicates)} PI predicates are generated!! ======", args.log_file)
+        log_utils.add_lines(f"======  {len(passed_pi_clauses)} PI predicates are generated!! ======", args.log_file)
         for c in passed_pi_clauses:
-            print(c)
+            log_utils.add_lines(f"{c}", args.log_file)
         if len(passed_pi_predicates) > 0:
             self.lang.invented_preds = passed_pi_predicates
 
         return passed_pi_clauses, found_ns
 
-    def eval_multi_clauses(self, clauses, pos_pred, neg_pred):
+    def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
 
         C = len(clauses)
-        print("Eval clauses: ", len(clauses))
+        log_utils.add_lines(f"Eval clauses: {len(clauses)}", args.log_file)
         # update infer module with new clauses
         # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
         pi_clauses = []
@@ -1064,7 +1068,7 @@ class PIClauseGenerator(object):
         # passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
         # unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
 
-    def extract_pi(self, passed_pi_languages):
+    def extract_pi(self, passed_pi_languages, args):
 
         pi_clauses = []
         pi_predicates = []
@@ -1074,7 +1078,8 @@ class PIClauseGenerator(object):
                 if c not in pi_clauses:
                     pi_clauses.append(c)
                 else:
-                    print(f"duplicate pi clause {c}")
+                    log_utils.add_lines(f"duplicate pi clause {c}", args.log_file)
+
             for p in passed_lang.invented_preds:
                 if p not in pi_predicates:
                     pi_predicates.append(p)
