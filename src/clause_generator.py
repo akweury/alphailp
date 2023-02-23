@@ -669,8 +669,6 @@ class PIClauseGenerator(object):
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
         uc_new_predicates = self.prune_predicates(uc_new_predicates)
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates
-        if step == 0:
-            new_predicates = []
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
@@ -862,9 +860,12 @@ class PIClauseGenerator(object):
                     if len(obsolete_term) == 0:
                         atoms.append(atom)
                 new_predicate.body.append(atoms)
-            if len(new_predicate.body) >= 1:
+            if len(new_predicate.body) > 1:
                 new_predicates.append([new_predicate, cluster_score])
-
+            elif len(new_predicate.body) == 1:
+                body = (new_predicate.body)[0]
+                if len(body) > new_predicate.arity + 1:
+                    new_predicates.append([new_predicate, cluster_score])
             # # symmetric invent
             # new_sym_predicate = self.lang.get_new_invented_predicate(arity=arity, pi_dtypes=dtypes)
             # symmetry_bodies = []
