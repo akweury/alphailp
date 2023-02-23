@@ -548,16 +548,16 @@ class ClauseGenerator(object):
         refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses, args)
         refs_non_trivial = logic_utils.remove_trivial_clauses(refs_non_conflict, args)
         # remove duplicate clauses
-        new_clauses = []
-        for i, ref in enumerate(refs_non_trivial):
-            # check duplication
-            if not self.is_in_beam(new_clauses, ref):
-                new_clauses.append(ref)
+        # new_clauses = []
+        # for i, ref in enumerate(refs_non_trivial):
+        #     # check duplication
+        #     if not self.is_in_beam(new_clauses, ref):
+        #         new_clauses.append(ref)
             # else:
             #     log_utils.add_lines(f"(already in beam) {ref}", args.log_file)
         # for c in new_clauses:
         #     log_utils.add_lines(f"(beam searched clause) {c}", args.log_file)
-        return new_clauses
+        return refs_non_trivial
 
     def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, args):
         # evaluate clauses
