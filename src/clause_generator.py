@@ -519,8 +519,8 @@ class ClauseGenerator(object):
             # check duplication
             if not self.is_in_beam_same_score(new_clauses, ref, i, four_scores):
                 new_clauses.append(ref)
-            else:
-                log_utils.add_lines(f"(same score clause) {ref}", args.log_file)
+            # else:
+            #     log_utils.add_lines(f"(same score clause) {ref}", args.log_file)
 
         for c_i, clause in enumerate(new_clauses):
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
@@ -532,7 +532,7 @@ class ClauseGenerator(object):
             if score[1] / self.pos_loader.dataset.__len__() > args.sn_th:
                 sn_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-            if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 8:
+            if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 2:
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
             if score[1] + score[3] == self.pos_loader.dataset.__len__():
