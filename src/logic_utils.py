@@ -281,22 +281,9 @@ def change_pi_body_names(pi_clauses):
     return pi_clauses
 
 
-def remove_conflict_clauses(clauses, pi_clauses):
+def remove_conflict_clauses(clauses, pi_clauses, args):
     # print("\nCheck for conflict clauses...")
     clause_ordered = []
-
-    # for c_i, clause in enumerate(clauses):
-    #     ordered = True
-    #     for b_i, b in enumerate(clause.body):
-    #         if "at_area" in b.pred.name or "inv_pred" in b.pred.name:
-    #             if not b.terms[0].name == "O1" or not b.terms[1].name == "O2":
-    #                 ordered = False
-    #         # if "color" in b.pred.name or "shape" in b.pred.name:
-    #         #     if not b.terms[0].name == "O1":
-    #         #         ordered = False
-    #     if ordered:
-    #         clause_ordered.append(clause)
-
     non_conflict_clauses = []
     for clause in clauses:
         is_conflict = False
@@ -345,6 +332,8 @@ def remove_conflict_clauses(clauses, pi_clauses):
 
         if not is_conflict:
             non_conflict_clauses.append(clause)
+        else:
+            log_utils.add_lines(f"(conflict clause) {clause}", args.log_file)
 
     return non_conflict_clauses
 
@@ -985,13 +974,15 @@ def extract_clauses_from_bs_clauses(bs_clauses):
     return clauses
 
 
-def remove_trivial_clauses(refs_non_conflict):
+def remove_trivial_clauses(refs_non_conflict, args):
     non_trivial_clauses = []
     for ref in refs_non_conflict:
         preds = get_pred_names_from_clauses(ref)
 
         if not is_trivial_preds(preds):
             non_trivial_clauses.append(ref)
+        else:
+            log_utils.add_lines(f"(trivial clause) {ref}", args.log_file)
     return non_trivial_clauses
 
 

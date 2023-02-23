@@ -280,7 +280,7 @@ class ClauseGenerator(object):
             log_utils.add_lines(f"\n({date_now} {time_now}) Step {step}/{min_step}", args.log_file)
 
             extended_refs = self.extend_clauses(refs)
-            removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses)
+            removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses, args)
             clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred_names, pos_pred, neg_pred, step,
                                                    args)
             if (len(clause_dict["sn"]) > 0):
@@ -528,16 +528,20 @@ class ClauseGenerator(object):
                 unclassified_clauses.append((clause, all_scores[c_i]))
         return sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses, sn_good_clauses
 
-    def remove_conflict_clauses(self, refs, pi_clauses):
+    def remove_conflict_clauses(self, refs, pi_clauses, args):
         # remove conflict clauses
-        refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses)
-        refs_non_trivial = logic_utils.remove_trivial_clauses(refs_non_conflict)
+        refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses, args)
+        refs_non_trivial = logic_utils.remove_trivial_clauses(refs_non_conflict, args)
         # remove duplicate clauses
         new_clauses = []
         for i, ref in enumerate(refs_non_trivial):
             # check duplication
             if not self.is_in_beam(new_clauses, ref):
                 new_clauses.append(ref)
+            else:
+                log_utils.add_lines(f"(already in beam) {ref}", args.log_file)
+        for c in new_clauses:
+            log_utils.add_lines(f"(beam searched clause) {c}", args.log_file)
         return new_clauses
 
     def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, args):
@@ -589,7 +593,8 @@ class ClauseGenerator(object):
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
         if len(clause_dict['sc']) > 0:
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
-        if len(clause_dict['uc']) > 0:
+
+        if len(refs) == 0:
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
         return refs
 
@@ -654,7 +659,7 @@ class PIClauseGenerator(object):
         uc_new_predicates = []
 
         # cluster sufficient clauses
-        if len(beam_search_clauses['sc']) < 100 and len(beam_search_clauses['sc'] > 0):
+        if len(beam_search_clauses['sc']) < 100 and len(beam_search_clauses['sc']) > 0:
             sc_new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
 
