@@ -1129,8 +1129,7 @@ class PIClauseGenerator(object):
 
     def cluster_invention(self, clause_candidates, total_score, args):
         n_clu, sn_clu, s_clu, sn_th_clu, nc_th_clu, sc_th_clu = logic_utils.search_independent_clauses_parallel(
-            clause_candidates,
-            total_score, args)
+            clause_candidates, total_score, args)
         if len(sn_clu) > 0:
             found_ns = True
             new_predicates = self.generate_new_predicate(sn_clu)

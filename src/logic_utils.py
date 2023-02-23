@@ -545,10 +545,8 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         else:
             other_clusters.append([clause_cluster, cluster_clause_score])
 
-    # necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
-    # ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
     sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)[:2]
-    return necessary_clusters, sn_clusters,sufficient_clusters, sn_th_clusters, nc_th_clusters, sc_th_clusters
+    return necessary_clusters, sn_clusters, sufficient_clusters, sn_th_clusters, nc_th_clusters, sc_th_clusters
 
 
 def sub_clause_of(clause_a, clause_b):
