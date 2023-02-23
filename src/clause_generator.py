@@ -515,6 +515,8 @@ class ClauseGenerator(object):
         sufficient_clauses = []
         unclassified_clauses = []
         sn_good_clauses = []
+        sc_good_clauses = []
+        nc_good_clauses = []
 
         new_clauses = []
         for i, ref in enumerate(clauses):
@@ -537,13 +539,22 @@ class ClauseGenerator(object):
             elif score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 0:
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
+
+            elif (score[0] + score[1]) / self.pos_loader.dataset.__len__() > args.sc_th and score[1] > 0:
+                sc_good_clauses.append((clause, all_scores[c_i]))
+                log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
+
             elif score[1] + score[3] == self.pos_loader.dataset.__len__():
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
+            elif (score[1] + score[3]) / self.pos_loader.dataset.__len__() > args.nc_th and score[1] > 0:
+                nc_good_clauses.append((clause, all_scores[c_i]))
+                log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
+
             else:
                 unclassified_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
-        return sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses, sn_good_clauses
+        return sufficient_necessary_clauses, necessary_clauses, sufficient_clauses, unclassified_clauses, sn_good_clauses, nc_good_clauses, sc_good_clauses
 
     def remove_conflict_clauses(self, refs, pi_clauses, args):
         # remove conflict clauses
@@ -555,8 +566,8 @@ class ClauseGenerator(object):
         #     # check duplication
         #     if not self.is_in_beam(new_clauses, ref):
         #         new_clauses.append(ref)
-            # else:
-            #     log_utils.add_lines(f"(already in beam) {ref}", args.log_file)
+        # else:
+        #     log_utils.add_lines(f"(already in beam) {ref}", args.log_file)
         # for c in new_clauses:
         #     log_utils.add_lines(f"(beam searched clause) {c}", args.log_file)
         return refs_non_trivial
@@ -564,7 +575,7 @@ class ClauseGenerator(object):
     def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, args):
         # evaluate clauses
         if len(new_clauses) == 0:
-            return {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
+            return {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": [], "sc_good": [], "nc_good": []}
         log_utils.add_lines(f"Evaluating: {len(new_clauses)} generated clauses.", args.log_file)
         self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
                                    self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
@@ -573,9 +584,11 @@ class ClauseGenerator(object):
                                                                                 neg_pred)
 
         # classify clauses
-        sn_c, nc, sc, uc, sn_good_c = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores,
-                                                            args)
-        clause_dict = {"sn": sn_c, "nc": nc, "sc": sc, "uc": uc, "sn_good": sn_good_c}
+        sn_c, nc, sc, uc, sn_good_c, nc_good_c, sc_good_c = self.classify_clauses(new_clauses, clause_scores_full,
+                                                                                  all_predicates_scores,
+                                                                                  args)
+        clause_dict = {"sn": sn_c, "nc": nc, "sc": sc, "uc": uc, "sn_good": sn_good_c,
+                       "nc_good": nc_good_c, 'sc_good': sc_good_c}
 
         # print best clauses that have been found...
         logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full, pos_pred.size(0), step, args)
@@ -608,8 +621,12 @@ class ClauseGenerator(object):
         refs = []
         if len(clause_dict['nc']) > 0:
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
+        elif len(clause_dict['nc_good']) > 0:
+            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
         if len(clause_dict['sc']) > 0:
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
+        if len(clause_dict['sc_good']) > 0:
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
 
         if len(refs) == 0:
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
