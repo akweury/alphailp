@@ -640,7 +640,7 @@ class PIClauseGenerator(object):
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
 
-    def generate(self, beam_search_clauses, pos_pred, neg_pred, args):
+    def generate(self, beam_search_clauses, pos_pred, neg_pred, args, step):
         found_ns = False
         # evaluate for all the clauses
         # clause_image_scores = self.eval_multi_clauses(beam_search_clauses, pos_pred, neg_pred)  # time-consuming line
@@ -669,7 +669,8 @@ class PIClauseGenerator(object):
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
         uc_new_predicates = self.prune_predicates(uc_new_predicates)
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates
-
+        if step == 0:
+            new_predicates = []
         # convert to strings
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
