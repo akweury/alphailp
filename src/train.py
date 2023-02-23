@@ -393,7 +393,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     # loop for predicate invention
     # found_ns = False
 
-    for i in range(0, args.t_beam):
+    for i in range(3, args.t_beam):
         # if generate new predicates, start the bs deep from 0
         # if len(new_pi_clauses) > 0:
         #     i = 2
