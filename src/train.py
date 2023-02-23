@@ -60,6 +60,8 @@ def get_args():
                         help="Plot images with captions.")
     parser.add_argument("--t-beam", type=int, default=4,
                         help="Number of rule expantion of clause generation.")
+    parser.add_argument("--min-beam", type=int, default=0,
+                        help="The size of the minimum beam.")
     parser.add_argument("--n-beam", type=int, default=5,
                         help="The size of the beam.")
     parser.add_argument("--n-max", type=int, default=50,
@@ -393,7 +395,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     # loop for predicate invention
     # found_ns = False
 
-    for i in range(3, args.t_beam):
+    for i in range(args.min_beam, args.t_beam):
         # if generate new predicates, start the bs deep from 0
         # if len(new_pi_clauses) > 0:
         #     i = 2
