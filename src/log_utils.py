@@ -26,7 +26,7 @@ def get_unused_args(c):
     for body in c.body:
         if not "in" in body.pred.name:
             for term in body.terms:
-                if "O" in term.name and term.name not in used_args:
+                if "O" in term.name and term not in used_args:
                     unused_args.remove(term)
                     used_args.append(term)
     return unused_args, used_args
