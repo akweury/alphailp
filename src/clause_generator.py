@@ -248,17 +248,19 @@ class ClauseGenerator(object):
     #                 return True
     #     return False
 
-    def extend_clauses(self, clauses):
+    def extend_clauses(self, clauses, args):
         refs = []
         B_ = []
         for c in clauses:
             refs_i = self.rgen.refinement_clause(c)
+            unused_args, used_args = log_utils.get_unused_args(c)
+            refs_i_removed = logic_utils.remove_duplicate_clauses(refs_i, unused_args, used_args, args)
             # remove invalid clauses
             ###refs_i = [x for x in refs_i if self._is_valid(x)]
             # remove already appeared refs
-            refs_i = list(set(refs_i).difference(set(B_)))
-            B_.extend(refs_i)
-            refs.extend(refs_i)
+            refs_i_removed = list(set(refs_i_removed).difference(set(B_)))
+            B_.extend(refs_i_removed)
+            refs.extend(refs_i_removed)
             # if self._is_valid(c) and not self._is_confounded(c):
             #     C = C.union(set([c]))
         return refs
@@ -279,7 +281,7 @@ class ClauseGenerator(object):
             time_now = datetime.datetime.now().strftime("%H_%M_%S")
             log_utils.add_lines(f"\n({date_now} {time_now}) Step {step}/{min_step}", args.log_file)
 
-            extended_refs = self.extend_clauses(refs)
+            extended_refs = self.extend_clauses(refs, args)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses, args)
             clause_dict = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred, pos_pred, neg_pred, step, args)
             if (len(clause_dict["sn"]) > 0):

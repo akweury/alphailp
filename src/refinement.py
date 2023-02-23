@@ -92,14 +92,15 @@ class RefinementGenerator(object):
                 # if non_redundant_term not in non_redundant_term_list:
                 #     non_redundant_term_list.append(non_redundant_term)
 
-        # for terms in non_redundant_term_list:
-        #     for t_i, term in enumerate(terms):
-        #         if "placeholder" in str(term):
-        #             a_index = int(term.split("placeholder")[1])
-        #             terms[t_i] = unused_args[a_index]
+                # for terms in non_redundant_term_list:
+                #     for t_i, term in enumerate(terms):
+                #         if "placeholder" in str(term):
+                #             a_index = int(term.split("placeholder")[1])
+                #             terms[t_i] = unused_args[a_index]
                 new_atom = Atom(modeb.pred, terms)
                 if not new_atom in clause.body:
-                    new_clause = Clause(clause.head, clause.body + [new_atom])
+                    body = sorted(clause.body) + sorted([new_atom])
+                    new_clause = Clause(clause.head, body)
                     C_refined.append(new_clause)
         # self._increment_recall(modeb)
         return list(set(C_refined))

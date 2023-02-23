@@ -15,3 +15,20 @@ def add_lines(line_str, log_file):
     print(line_str)
     with open(log_file, "a") as f:
         f.write(line_str + "\n")
+
+
+def get_unused_args(c):
+    unused_args = []
+    used_args = []
+    for body in c.body:
+        if "in" == body.pred.name:
+            unused_args.append(body.terms[0])
+    for body in c.body:
+        if not "in" in body.pred.name:
+            for term in body.terms:
+                if "O" in term.name:
+                    unused_args.remove(term)
+                    used_args.append(term)
+    return unused_args, used_args
+
+
