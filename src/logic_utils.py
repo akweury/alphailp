@@ -1047,8 +1047,6 @@ def remove_same_four_score_predicates(new_predicates):
         if predicate[1].tolist() not in passed_scores:
             passed_scores.append(predicate[1].tolist())
             passed_predicates.append(predicate)
-        else:
-            print(predicate)
     return passed_predicates
 
 

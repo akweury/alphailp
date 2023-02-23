@@ -586,9 +586,9 @@ class ClauseGenerator(object):
         if len(clause_dict['nc']) > 0:
             refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
         if len(clause_dict['sc']) > 0:
-            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
         elif len(clause_dict['uc']) > 0:
-            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
         return refs
 
     def select_all_refs(self, clause_dict):
