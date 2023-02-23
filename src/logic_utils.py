@@ -1075,9 +1075,10 @@ def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
             if "in" != body.pred.name:
                 if "O" not in body.terms[1].name:
                     # predicate with 1 object arg
-                    if not (body.terms[0] == unused_args[0] or body.terms[0] in used_args):
-                        is_duplicate = True
-                        break
+                    if len(unused_args) > 0:
+                        if not (body.terms[0] == unused_args[0] or body.terms[0] in used_args):
+                            is_duplicate = True
+                            break
                     # predicate with 2 object args
                 elif body.terms[0] in unused_args and body.terms[1] in unused_args:
                     if body.terms[0] not in unused_args[:2] and body.terms[1] not in unused_args:
@@ -1088,5 +1089,5 @@ def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
             non_duplicate_c.append(clause)
             # log_utils.add_lines(f'(non duplicate clause) {clause}', args.log_file)
         # else:
-            # log_utils.add_lines(f'(duplicate clause) {clause}', args.log_file)
+        # log_utils.add_lines(f'(duplicate clause) {clause}', args.log_file)
     return non_duplicate_c

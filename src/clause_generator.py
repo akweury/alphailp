@@ -620,9 +620,10 @@ class ClauseGenerator(object):
     def update_refs(self, clause_dict):
         refs = []
         if len(clause_dict['nc']) > 0:
-            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
         elif len(clause_dict['nc_good']) > 0:
-            refs = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
+
         if len(clause_dict['sc']) > 0:
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
         if len(clause_dict['sc_good']) > 0:
