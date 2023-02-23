@@ -383,7 +383,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     # loop for predicate invention
     # found_ns = False
     while len(clauses) == 0:
-        for i in range(1, args.t_beam):
+        for i in range(0, args.t_beam):
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, bk_clauses, pi_clauses, atoms, bk)
             # generate clauses # time-consuming code
