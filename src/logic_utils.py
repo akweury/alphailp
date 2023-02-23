@@ -306,7 +306,7 @@ def remove_conflict_clauses(clauses, pi_clauses):
                 if "inv_pred" in cb.pred.name:
                     with_pi = True
             if not with_pi:
-                is_conflict = True
+                is_conflict = False
         if with_pi or len(pi_clauses) == 0:
             for i in range(len(clause.body)):
                 if is_conflict:
