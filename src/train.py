@@ -385,10 +385,14 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
     init_clauses = update_initial_clauses(init_clauses, args.n_obj)
     clauses = []
+    new_pi_clauses = []
     # loop for predicate invention
     # found_ns = False
     while len(clauses) == 0:
         for i in range(0, args.t_beam):
+            # if generate new predicates, start the bs deep from 0
+            if len(new_pi_clauses) > 0:
+                i = 1
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, bk_clauses, pi_clauses, atoms, bk)
             # generate clauses # time-consuming code
