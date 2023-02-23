@@ -970,7 +970,7 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step):
         print(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}")
         c_indices = [np.argmax(clause_accuracy)]
         for c_i in c_indices:
-            print(clauses[c_i])
+            print(f"{clauses[c_i]}, {clause_scores[c_i]}")
     return target_has_been_found
 
 
