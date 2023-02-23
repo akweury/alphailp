@@ -1143,18 +1143,26 @@ class PIClauseGenerator(object):
         no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates)
         if len(no_3_zone_only) > 0:
             new_predicates = no_3_zone_only
+        else:
+            new_predicates = new_predicates[:5]
 
         first_zone_max = logic_utils.keep_1_zone_max_predicates(new_predicates)
         if len(first_zone_max) > 0:
             new_predicates = first_zone_max
+        else:
+            new_predicates = new_predicates[:5]
 
         no_unaligned = logic_utils.remove_unaligned_predicates(new_predicates)
         if len(no_unaligned) > 0:
             new_predicates = no_unaligned
+        else:
+            new_predicates = new_predicates[:5]
 
         no_duplicate = logic_utils.remove_duplicate_predicates(new_predicates)
         if len(no_duplicate) > 0:
             new_predicates = no_duplicate
+        else:
+            new_predicates = new_predicates[:5]
 
         no_same_four = logic_utils.remove_same_four_score_predicates(new_predicates)
         if not keep_all and len(new_predicates) > 20:
