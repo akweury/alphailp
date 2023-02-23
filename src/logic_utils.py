@@ -1084,7 +1084,7 @@ def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
 
         if not is_duplicate:
             non_duplicate_c.append(clause)
-            log_utils.add_lines(f'(non duplicate clause) {clause}', args.log_file)
-        else:
-            log_utils.add_lines(f'(duplicate clause) {clause}', args.log_file)
+            # log_utils.add_lines(f'(non duplicate clause) {clause}', args.log_file)
+        # else:
+            # log_utils.add_lines(f'(duplicate clause) {clause}', args.log_file)
     return non_duplicate_c
