@@ -288,8 +288,8 @@ class ClauseGenerator(object):
                 break
             elif (len(clause_dict["sn_good"]) > 0):
                 break
-            refs = self.update_refs(clause_dict)
-            # refs = self.select_all_refs(clause_dict)
+            # refs = self.update_refs(clause_dict)
+            refs = self.select_all_refs(clause_dict)
             step += 1
 
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"], clause_dict["sn_good"], args)
