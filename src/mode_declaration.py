@@ -157,10 +157,10 @@ def get_mode_declarations_kandinsky(lang, obj_num):
         ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_1'), [p_object, p_object]),
         ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_2'), [p_object, p_object]),
         ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_3'), [p_object, p_object]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_4'), [p_object, p_object]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_5'), [p_object, p_object]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_6'), [p_object, p_object]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_7'), [p_object, p_object]),
+        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_4'), [p_object, p_object]),
+        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_5'), [p_object, p_object]),
+        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_6'), [p_object, p_object]),
+        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_7'), [p_object, p_object]),
 
         # ModeDeclaration('body', 1, lang.get_pred_by_name('inv_1'), [p_object, p_object]),
 
