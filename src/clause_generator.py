@@ -638,7 +638,7 @@ class ClauseGenerator(object):
 
         if len(clause_dict['uc_good']) > 0:
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'])
-        elif len(refs) == 0:
+        else:
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
         return refs
 
