@@ -908,7 +908,7 @@ class PIClauseGenerator(object):
 
         return clause_sign_list, clause_score_list, clause_score_full_list
 
-    def generate_new_predicate(self, clause_clusters, clause_type):
+    def generate_new_predicate(self, clause_clusters, clause_type=None):
         new_predicate = None
         # positive_clauses_exchange = [(c[1], c[0]) for c in positive_clauses]
         # no_hn_ = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0 and c[0][3] == 0]
