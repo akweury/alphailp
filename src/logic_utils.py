@@ -970,14 +970,17 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
             log_utils.add_lines(f"{clauses[c_i]}", args.log_file)
     else:
         new_max = clause_accuracy.max()
+        new_max_i = np.argmax(clause_accuracy)
         if new_max > max_clause_score:
             max_clause_score = new_max
             log_utils.add_lines(f"(BS Step {step}) (new) max clause accuracy: {clause_accuracy.max()}", args.log_file)
-        log_utils.add_lines(f"(BS Step {step}) (old) max clause accuracy: {clause_accuracy.max()}", args.log_file)
+        else:
+            log_utils.add_lines(f"(BS Step {step}) (old) max clause accuracy: {clause_accuracy.max()}", args.log_file)
         c_indices = [np.argmax(clause_accuracy)]
         for c_i in c_indices:
+            clause_dict["max_clause"] = clauses[c_i]
             log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
-    return max_clause_score
+    return max_clause_score, clause_dict
 
 
 def extract_clauses_from_bs_clauses(bs_clauses):

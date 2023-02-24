@@ -606,7 +606,7 @@ class ClauseGenerator(object):
         clause_dict = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores, args)
 
         # print best clauses that have been found...
-        new_max = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full, pos_pred.size(0), step,
+        new_max, clause_dict = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full, pos_pred.size(0), step,
                                                  args, max_clause_score)
         chart_utils.plot_4_zone(False, new_clauses, clause_scores_full, step)
         return clause_dict, new_max
