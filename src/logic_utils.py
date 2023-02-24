@@ -482,7 +482,7 @@ def search_independent_clauses(clauses, total_score):
 
 
 def search_independent_clauses_parallel(clauses, total_score, args):
-    print("searching for independent clauses...")
+    print(f"searching for independent clauses from {len(clauses)} clauses...")
     clauses_with_score = []
     for clause_i, [clause, c_scores] in enumerate(clauses):
         clauses_with_score.append([clause_i, clause, c_scores])
