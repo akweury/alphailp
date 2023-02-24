@@ -555,7 +555,7 @@ class ClauseGenerator(object):
                 nc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
 
-            elif score[1] > score[0] and score[1] > score[2] and score[0] > score[3]:
+            elif score[0] / score[1] < args.uc_th and score[2]/ score[1] > args.uc_th and score[3]/ score[0] > args.uc_th:
                 uc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
             else:
