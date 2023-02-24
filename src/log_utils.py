@@ -14,7 +14,7 @@ def create_log_file(exp_output_path):
 def add_lines(line_str, log_file):
     print(line_str)
     with open(log_file, "a") as f:
-        f.write(line_str + "\n")
+        f.write(str(line_str) + "\n")
 
 
 def get_unused_args(c):

@@ -518,15 +518,19 @@ class ClauseGenerator(object):
         sc_good_clauses = []
         nc_good_clauses = []
 
-        new_clauses = []
-        for i, ref in enumerate(clauses):
-            # check duplication
-            if not self.is_in_beam_same_score(new_clauses, ref, i, four_scores):
-                new_clauses.append(ref)
-            # else:
-            #     log_utils.add_lines(f"(same score clause) {ref}", args.log_file)
+        # new_clauses = []
+        # new_four_scores = []
+        # new_all_scores = []
+        # for i, ref in enumerate(clauses):
+        # #     check duplication
+        #     if not self.is_in_beam_same_score(new_clauses, ref, i, four_scores):
+        #         new_clauses.append(ref)
+        #         new_all_scores.append(all_scores[i])
+        #         new_four_scores.append(four_scores[i])
+        #     else:
+        #         log_utils.add_lines(f"(same score clause) {ref}", args.log_file)
 
-        for c_i, clause in enumerate(new_clauses):
+        for c_i, clause in enumerate(clauses):
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
             #     good_clauses.append((clause, scores))
             score = four_scores[c_i]

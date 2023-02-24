@@ -961,7 +961,7 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
         target_has_been_found = True
         c_indices = [np.argmax(clause_accuracy)]
         for c_i in c_indices:
-            log_utils.add_lines(clauses[c_i], args.log_file)
+            log_utils.add_lines(f"{clauses[c_i]}", args.log_file)
     else:
         log_utils.add_lines(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}", args.log_file)
         c_indices = [np.argmax(clause_accuracy)]
