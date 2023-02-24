@@ -327,13 +327,13 @@ def remove_conflict_clauses(clauses, pi_clauses, args):
                         is_conflict = is_conflict_bodies(pi_bodies, clause.body)
                         if is_conflict:
                             break
-                    if "at_are_6" in clause.body[i].pred.name or "at_are_6" in clause.body[j].pred.name:
-                        print("conflict")
+                    # if "at_are_6" in clause.body[i].pred.name or "at_are_6" in clause.body[j].pred.name:
+                    #     print("conflict")
 
         if not is_conflict:
             non_conflict_clauses.append(clause)
-        else:
-            log_utils.add_lines(f"(conflict clause) {clause}", args.log_file)
+        # else:
+        #     log_utils.add_lines(f"(conflict clause) {clause}", args.log_file)
 
     return non_conflict_clauses
 
@@ -993,8 +993,8 @@ def remove_trivial_clauses(refs_non_conflict, args):
 
         if not is_trivial_preds(preds):
             non_trivial_clauses.append(ref)
-        else:
-            log_utils.add_lines(f"(trivial clause) {ref}", args.log_file)
+        # else:
+        #     log_utils.add_lines(f"(trivial clause) {ref}", args.log_file)
     return non_trivial_clauses
 
 
