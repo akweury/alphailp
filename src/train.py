@@ -413,7 +413,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'])
             break
         else:
-            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses["max_clause"])
+            clauses += logic_utils.extract_clauses_from_bs_clauses([bs_clauses["max_clause"]])
         if args.no_pi:
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'])
