@@ -398,14 +398,14 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     new_pi_clauses = []
     # loop for predicate invention
     # found_ns = False
-
+    max_clause_score = 0.0
     for i in range(args.min_beam, args.t_beam):
         # if generate new predicates, start the bs deep from 0
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                init_clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
         bs_clauses = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg, pi_clauses, args,
-                                                               min_step=i)
+                                                               max_clause_score, min_step=i)
         if len(bs_clauses['sn']) > 0:
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
             break
@@ -425,7 +425,6 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             bk_clauses += new_pi_clauses
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
-
 
     NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
     nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
