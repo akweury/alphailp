@@ -612,8 +612,9 @@ class ClauseGenerator(object):
         if len(sn_good) > 0:
             for c in sn_good:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
-                log_utils.add_lines(f"sufficient and necessary clause with {args.sn_th * 100}% accuracy: {c[0]}, {score}",
-                                    args.log_file)
+                log_utils.add_lines(
+                    f"sufficient and necessary clause with {args.sn_th * 100}% accuracy: {c[0]}, {score}",
+                    args.log_file)
         if len(sc) > 0:
             for c in sc:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
@@ -734,9 +735,14 @@ class PIClauseGenerator(object):
         if len(beam_search_clauses['uc_good']) > 0:
             uc_new_predicates = self.cluster_invention(beam_search_clauses["uc_good"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from UC_GOOD: {len(uc_new_predicates)}\n", args.log_file)
-        # else:
-        #     uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
-        #     log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
+        else:
+            if len(beam_search_clauses["uc"]) > 50:
+                top_select = 50
+            else:
+                top_select = None
+            uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args,
+                                                       top_select=top_select)
+            log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
 
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
         uc_new_predicates = self.prune_predicates(uc_new_predicates)
@@ -1161,12 +1167,19 @@ class PIClauseGenerator(object):
                     pi_predicates.append(p)
         return pi_clauses, pi_predicates
 
-    def cluster_invention(self, clause_candidates, total_score, args):
-        clause_candidates_with_scores = []
-        for c_i, c in enumerate(clause_candidates):
-            four_scores = logic_utils.get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
-            clause_candidates_with_scores.append([c, four_scores])
-        clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x:x[1][0][1], reverse=True)
+    def cluster_invention(self, clause_candidates, total_score, args, top_select=None):
+
+        if top_select is not None:
+            clause_candidates_with_scores = []
+            for c_i, c in enumerate(clause_candidates):
+                four_scores = logic_utils.get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
+                clause_candidates_with_scores.append([c, four_scores])
+            clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
+                                                          reverse=True)
+            clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:top_select]
+            clause_candidates = []
+            for c in clause_candidates_with_scores_sorted:
+                clause_candidates.append(c[0])
 
         n_clu, sn_clu, s_clu, sn_th_clu, nc_th_clu, sc_th_clu = logic_utils.search_independent_clauses_parallel(
             clause_candidates, total_score, args)
