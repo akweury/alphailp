@@ -140,7 +140,7 @@ class Language(object):
             raise ValueError('Too many or less match in ' + invented_pred_name)
         return invented_pred[0]
 
-    def get_new_invented_predicate(self, arity, pi_dtypes, args, pi_type):
+    def get_new_invented_predicate(self, arity, pi_dtypes, args, pi_types):
         """Get the predicate by its id.
 
         Args:
@@ -154,7 +154,7 @@ class Language(object):
         self.invented_preds_number += 1
         pred_with_id = prefix + str(new_predicate_id)
         #
-        new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, args, pi_type)
+        new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, args, pi_types)
         # self.invented_preds.append(new_predicate)
         return new_predicate
 
