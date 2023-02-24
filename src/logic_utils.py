@@ -544,6 +544,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
             sufficient_clusters.append([clause_cluster, cluster_clause_score])
         elif (cluster_clause_score[0] + cluster_clause_score[1]) == total_score:
             sc_th_clusters.append([clause_cluster, cluster_clause_score])
+            print(f"sc_th_clusters:{clause_cluster}")
         else:
             other_clusters.append([clause_cluster, cluster_clause_score])
 
