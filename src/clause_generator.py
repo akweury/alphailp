@@ -548,7 +548,7 @@ class ClauseGenerator(object):
                 sc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
 
-            elif score[1] + score[3] == self.pos_loader.dataset.__len__():
+            elif score[1] + score[3] == self.pos_loader.dataset.__len__() and score[1] > score[3]:
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
             elif (score[1] + score[3]) / self.pos_loader.dataset.__len__() > args.nc_th and score[1] > 0:
@@ -728,9 +728,9 @@ class PIClauseGenerator(object):
             sc_new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
 
-        # elif len(beam_search_clauses['nc']) < 100:
-        #     nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
-        #     log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
+        elif len(beam_search_clauses['nc']) < 100:
+            nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
+            log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
         # cluster necessary clauses
         if len(beam_search_clauses['uc_good']) > 0:
             uc_new_predicates = self.cluster_invention(beam_search_clauses["uc_good"], pos_pred.shape[0], args)
