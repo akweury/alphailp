@@ -548,7 +548,12 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         else:
             other_clusters.append([clause_cluster, cluster_clause_score])
 
+    necessary_clusters = sorted(necessary_clusters, key=lambda x: x[1][1], reverse=True)[:2]
+    sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)[:2]
+    sufficient_clusters = sorted(sufficient_clusters, key=lambda x: x[1][1], reverse=True)[:2]
     sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)[:2]
+    nc_th_clusters = sorted(nc_th_clusters, key=lambda x: x[1][1], reverse=True)[:2]
+    sc_th_clusters = sorted(sc_th_clusters, key=lambda x: x[1][1], reverse=True)[:2]
     return necessary_clusters, sn_clusters, sufficient_clusters, sn_th_clusters, nc_th_clusters, sc_th_clusters
 
 
@@ -1089,7 +1094,6 @@ def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
                     if body.terms[0] not in unused_args[:1]:
                         is_duplicate = True
                         break
-
 
         if not is_duplicate:
             non_duplicate_c.append(clause)
