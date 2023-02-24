@@ -201,7 +201,7 @@ class DataUtils(object):
 
         # pred_with_id = pred + f"_{i}"
         pred_with_id = pred
-        invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes, args=None)
+        invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes, args=None, pi_type=None)
 
         return invented_pred
 
