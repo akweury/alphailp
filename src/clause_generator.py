@@ -612,7 +612,7 @@ class ClauseGenerator(object):
         if len(sn_good) > 0:
             for c in sn_good:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
-                log_utils.add_lines(f"sufficient and necessary clause with {args.sn_th}% accuracy: {c[0]}, {score}",
+                log_utils.add_lines(f"sufficient and necessary clause with {args.sn_th * 100}% accuracy: {c[0]}, {score}",
                                     args.log_file)
         if len(sc) > 0:
             for c in sc:
@@ -908,7 +908,7 @@ class PIClauseGenerator(object):
 
         return clause_sign_list, clause_score_list, clause_score_full_list
 
-    def generate_new_predicate(self, clause_clusters):
+    def generate_new_predicate(self, clause_clusters, clause_type):
         new_predicate = None
         # positive_clauses_exchange = [(c[1], c[0]) for c in positive_clauses]
         # no_hn_ = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0 and c[0][3] == 0]
@@ -920,7 +920,8 @@ class PIClauseGenerator(object):
         for pi_index, [clause_cluster, cluster_score] in enumerate(clause_clusters):
             args = count_arity_from_clause_cluster(clause_cluster)
             dtypes = [DataType("object")] * len(args)
-            new_predicate = self.lang.get_new_invented_predicate(arity=len(args), pi_dtypes=dtypes, args=args)
+            new_predicate = self.lang.get_new_invented_predicate(arity=len(args), pi_dtypes=dtypes, args=args,
+                                                                 pi_types=clause_type)
             new_predicate.body = []
             for [c_i, clause, c_score] in clause_cluster:
                 atoms = []
