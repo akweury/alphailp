@@ -979,7 +979,7 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
         max_scoring_clauses = [[clauses[c_i], clause_scores[c_i]] for c_i in c_indices]
         new_max_clause = [new_max_score, max_scoring_clauses]
 
-        if new_max_clause[0] >= max_clause[0] and str(new_max_clause[1]) != str(max_clause[1]):
+        if new_max_clause[0] > max_clause[0] and str(new_max_clause[1]) != str(max_clause[1]):
             max_clause = new_max_clause
             for c_i in c_indices:
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
