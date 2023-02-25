@@ -776,14 +776,14 @@ class PIClauseGenerator(object):
         # # passed_pi_languages = passed_pi_languages[:5]
         #
         passed_pi_clauses, passed_pi_predicates = self.extract_pi(pi_languages, args)
-        log_utils.add_lines(f"======  {len(passed_pi_predicates)} PI predicates are generated!! ======", args.log_file)
-        log_utils.add_lines(f"======  {len(passed_pi_clauses)} PI predicates are generated!! ======", args.log_file)
-        log_utils.add_lines(f"======  Total PI Number Now: {len(self.lang.invented_preds)}  ======", args.log_file)
-        for c in passed_pi_clauses:
-            log_utils.add_lines(f"{c}", args.log_file)
         if len(passed_pi_predicates) > 0:
             self.lang.invented_preds = passed_pi_predicates
 
+        for c in passed_pi_clauses:
+            log_utils.add_lines(f"{c}", args.log_file)
+        log_utils.add_lines(f"======  {len(passed_pi_predicates)} PI predicates are generated!! ======", args.log_file)
+        log_utils.add_lines(f"======  {len(passed_pi_clauses)} PI predicates are generated!! ======", args.log_file)
+        log_utils.add_lines(f"======  Total PI Number Now: {len(self.lang.invented_preds)}  ======", args.log_file)
         return passed_pi_clauses, found_ns
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
