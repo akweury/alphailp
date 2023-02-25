@@ -607,8 +607,9 @@ class ClauseGenerator(object):
         clause_dict = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores, args)
 
         # print best clauses that have been found...
-        new_max, clause_dict = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full, pos_pred.size(0), step,
-                                                 args, max_clause_score)
+        new_max, clause_dict = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full,
+                                                              pos_pred.size(0), step,
+                                                              args, max_clause_score)
         chart_utils.plot_4_zone(False, new_clauses, clause_scores_full, step)
         return clause_dict, new_max
 
@@ -729,6 +730,7 @@ class PIClauseGenerator(object):
 
         # generate new clauses
         sc_new_predicates = []
+        sc_good_new_predicates = []
         nc_new_predicates = []
         uc_new_predicates = []
 
@@ -736,6 +738,9 @@ class PIClauseGenerator(object):
         if len(beam_search_clauses['sc']) < 100 and len(beam_search_clauses['sc']) > 0:
             sc_new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
+        elif len(beam_search_clauses['sc_good']) < 100 and len(beam_search_clauses['sc']) > 0:
+            sc_good_new_predicates = self.cluster_invention(beam_search_clauses["sc_good"], pos_pred.shape[0], args)
+            log_utils.add_lines(f"new PI from sc_good: {len(sc_good_new_predicates)}\n", args.log_file)
 
         elif len(beam_search_clauses['nc']) < 100:
             nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
