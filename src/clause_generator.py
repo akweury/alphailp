@@ -273,6 +273,7 @@ class ClauseGenerator(object):
         # extend clauses
         step = 0
         break_step = 5
+        max_score = max_clause[0]
         refs = init_clauses
         # while (len(clause_dict["sc"]) == 0 and len(clause_dict["sn"]) == 0 and step < T_beam) or step <= min_step:
         while step <= min_step:
@@ -294,7 +295,7 @@ class ClauseGenerator(object):
             # refs = self.select_all_refs(clause_dict)
             step += 1
             # try to invent predicate if find any new high score clauses.
-            if new_max_clause[0] > max_clause[0]:
+            if new_max_clause[0] > max_score:
                 max_clause = new_max_clause
                 break
 
