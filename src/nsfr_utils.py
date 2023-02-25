@@ -11,6 +11,8 @@ from logic_utils import build_infer_module, build_clause_infer_module, build_pi_
 from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
 from valuation import SlotAttentionValuationModule, YOLOValuationModule, PIValuationModule
 
+import log_utils
+
 attrs = ['color', 'shape', 'material', 'size']
 
 
@@ -340,6 +342,9 @@ def get_prob_by_prednames(v_T, NSFR, prednames):
 
 
 def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=False):
+    for c in clauses:
+        log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
+
     device = args.device
     if args.dataset_type == 'kandinsky':
         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
@@ -354,7 +359,8 @@ def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, t
         assert False, "Invalid dataset type: " + str(args.dataset_type)
     IM = build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=args.m, infer_step=3, device=device,
                             train=train)
-    CIM = build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=3, device=device)
+    CIM = build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=3,
+                                    device=device)
 
     # Neuro-Symbolic Forward Reasoner
     NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM, clause_infer_module=CIM, atoms=atoms,
