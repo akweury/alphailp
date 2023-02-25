@@ -778,6 +778,7 @@ class PIClauseGenerator(object):
         passed_pi_clauses, passed_pi_predicates = self.extract_pi(pi_languages, args)
         log_utils.add_lines(f"======  {len(passed_pi_predicates)} PI predicates are generated!! ======", args.log_file)
         log_utils.add_lines(f"======  {len(passed_pi_clauses)} PI predicates are generated!! ======", args.log_file)
+        log_utils.add_lines(f"======  Total PI Number Now: {len(self.lang.invented_preds)}  ======", args.log_file)
         for c in passed_pi_clauses:
             log_utils.add_lines(f"{c}", args.log_file)
         if len(passed_pi_predicates) > 0:
