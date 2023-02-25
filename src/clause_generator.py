@@ -285,8 +285,9 @@ class ClauseGenerator(object):
 
             extended_refs = self.extend_clauses(refs, args)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses, args)
-            clause_dict, new_max_clause = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred, pos_pred,
-                                                                   neg_pred, step, args, max_clause)
+            clause_dict, new_max_clause, higher = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred,
+                                                                           pos_pred,
+                                                                           neg_pred, step, args, max_clause)
             if (len(clause_dict["sn"]) > 0):
                 break
             elif (len(clause_dict["sn_good"]) > 0):
@@ -295,7 +296,7 @@ class ClauseGenerator(object):
             # refs = self.select_all_refs(clause_dict)
             step += 1
             # try to invent predicate if find any new high score clauses.
-            if new_max_clause[0] > max_score:
+            if higher:
                 max_clause = new_max_clause
                 break
 
@@ -607,11 +608,11 @@ class ClauseGenerator(object):
         clause_dict = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores, args)
 
         # print best clauses that have been found...
-        new_max, clause_dict = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full,
-                                                              pos_pred.size(0), step,
-                                                              args, max_clause_score)
+        new_max, clause_dict, higher = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full,
+                                                                      pos_pred.size(0), step,
+                                                                      args, max_clause_score)
         chart_utils.plot_4_zone(False, new_clauses, clause_scores_full, step)
-        return clause_dict, new_max
+        return clause_dict, new_max, higher
 
     def print_clauses(self, sc, sn, nc, sn_good, args):
         log_utils.add_lines('\n======= BEAM SEARCHED CLAUSES ======', args.log_file)

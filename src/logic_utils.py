@@ -962,6 +962,7 @@ def check_accuracy(clause_scores_full, pair_num):
 
 def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, args, max_clause):
     target_has_been_found = False
+    higher = False
     clause_accuracy = check_accuracy(clause_scores, total_score)
     log_utils.add_lines(
         f"(BS Step {step}) sn_c: {len(clause_dict['sn'])}, n_c: {len(clause_dict['nc'])}, s_c: {len(clause_dict['sc'])}.",
@@ -984,12 +985,13 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
             log_utils.add_lines(f"(BS Step {step}) (global) max clause accuracy: {clause_accuracy.max()}",
                                 args.log_file)
+            higher = True
         else:
             log_utils.add_lines(f"(BS Step {step}) (local) max clause accuracy: {clause_accuracy.max()}", args.log_file)
             for c_i in c_indices:
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
 
-    return max_clause, clause_dict
+    return max_clause, clause_dict, higher
 
 
 def extract_clauses_from_bs_clauses(bs_clauses):
