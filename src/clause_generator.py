@@ -778,9 +778,8 @@ class PIClauseGenerator(object):
         #
         all_pi_clauses = self.extract_pi(pi_languages, pi_clauses, args)
 
-        log_utils.add_lines(f"======  {len(all_pi_clauses)} PI clauses are generated!! ======", args.log_file)
-        log_utils.add_lines(f"======  Total PI Number Now: {len(self.lang.invented_preds)}  ======", args.log_file)
-        log_utils.add_lines(f"========== all invented clauses ============= ", args.log_file)
+        log_utils.add_lines(f"======  Total PI Number: {len(self.lang.invented_preds)}  ======", args.log_file)
+        log_utils.add_lines(f"========== Total {len(all_pi_clauses)} PI Clauses ============= ", args.log_file)
         for c in all_pi_clauses:
             log_utils.add_lines(f"{c}", args.log_file)
 
