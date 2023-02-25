@@ -281,7 +281,8 @@ class ClauseGenerator(object):
             # log
             date_now = datetime.datetime.today().date()
             time_now = datetime.datetime.now().strftime("%H_%M_%S")
-            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step}", args.log_file)
+            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step}",
+                                args.log_file)
 
             extended_refs = self.extend_clauses(refs, args)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses, args)
@@ -721,7 +722,7 @@ class PIClauseGenerator(object):
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
 
-    def generate(self, beam_search_clauses, pos_pred, neg_pred, args, step):
+    def generate(self, beam_search_clauses, pi_clauses, pos_pred, neg_pred, args, step):
         found_ns = False
         # evaluate for all the clauses
         # clause_image_scores = self.eval_multi_clauses(beam_search_clauses, pos_pred, neg_pred)  # time-consuming line
@@ -775,14 +776,11 @@ class PIClauseGenerator(object):
         # passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
         # # passed_pi_languages = passed_pi_languages[:5]
         #
-        passed_pi_clauses, passed_pi_predicates = self.extract_pi(pi_languages, args)
-        if len(passed_pi_predicates) > 0:
-            self.lang.invented_preds = passed_pi_predicates
+        passed_pi_clauses = self.extract_pi(pi_languages, pi_clauses, args)
 
         for c in passed_pi_clauses:
             log_utils.add_lines(f"{c}", args.log_file)
-        log_utils.add_lines(f"======  {len(passed_pi_predicates)} PI predicates are generated!! ======", args.log_file)
-        log_utils.add_lines(f"======  {len(passed_pi_clauses)} PI predicates are generated!! ======", args.log_file)
+        log_utils.add_lines(f"======  {len(passed_pi_clauses)} PI clauses are generated!! ======", args.log_file)
         log_utils.add_lines(f"======  Total PI Number Now: {len(self.lang.invented_preds)}  ======", args.log_file)
         return passed_pi_clauses, found_ns
 
@@ -1166,10 +1164,9 @@ class PIClauseGenerator(object):
         # passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
         # unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
 
-    def extract_pi(self, passed_pi_languages, args):
+    def extract_pi(self, passed_pi_languages, pi_clauses, args):
 
-        pi_clauses = []
-        pi_predicates = []
+
         for index, passed_pi_language in enumerate(passed_pi_languages):
             passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
             for c in passed_pi_clauses:
@@ -1179,9 +1176,9 @@ class PIClauseGenerator(object):
                     log_utils.add_lines(f"duplicate pi clause {c}", args.log_file)
 
             for p in passed_lang.invented_preds:
-                if p not in pi_predicates:
-                    pi_predicates.append(p)
-        return pi_clauses, pi_predicates
+                if p not in self.lang.invented_preds:
+                    self.lang.invented_preds.append(p)
+        return pi_clauses
 
     def cluster_invention(self, clause_candidates, total_score, args, top_select=None):
 

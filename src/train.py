@@ -395,10 +395,6 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
     init_clauses = update_initial_clauses(init_clauses, args.n_obj)
     clauses = []
-    new_pi_clauses = []
-    # loop for predicate invention
-    # found_ns = False
-
     max_step = 0
     iteration = 0
     max_clause = [0.0, None]
@@ -426,10 +422,10 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'])
         else:
             # invent new predicate and generate pi clauses
-            new_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, val_pos, val_neg, args, step=iteration)
+            pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
+                                                                    val_neg, args, step=iteration)
             # add new predicates
-            pi_clauses += new_pi_clauses
-            bk_clauses += new_pi_clauses
+            bk_clauses += pi_clauses
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
         iteration += 1
