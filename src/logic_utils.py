@@ -983,6 +983,8 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
                                 args.log_file)
         else:
             log_utils.add_lines(f"(BS Step {step}) (local) max clause accuracy: {clause_accuracy.max()}", args.log_file)
+            for c_i in c_indices:
+                log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
 
     return max_clause, clause_dict
 
