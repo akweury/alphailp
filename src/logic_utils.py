@@ -670,6 +670,7 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
     V_T_neg = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
     for i in range(int(train_size / args.batch_size_train)):
+        print(f"eval batch {i}/{range(int(train_size / args.batch_size_train))}")
         V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_pred[i * bz:(i + 1) * bz])
         V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_pred[i * bz:(i + 1) * bz])
 
@@ -973,9 +974,10 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
         new_max_i = np.argmax(clause_accuracy)
         if new_max > max_clause_score:
             max_clause_score = new_max
-            log_utils.add_lines(f"(BS Step {step}) (new) max clause accuracy: {clause_accuracy.max()}", args.log_file)
+            log_utils.add_lines(f"(BS Step {step}) (global) max clause accuracy: {clause_accuracy.max()}",
+                                args.log_file)
         else:
-            log_utils.add_lines(f"(BS Step {step}) (old) max clause accuracy: {clause_accuracy.max()}", args.log_file)
+            log_utils.add_lines(f"(BS Step {step}) (local) max clause accuracy: {clause_accuracy.max()}", args.log_file)
         c_indices = [np.argmax(clause_accuracy)]
         for c_i in c_indices:
             clause_dict["max_clause"] = [clauses[c_i], clause_scores[c_i]]
