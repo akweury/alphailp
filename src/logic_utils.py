@@ -673,7 +673,7 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     for i in range(int(train_size / args.batch_size_train)):
         date_now = datetime.datetime.today().date()
         time_now = datetime.datetime.now().strftime("%H_%M_%S")
-        print(f"({date_now} {time_now}) eval batch {i}/{int(train_size / args.batch_size_train)}")
+        print(f"({date_now} {time_now}) eval batch {i + 1}/{int(train_size / args.batch_size_train)}")
         V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_pred[i * bz:(i + 1) * bz])
         V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_pred[i * bz:(i + 1) * bz])
 
