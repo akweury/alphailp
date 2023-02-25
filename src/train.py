@@ -407,7 +407,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         # generate clauses # time-consuming code
         bs_clauses, max_clause = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
                                                                                  pi_clauses, args,
-                                                                                 max_clause, min_step=i)
+                                                                                 max_clause, max_step=args.t_beam, iteration=i)
         if len(bs_clauses['sn']) > 0:
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
             break

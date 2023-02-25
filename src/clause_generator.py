@@ -266,8 +266,8 @@ class ClauseGenerator(object):
         return refs
 
     def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause,
-                                 min_step=1):
-        log_utils.add_lines(f"\n======== beam search iteration {min_step} ========", args.log_file)
+                                 max_step=4, iteration=None):
+        log_utils.add_lines(f"\n======== beam search iteration {iteration} ========", args.log_file)
         eval_pred = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
         # extend clauses
@@ -276,12 +276,12 @@ class ClauseGenerator(object):
         max_score = max_clause[0]
         refs = init_clauses
         # while (len(clause_dict["sc"]) == 0 and len(clause_dict["sn"]) == 0 and step < T_beam) or step <= min_step:
-        while step <= min_step:
+        while step <= max_step:
 
             # log
             date_now = datetime.datetime.today().date()
             time_now = datetime.datetime.now().strftime("%H_%M_%S")
-            log_utils.add_lines(f"\n({date_now} {time_now}) Step {step}/{min_step}", args.log_file)
+            log_utils.add_lines(f"\n({date_now} {time_now}) Step {step}/{max_step}", args.log_file)
 
             extended_refs = self.extend_clauses(refs, args)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses, args)
