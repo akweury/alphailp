@@ -776,13 +776,15 @@ class PIClauseGenerator(object):
         # passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
         # # passed_pi_languages = passed_pi_languages[:5]
         #
-        passed_pi_clauses = self.extract_pi(pi_languages, pi_clauses, args)
+        all_pi_clauses = self.extract_pi(pi_languages, pi_clauses, args)
 
-        for c in passed_pi_clauses:
-            log_utils.add_lines(f"{c}", args.log_file)
-        log_utils.add_lines(f"======  {len(passed_pi_clauses)} PI clauses are generated!! ======", args.log_file)
+        log_utils.add_lines(f"======  {len(all_pi_clauses)} PI clauses are generated!! ======", args.log_file)
         log_utils.add_lines(f"======  Total PI Number Now: {len(self.lang.invented_preds)}  ======", args.log_file)
-        return passed_pi_clauses, found_ns
+        log_utils.add_lines(f"========== all invented clauses ============= ", args.log_file)
+        for c in all_pi_clauses:
+            log_utils.add_lines(f"{c}", args.log_file)
+
+        return all_pi_clauses, found_ns
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
 
@@ -1165,7 +1167,6 @@ class PIClauseGenerator(object):
         # unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
 
     def extract_pi(self, passed_pi_languages, pi_clauses, args):
-
 
         for index, passed_pi_language in enumerate(passed_pi_languages):
             passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
