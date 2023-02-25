@@ -670,7 +670,7 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
     V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
     V_T_neg = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
     for i in range(int(train_size / args.batch_size_train)):
-        print(f"eval batch {i}/{range(int(train_size / args.batch_size_train))}")
+        print(f"eval batch {i}/{int(train_size / args.batch_size_train)}")
         V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_pred[i * bz:(i + 1) * bz])
         V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_pred[i * bz:(i + 1) * bz])
 
