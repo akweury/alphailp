@@ -64,6 +64,8 @@ def get_args():
                         help="The size of the minimum beam.")
     parser.add_argument("--n-beam", type=int, default=5,
                         help="The size of the beam.")
+    parser.add_argument("--cim-step", type=int, default=5,
+                        help="The steps of clause infer module.")
     parser.add_argument("--n-max", type=int, default=50,
                         help="The maximum number of clauses.")
     parser.add_argument("--m", type=int, default=1,

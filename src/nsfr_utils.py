@@ -357,7 +357,7 @@ def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, t
         assert False, "Invalid dataset type: " + str(args.dataset_type)
     IM = build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=args.m, infer_step=3, device=device,
                             train=train)
-    CIM = build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=3,
+    CIM = build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
                                     device=device)
 
     # Neuro-Symbolic Forward Reasoner

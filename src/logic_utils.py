@@ -135,7 +135,7 @@ def build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, device, m=3
     return im
 
 
-def build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
+def build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, device, m=3, infer_step=5, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
     I = te.encode()
     if len(bk_clauses) > 0:
