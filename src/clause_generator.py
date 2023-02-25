@@ -265,7 +265,7 @@ class ClauseGenerator(object):
             #     C = C.union(set([c]))
         return refs
 
-    def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause_score,
+    def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause,
                                  min_step=1):
         log_utils.add_lines(f"\n======== beam search iteration {min_step} ========", args.log_file)
         eval_pred = ['kp']
@@ -284,9 +284,8 @@ class ClauseGenerator(object):
 
             extended_refs = self.extend_clauses(refs, args)
             removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses, args)
-            clause_dict, new_max_score = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred, pos_pred,
-                                                                  neg_pred, step, args,
-                                                                  max_clause_score)
+            clause_dict, new_max_clause = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred, pos_pred,
+                                                                   neg_pred, step, args, max_clause)
             if (len(clause_dict["sn"]) > 0):
                 break
             elif (len(clause_dict["sn_good"]) > 0):
@@ -295,13 +294,13 @@ class ClauseGenerator(object):
             # refs = self.select_all_refs(clause_dict)
             step += 1
             # try to invent predicate if find any new high score clauses.
-            if new_max_score > max_clause_score:
-                max_clause_score = new_max_score
+            if new_max_clause[0] > max_clause[0]:
+                max_clause = new_max_clause
                 break
 
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"], clause_dict["sn_good"], args)
 
-        return clause_dict, max_clause_score
+        return clause_dict, max_clause
 
     def eval_images(self, save_path):
 
