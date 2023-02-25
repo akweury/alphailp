@@ -342,8 +342,6 @@ def get_prob_by_prednames(v_T, NSFR, prednames):
 
 
 def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=False):
-    for c in clauses:
-        log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
 
     device = args.device
     if args.dataset_type == 'kandinsky':
