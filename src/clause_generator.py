@@ -296,11 +296,12 @@ class ClauseGenerator(object):
             step += 1
             # try to invent predicate if find any new high score clauses.
             if new_max_score > max_clause_score:
+                max_clause_score = new_max_score
                 break
 
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"], clause_dict["sn_good"], args)
 
-        return clause_dict
+        return clause_dict, max_clause_score
 
     def eval_images(self, save_path):
 

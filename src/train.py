@@ -404,8 +404,9 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                init_clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
-        bs_clauses = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg, pi_clauses, args,
-                                                               max_clause_score, min_step=i)
+        bs_clauses, max_clause_score = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
+                                                                                 pi_clauses, args,
+                                                                                 max_clause_score, min_step=i)
         if len(bs_clauses['sn']) > 0:
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
             break
