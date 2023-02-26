@@ -534,16 +534,19 @@ def search_independent_clauses_parallel(clauses, total_score, args):
             sn_clusters.append([clause_cluster, cluster_clause_score])
         elif cluster_clause_score[1] / total_score > args.sn_th:
             sn_th_clusters.append([clause_cluster, cluster_clause_score])
-        elif cluster_clause_score[1] + cluster_clause_score[3] == total_score:
+        if cluster_clause_score[1] + cluster_clause_score[3] == total_score and cluster_clause_score[1] > \
+                cluster_clause_score[3]:
             necessary_clusters.append([clause_cluster, cluster_clause_score])
 
-        elif (cluster_clause_score[1] + cluster_clause_score[3]) / total_score > args.nc_th:
+        elif (cluster_clause_score[1] + cluster_clause_score[3]) == total_score and cluster_clause_score[
+            1] > args.nc_th:
             nc_th_clusters.append([clause_cluster, cluster_clause_score])
 
-        elif cluster_clause_score[0] + cluster_clause_score[1] == total_score and cluster_clause_score[1] > \
+        if cluster_clause_score[0] + cluster_clause_score[1] == total_score and cluster_clause_score[1] > \
                 cluster_clause_score[0]:
             sufficient_clusters.append([clause_cluster, cluster_clause_score])
-        elif (cluster_clause_score[0] + cluster_clause_score[1]) == total_score:
+        elif (cluster_clause_score[0] + cluster_clause_score[1]) == total_score and cluster_clause_score[
+            1] > args.sc_th:
             sc_th_clusters.append([clause_cluster, cluster_clause_score])
             # print(f"sc_th_clusters:{clause_cluster}")
         else:
