@@ -73,7 +73,7 @@ def get_pi_clauses_objs(args, cg_lang, clauses_str_list, new_predicates):
         # lang.invented_preds = cg_lang.invented_preds
         # lang.invented_preds_number = cg_lang.invented_preds_number + c_index
         # add predicates to new language
-        lang.invented_preds.append(new_predicates[c_index][0])
+        lang.invented_preds = cg_lang.invented_preds + new_predicates[c_index][0]
 
         # add pi clauses to new language
         pi_clauses = du.gen_pi_clauses(lang, c_list)
