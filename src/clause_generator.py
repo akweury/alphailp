@@ -752,12 +752,7 @@ class PIClauseGenerator(object):
             uc_new_predicates = self.cluster_invention(beam_search_clauses["uc_good"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from UC_GOOD: {len(uc_new_predicates)}\n", args.log_file)
         else:
-            if len(beam_search_clauses["uc"]) > args.uc_top:
-                top_select = args.uc_top
-            else:
-                top_select = None
-            uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args,
-                                                       top_select=top_select)
+            uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
 
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
@@ -1182,16 +1177,16 @@ class PIClauseGenerator(object):
                     self.lang.invented_preds.append(p)
         return pi_clauses
 
-    def cluster_invention(self, clause_candidates, total_score, args, top_select=None):
+    def cluster_invention(self, clause_candidates, total_score, args):
 
-        if top_select is not None:
+        if args.uc_top is not None:
             clause_candidates_with_scores = []
             for c_i, c in enumerate(clause_candidates):
                 four_scores = logic_utils.get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
                 clause_candidates_with_scores.append([c, four_scores])
             clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
                                                           reverse=True)
-            clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:top_select]
+            clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:args.uc_top]
             clause_candidates = []
             for c in clause_candidates_with_scores_sorted:
                 clause_candidates.append(c[0])
