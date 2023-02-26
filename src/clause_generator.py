@@ -749,7 +749,7 @@ class PIClauseGenerator(object):
                                                             pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc_good: {len(sc_good_new_predicates)}\n", args.log_file)
 
-        if 100 > len(beam_search_clauses['nc']) > 0:
+        elif 100 > len(beam_search_clauses['nc']) > 0:
             nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pi_clauses, pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
         elif 100 > len(beam_search_clauses['nc_good']) > 0:
@@ -757,13 +757,14 @@ class PIClauseGenerator(object):
                                                             pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from nc_good: {len(nc_good_new_predicates)}\n", args.log_file)
         # cluster necessary clauses
-        if len(beam_search_clauses['uc_good']) > 0:
+        elif len(beam_search_clauses['uc_good']) > 0:
             uc_good_new_predicates = self.cluster_invention(beam_search_clauses["uc_good"], pi_clauses,
                                                             pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from UC_GOOD: {len(uc_good_new_predicates)}\n", args.log_file)
 
-        uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pi_clauses, pos_pred.shape[0], args)
-        log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
+        else:
+            uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pi_clauses, pos_pred.shape[0], args)
+            log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
 
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
         sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, keep_all=True)
