@@ -529,28 +529,24 @@ def search_independent_clauses_parallel(clauses, total_score, args):
             score_pos = torch.cat((score_pos[0, :, :], c_score[:, 1:]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(0)
         score_max = torch.cat((score_neg, score_pos), dim=2)
         p_clause_signs = eval_clause_sign(score_max)
-        cluster_clause_score = p_clause_signs[0][1].reshape(4)
-        if cluster_clause_score[1] == total_score:
-            sn_clusters.append([clause_cluster, cluster_clause_score])
-        elif cluster_clause_score[1] / total_score > args.sn_th:
-            sn_th_clusters.append([clause_cluster, cluster_clause_score])
-        if cluster_clause_score[1] + cluster_clause_score[3] == total_score and cluster_clause_score[1] > \
-                cluster_clause_score[3]:
-            necessary_clusters.append([clause_cluster, cluster_clause_score])
+        clu_c_score = p_clause_signs[0][1].reshape(4)
+        if clu_c_score[1] == total_score:
+            sn_clusters.append([clause_cluster, clu_c_score])
+        elif clu_c_score[1] / total_score > args.sn_th:
+            sn_th_clusters.append([clause_cluster, clu_c_score])
 
-        elif (cluster_clause_score[1] + cluster_clause_score[3]) == total_score and cluster_clause_score[
-            1] > args.nc_th:
-            nc_th_clusters.append([clause_cluster, cluster_clause_score])
+        if clu_c_score[1] + clu_c_score[3] == total_score and clu_c_score[1] > clu_c_score[3]:
+            necessary_clusters.append([clause_cluster, clu_c_score])
+        elif (clu_c_score[1] + clu_c_score[3]) == total_score and clu_c_score[1] > args.nc_th:
+            nc_th_clusters.append([clause_cluster, clu_c_score])
 
-        if cluster_clause_score[0] + cluster_clause_score[1] == total_score and cluster_clause_score[1] > \
-                cluster_clause_score[0]:
-            sufficient_clusters.append([clause_cluster, cluster_clause_score])
-        elif (cluster_clause_score[0] + cluster_clause_score[1]) == total_score and cluster_clause_score[
-            1] > args.sc_th:
-            sc_th_clusters.append([clause_cluster, cluster_clause_score])
+        if clu_c_score[0] + clu_c_score[1] == total_score and clu_c_score[1] > clu_c_score[0]:
+            sufficient_clusters.append([clause_cluster, clu_c_score])
+        elif (clu_c_score[0] + clu_c_score[1]) == total_score and clu_c_score[1] > args.sc_th:
+            sc_th_clusters.append([clause_cluster, clu_c_score])
             # print(f"sc_th_clusters:{clause_cluster}")
         else:
-            other_clusters.append([clause_cluster, cluster_clause_score])
+            other_clusters.append([clause_cluster, clu_c_score])
 
     necessary_clusters = sorted(necessary_clusters, key=lambda x: x[1][1], reverse=True)[:2]
     sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)[:2]
