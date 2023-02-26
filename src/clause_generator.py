@@ -282,7 +282,7 @@ class ClauseGenerator(object):
             # log
             date_now = datetime.datetime.today().date()
             time_now = datetime.datetime.now().strftime("%H_%M_%S")
-            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step - 1}",
+            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step+1}/{max_step }",
                                 args.log_file)
 
             extended_refs = self.extend_clauses(refs, args)
