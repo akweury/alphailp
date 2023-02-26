@@ -19,7 +19,7 @@ from fol.language import Language, DataType
 import fol.logic as logic
 import log_utils
 import datetime
-
+import eval_utils
 
 class ClauseGenerator(object):
     """
@@ -540,32 +540,29 @@ class ClauseGenerator(object):
         #         log_utils.add_lines(f"(same score clause) {ref}", args.log_file)
 
         for c_i, clause in enumerate(clauses):
+            data_size =  self.pos_loader.dataset.__len__()
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
             #     good_clauses.append((clause, scores))
             score = four_scores[c_i]
-            if score[1] == self.pos_loader.dataset.__len__():
+            if eval_utils.is_sn(score, data_size):
                 sufficient_necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn) {clause}, {four_scores[c_i]}', args.log_file)
-            if score[1] / self.pos_loader.dataset.__len__() > args.sn_th:
+            if eval_utils.is_sn_th_good(score, data_size, args.sn_th):
                 sn_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-
-            if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 0:
+            if eval_utils.is_sc(score, data_size, 0):
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
-            elif (score[0] + score[1]) / self.pos_loader.dataset.__len__() > args.sc_th:
+            elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
                 sc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
-
-            if score[1] + score[3] == self.pos_loader.dataset.__len__() and score[1] > 0:
+            if eval_utils.is_nc(score, data_size, 0):
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
-            elif (score[1] + score[3]) / self.pos_loader.dataset.__len__() > args.nc_th:
+            elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
                 nc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
-
-            if score[0] / score[1] < args.uc_th and score[2] / score[1] < args.uc_th and score[3] / score[
-                1] < args.uc_th:
+            if eval_utils.is_uc_th_good(score, args.uc_th):
                 uc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
 

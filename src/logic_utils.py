@@ -10,6 +10,7 @@ import datetime
 
 import config
 import log_utils
+import eval_utils
 
 p_ = Predicate('.', 1, [DataType('spec')])
 false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
@@ -530,30 +531,35 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         score_max = torch.cat((score_neg, score_pos), dim=2)
         p_clause_signs = eval_clause_sign(score_max)
         clu_c_score = p_clause_signs[0][1].reshape(4)
-        if clu_c_score[1] == total_score:
+
+        # sufficient and necessary clauses
+        if eval_utils.is_sn(clu_c_score, total_score):
             sn_clusters.append([clause_cluster, clu_c_score])
-        elif clu_c_score[1] / total_score > args.sn_th:
+        # almost a sufficient and necessary clauses
+        elif eval_utils.is_sn_th_good(clu_c_score, total_score, args.sn_th):
             sn_th_clusters.append([clause_cluster, clu_c_score])
-
-        if clu_c_score[1] + clu_c_score[3] == total_score:
+        # necessary clauses
+        if eval_utils.is_nc(clu_c_score, total_score, 0):
             necessary_clusters.append([clause_cluster, clu_c_score])
-        elif (clu_c_score[1] + clu_c_score[3]) / total_score > args.nc_th:
+        # almost necessary clauses
+        elif eval_utils.is_nc_th_good(clu_c_score, total_score, args.nc_th):
             nc_th_clusters.append([clause_cluster, clu_c_score])
-
-        if clu_c_score[0] + clu_c_score[1] == total_score:
+        # sufficient clauses
+        if eval_utils.is_sc(clu_c_score, total_score, 0):
             sufficient_clusters.append([clause_cluster, clu_c_score])
-        elif (clu_c_score[0] + clu_c_score[1]) / total_score > args.sc_th:
+        # almost sufficient clauses
+        elif eval_utils.is_sc_th_good(clu_c_score, total_score, args.sc_th):
             sc_th_clusters.append([clause_cluster, clu_c_score])
-            # print(f"sc_th_clusters:{clause_cluster}")
+
         else:
             other_clusters.append([clause_cluster, clu_c_score])
 
-    necessary_clusters = sorted(necessary_clusters, key=lambda x: x[1][1], reverse=True)[:2]
-    sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)[:2]
-    sufficient_clusters = sorted(sufficient_clusters, key=lambda x: x[1][1], reverse=True)[:2]
-    sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)[:2]
-    nc_th_clusters = sorted(nc_th_clusters, key=lambda x: x[1][1], reverse=True)[:2]
-    sc_th_clusters = sorted(sc_th_clusters, key=lambda x: x[1][1], reverse=True)[:2]
+    sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)
+    sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)
+    sufficient_clusters = sorted(sufficient_clusters, key=lambda x: x[1][1], reverse=True)
+    sc_th_clusters = sorted(sc_th_clusters, key=lambda x: x[1][1], reverse=True)
+    necessary_clusters = sorted(necessary_clusters, key=lambda x: x[1][1], reverse=True)
+    nc_th_clusters = sorted(nc_th_clusters, key=lambda x: x[1][1], reverse=True)
     return necessary_clusters, sn_clusters, sufficient_clusters, sn_th_clusters, nc_th_clusters, sc_th_clusters
 
 
