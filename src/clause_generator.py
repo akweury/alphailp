@@ -529,7 +529,6 @@ class ClauseGenerator(object):
         nc_good_clauses = []
         uc_good_clauses = []
 
-
         for c_i, clause in enumerate(clauses):
             data_size = self.pos_loader.dataset.__len__()
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
@@ -786,7 +785,7 @@ class PIClauseGenerator(object):
         # passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
         # # passed_pi_languages = passed_pi_languages[:5]
         #
-        all_pi_clauses = self.extract_pi(pi_languages, pi_clauses, args)
+        all_pi_clauses = self.extract_pi(pi_languages, args)
 
         log_utils.add_lines(f"======  Total PI Number: {len(self.lang.invented_preds)}  ======", args.log_file)
         for p in self.lang.invented_preds:
@@ -1177,21 +1176,20 @@ class PIClauseGenerator(object):
         # passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
         # unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
 
-    def extract_pi(self, passed_pi_languages, pi_clauses, args):
-
+    def extract_pi(self, passed_pi_languages, args):
+        all_pi_clauses = []
         for index, passed_pi_language in enumerate(passed_pi_languages):
             passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
-            for c in passed_pi_clauses:
-                if c not in pi_clauses:
-                    pi_clauses.append(c)
-                else:
-                    log_utils.add_lines(f"duplicate pi clause {c}", args.log_file)
-
-            for p in passed_lang.invented_preds:
-                if p not in self.lang.invented_preds:
-                    self.lang.invented_preds.append(p)
-        return pi_clauses
-
+            is_duplicate = False
+            for inv_pred in self.lang.invented_preds:
+                assert len(passed_lang.invented_preds) == 1
+                if passed_lang.invented_preds[0].body == inv_pred.body:
+                    is_duplicate = True
+                    log_utils.add_lines(f"duplicate pi clause {passed_lang.invented_preds[0].body}", args.log_file)
+            if not is_duplicate:
+                self.lang.invented_preds.append(passed_lang.invented_preds[0])
+                all_pi_clauses += passed_pi_clauses
+        return all_pi_clauses
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args):
 
         if args.uc_top is not None:
