@@ -272,7 +272,7 @@ class ClauseGenerator(object):
         eval_pred = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
         # extend clauses
-        step = 1
+        step = 0
         break_step = 5
         max_score = max_clause[0]
         refs = init_clauses
@@ -282,7 +282,7 @@ class ClauseGenerator(object):
             # log
             date_now = datetime.datetime.today().date()
             time_now = datetime.datetime.now().strftime("%H_%M_%S")
-            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step}",
+            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step - 1}",
                                 args.log_file)
 
             extended_refs = self.extend_clauses(refs, args)
@@ -1190,6 +1190,7 @@ class PIClauseGenerator(object):
                 self.lang.invented_preds.append(passed_lang.invented_preds[0])
                 all_pi_clauses += passed_pi_clauses
         return all_pi_clauses
+
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args):
 
         if args.uc_top is not None:
