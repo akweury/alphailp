@@ -1216,8 +1216,8 @@ class PIClauseGenerator(object):
             new_predicates = self.generate_new_predicate(sn_th_clu)[:5]
         elif len(n_clu) > 0:
             new_predicates = self.generate_new_predicate(n_clu)[:5]
-        # elif len(nc_th_clu) > 0:
-        #     new_predicates = self.generate_new_predicate(nc_th_clu)[:5]
+        elif len(nc_th_clu) > 0:
+            new_predicates = self.generate_new_predicate(nc_th_clu)[:5]
         elif len(s_clu) > 0:
             new_predicates = self.generate_new_predicate(s_clu)[:5]
         # elif len(sc_th_clu) > 0:
