@@ -303,7 +303,7 @@ class ClauseGenerator(object):
 
         self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"], clause_dict["sn_good"], args)
 
-        return clause_dict, max_clause
+        return clause_dict, max_clause, step
 
     def eval_images(self, save_path):
 

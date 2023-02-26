@@ -397,15 +397,15 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
     init_clauses = update_initial_clauses(init_clauses, args.n_obj)
     clauses = []
-    max_step = 0
     iteration = 0
+    max_step = 0
     max_clause = [0.0, None]
     while max_step < args.t_beam:
         # if generate new predicates, start the bs deep from 0
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                init_clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
-        bs_clauses, max_clause = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
+        bs_clauses, max_clause, max_step = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
                                                                            pi_clauses, args,
                                                                            max_clause, max_step=args.t_beam,
                                                                            iteration=iteration)
