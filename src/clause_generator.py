@@ -550,17 +550,17 @@ class ClauseGenerator(object):
                 sn_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
 
-            if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > args.sc_th:
+            if score[0] + score[1] == self.pos_loader.dataset.__len__():
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
-            elif (score[0] + score[1]) == self.pos_loader.dataset.__len__():
+            elif (score[0] + score[1]) / self.pos_loader.dataset.__len__() > args.sc_th:
                 sc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
 
-            if score[1] + score[3] == self.pos_loader.dataset.__len__() and score[1] > args.nc_th:
+            if score[1] + score[3] == self.pos_loader.dataset.__len__():
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
-            elif (score[1] + score[3]) == self.pos_loader.dataset.__len__():
+            elif (score[1] + score[3]) / self.pos_loader.dataset.__len__() > args.nc_th:
                 nc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
 

@@ -535,14 +535,14 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         elif clu_c_score[1] / total_score > args.sn_th:
             sn_th_clusters.append([clause_cluster, clu_c_score])
 
-        if clu_c_score[1] + clu_c_score[3] == total_score and clu_c_score[1] > args.nc_th:
+        if clu_c_score[1] + clu_c_score[3] == total_score:
             necessary_clusters.append([clause_cluster, clu_c_score])
-        elif (clu_c_score[1] + clu_c_score[3]) == total_score:
+        elif (clu_c_score[1] + clu_c_score[3]) / total_score > args.nc_th:
             nc_th_clusters.append([clause_cluster, clu_c_score])
 
-        if clu_c_score[0] + clu_c_score[1] == total_score and clu_c_score[1] > args.sc_th:
+        if clu_c_score[0] + clu_c_score[1] == total_score:
             sufficient_clusters.append([clause_cluster, clu_c_score])
-        elif (clu_c_score[0] + clu_c_score[1]) == total_score:
+        elif (clu_c_score[0] + clu_c_score[1]) / total_score > args.sc_th:
             sc_th_clusters.append([clause_cluster, clu_c_score])
             # print(f"sc_th_clusters:{clause_cluster}")
         else:
