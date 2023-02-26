@@ -282,7 +282,7 @@ class ClauseGenerator(object):
             # log
             date_now = datetime.datetime.today().date()
             time_now = datetime.datetime.now().strftime("%H_%M_%S")
-            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step }",
+            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step}",
                                 args.log_file)
 
             extended_refs = self.extend_clauses(refs, args)
@@ -1180,18 +1180,18 @@ class PIClauseGenerator(object):
         all_pi_clauses = []
         for index, passed_pi_language in enumerate(passed_pi_languages):
             passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
+            passed_lang_pred = passed_lang.invented_preds[0]
 
-            for passed_lang_pred in passed_lang.invented_preds:
-                if passed_lang.invented_preds in self.lang.invented_preds:
-                    continue
-                is_duplicate = False
-                for inv_pred in self.lang.invented_preds:
-                    if passed_lang_pred.body==inv_pred.body:
-                        is_duplicate=True
-                        log_utils.add_lines(f"duplicate pi clause {passed_lang_pred.body}", args.log_file)
-                if not is_duplicate:
-                    self.lang.invented_preds.append(passed_lang_pred)
-                all_pi_clauses += passed_pi_clauses
+            if passed_lang.invented_preds[0] in self.lang.invented_preds:
+                continue
+            is_duplicate = False
+            for inv_pred in self.lang.invented_preds:
+                if passed_lang_pred.body == inv_pred.body:
+                    is_duplicate = True
+                    log_utils.add_lines(f"duplicate pi clause {passed_lang_pred.body}", args.log_file)
+            if not is_duplicate:
+                self.lang.invented_preds.append(passed_lang_pred)
+            all_pi_clauses += passed_pi_clauses
         return all_pi_clauses
 
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args):
