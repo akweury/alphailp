@@ -568,8 +568,8 @@ class ClauseGenerator(object):
                 1] < args.uc_th:
                 uc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-            else:
-                unclassified_clauses.append((clause, all_scores[c_i]))
+
+            unclassified_clauses.append((clause, all_scores[c_i]))
                 # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
 
         clause_dict = {"sn": sufficient_necessary_clauses, "nc": necessary_clauses, "sc": sufficient_clauses,
