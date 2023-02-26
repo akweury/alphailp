@@ -553,14 +553,14 @@ class ClauseGenerator(object):
             if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 0:
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
-            elif (score[0] + score[1]) / self.pos_loader.dataset.__len__() > args.sc_th and score[1] > 0:
+            elif (score[0] + score[1]) / self.pos_loader.dataset.__len__() > args.sc_th and score[1] > 10:
                 sc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
 
             if score[1] + score[3] == self.pos_loader.dataset.__len__() and score[1] > score[3]:
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
-            elif (score[1] + score[3]) / self.pos_loader.dataset.__len__() > args.nc_th and score[1] > 0:
+            elif (score[1] + score[3]) / self.pos_loader.dataset.__len__() > args.nc_th and score[1] > 10:
                 nc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
 
