@@ -785,7 +785,7 @@ class PIClauseGenerator(object):
         # passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
         # # passed_pi_languages = passed_pi_languages[:5]
         #
-        all_pi_clauses = self.extract_pi(pi_languages, args)
+        all_pi_clauses = self.extract_pi(pi_languages, args) + pi_clauses
 
         log_utils.add_lines(f"======  Total PI Number: {len(self.lang.invented_preds)}  ======", args.log_file)
         for p in self.lang.invented_preds:
