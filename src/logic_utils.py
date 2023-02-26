@@ -71,7 +71,7 @@ def get_pi_clauses_objs(args, cg_lang, clauses_str_list, new_predicates):
         lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                          args.dataset_type, args.dataset)
         # lang.invented_preds = cg_lang.invented_preds
-        lang.invented_preds_number = max(cg_lang.invented_preds_number, lang.invented_preds_number + 1)
+        lang.invented_preds_number = cg_lang.invented_preds_number + c_index
         # add predicates to new language
         lang.invented_preds.append(new_predicates[c_index][0])
 
