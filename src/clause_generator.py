@@ -271,7 +271,7 @@ class ClauseGenerator(object):
         eval_pred = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
         # extend clauses
-        step = 0
+        step = 1
         break_step = 5
         max_score = max_clause[0]
         refs = init_clauses
