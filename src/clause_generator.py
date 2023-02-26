@@ -21,6 +21,7 @@ import log_utils
 import datetime
 import eval_utils
 
+
 class ClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -301,7 +302,7 @@ class ClauseGenerator(object):
                 max_clause = new_max_clause
                 break
 
-        self.print_clauses(clause_dict['sc'], clause_dict['sn'], clause_dict["nc"], clause_dict["sn_good"], args)
+        self.print_clauses(clause_dict, args)
 
         return clause_dict, max_clause, step
 
@@ -527,47 +528,37 @@ class ClauseGenerator(object):
         sc_good_clauses = []
         nc_good_clauses = []
         uc_good_clauses = []
-        # new_clauses = []
-        # new_four_scores = []
-        # new_all_scores = []
-        # for i, ref in enumerate(clauses):
-        # #     check duplication
-        #     if not self.is_in_beam_same_score(new_clauses, ref, i, four_scores):
-        #         new_clauses.append(ref)
-        #         new_all_scores.append(all_scores[i])
-        #         new_four_scores.append(four_scores[i])
-        #     else:
-        #         log_utils.add_lines(f"(same score clause) {ref}", args.log_file)
+
 
         for c_i, clause in enumerate(clauses):
-            data_size =  self.pos_loader.dataset.__len__()
+            data_size = self.pos_loader.dataset.__len__()
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
             #     good_clauses.append((clause, scores))
             score = four_scores[c_i]
             if eval_utils.is_sn(score, data_size):
                 sufficient_necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn) {clause}, {four_scores[c_i]}', args.log_file)
-            if eval_utils.is_sn_th_good(score, data_size, args.sn_th):
+            elif eval_utils.is_sn_th_good(score, data_size, args.sn_th):
                 sn_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-            if eval_utils.is_sc(score, data_size, 0):
+            elif eval_utils.is_sc(score, data_size, 0):
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
                 sc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
-            if eval_utils.is_nc(score, data_size, 0):
+            elif eval_utils.is_nc(score, data_size, 0):
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
                 nc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
-            if eval_utils.is_uc_th_good(score, args.uc_th):
+            elif eval_utils.is_uc_th_good(score, args.uc_th):
                 uc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-
-            unclassified_clauses.append((clause, all_scores[c_i]))
-            # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
+            else:
+                unclassified_clauses.append((clause, all_scores[c_i]))
+                log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
 
         clause_dict = {"sn": sufficient_necessary_clauses, "nc": necessary_clauses, "sc": sufficient_clauses,
                        "uc": unclassified_clauses, "sn_good": sn_good_clauses,
@@ -612,27 +603,34 @@ class ClauseGenerator(object):
         chart_utils.plot_4_zone(False, new_clauses, clause_scores_full, step)
         return clause_dict, new_max, higher
 
-    def print_clauses(self, sc, sn, nc, sn_good, args):
+    def print_clauses(self, clause_dict, args):
         log_utils.add_lines('\n======= BEAM SEARCHED CLAUSES ======', args.log_file)
 
-        if len(sn) > 0:
-            for c in sn:
+        if len(clause_dict["sn"]) > 0:
+            for c in clause_dict["sn"]:
                 log_utils.add_lines(f"sufficient and necessary clause: {c[0]}", args.log_file)
-        if len(sn_good) > 0:
-            for c in sn_good:
+        if len(clause_dict["sn_good"]) > 0:
+            for c in clause_dict["sn_good"]:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
                 log_utils.add_lines(
                     f"sufficient and necessary clause with {args.sn_th * 100}% accuracy: {c[0]}, {score}",
                     args.log_file)
-        if len(sc) > 0:
-            for c in sc:
+        if len(clause_dict["sc"]) > 0:
+            for c in clause_dict["sc"]:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
                 log_utils.add_lines(f"sufficient clause: {c[0]}, {score}", args.log_file)
-        if len(nc) > 0:
-            for c in nc:
+        if len(clause_dict["sc_good"]) > 0:
+            for c in clause_dict["sc_good"]:
+                score = logic_utils.get_four_scores(c[1].unsqueeze(0))
+                log_utils.add_lines(f"sufficient clause with {args.sc_th * 100}%: {c[0]}, {score}", args.log_file)
+        if len(clause_dict["nc"]) > 0:
+            for c in clause_dict["nc"]:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
                 log_utils.add_lines(f"necessary clause: {c[0]}, {score}", args.log_file)
-
+        if len(clause_dict["nc_good"]) > 0:
+            for c in clause_dict["nc_good"]:
+                score = logic_utils.get_four_scores(c[1].unsqueeze(0))
+                log_utils.add_lines(f"necessary clause with {args.nc_th * 100}%: {c[0]}, {score}", args.log_file)
         log_utils.add_lines('============= Beam search End ===================\n', args.log_file)
 
     def update_refs(self, clause_dict):

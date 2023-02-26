@@ -970,7 +970,10 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
     higher = False
     clause_accuracy = check_accuracy(clause_scores, total_score)
     log_utils.add_lines(
-        f"(BS Step {step}) sn_c: {len(clause_dict['sn'])}, n_c: {len(clause_dict['nc'])}, s_c: {len(clause_dict['sc'])}.",
+        f"(BS Step {step}) sn_c: {len(clause_dict['sn'])}, sn_c_good: {len(clause_dict['sn_good'])}, "
+        f"n_c: {len(clause_dict['nc'])}, s_c: {len(clause_dict['sc'])}, "
+        f"n_c_good: {len(clause_dict['nc_good'])}, s_c_good: {len(clause_dict['sc_good'])}, "
+        f"u_c_good: {len(clause_dict['uc_good'])}, u_c: {len(clause_dict['uc'])}.",
         args.log_file)
     if clause_accuracy.max() == 1.0:
         log_utils.add_lines(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}", args.log_file)
@@ -986,11 +989,12 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
 
         if new_max_clause[0] > max_clause[0] and str(new_max_clause[1]) != str(max_clause[1]):
             max_clause = new_max_clause
-            for c_i in c_indices:
-                log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
+            higher = True
             log_utils.add_lines(f"(BS Step {step}) (global) max clause accuracy: {clause_accuracy.max()}",
                                 args.log_file)
-            higher = True
+            for c_i in c_indices:
+                log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
+
         else:
             log_utils.add_lines(f"(BS Step {step}) (local) max clause accuracy: {clause_accuracy.max()}", args.log_file)
             for c_i in c_indices:
