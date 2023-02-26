@@ -549,22 +549,22 @@ class ClauseGenerator(object):
             if score[1] / self.pos_loader.dataset.__len__() > args.sn_th:
                 sn_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-            elif score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 0:
+
+            if score[0] + score[1] == self.pos_loader.dataset.__len__() and score[1] > 0:
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
-
             elif (score[0] + score[1]) / self.pos_loader.dataset.__len__() > args.sc_th and score[1] > 0:
                 sc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
 
-            elif score[1] + score[3] == self.pos_loader.dataset.__len__() and score[1] > score[3]:
+            if score[1] + score[3] == self.pos_loader.dataset.__len__() and score[1] > score[3]:
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
             elif (score[1] + score[3]) / self.pos_loader.dataset.__len__() > args.nc_th and score[1] > 0:
                 nc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
 
-            elif score[0] / score[1] < args.uc_th and score[2] / score[1] < args.uc_th and score[3] / score[
+            if score[0] / score[1] < args.uc_th and score[2] / score[1] < args.uc_th and score[3] / score[
                 1] < args.uc_th:
                 uc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
@@ -753,7 +753,7 @@ class PIClauseGenerator(object):
             sc_good_new_predicates = self.cluster_invention(beam_search_clauses["sc_good"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc_good: {len(sc_good_new_predicates)}\n", args.log_file)
 
-        elif 100 > len(beam_search_clauses['nc']) > 0:
+        if 100 > len(beam_search_clauses['nc']) > 0:
             nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
         elif 100 > len(beam_search_clauses['nc_good']) > 0:
@@ -763,9 +763,9 @@ class PIClauseGenerator(object):
         if len(beam_search_clauses['uc_good']) > 0:
             uc_good_new_predicates = self.cluster_invention(beam_search_clauses["uc_good"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from UC_GOOD: {len(uc_good_new_predicates)}\n", args.log_file)
-        else:
-            uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
-            log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
+
+        uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pos_pred.shape[0], args)
+        log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
 
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
         sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, keep_all=True)
