@@ -1228,17 +1228,8 @@ class PIClauseGenerator(object):
         else:
             new_predicates = []
 
-        non_repeated_new_predicates = []
 
-        for new_p in new_predicates:
-            is_repeated = True
-            for new_p_c in new_p[0].body:
-                if new_p_c not in pi_clauses:
-                    is_repeated = False
-            if not is_repeated:
-                non_repeated_new_predicates.append(new_p)
-
-        return non_repeated_new_predicates
+        return new_predicates
 
     def prune_predicates(self, new_predicates, keep_all=False):
 
