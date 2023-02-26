@@ -1004,6 +1004,24 @@ def extract_clauses_from_bs_clauses(bs_clauses):
     return clauses
 
 
+def select_top_x_clauses(clause_candidates, args):
+    top_clauses_with_scores = []
+    if args.uc_top is None:
+        top_clauses_with_scores = clause_candidates
+    else:
+        clause_candidates_with_scores = []
+        for c_i, c in enumerate(clause_candidates):
+            four_scores = get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
+            clause_candidates_with_scores.append([c, four_scores])
+        clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
+                                                      reverse=True)
+        clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:args.uc_top]
+        for c in clause_candidates_with_scores_sorted:
+            top_clauses_with_scores.append(c[0])
+
+    return top_clauses_with_scores
+
+
 def remove_trivial_clauses(refs_non_conflict, args):
     non_trivial_clauses = []
     for ref in refs_non_conflict:

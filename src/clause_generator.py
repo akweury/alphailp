@@ -641,19 +641,26 @@ class ClauseGenerator(object):
     def update_refs(self, clause_dict):
         refs = []
         if len(clause_dict['nc']) > 0:
+            clause_dict['nc'] = logic_utils.select_top_x_clauses(clause_dict['nc'], self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
         elif len(clause_dict['nc_good']) > 0:
+            clause_dict['nc_good'] = logic_utils.select_top_x_clauses(clause_dict['nc_good'], self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
 
         if len(clause_dict['sc']) > 0:
+            clause_dict['sc'] = logic_utils.select_top_x_clauses(clause_dict['sc'], self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
         elif len(clause_dict['sc_good']) > 0:
+            clause_dict['sc_good'] = logic_utils.select_top_x_clauses(clause_dict['sc_good'], self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
 
         if len(clause_dict['uc_good']) > 0:
+            clause_dict['uc_good'] = logic_utils.select_top_x_clauses(clause_dict['uc_good'], self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'])
         else:
+            clause_dict['uc'] = logic_utils.select_top_x_clauses(clause_dict['uc'], self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
+        # sort refs and select top ...
         return refs
 
     def select_all_refs(self, clause_dict):
@@ -737,14 +744,14 @@ class PIClauseGenerator(object):
         uc_new_predicates = []
 
         # cluster sufficient clauses
-        if len(beam_search_clauses['sc']) < 100 and len(beam_search_clauses['sc']) > 0:
+        if 100 > len(beam_search_clauses['sc']) > 0:
             sc_new_predicates = self.cluster_invention(beam_search_clauses["sc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
         elif len(beam_search_clauses['sc_good']) < 100 and len(beam_search_clauses['sc']) > 0:
             sc_good_new_predicates = self.cluster_invention(beam_search_clauses["sc_good"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc_good: {len(sc_good_new_predicates)}\n", args.log_file)
 
-        elif len(beam_search_clauses['nc']) < 100:
+        elif 100 > len(beam_search_clauses['nc']) > 0:
             nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
         # cluster necessary clauses
