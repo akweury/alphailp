@@ -1180,14 +1180,17 @@ class PIClauseGenerator(object):
         all_pi_clauses = []
         for index, passed_pi_language in enumerate(passed_pi_languages):
             passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
-            is_duplicate = False
-            for inv_pred in self.lang.invented_preds:
-                assert len(passed_lang.invented_preds) == 1
-                if passed_lang.invented_preds[0].body == inv_pred.body:
-                    is_duplicate = True
-                    log_utils.add_lines(f"duplicate pi clause {passed_lang.invented_preds[0].body}", args.log_file)
-            if not is_duplicate:
-                self.lang.invented_preds.append(passed_lang.invented_preds[0])
+
+            for passed_lang_pred in passed_lang.invented_preds:
+                if passed_lang.invented_preds in self.lang.invented_preds:
+                    continue
+                is_duplicate = False
+                for inv_pred in self.lang.invented_preds:
+                    if passed_lang_pred.body==inv_pred.body:
+                        is_duplicate=True
+                        log_utils.add_lines(f"duplicate pi clause {passed_lang_pred.body}", args.log_file)
+                if not is_duplicate:
+                    self.lang.invented_preds.append(passed_lang_pred)
                 all_pi_clauses += passed_pi_clauses
         return all_pi_clauses
 
