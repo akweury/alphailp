@@ -585,7 +585,7 @@ class ClauseGenerator(object):
                             max_clause_score):
         # evaluate clauses
         if len(new_clauses) == 0:
-            return {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": [], "sc_good": [], "nc_good": [], "uc_good": []}
+            raise ValueError
         log_utils.add_lines(f"Evaluating: {len(new_clauses)} generated clauses.", args.log_file)
         self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
                                    self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
