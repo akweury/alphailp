@@ -84,7 +84,7 @@ def get_args():
                         help="The accept threshold for necessary clauses.")
     parser.add_argument("--uc_th", type=float, default=0.7,
                         help="The accept threshold for unclassified clauses.")
-    parser.add_argument("--sc_th", type=float, default=0.8,
+    parser.add_argument("--sc_th", type=float, default=0.9,
                         help="The accept threshold for sufficient clauses.")
     parser.add_argument("--uc_top", type=int, default=20,
                         help="The accept number for unclassified clauses.")
