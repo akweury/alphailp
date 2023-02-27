@@ -1228,19 +1228,20 @@ class PIClauseGenerator(object):
 
         n_clu, sn_clu, s_clu, sn_th_clu, nc_th_clu, sc_th_clu = logic_utils.search_independent_clauses_parallel(
             clause_candidates, total_score, args)
+        new_predicates = []
         if len(sn_clu) > 0:
             found_ns = True
-            new_predicates = self.generate_new_predicate(sn_clu)[:3]
-        elif len(sn_th_clu) > 0:
-            new_predicates = self.generate_new_predicate(sn_th_clu)[:3]
-        elif len(n_clu) > 0:
-            new_predicates = self.generate_new_predicate(n_clu)[:3]
-        elif len(nc_th_clu) > 0:
-            new_predicates = self.generate_new_predicate(nc_th_clu)[:3]
-        elif len(s_clu) > 0:
-            new_predicates = self.generate_new_predicate(s_clu)[:3]
-        elif len(sc_th_clu) > 0:
-            new_predicates = self.generate_new_predicate(sc_th_clu)[:3]
+            new_predicates = self.generate_new_predicate(sn_clu)[:5]
+        if len(sn_th_clu) > 0:
+            new_predicates += self.generate_new_predicate(sn_th_clu)[:5]
+        if len(n_clu) > 0:
+            new_predicates += self.generate_new_predicate(n_clu)[:5]
+        if len(nc_th_clu) > 0:
+            new_predicates += self.generate_new_predicate(nc_th_clu)[:5]
+        if len(s_clu) > 0:
+            new_predicates += self.generate_new_predicate(s_clu)[:5]
+        if len(sc_th_clu) > 0:
+            new_predicates += self.generate_new_predicate(sc_th_clu)[:5]
         else:
             new_predicates = []
 
