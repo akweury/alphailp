@@ -82,17 +82,17 @@ def get_args():
                         help="The accept threshold for sufficient and necessary clauses.")
     parser.add_argument("--nc_th", type=float, default=0.9,
                         help="The accept threshold for necessary clauses.")
-    parser.add_argument("--uc_th", type=float, default=0.7,
+    parser.add_argument("--uc_th", type=float, default=0.8,
                         help="The accept threshold for unclassified clauses.")
     parser.add_argument("--sc_th", type=float, default=0.9,
                         help="The accept threshold for sufficient clauses.")
     parser.add_argument("--uc_top", type=int, default=5,
                         help="The accept number for unclassified clauses.")
-    parser.add_argument("--uc_good_top", type=int, default=20,
+    parser.add_argument("--uc_good_top", type=int, default=10,
                         help="The accept number for unclassified good clauses.")
-    parser.add_argument("--sc_good_top", type=int, default=20,
+    parser.add_argument("--sc_good_top", type=int, default=10,
                         help="The accept number for sufficient good clauses.")
-    parser.add_argument("--nc_good_top", type=int, default=20,
+    parser.add_argument("--nc_good_top", type=int, default=10,
                         help="The accept number for necessary good clauses.")
     parser.add_argument("--n-data", type=float, default=200,
                         help="The number of data to be used.")
