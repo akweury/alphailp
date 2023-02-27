@@ -253,8 +253,6 @@ class ClauseGenerator(object):
     def extend_clauses(self, clauses, args):
         refs = []
         B_ = []
-        for c in clauses:
-            log_utils.add_lines(f'(extend clause candidate) {c}', args.log_file)
 
         for c in clauses:
             refs_i = self.rgen.refinement_clause(c)
