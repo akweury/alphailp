@@ -11,6 +11,8 @@ trivial_preds_dict = [
     ["diff_color_pair", "same_color_pair"]
 ]
 
-buffer_path = root / "src" / "runs" / "buffer"
+buffer_path = root / ".." / "buffer"
+if not os.path.exists(buffer_path):
+        os.mkdir(buffer_path)
 if __name__ == "__main__":
     print("root path: " + str(root))
