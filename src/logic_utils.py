@@ -1024,7 +1024,7 @@ def select_top_x_clauses(clause_candidates,c_type, args, threshold=None):
         for c in clause_candidates_with_scores_sorted:
             top_clauses_with_scores.append(c[0])
     for t in top_clauses_with_scores:
-        log_utils.add_lines(f'TOP {(c_type)} {t}', args.log_file)
+        log_utils.add_lines(f'TOP {(c_type)} {t[0]}', args.log_file)
 
     return top_clauses_with_scores
 
