@@ -536,7 +536,15 @@ def search_independent_clauses_parallel(clauses, total_score, args):
             sn_th_clusters.append([clause_cluster, clu_c_score])
         # necessary clauses
         if eval_utils.is_nc(clu_c_score, total_score, 1):
-            necessary_clusters.append([clause_cluster, clu_c_score])
+            is_repeat = False
+            for clu, clu_score in necessary_clusters:
+                if clause_cluster == clu:
+                    is_repeat = True
+                    break
+            if not is_repeat:
+                necessary_clusters.append([clause_cluster, clu_c_score])
+            else:
+                print("repeat clauses")
         # almost necessary clauses
         elif eval_utils.is_nc_th_good(clu_c_score, total_score, args.nc_th):
             nc_th_clusters.append([clause_cluster, clu_c_score])
