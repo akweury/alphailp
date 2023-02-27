@@ -1217,7 +1217,8 @@ class PIClauseGenerator(object):
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None):
         found_ns = False
         if random_top is not None:
-            clause_candidates = clause_candidates[random_top]
+            if len(clause_candidates)>random_top:
+                clause_candidates = clause_candidates[random_top]
         elif args.uc_top is not None:
             clause_candidates_with_scores = []
             for c_i, c in enumerate(clause_candidates):
