@@ -372,7 +372,7 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
 
 
 def get_models(args, lang, val_pos_loader, val_neg_loader,
-               clauses, bk_clauses, pi_clauses, atoms, bk):
+               clauses, bk_clauses, pi_clauses, atoms, bk, obj_n):
     PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
     VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
     PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset)
@@ -382,7 +382,7 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
     NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC)
     PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC)
 
-    mode_declarations = get_mode_declarations(args, lang, args.n_obj)
+    mode_declarations = get_mode_declarations(args, lang, obj_n)
     clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
                                        mode_declarations,
                                        bk_clauses, no_xil=args.no_xil)  # torch.device('cpu'))
@@ -401,17 +401,17 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                      args.dataset_type, args.dataset)
 
-
     clauses = []
     iteration = 0
     max_step = 0
     max_clause = [0.0, None]
     while max_step < args.t_beam:
         # if generate new predicates, start the bs deep from 0
-        for obj_n in range(2, args.n_obj):
+        for obj_n in range(2, args.n_obj + 1):
             init_clauses = update_initial_clauses(init_clauses, obj_n)
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                                   init_clauses, bk_clauses, pi_clauses, atoms, bk)
+                                                                   init_clauses, bk_clauses, pi_clauses, atoms, bk,
+                                                                   obj_n)
             # generate clauses # time-consuming code
             bs_clauses, max_clause, max_step = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
                                                                                          pi_clauses, args,
