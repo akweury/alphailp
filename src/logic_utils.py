@@ -479,6 +479,15 @@ def search_independent_clauses(clauses, total_score):
     return necessary_clusters, ns_clusters
 
 
+def is_repeat_clu(clu, clu_list):
+    is_repeat = False
+    for ref_clu, clu_score in clu_list:
+        if clu == ref_clu:
+            is_repeat = True
+            break
+    return is_repeat
+
+
 def search_independent_clauses_parallel(clauses, total_score, args):
     print(f"searching for independent clauses from {len(clauses)} clauses...")
     clauses_with_score = []
@@ -536,24 +545,20 @@ def search_independent_clauses_parallel(clauses, total_score, args):
             sn_th_clusters.append([clause_cluster, clu_c_score])
         # necessary clauses
         if eval_utils.is_nc(clu_c_score, total_score, 1):
-            is_repeat = False
-            for clu, clu_score in necessary_clusters:
-                if clause_cluster == clu:
-                    is_repeat = True
-                    break
-            if not is_repeat:
+            if not is_repeat_clu(clause_cluster, necessary_clusters):
                 necessary_clusters.append([clause_cluster, clu_c_score])
-            else:
-                print("repeat clauses")
         # almost necessary clauses
         elif eval_utils.is_nc_th_good(clu_c_score, total_score, args.nc_th):
-            nc_th_clusters.append([clause_cluster, clu_c_score])
+            if not is_repeat_clu(clause_cluster, nc_th_clusters):
+                nc_th_clusters.append([clause_cluster, clu_c_score])
         # sufficient clauses
         if eval_utils.is_sc(clu_c_score, total_score, 1):
-            sufficient_clusters.append([clause_cluster, clu_c_score])
+            if not is_repeat_clu(clause_cluster, sufficient_clusters):
+                sufficient_clusters.append([clause_cluster, clu_c_score])
         # almost sufficient clauses
         elif eval_utils.is_sc_th_good(clu_c_score, total_score, args.sc_th):
-            sc_th_clusters.append([clause_cluster, clu_c_score])
+            if not is_repeat_clu(clause_cluster, sc_th_clusters):
+                sc_th_clusters.append([clause_cluster, clu_c_score])
 
         else:
             other_clusters.append([clause_cluster, clu_c_score])
@@ -1017,7 +1022,7 @@ def extract_clauses_from_bs_clauses(bs_clauses):
     return clauses
 
 
-def select_top_x_clauses(clause_candidates,c_type, args, threshold=None):
+def select_top_x_clauses(clause_candidates, c_type, args, threshold=None):
     top_clauses_with_scores = []
     clause_candidates_with_scores_sorted = []
     if threshold is None:
@@ -1033,7 +1038,6 @@ def select_top_x_clauses(clause_candidates,c_type, args, threshold=None):
         for c in clause_candidates_with_scores_sorted:
             top_clauses_with_scores.append(c[0])
     for t_i, t in enumerate(top_clauses_with_scores):
-
         log_utils.add_lines(f'TOP {(c_type)} {t[0]}, {clause_candidates_with_scores_sorted[t_i][1]}', args.log_file)
 
     return top_clauses_with_scores
