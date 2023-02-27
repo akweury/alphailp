@@ -57,35 +57,31 @@ def get_atoms(lang):
 #     return new_lang
 
 
-def get_pi_clauses_objs(args, cg_lang, clauses_str_list, new_predicates):
-    """Load the language of first-order logic from files.
-
-    Read the language, clauses, background knowledge from files.
-    Atoms are generated from the language.
-    """
-    du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
-                   dataset_type=args.dataset_type, dataset=args.dataset)
-    pi_languages = []
-    for c_index, [c_list, c_score] in enumerate(clauses_str_list):
-        # create a new language with new pi clauses in c_list
-        lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
-                                                                         args.dataset_type, args.dataset)
-        # lang.invented_preds = cg_lang.invented_preds
-        # lang.invented_preds_number = cg_lang.invented_preds_number + c_index
-        # add predicates to new language
-        lang.invented_preds = cg_lang.invented_preds + new_predicates[c_index]
-
-        # add pi clauses to new language
-        pi_clauses = du.gen_pi_clauses(lang, c_list)
-
-        pi_languages.append([lang, pi_clauses])
-
-        # for pi_c in pi_clauses:
-        #     print(f"(PI Clause Cluster {c_index} )" + str(pi_c))
-
-    # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
-    # atoms = generate_atoms(lang)
-    return pi_languages
+# def get_pi_clauses_objs(args, cg_lang, clauses_str_list, new_predicates):
+#
+#     du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
+#                    dataset_type=args.dataset_type, dataset=args.dataset)
+#     pi_languages = []
+#     for c_index, [c_list, c_score] in enumerate(clauses_str_list):
+#         # create a new language with new pi clauses in c_list
+#         lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
+#                                                                          args.dataset_type, args.dataset)
+#         # lang.invented_preds = cg_lang.invented_preds
+#         # lang.invented_preds_number = cg_lang.invented_preds_number + c_index
+#         # add predicates to new language
+#         lang.invented_preds = cg_lang.invented_preds + new_predicates[c_index]
+#
+#         # add pi clauses to new language
+#         pi_clauses = du.gen_pi_clauses(lang, c_list)
+#
+#         pi_languages.append([lang, pi_clauses])
+#
+#         # for pi_c in pi_clauses:
+#         #     print(f"(PI Clause Cluster {c_index} )" + str(pi_c))
+#
+#     # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
+#     # atoms = generate_atoms(lang)
+#     return pi_languages
 
 
 def get_searched_clauses(lark_path, lang_base_path, dataset_type, dataset):

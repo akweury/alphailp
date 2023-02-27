@@ -20,6 +20,7 @@ import fol.logic as logic
 import log_utils
 import datetime
 import eval_utils
+from fol.data_utils import DataUtils
 
 
 class ClauseGenerator(object):
@@ -777,15 +778,21 @@ class PIClauseGenerator(object):
         new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
 
         # convert clauses from strings to objects
-        pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
+        # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
+        du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
+                       dataset_type=args.dataset_type, dataset=args.dataset)
+        lang, init_clauses, bk_clauses, _, bk, atoms = logic_utils.get_lang(args.lark_path,
+                                                                                     args.lang_base_path,
+                                                                                     args.dataset_type, args.dataset)
 
+        all_pi_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list)
         # pos_pred = pos_pred.to(self.args.device)
         # neg_pred = neg_pred.to(self.args.device)
         # generate pi clauses
         # passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
         # # passed_pi_languages = passed_pi_languages[:5]
         #
-        all_pi_clauses = self.extract_pi(pi_languages, args) + pi_clauses
+        all_pi_clauses = self.extract_pi(lang, all_pi_clauses, args) + pi_clauses
 
         log_utils.add_lines(f"======  Total PI Number: {len(self.lang.invented_preds)}  ======", args.log_file)
         for p in self.lang.invented_preds:
@@ -1176,23 +1183,25 @@ class PIClauseGenerator(object):
         # passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
         # unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
 
-    def extract_pi(self, passed_pi_languages, args):
-        all_pi_clauses = []
-        for index, passed_pi_language in enumerate(passed_pi_languages):
-            passed_lang, passed_pi_clauses = passed_pi_language[0], passed_pi_language[1]
-            passed_lang_pred = passed_lang.invented_preds[0]
-
-            if passed_lang.invented_preds[0] in self.lang.invented_preds:
+    def extract_pi(self, new_lang, all_pi_clauses, args):
+        for index, new_p in enumerate(new_lang.invented_preds):
+            if new_p in self.lang.invented_preds:
                 continue
             is_duplicate = False
-            for inv_pred in self.lang.invented_preds:
-                if passed_lang_pred.body == inv_pred.body:
+            for self_p in self.lang.invented_preds:
+                if new_p.body == self_p.body:
                     is_duplicate = True
-                    log_utils.add_lines(f"duplicate pi clause {passed_lang_pred.body}", args.log_file)
+                    log_utils.add_lines(f"duplicate pi body {new_p.body}", args.log_file)
             if not is_duplicate:
-                self.lang.invented_preds.append(passed_lang_pred)
-            all_pi_clauses += passed_pi_clauses
-        return all_pi_clauses
+                self.lang.invented_preds.append(new_p)
+
+        new_p_names = [self_p.name for self_p in self.lang.invented_preds]
+        new_all_pi_clausese = []
+        for pi_c in all_pi_clauses:
+            pi_c_head_name = pi_c.head.pred.name
+            if pi_c_head_name in new_p_names:
+                new_all_pi_clausese.append(pi_c)
+        return new_all_pi_clausese
 
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args):
 

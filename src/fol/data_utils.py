@@ -61,10 +61,14 @@ class DataUtils(object):
 
         return clauses
 
-    def gen_pi_clauses(self, lang, clause_str_list):
+    def gen_pi_clauses(self, lang, new_predicates, clause_str_list_with_score):
         """Read lines and parse to Atom objects.
         """
-
+        for n_p in new_predicates:
+            lang.invented_preds.append(n_p[0])
+        clause_str_list = []
+        for c_str, c_score in clause_str_list_with_score:
+            clause_str_list += c_str
         clauses = []
         for clause_str in clause_str_list:
             tree = self.lp_clause.parse(clause_str)
