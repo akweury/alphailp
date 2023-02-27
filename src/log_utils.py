@@ -55,4 +55,4 @@ def write_predicate_to_file(invented_preds, inv_predicate_file):
             for body in inv_pred.body:
                 clause_str = head + ":-" + str(body).replace(" ", "")[1:-1] + "."
                 print(str(clause_str))
-                f.write(str(inv_pred) + "\n")
+                f.write(str(clause_str) + "\n")
