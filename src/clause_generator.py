@@ -774,12 +774,12 @@ class PIClauseGenerator(object):
         uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pi_clauses, pos_pred.shape[0], args)
         log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
 
-        sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)[:2]
-        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, keep_all=True)[:2]
-        nc_new_predicates = self.prune_predicates(nc_new_predicates)[:2]
-        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates)[:2]
-        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates)[:2]
-        uc_new_predicates = self.prune_predicates(uc_new_predicates)[:2]
+        sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)[:5]
+        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, keep_all=True)[:5]
+        nc_new_predicates = self.prune_predicates(nc_new_predicates)[:5]
+        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates)[:5]
+        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates)[:5]
+        uc_new_predicates = self.prune_predicates(uc_new_predicates)[:5]
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
                          nc_good_new_predicates + uc_good_new_predicates
         # convert to strings
