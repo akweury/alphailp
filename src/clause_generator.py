@@ -1218,7 +1218,7 @@ class PIClauseGenerator(object):
         found_ns = False
         if random_top is not None:
             if len(clause_candidates)>random_top:
-                clause_candidates = clause_candidates[random_top]
+                clause_candidates = clause_candidates[:random_top]
         elif args.uc_top is not None:
             clause_candidates_with_scores = []
             for c_i, c in enumerate(clause_candidates):
