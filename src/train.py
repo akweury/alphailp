@@ -402,13 +402,14 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     val_pos = pm_prediction_dict["val_pos"].to(args.device)
     val_neg = pm_prediction_dict["val_neg"].to(args.device)
     lang, full_init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
-                                                                     args.dataset_type, args.dataset)
+                                                                          args.dataset_type, args.dataset)
 
     clauses = []
     iteration = 0
     max_step = 0
     max_clause = [0.0, None]
-    while max_step < args.t_beam:
+    found_ns = False
+    while max_step < args.t_beam and not found_ns:
         # if generate new predicates, start the bs deep from 0
         for obj_n in range(2, args.n_obj + 1):
             du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
@@ -426,10 +427,12 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             if len(bs_clauses['sn']) > 0:
                 log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
                 clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]])
+                found_ns = True
                 break
             elif len(bs_clauses['sn_good']) > 0:
                 log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
                 clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'])
+                found_ns = True
                 break
             else:
                 clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
