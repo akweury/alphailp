@@ -416,11 +416,11 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                                                                                      max_clause, max_step=iteration,
                                                                                      iteration=iteration)
         if len(bs_clauses['sn']) > 0:
-            log_utils.add_lines(f"found sufficient and necessary clause: {bs_clauses['sn']}.", args.log_file)
+            log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
             break
         elif len(bs_clauses['sn_good']) > 0:
-            log_utils.add_lines(f"found quasi-sufficient and necessary clause: {bs_clauses['sn_good']}.", args.log_file)
+            log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'])
             break
 
