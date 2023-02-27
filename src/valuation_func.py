@@ -145,7 +145,7 @@ class YOLOAreaValuationFunction(nn.Module):
         zone_id = (phi_clock_shift + area_angle_half) // area_angle % round_divide
 
         # This is a threshold, but it can be decided automatically.
-        zone_id[rho >= 0.12] = zone_id[rho >= 0.12] + round_divide
+        # zone_id[rho >= 0.12] = zone_id[rho >= 0.12] + round_divide
 
         area_pred = torch.zeros(area.shape).to(area.device)
         for i in range(area_pred.shape[0]):
