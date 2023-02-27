@@ -425,6 +425,10 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         if len(bs_clauses['sn']) > 0:
             log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
             clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]])
+            pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
+            inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
+            log_utils.write_clause_to_file(clauses, pi_clause_file)
+            log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
             found_ns = True
             break
         elif len(bs_clauses['sn_good']) > 0:

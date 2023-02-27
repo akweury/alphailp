@@ -1,6 +1,13 @@
 import datetime
 
+def create_file(exp_output_path, file_name):
+    date_now = datetime.datetime.today().date()
+    time_now = datetime.datetime.now().strftime("%H_%M_%S")
+    file_name = str(exp_output_path / f"log_{date_now}_{time_now}_{file_name}.txt")
+    with open(file_name, "w") as f:
+        f.write(f"{file_name} from {date_now}, {time_now}")
 
+    return str(exp_output_path / file_name)
 def create_log_file(exp_output_path):
     date_now = datetime.datetime.today().date()
     time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -32,3 +39,16 @@ def get_unused_args(c):
     return unused_args, used_args
 
 
+def write_clause_to_file(clauses, pi_clause_file):
+
+    with open(pi_clause_file, "a") as f:
+        for c in clauses:
+            print(str(c))
+            f.write(str(c) + "\n")
+
+
+def write_predicate_to_file(invented_preds, inv_predicate_file):
+    with open(inv_predicate_file, "a") as f:
+        for inv_pred in invented_preds:
+            print(str(inv_pred))
+            f.write(str(inv_pred) + "\n")
