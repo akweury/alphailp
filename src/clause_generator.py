@@ -544,13 +544,13 @@ class ClauseGenerator(object):
             elif eval_utils.is_sn_th_good(score, data_size, args.sn_th):
                 sn_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-            elif eval_utils.is_sc(score, data_size, 0):
+            elif eval_utils.is_sc(score, data_size, 1):
                 sufficient_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
                 sc_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
-            elif eval_utils.is_nc(score, data_size, 0):
+            elif eval_utils.is_nc(score, data_size, 1):
                 necessary_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
@@ -761,7 +761,7 @@ class PIClauseGenerator(object):
                                                             pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from nc_good: {len(nc_good_new_predicates)}\n", args.log_file)
         # cluster necessary clauses
-        if len(beam_search_clauses['uc_good']) > 0:
+        elif len(beam_search_clauses['uc_good']) > 0:
             uc_good_new_predicates = self.cluster_invention(beam_search_clauses["uc_good"], pi_clauses,
                                                             pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from UC_GOOD: {len(uc_good_new_predicates)}\n", args.log_file)
@@ -786,8 +786,8 @@ class PIClauseGenerator(object):
         du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
                        dataset_type=args.dataset_type, dataset=args.dataset)
         lang, init_clauses, bk_clauses, _, bk, atoms = logic_utils.get_lang(args.lark_path,
-                                                                                     args.lang_base_path,
-                                                                                     args.dataset_type, args.dataset)
+                                                                            args.lang_base_path,
+                                                                            args.dataset_type, args.dataset)
         for learned_p in self.lang.invented_preds:
             lang.invented_preds.append(learned_p)
         all_pi_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list)

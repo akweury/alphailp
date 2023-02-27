@@ -535,13 +535,13 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         elif eval_utils.is_sn_th_good(clu_c_score, total_score, args.sn_th):
             sn_th_clusters.append([clause_cluster, clu_c_score])
         # necessary clauses
-        if eval_utils.is_nc(clu_c_score, total_score, 0):
+        if eval_utils.is_nc(clu_c_score, total_score, 1):
             necessary_clusters.append([clause_cluster, clu_c_score])
         # almost necessary clauses
         elif eval_utils.is_nc_th_good(clu_c_score, total_score, args.nc_th):
             nc_th_clusters.append([clause_cluster, clu_c_score])
         # sufficient clauses
-        if eval_utils.is_sc(clu_c_score, total_score, 0):
+        if eval_utils.is_sc(clu_c_score, total_score, 1):
             sufficient_clusters.append([clause_cluster, clu_c_score])
         # almost sufficient clauses
         elif eval_utils.is_sc_th_good(clu_c_score, total_score, args.sc_th):
