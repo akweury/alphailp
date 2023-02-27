@@ -637,7 +637,7 @@ class ClauseGenerator(object):
     def update_refs(self, clause_dict):
         refs = []
         if len(clause_dict['nc']) > 0:
-            nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args)
+            nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args, self.args.nc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(nc_top)
         if len(clause_dict['nc_good']) > 0:
             nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
@@ -645,7 +645,7 @@ class ClauseGenerator(object):
             refs += logic_utils.extract_clauses_from_bs_clauses(nc_good_top)
 
         if len(clause_dict['sc']) > 0:
-            sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args)
+            sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(sc_top)
         if len(clause_dict['sc_good']) > 0:
             sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], "sc_good", self.args,
