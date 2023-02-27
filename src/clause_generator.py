@@ -645,7 +645,7 @@ class ClauseGenerator(object):
         if len(clause_dict['sc']) > 0:
             sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(sc_top)
-        elif len(clause_dict['sc_good']) > 0:
+        if len(clause_dict['sc_good']) > 0:
             sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(sc_good_top)
 
