@@ -24,6 +24,7 @@ from percept import YOLOPerceptionModule
 from valuation import YOLOValuationModule, PIValuationModule
 import chart_utils
 import log_utils
+from fol.data_utils import DataUtils
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -408,7 +409,10 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     while max_step < args.t_beam:
         # if generate new predicates, start the bs deep from 0
         for obj_n in range(2, args.n_obj + 1):
-            init_clauses = update_initial_clauses(full_init_clauses, obj_n)
+            du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
+                           dataset_type=args.dataset_type, dataset=args.dataset)
+            init_clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
+            init_clauses = update_initial_clauses(init_clauses, obj_n)
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, bk_clauses, pi_clauses, atoms, bk,
                                                                    obj_n)
