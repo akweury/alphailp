@@ -254,6 +254,9 @@ class ClauseGenerator(object):
         refs = []
         B_ = []
         for c in clauses:
+            log_utils.add_lines(f'(extend clause candidate) {c}', args.log_file)
+
+        for c in clauses:
             refs_i = self.rgen.refinement_clause(c)
             unused_args, used_args = log_utils.get_unused_args(c)
             refs_i_removed = logic_utils.remove_duplicate_clauses(refs_i, unused_args, used_args, args)
