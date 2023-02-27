@@ -775,7 +775,7 @@ class PIClauseGenerator(object):
                                                                  pos_pred.shape[0], args)
         log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
 
-        top_selector = 3
+        top_selector = args.pi_top
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)[:top_selector]
         sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, keep_all=True)[:top_selector]
         nc_new_predicates = self.prune_predicates(nc_new_predicates)[:top_selector]
