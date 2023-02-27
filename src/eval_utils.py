@@ -19,7 +19,7 @@ def is_nc(score, data_size, threshold):
 
 
 def is_nc_th_good(score, data_size, threshold):
-    if (score[1] + score[3]) / data_size > threshold and score[1] > 0:
+    if (score[1] + score[3]) / data_size > threshold and score[1] > score[3]:
         return True
     else:
         return False
