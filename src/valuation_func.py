@@ -134,7 +134,7 @@ class YOLOAreaValuationFunction(nn.Module):
         c_1 = self.to_center(z_1)
         c_2 = self.to_center(z_2)
 
-        round_divide = 8
+        round_divide = 4
         area_angle = int(360 / round_divide)
         area_angle_half = area_angle * 0.5
         # area_angle_half = 0
