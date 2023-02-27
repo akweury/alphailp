@@ -10,7 +10,3 @@ diff_shape(circle,triangle).
 diff_shape(triangle,circle).
 diff_shape(square,triangle).
 diff_shape(triangle,square).
-area_0(a0).
-area_1(a1).
-area_2(a2).
-area_3(a3).
