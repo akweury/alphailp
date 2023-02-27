@@ -409,47 +409,45 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     max_step = 0
     max_clause = [0.0, None]
     found_ns = False
+    obj_n = args.n_obj
+    init_clauses = update_initial_clauses(full_init_clauses, obj_n)
+
     while max_step < args.t_beam and not found_ns:
         # if generate new predicates, start the bs deep from 0
-        for obj_n in range(2, args.n_obj + 1):
-            du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
-                           dataset_type=args.dataset_type, dataset=args.dataset)
-            init_clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
-            init_clauses = update_initial_clauses(init_clauses, obj_n)
-            clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                                   init_clauses, bk_clauses, pi_clauses, atoms, bk,
-                                                                   obj_n)
-            # generate clauses # time-consuming code
-            bs_clauses, max_clause, max_step = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
-                                                                                         pi_clauses, args,
-                                                                                         max_clause, max_step=iteration,
-                                                                                         iteration=iteration)
-            if len(bs_clauses['sn']) > 0:
-                log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
-                clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]])
-                found_ns = True
-                break
-            elif len(bs_clauses['sn_good']) > 0:
-                log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'])
-                found_ns = True
-                break
-            else:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
+        clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
+                                                               init_clauses, bk_clauses, pi_clauses, atoms, bk,
+                                                               obj_n)
+        # generate clauses # time-consuming code
+        bs_clauses, max_clause, max_step = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
+                                                                                     pi_clauses, args,
+                                                                                     max_clause, max_step=iteration,
+                                                                                     iteration=iteration)
+        if len(bs_clauses['sn']) > 0:
+            log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
+            clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]])
+            found_ns = True
+            break
+        elif len(bs_clauses['sn_good']) > 0:
+            log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
+            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'])
+            found_ns = True
+            break
+        else:
+            clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
 
-            if args.no_pi:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'])
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'])
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'])
-            else:
-                # invent new predicate and generate pi clauses
-                pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
-                                                                    val_neg, args, step=iteration)
-                # add new predicates
-                bk_clauses += pi_clauses
-                lang = pi_clause_generator.lang
-                atoms = logic_utils.get_atoms(lang)
+        if args.no_pi:
+            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
+            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'])
+            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'])
+            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'])
+        else:
+            # invent new predicate and generate pi clauses
+            pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
+                                                                val_neg, args, step=iteration)
+            # add new predicates
+            bk_clauses += pi_clauses
+            lang = pi_clause_generator.lang
+            atoms = logic_utils.get_atoms(lang)
 
         iteration += 1
 
