@@ -751,7 +751,10 @@ class PIClauseGenerator(object):
         if len(beam_search_clauses['sc_good']) < 100 and len(beam_search_clauses['sc_good']) > 0:
             sc_good_new_predicates = self.cluster_invention(beam_search_clauses["sc_good"], pi_clauses,
                                                             pos_pred.shape[0], args)
+
             log_utils.add_lines(f"new PI from sc_good: {len(sc_good_new_predicates)}\n", args.log_file)
+            for p in sc_good_new_predicates:
+                print(p)
 
         if 100 > len(beam_search_clauses['nc']) > 0:
             nc_new_predicates = self.cluster_invention(beam_search_clauses["nc"], pi_clauses, pos_pred.shape[0], args)
@@ -1257,9 +1260,9 @@ class PIClauseGenerator(object):
         # else:
         #     new_predicates = new_predicates[:5]
 
-        no_unaligned = logic_utils.remove_unaligned_predicates(new_predicates)
-        if len(no_unaligned) > 0:
-            new_predicates = no_unaligned
+        # no_unaligned = logic_utils.remove_unaligned_predicates(new_predicates)
+        # if len(no_unaligned) > 0:
+        #     new_predicates = no_unaligned
         # else:
         #     new_predicates = new_predicates[:5]
 
