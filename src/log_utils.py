@@ -6,7 +6,7 @@ def create_file(exp_output_path, file_name):
     time_now = datetime.datetime.now().strftime("%H_%M_%S")
     file_name = str(exp_output_path / f"log_{date_now}_{time_now}_{file_name}.txt")
     with open(file_name, "w") as f:
-        f.write(f"{file_name} from {date_now}, {time_now}")
+        f.write(f"{file_name} from {date_now}, {time_now}\n")
 
     return str(exp_output_path / file_name)
 
@@ -45,7 +45,6 @@ def get_unused_args(c):
 def write_clause_to_file(clauses, pi_clause_file):
     with open(pi_clause_file, "a") as f:
         for c in clauses:
-            print(str(c))
             f.write(str(c) + "\n")
 
 

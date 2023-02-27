@@ -1,0 +1,1 @@
+kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1).
