@@ -84,10 +84,16 @@ def get_args():
                         help="The accept threshold for necessary clauses.")
     parser.add_argument("--uc_th", type=float, default=0.7,
                         help="The accept threshold for unclassified clauses.")
-    parser.add_argument("--uc_top", type=int, default=20,
-                        help="The accept number for unclassified clauses.")
     parser.add_argument("--sc_th", type=float, default=0.8,
                         help="The accept threshold for sufficient clauses.")
+    parser.add_argument("--uc_top", type=int, default=20,
+                        help="The accept number for unclassified clauses.")
+    parser.add_argument("--uc_good_top", type=int, default=20,
+                        help="The accept number for unclassified good clauses.")
+    parser.add_argument("--sc_good_top", type=int, default=20,
+                        help="The accept number for sufficient good clauses.")
+    parser.add_argument("--nc_good_top", type=int, default=20,
+                        help="The accept number for necessary good clauses.")
     parser.add_argument("--n-data", type=float, default=200,
                         help="The number of data to be used.")
     parser.add_argument("--pre-searched", action="store_true",
@@ -406,9 +412,9 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                                                                init_clauses, bk_clauses, pi_clauses, atoms, bk)
         # generate clauses # time-consuming code
         bs_clauses, max_clause, max_step = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
-                                                                           pi_clauses, args,
-                                                                           max_clause, max_step=iteration,
-                                                                           iteration=iteration)
+                                                                                     pi_clauses, args,
+                                                                                     max_clause, max_step=iteration,
+                                                                                     iteration=iteration)
         if len(bs_clauses['sn']) > 0:
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
             break
@@ -425,7 +431,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         else:
             # invent new predicate and generate pi clauses
             pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
-                                                                    val_neg, args, step=iteration)
+                                                                val_neg, args, step=iteration)
             # add new predicates
             bk_clauses += pi_clauses
             lang = pi_clause_generator.lang

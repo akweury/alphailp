@@ -1009,9 +1009,9 @@ def extract_clauses_from_bs_clauses(bs_clauses):
     return clauses
 
 
-def select_top_x_clauses(clause_candidates, args):
+def select_top_x_clauses(clause_candidates, threshold=None):
     top_clauses_with_scores = []
-    if args.uc_top is None:
+    if threshold is None:
         top_clauses_with_scores = clause_candidates
     else:
         clause_candidates_with_scores = []
@@ -1020,7 +1020,7 @@ def select_top_x_clauses(clause_candidates, args):
             clause_candidates_with_scores.append([c, four_scores])
         clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
                                                       reverse=True)
-        clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:args.uc_top]
+        clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:threshold]
         for c in clause_candidates_with_scores_sorted:
             top_clauses_with_scores.append(c[0])
 
