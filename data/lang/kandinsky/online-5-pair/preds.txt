@@ -1,3 +1,4 @@
 kp:1:image
 diff_color:2:color,color
 diff_shape:2:shape,shape
+inv_pred0:2:object,object
