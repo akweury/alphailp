@@ -756,9 +756,9 @@ class PIClauseGenerator(object):
             for p in sc_good_new_predicates:
                 print(p)
 
-        if not found_ns and 100 > len(beam_search_clauses['nc']) > 0:
+        if not found_ns and len(beam_search_clauses['nc']) > 0:
             nc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc"], pi_clauses,
-                                                                 pos_pred.shape[0], args)
+                                                                 pos_pred.shape[0], args, random_top=20)
             log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
 
         if not found_ns and len(beam_search_clauses['nc_good']) > 0:
@@ -1214,9 +1214,11 @@ class PIClauseGenerator(object):
                 new_all_pi_clausese.append(pi_c)
         return new_all_pi_clausese
 
-    def cluster_invention(self, clause_candidates, pi_clauses, total_score, args):
+    def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None):
         found_ns = False
-        if args.uc_top is not None:
+        if random_top is not None:
+            clause_candidates = clause_candidates[random_top]
+        elif args.uc_top is not None:
             clause_candidates_with_scores = []
             for c_i, c in enumerate(clause_candidates):
                 four_scores = logic_utils.get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
