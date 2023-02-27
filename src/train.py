@@ -398,7 +398,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     FC = None
     val_pos = pm_prediction_dict["val_pos"].to(args.device)
     val_neg = pm_prediction_dict["val_neg"].to(args.device)
-    lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
+    lang, full_init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
                                                                      args.dataset_type, args.dataset)
 
     clauses = []
@@ -408,7 +408,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     while max_step < args.t_beam:
         # if generate new predicates, start the bs deep from 0
         for obj_n in range(2, args.n_obj + 1):
-            init_clauses = update_initial_clauses(init_clauses, obj_n)
+            init_clauses = update_initial_clauses(full_init_clauses, obj_n)
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, bk_clauses, pi_clauses, atoms, bk,
                                                                    obj_n)
