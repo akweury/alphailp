@@ -1009,7 +1009,7 @@ def extract_clauses_from_bs_clauses(bs_clauses):
     return clauses
 
 
-def select_top_x_clauses(clause_candidates, threshold=None):
+def select_top_x_clauses(clause_candidates,c_type, args, threshold=None):
     top_clauses_with_scores = []
     if threshold is None:
         top_clauses_with_scores = clause_candidates
@@ -1023,6 +1023,8 @@ def select_top_x_clauses(clause_candidates, threshold=None):
         clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:threshold]
         for c in clause_candidates_with_scores_sorted:
             top_clauses_with_scores.append(c[0])
+    for t in top_clauses_with_scores:
+        log_utils.add_lines(f'TOP {(c_type)} {t}', args.log_file)
 
     return top_clauses_with_scores
 

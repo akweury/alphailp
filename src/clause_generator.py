@@ -639,25 +639,28 @@ class ClauseGenerator(object):
     def update_refs(self, clause_dict):
         refs = []
         if len(clause_dict['nc']) > 0:
-            nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'])
+            nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(nc_top)
         if len(clause_dict['nc_good']) > 0:
-            nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], self.args.nc_good_top)
+            nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
+                                                           self.args.nc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(nc_good_top)
 
         if len(clause_dict['sc']) > 0:
-            sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'])
+            sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args)
             refs += logic_utils.extract_clauses_from_bs_clauses(sc_top)
         if len(clause_dict['sc_good']) > 0:
-            sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], self.args.sc_good_top)
+            sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], "sc_good", self.args,
+                                                           self.args.sc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(sc_good_top)
 
         if len(clause_dict['uc_good']) > 0:
-            uc_good_top = logic_utils.select_top_x_clauses(clause_dict['uc_good'], self.args.uc_good_top)
+            uc_good_top = logic_utils.select_top_x_clauses(clause_dict['uc_good'], "uc_good", self.args,
+                                                           self.args.uc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(uc_good_top)
-        else:
-            uc_top = logic_utils.select_top_x_clauses(clause_dict['uc'], self.args.uc_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(uc_top)
+
+        uc_top = logic_utils.select_top_x_clauses(clause_dict['uc'], "uc", self.args, self.args.uc_top)
+        refs += logic_utils.extract_clauses_from_bs_clauses(uc_top)
         # sort refs and select top ...
         return refs
 
@@ -770,12 +773,12 @@ class PIClauseGenerator(object):
             uc_new_predicates = self.cluster_invention(beam_search_clauses["uc"], pi_clauses, pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
 
-        sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)
-        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, keep_all=True)
-        nc_new_predicates = self.prune_predicates(nc_new_predicates)
-        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates)
-        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates)
-        uc_new_predicates = self.prune_predicates(uc_new_predicates)
+        sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)[:2]
+        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, keep_all=True)[:2]
+        nc_new_predicates = self.prune_predicates(nc_new_predicates)[:2]
+        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates)[:2]
+        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates)[:2]
+        uc_new_predicates = self.prune_predicates(uc_new_predicates)[:2]
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
                          nc_good_new_predicates + uc_good_new_predicates
         # convert to strings
