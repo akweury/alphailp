@@ -1,0 +1,21 @@
+{
+  "n_obj": 2,
+  "batch-size-train": 10,
+  "e": 6,
+  "dataset": "online-5-pair",
+  "dataset-type": "kandinsky",
+  "t-beam": 5,
+  "n-beam": 5,
+  "cim-step": 6,
+  "epochs": 100,
+  "sn_th": 0.9,
+  "nc_th": 0.9,
+  "uc_th": 0.8,
+  "sc_th": 0.9,
+  "uc_top": 20,
+  "uc_good_top": 20,
+  "sc_good_top": 20,
+  "nc_good_top": 30,
+  "pi_top": 20,
+  "with_bk": true
+}
