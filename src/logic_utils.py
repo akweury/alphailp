@@ -495,7 +495,7 @@ def is_repeat_clu(clu, clu_list):
 
 
 def search_independent_clauses_parallel(clauses, total_score, args):
-    print(f"searching for independent clauses from {len(clauses)} clauses...")
+    print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
     clauses_with_score = []
     for clause_i, [clause, c_scores] in enumerate(clauses):
         clauses_with_score.append([clause_i, clause, c_scores])
