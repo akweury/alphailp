@@ -101,6 +101,8 @@ def get_args():
                         help="The number of data to be used.")
     parser.add_argument("--pre-searched", action="store_true",
                         help="Using pre searched clauses.")
+    parser.add_argument("--with_bk", action="store_true",
+                        help="Using background knowledge by PI.")
     args = parser.parse_args()
     return args
 
@@ -375,23 +377,22 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
 
 
 def get_models(args, lang, val_pos_loader, val_neg_loader,
-               clauses, bk_clauses, pi_clauses, atoms, bk, obj_n):
+               clauses, pi_clauses, atoms, obj_n):
     PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
     VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
     PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset)
     FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
                                         pi_valuation_module=PI_VM, device=args.device)
     # Neuro-Symbolic Forward Reasoner for clause generation
-    NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC)
-    PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC)
+    NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC)
+    PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
 
     mode_declarations = get_mode_declarations(args, lang, obj_n)
     clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
-                                       mode_declarations,
-                                       bk_clauses, no_xil=args.no_xil)  # torch.device('cpu'))
+                                       mode_declarations, no_xil=args.no_xil)  # torch.device('cpu'))
 
     pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
-                                            mode_declarations, bk_clauses, no_xil=args.no_xil)  # torch.device('cpu'))
+                                            mode_declarations, no_xil=args.no_xil)  # torch.device('cpu'))
 
     return clause_generator, pi_clause_generator, FC
 
@@ -401,8 +402,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     FC = None
     val_pos = pm_prediction_dict["val_pos"].to(args.device)
     val_neg = pm_prediction_dict["val_neg"].to(args.device)
-    lang, full_init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
-                                                                          args.dataset_type, args.dataset)
+    lang, full_init_clauses, pi_clauses, atoms = get_lang(args)
 
     clauses = []
     iteration = 0
@@ -415,8 +415,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     while max_step < args.t_beam:
         # if generate new predicates, start the bs deep from 0
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                               init_clauses, bk_clauses, pi_clauses, atoms, bk,
-                                                               obj_n)
+                                                               init_clauses, pi_clauses, atoms, obj_n)
         # generate clauses # time-consuming code
         bs_clauses, max_clause, max_step = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
                                                                                      pi_clauses, args,
@@ -453,7 +452,6 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
                                                                 val_neg, args, step=iteration)
             # add new predicates
-            bk_clauses += pi_clauses
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
 
@@ -461,7 +459,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
     for c in clauses:
         log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
-    NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=True)
+    NSFR = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=True)
     nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
     return NSFR
 

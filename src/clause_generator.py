@@ -37,14 +37,14 @@ class ClauseGenerator(object):
         max number of atoms in body of clauses
     """
 
-    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations, bk_clauses,
+    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations,
                  no_xil=False):
         self.args = args
         self.NSFR = NSFR
         self.PI = PI
         self.lang = lang
         self.mode_declarations = mode_declarations
-        self.bk_clauses = bk_clauses
+        self.bk_clauses = None
         self.device = args.device
         self.no_xil = no_xil
         self.rgen = RefinementGenerator(lang=lang, mode_declarations=mode_declarations)
@@ -588,8 +588,7 @@ class ClauseGenerator(object):
         if len(new_clauses) == 0:
             raise ValueError
         log_utils.add_lines(f"Evaluating: {len(new_clauses)} generated clauses.", args.log_file)
-        self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms,
-                                   self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
+        self.NSFR = get_nsfr_model(self.args, self.lang, new_clauses, self.NSFR.atoms, pi_clauses, self.NSFR.fc)
         all_predicates_scores, clause_scores_full = logic_utils.eval_predicates(self.NSFR, self.args,
                                                                                 eval_pred_names, pos_pred,
                                                                                 neg_pred)
@@ -717,13 +716,13 @@ class PIClauseGenerator(object):
         max number of atoms in body of clauses
     """
 
-    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations, bk_clauses,
+    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations,
                  no_xil=False):
         self.args = args
         self.lang = lang
         self.NSFR = NSFR
         self.PI = PI
-        self.bk_clauses = bk_clauses
+        self.bk_clauses = None
         self.device = args.device
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
@@ -791,9 +790,7 @@ class PIClauseGenerator(object):
         # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
         du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
                        dataset_type=args.dataset_type, dataset=args.dataset)
-        lang, init_clauses, bk_clauses, _, bk, atoms = logic_utils.get_lang(args.lark_path,
-                                                                            args.lang_base_path,
-                                                                            args.dataset_type, args.dataset)
+        lang, init_clauses, bk_pi_clauses, atoms = logic_utils.get_lang(args)
         for learned_p in self.lang.invented_preds:
             lang.invented_preds.append(learned_p)
         all_pi_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list)
@@ -1217,7 +1214,7 @@ class PIClauseGenerator(object):
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None):
         found_ns = False
         if random_top is not None:
-            if len(clause_candidates)>random_top:
+            if len(clause_candidates) > random_top:
                 clause_candidates = clause_candidates[:random_top]
         elif args.uc_top is not None:
             clause_candidates_with_scores = []

@@ -1,4 +1,5 @@
 import os.path
+import glob
 
 import lark.exceptions
 from lark import Lark
@@ -41,7 +42,7 @@ class DataUtils(object):
                     clauses.append(clause)
         return clauses
 
-    def load_pi_clauses(self, path, lang):
+    def load_pi_clauses(self, bk_prefix, path, lang):
         """Read lines and parse to Atom objects.
         """
         clauses = []
@@ -50,9 +51,7 @@ class DataUtils(object):
                 for line in f:
                     if line[-1] == '\n':
                         line = line[:-1]
-
                     # substitude placeholder predicates to exist predicates
-
                     clause_candidates = self.get_clause_candidates(lang, line)
                     for clause_str in clause_candidates:
                         tree = self.lp_clause.parse(clause_str)
@@ -142,7 +141,21 @@ class DataUtils(object):
         preds = [self.parse_neural_pred(line) for line in lines]
         return preds
 
-    def load_invented_preds(self, path):
+    def load_invented_preds(self, bk_prefix, path):
+        f = open(path)
+        lines = f.readlines()
+        lines = [self.rename_bk_preds_in_clause(bk_prefix, line) for line in lines]
+        preds = [self.parse_invented_bk_pred(bk_prefix, line) for line in lines]
+        return preds
+
+    def load_invented_clauses(self, bk_prefix, path, lang):
+        f = open(path)
+        lines = f.readlines()
+        lines = [self.rename_bk_preds_in_clause(bk_prefix, line) for line in lines]
+        clauses = [self.parse_invented_bk_clause(line, lang) for line in lines]
+        return clauses
+
+    def load_invented_preds_template(self, path):
         f = open(path)
         lines = f.readlines()
         preds = {}
@@ -195,16 +208,43 @@ class DataUtils(object):
         """Parse string to invented predicates.
         """
         line = line.replace('\n', '')
+
         if (len(line)) == 0:
             return None
-
         pred, arity, dtype_names_str = line.split(':')
         dtype_names = dtype_names_str.split(',')
         dtypes = [DataType(dt) for dt in dtype_names]
         assert int(arity) == len(dtypes), 'Invalid arity and dtypes in ' + pred + '.'
+        pred_with_id = pred
+        invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes, args=None, pi_type=None)
+        return invented_pred
+
+    def rename_bk_preds_in_clause(self, bk_prefix, line):
+        """Parse string to invented predicates.
+        """
+        new_line = line.replace('\n', '')
+        new_line = new_line.replace('inv_pred', "inv_pred_bk" + str(bk_prefix) + "_")
+        return new_line
+
+    def parse_invented_bk_clause(self,line, lang):
+        """Parse string to invented predicates.
+        """
+
+        tree = self.lp_clause.parse(line)
+        clause = ExpTree(lang).transform(tree)
+
+        return clause
+
+    def parse_invented_bk_pred(self, bk_prefix, line):
+        """Parse string to invented predicates.
+        """
+        head, body = line.split(':-')
+        arity = len(head.split(","))
+        head_dtype_names = arity * ['object']
+        dtypes = [DataType(dt) for dt in head_dtype_names]
 
         # pred_with_id = pred + f"_{i}"
-        pred_with_id = pred
+        pred_with_id = head.split("(")[0]
         invented_pred = InventedPredicate(pred_with_id, int(arity), dtypes, args=None, pi_type=None)
 
         return invented_pred
@@ -237,13 +277,18 @@ class DataUtils(object):
     def get_bk(self, lang):
         return self.load_atoms(str(self.base_path / 'bk.txt'), lang)
 
-    def load_language(self):
+    def load_language(self, args):
         """Load language, background knowledge, and clauses from files.
         """
         preds = self.load_preds(str(self.base_path / 'preds.txt'))
         preds += self.load_neural_preds(str(self.base_path / 'neural_preds.txt'))
-        pi_templates = self.load_invented_preds(str(self.base_path / 'neural_preds.txt'))
-        # preds += pi_templates
+        pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
         consts = self.load_consts(str(self.base_path / 'consts.txt'))
+
+        if args.with_bk:
+            bk_pred_files = glob.glob(str(self.base_path / ".." / "bg_predicates" / "*.txt"))
+            for bk_i, bk_file in enumerate(bk_pred_files):
+                preds += self.load_invented_preds(bk_i, bk_file)
+
         lang = Language(preds, [], consts, pi_templates)
         return lang

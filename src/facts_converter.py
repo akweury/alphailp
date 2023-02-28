@@ -68,10 +68,10 @@ class FactsConverter(nn.Module):
             #         V[:, i] = value
 
                 # this atom in background knowledge
-            elif atom in B:
-            # V[:, i] += 1.0
-                value = torch.ones((batch_size,)).to(torch.float32).to(self.device)
-                V[:, i] += value
+            # elif atom in B:
+            # # V[:, i] += 1.0
+            #     value = torch.ones((batch_size,)).to(torch.float32).to(self.device)
+            #     V[:, i] += value
 
         V[:, 1] = torch.ones((batch_size,)).to(torch.float32).to(self.device)
         return V

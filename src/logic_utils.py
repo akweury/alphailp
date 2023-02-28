@@ -7,6 +7,7 @@ from fol.logic import *
 from fol.data_utils import DataUtils
 from fol.language import DataType
 import datetime
+import glob
 
 import config
 import log_utils
@@ -17,24 +18,28 @@ false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
 true = Atom(p_, [Const('__T__', dtype=DataType('spec'))])
 
 
-def get_lang(lark_path, lang_base_path, dataset_type, dataset):
+def get_lang(args):
     """Load the language of first-order logic from files.
 
     Read the language, clauses, background knowledge from files.
     Atoms are generated from the language.
     """
-    du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
-                   dataset_type=dataset_type, dataset=dataset)
-    lang = du.load_language()
-    clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
-    bk_clauses = du.load_clauses(str(du.base_path / 'bk_clauses.txt'), lang)
-    pi_clauses = du.load_pi_clauses(str(du.base_path / 'pi_clauses.txt'), lang)
 
+    du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
+                   dataset_type=args.dataset_type, dataset=args.dataset)
+    lang = du.load_language(args)
+    init_clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
+    # bk_clauses = du.load_clauses(str(du.base_path / 'bk_clauses.txt'), lang)
+    pi_clauses = []
+    if args.with_bk:
+        bk_pred_files = glob.glob(str(du.base_path / ".." / "bg_predicates" / "*.txt"))
+        for bk_i, bk_file in enumerate(bk_pred_files):
+            pi_clauses += du.load_invented_clauses(bk_i, bk_file, lang)
     # clauses += pi_clauses
 
-    bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
+    # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
     atoms = generate_atoms(lang)
-    return lang, clauses, bk_clauses, pi_clauses, bk, atoms
+    return lang, init_clauses, pi_clauses, atoms
 
 
 def get_atoms(lang):
@@ -112,15 +117,11 @@ def _get_lang(lark_path, lang_base_path, dataset_type, dataset):
     return lang, clauses, bk, atoms
 
 
-def build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
+def build_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
     I = te.encode()
-    if len(bk_clauses) > 0:
-        te_bk = TensorEncoder(lang, atoms, bk_clauses, device=device)
-        I_bk = te_bk.encode()
-    else:
-        te_bk = None
-        I_bk = None
+    te_bk = None
+    I_bk = None
     if len(pi_clauses) > 0:
         te_pi = TensorEncoder(lang, atoms, pi_clauses, device=device)
         I_pi = te_pi.encode()
@@ -132,15 +133,11 @@ def build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, device, m=3
     return im
 
 
-def build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, device, m=3, infer_step=5, train=False):
+def build_clause_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, infer_step=5, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
     I = te.encode()
-    if len(bk_clauses) > 0:
-        te_bk = TensorEncoder(lang, atoms, bk_clauses, device=device)
-        I_bk = te_bk.encode()
-    else:
-        te_bk = None
-        I_bk = None
+    te_bk = None
+    I_bk = None
 
     te_pi = None
     I_pi = None
@@ -152,15 +149,12 @@ def build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, devi
     return im
 
 
-def build_pi_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
+def build_pi_clause_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
     I = te.encode()
-    if len(bk_clauses) > 0:
-        te_bk = TensorEncoder(lang, atoms, bk_clauses, device=device)
-        I_bk = te_bk.encode()
-    else:
-        te_bk = None
-        I_bk = None
+
+    te_bk = None
+    I_bk = None
 
     te_pi = None
     I_pi = None

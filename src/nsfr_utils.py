@@ -7,11 +7,9 @@ import data_clevr
 import data_kandinsky
 from facts_converter import FactsConverter
 from nsfr import NSFReasoner
-from logic_utils import build_infer_module, build_clause_infer_module, build_pi_clause_infer_module
+from logic_utils import build_infer_module, build_clause_infer_module
 from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
 from valuation import SlotAttentionValuationModule, YOLOValuationModule, PIValuationModule
-
-import log_utils
 
 attrs = ['color', 'shape', 'material', 'size']
 
@@ -341,7 +339,7 @@ def get_prob_by_prednames(v_T, NSFR, prednames):
     return predicted
 
 
-def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=False):
+def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
 
     device = args.device
     if args.dataset_type == 'kandinsky':
@@ -355,14 +353,14 @@ def get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, t
 
     else:
         assert False, "Invalid dataset type: " + str(args.dataset_type)
-    IM = build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,
+    IM = build_infer_module(clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,
                             train=train)
-    CIM = build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
+    CIM = build_clause_infer_module(clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
                                     device=device)
 
     # Neuro-Symbolic Forward Reasoner
-    NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM, clause_infer_module=CIM, atoms=atoms,
-                       bk=bk, clauses=clauses)
+    NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM,
+                       clause_infer_module=CIM, atoms=atoms, clauses=clauses)
     return NSFR
 
 

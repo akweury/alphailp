@@ -17,7 +17,7 @@ class NSFReasoner(nn.Module):
         atoms (list(atom)): The set of ground atoms (facts).
     """
 
-    def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, atoms, bk, clauses,
+    def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, atoms, clauses,
                  train=False):
         super().__init__()
         self.pm = perception_module
@@ -25,7 +25,7 @@ class NSFReasoner(nn.Module):
         self.im = infer_module
         self.cim = clause_infer_module
         self.atoms = atoms
-        self.bk = bk
+        self.bk = None
         self.clauses = clauses
         self._train = train
 

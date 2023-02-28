@@ -1,0 +1,1 @@
+inv_pred0(O1):-color(O1,blue),in(O1,X).

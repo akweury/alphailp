@@ -51,7 +51,7 @@ def write_clause_to_file(clauses, pi_clause_file):
 def write_predicate_to_file(invented_preds, inv_predicate_file):
     with open(inv_predicate_file, "a") as f:
         for inv_pred in invented_preds:
-            head = inv_pred.name
+            head = inv_pred.name + str(inv_pred.terms)
             for body in inv_pred.body:
                 clause_str = head + ":-" + str(body).replace(" ", "")[1:-1] + "."
                 print(str(clause_str))

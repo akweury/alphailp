@@ -7,7 +7,7 @@ import data_kandinsky
 from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
 from facts_converter import FactsConverter
 from logic_utils import build_infer_module, build_clause_infer_module, build_pi_clause_infer_module
-from valuation import SlotAttentionValuationModule, YOLOValuationModule, PIValuationModule
+from valuation import PIValuationModule
 from fol.logic import InventedPredicate
 import numpy as np
 import torch.nn as nn
@@ -26,7 +26,7 @@ class PIReasoner(nn.Module):
     """
 
     def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, pi_clause_infer_module,
-                 atoms, bk, clauses,
+                 atoms, clauses,
                  pi_valuation_module, train=False):
         super().__init__()
         self.pm = perception_module
@@ -36,7 +36,7 @@ class PIReasoner(nn.Module):
         self.pi_cim = pi_clause_infer_module
         self.atoms = atoms
         self.pi_vm = pi_valuation_module
-        self.bk = bk
+        self.bk = None
         self.clauses = clauses
         self._train = train
 
@@ -154,22 +154,22 @@ class PIReasoner(nn.Module):
         return text
 
 
-def get_pi_model(args, lang, clauses, atoms, bk, bk_clauses, pi_clauses, FC, train=False):
+def get_pi_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
     device = args.device
     PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
     PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
-    IM = build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang,
+    IM = build_infer_module(clauses, pi_clauses, atoms, lang,
                             m=args.m, infer_step=2, device=device, train=train)
-    CIM = build_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang,
+    CIM = build_clause_infer_module(clauses, pi_clauses, atoms, lang,
                                     m=len(clauses), infer_step=2, device=device)
 
-    PICIM = build_pi_clause_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=2,
+    PICIM = build_pi_clause_infer_module(clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=2,
                                          device=device)
 
     PI = PIReasoner(perception_module=PM, facts_converter=FC,
                     infer_module=IM, clause_infer_module=CIM,
                     pi_clause_infer_module=PICIM,
-                    atoms=atoms, bk=bk, clauses=clauses,
+                    atoms=atoms, clauses=clauses,
                     pi_valuation_module=PI_VM)
     # Neuro-Symbolic Forward Reasoner
     return PI

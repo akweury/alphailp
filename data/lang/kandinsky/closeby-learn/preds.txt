@@ -1,11 +1,1 @@
 kp:1:image
-area_0:1:area
-area_1:1:area
-area_2:1:area
-area_3:1:area
-area_4:1:area
-area_5:1:area
-area_6:1:area
-area_7:1:area
-diff_color:2:color,color
-diff_shape:2:shape,shape
