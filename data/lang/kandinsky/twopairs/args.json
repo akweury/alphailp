@@ -17,5 +17,5 @@
   "sc_good_top": 20,
   "nc_good_top": 30,
   "pi_top": 20,
-  "with_bk": true
+  "with_bk": false
 }
