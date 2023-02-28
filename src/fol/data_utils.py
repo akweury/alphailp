@@ -226,7 +226,7 @@ class DataUtils(object):
         new_line = new_line.replace('inv_pred', "inv_pred_bk" + str(bk_prefix) + "_")
         return new_line
 
-    def parse_invented_bk_clause(self,line, lang):
+    def parse_invented_bk_clause(self, line, lang):
         """Parse string to invented predicates.
         """
 
@@ -284,11 +284,11 @@ class DataUtils(object):
         preds += self.load_neural_preds(str(self.base_path / 'neural_preds.txt'))
         pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
         consts = self.load_consts(str(self.base_path / 'consts.txt'))
-
+        bk_inv_preds = []
         if args.with_bk:
             bk_pred_files = glob.glob(str(self.base_path / ".." / "bg_predicates" / "*.txt"))
             for bk_i, bk_file in enumerate(bk_pred_files):
-                preds += self.load_invented_preds(bk_i, bk_file)
+                bk_inv_preds += self.load_invented_preds(bk_i, bk_file)
 
-        lang = Language(preds, [], consts, pi_templates)
+        lang = Language(preds, [], consts, bk_inv_preds, pi_templates)
         return lang

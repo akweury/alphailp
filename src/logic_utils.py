@@ -206,7 +206,19 @@ def generate_atoms(lang):
                     continue
             if len(args) == 1 or len(set(args)) == len(args):
                 pi_atoms.append(Atom(pred, args))
-    return spec_atoms + sorted(atoms) + sorted(pi_atoms)
+    bk_pi_atoms = []
+    for pred in lang.bk_inv_preds:
+        dtypes = pred.dtypes
+        consts_list = [lang.get_by_dtype(dtype) for dtype in dtypes]
+        args_list = list(set(itertools.product(*consts_list)))
+        for args in args_list:
+            # check if args and pred correspond are in the same area
+            if pred.dtypes[0].name == 'area':
+                if pred.name[0] + pred.name[5:] != args[0].name:
+                    continue
+            if len(args) == 1 or len(set(args)) == len(args):
+                pi_atoms.append(Atom(pred, args))
+    return spec_atoms + sorted(atoms) + sorted(pi_atoms) + sorted(bk_pi_atoms)
 
 
 def generate_bk(lang):

@@ -70,6 +70,10 @@ class ExpTree(Transformer):
             for p in self.lang.invented_preds:
                 if p.name == alphas[0]:
                     pred.append(p)
+        if len(pred) == 0:
+            for p in self.lang.bk_inv_preds:
+                if p.name == alphas[0]:
+                    pred.append(p)
         if (len(pred) == 0):
             raise ValueError("Not found predicate.")
         pred_0 = pred[0]

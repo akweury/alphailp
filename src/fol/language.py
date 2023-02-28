@@ -19,11 +19,12 @@ class Language(object):
         consts (List[Const]): A set of constants.
     """
 
-    def __init__(self, preds, funcs, consts, pi_templates):
+    def __init__(self, preds, funcs, consts, bk_inv_preds, pi_templates):
         self.preds = preds
         self.funcs = funcs
         self.consts = consts
         self.pi_templates = pi_templates
+        self.bk_inv_preds = bk_inv_preds
         self.invented_preds = []
         self.invented_preds_number = 0
 
@@ -138,6 +139,21 @@ class Language(object):
                          invented_pred.name == invented_pred_name]
         if not len(invented_pred) == 1:
             raise ValueError('Too many or less match in ' + invented_pred_name)
+        return invented_pred[0]
+
+    def get_bk_invented_pred_by_name(self, invented_pred_name):
+        """Get the predicate by its name.
+
+        Args:
+            invented_pred_name (str): The name of the predicate.
+
+        Returns:
+            InventedPredicat: The matched invented predicate with the given name.
+        """
+        invented_pred = [invented_pred for invented_pred in self.bk_inv_preds if
+                         invented_pred.name == invented_pred_name]
+        if not len(invented_pred) > 0:
+            raise ValueError('Too less match in ' + invented_pred_name)
         return invented_pred[0]
 
     def get_new_invented_predicate(self, arity, pi_dtypes, args, pi_types):

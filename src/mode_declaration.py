@@ -122,6 +122,11 @@ def get_pi_mode_declarations(lang):
         objects = [p_object] * pi.arity
         mode_declarations = ModeDeclaration('body', 1, lang.get_invented_pred_by_name(pi_str), objects)
         pi_mode_declarations.append(mode_declarations)
+    for pi_index, pi in enumerate(lang.bk_inv_preds):
+        pi_str = pi.name
+        objects = [p_object] * pi.arity
+        mode_declarations = ModeDeclaration('body', 1, lang.get_bk_invented_pred_by_name(pi_str), objects)
+        pi_mode_declarations.append(mode_declarations)
     return pi_mode_declarations
 
 
