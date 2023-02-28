@@ -777,9 +777,9 @@ class PIClauseGenerator(object):
         if not found_ns:
             uc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["uc"], pi_clauses,
                                                                  pos_pred.shape[0], args)
-        log_utils.add_lines(f"\nnew PI from UC: {len(uc_new_predicates)}", args.log_file)
-        for p in uc_new_predicates:
-            print(p)
+            log_utils.add_lines(f"\nnew PI from UC: {len(uc_new_predicates)}", args.log_file)
+            for p in uc_new_predicates:
+                print(p)
 
         top_selector = args.pi_top
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)[:top_selector]

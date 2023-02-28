@@ -550,7 +550,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         elif eval_utils.is_sn_th_good(clu_c_score, total_score, args.sn_th):
             sn_th_clusters.append([clause_cluster, clu_c_score])
         # necessary clauses
-        if eval_utils.is_nc(clu_c_score, total_score, 1):
+        if eval_utils.is_nc(clu_c_score, total_score, 0):
             if not is_repeat_clu(clause_cluster, necessary_clusters):
                 necessary_clusters.append([clause_cluster, clu_c_score])
         # almost necessary clauses
@@ -558,7 +558,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
             if not is_repeat_clu(clause_cluster, nc_th_clusters):
                 nc_th_clusters.append([clause_cluster, clu_c_score])
         # sufficient clauses
-        if eval_utils.is_sc(clu_c_score, total_score, 1):
+        if eval_utils.is_sc(clu_c_score, total_score, 0):
             if not is_repeat_clu(clause_cluster, sufficient_clusters):
                 sufficient_clusters.append([clause_cluster, clu_c_score])
         # almost sufficient clauses
