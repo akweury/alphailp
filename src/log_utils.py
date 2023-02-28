@@ -53,9 +53,9 @@ def write_predicate_to_file(invented_preds, inv_predicate_file):
         for inv_pred in invented_preds:
             arg_str = "("
             for a_i, a in enumerate(inv_pred.args):
-                arg_str+=str(a)
-                if a_i != len(inv_pred.args)-1:
-                    arg_str+=","
+                arg_str += str(a)
+                if a_i != len(inv_pred.args) - 1:
+                    arg_str += ","
             arg_str += ")"
             head = inv_pred.name + arg_str
             for body in inv_pred.body:
