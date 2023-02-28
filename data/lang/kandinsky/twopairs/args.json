@@ -8,7 +8,7 @@
   "cim-step": 5,
   "n_obj": 2,
   "epochs": 100,
-  "sn_th": 0.9,
+  "sn_th": 0.95,
   "nc_th": 0.9,
   "uc_th": 0.8,
   "sc_th": 0.9,
