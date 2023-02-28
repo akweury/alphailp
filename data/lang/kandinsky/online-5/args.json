@@ -14,8 +14,8 @@
   "sc_th": 0.9,
   "uc_top": 20,
   "uc_good_top": 20,
-  "sc_good_top": 20,
-  "nc_good_top": 30,
-  "pi_top": 20,
+  "sc_good_top": 10,
+  "nc_good_top": 10,
+  "pi_top": 10,
   "with_bk": false
 }
