@@ -6,7 +6,7 @@
   "t-beam": 4,
   "n-beam": 5,
   "cim-step": 5,
-  "n-obj": 2,
+  "n_obj": 2,
   "epochs": 100,
   "sn_th": 0.9,
   "nc_th": 0.9,

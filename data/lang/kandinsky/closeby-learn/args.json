@@ -1,5 +1,5 @@
 {
-  "n-obj": 2,
+  "n_obj": 2,
   "batch-size-train": 20,
   "e": 6,
   "dataset": "closeby-learn",
