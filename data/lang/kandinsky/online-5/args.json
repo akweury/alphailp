@@ -1,5 +1,5 @@
 {
-  "n_obj": 2,
+  "n_obj": 5,
   "batch-size-train": 10,
   "e": 6,
   "dataset": "online-5",

@@ -118,8 +118,8 @@ def get_args():
 def discretise_NSFR(NSFR, args, device):
     lark_path = 'src/lark/exp.lark'
     lang_base_path = 'data/lang/'
-    lang, clauses_, bk_clauses, pi_clauses, bk, atoms = get_lang(
-        lark_path, lang_base_path, args.dataset_type, args.dataset)
+    lang, clauses_, bk_clauses, pi_clauses, bk, atoms = get_lang(lark_path, lang_base_path, args.dataset_type,
+                                                                 args.dataset)
     # Discretise NSFR rules
     clauses = NSFR.get_clauses()
     return get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, device, train=False)
