@@ -12,10 +12,10 @@
   "nc_th": 0.9,
   "uc_th": 0.8,
   "sc_th": 0.9,
-  "uc_top": 20,
-  "uc_good_top": 20,
-  "sc_good_top": 10,
-  "nc_good_top": 10,
+  "uc_top": 10,
+  "uc_good_top": 10,
+  "sc_good_top": 5,
+  "nc_good_top": 5,
   "pi_top": 10,
   "with_bk": false
 }

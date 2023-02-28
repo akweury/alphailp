@@ -637,6 +637,7 @@ class ClauseGenerator(object):
         if len(clause_dict['nc']) > 0:
             nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args, self.args.nc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(nc_top)
+
         if len(clause_dict['nc_good']) > 0:
             nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
                                                            self.args.nc_good_top)
