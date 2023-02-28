@@ -751,28 +751,35 @@ class PIClauseGenerator(object):
             sc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc_good"], pi_clauses,
                                                                       pos_pred.shape[0], args)
 
-            log_utils.add_lines(f"new PI from sc_good: {len(sc_good_new_predicates)}\n", args.log_file)
+            log_utils.add_lines(f"\nnew PI from sc_good: {len(sc_good_new_predicates)}", args.log_file)
             for p in sc_good_new_predicates:
                 print(p)
 
         if not found_ns and len(beam_search_clauses['nc']) > 0:
             nc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc"], pi_clauses,
                                                                  pos_pred.shape[0], args, random_top=20)
-            log_utils.add_lines(f"new PI from nc: {len(nc_new_predicates)}\n", args.log_file)
-
+            log_utils.add_lines(f"\nnew PI from nc: {len(nc_new_predicates)}", args.log_file)
+            for p in nc_new_predicates:
+                print(p)
         if not found_ns and len(beam_search_clauses['nc_good']) > 0:
             nc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc_good"], pi_clauses,
                                                                       pos_pred.shape[0], args)
-            log_utils.add_lines(f"new PI from nc_good: {len(nc_good_new_predicates)}\n", args.log_file)
+            log_utils.add_lines(f"\nnew PI from nc_good: {len(nc_good_new_predicates)}", args.log_file)
+            for p in nc_good_new_predicates:
+                print(p)
         # cluster necessary clauses
         if not found_ns and len(beam_search_clauses['uc_good']) > 0:
             uc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["uc_good"], pi_clauses,
                                                                       pos_pred.shape[0], args)
-            log_utils.add_lines(f"new PI from UC_GOOD: {len(uc_good_new_predicates)}\n", args.log_file)
+            log_utils.add_lines(f"\nnew PI from UC_GOOD: {len(uc_good_new_predicates)}", args.log_file)
+            for p in uc_good_new_predicates:
+                print(p)
         if not found_ns:
             uc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["uc"], pi_clauses,
                                                                  pos_pred.shape[0], args)
-        log_utils.add_lines(f"new PI from UC: {len(uc_new_predicates)}\n", args.log_file)
+        log_utils.add_lines(f"\nnew PI from UC: {len(uc_new_predicates)}", args.log_file)
+        for p in uc_new_predicates:
+            print(p)
 
         top_selector = args.pi_top
         sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)[:top_selector]
@@ -1211,7 +1218,7 @@ class PIClauseGenerator(object):
                 new_all_pi_clausese.append(pi_c)
         return new_all_pi_clausese
 
-    def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None):
+    def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None, searching_for=None):
         found_ns = False
         if random_top is not None:
             if len(clause_candidates) > random_top:
