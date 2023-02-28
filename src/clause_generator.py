@@ -304,7 +304,7 @@ class ClauseGenerator(object):
                 max_clause = new_max_clause
                 break
 
-        self.print_clauses(clause_dict, args)
+        # self.print_clauses(clause_dict, args)
 
         return clause_dict, max_clause, step
 
@@ -613,8 +613,7 @@ class ClauseGenerator(object):
             for c in clause_dict["sn_good"]:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
                 log_utils.add_lines(
-                    f"sufficient and necessary clause with {args.sn_th * 100}% accuracy: {c[0]}, {score}",
-                    args.log_file)
+                    f"sufficient and necessary clause with {args.sn_th * 100}% accuracy: {c[0]}, {score}",args.log_file)
         if len(clause_dict["sc"]) > 0:
             for c in clause_dict["sc"]:
                 score = logic_utils.get_four_scores(c[1].unsqueeze(0))
