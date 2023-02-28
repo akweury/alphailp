@@ -12,7 +12,8 @@ trivial_preds_dict = [
 ]
 
 buffer_path = root / ".." / "buffer"
+data_path = root / "data"
 if not os.path.exists(buffer_path):
-        os.mkdir(buffer_path)
+    os.mkdir(buffer_path)
 if __name__ == "__main__":
     print("root path: " + str(root))

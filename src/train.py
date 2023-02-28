@@ -25,6 +25,7 @@ from valuation import YOLOValuationModule, PIValuationModule
 import chart_utils
 import log_utils
 from fol.data_utils import DataUtils
+import file_utils
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -104,6 +105,10 @@ def get_args():
     parser.add_argument("--with_bk", action="store_true",
                         help="Using background knowledge by PI.")
     args = parser.parse_args()
+
+    args_file = config.data_path / "lang" / args.dataset_type / args.dataset / "args.json"
+    file_utils.load_args_from_file(str(args_file), args)
+
     return args
 
 
