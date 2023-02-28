@@ -141,6 +141,8 @@ def get_mode_declarations_kandinsky(lang, obj_num):
     s_color = ModeTerm('#', DataType('color'))
     s_shape = ModeTerm('#', DataType('shape'))
     s_area = ModeTerm('#', DataType('area'))
+    s_rho = ModeTerm('#', DataType('rho'))
+    s_phi = ModeTerm('#', DataType('phi'))
 
     # modeh_1 = ModeDeclaration('head', 'kp', p_image)
 
@@ -148,7 +150,9 @@ def get_mode_declarations_kandinsky(lang, obj_num):
         ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]),
         # ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_object, s_color]),
         # ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_object, s_shape]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('area'), [p_object, p_object, s_area]),
+        ModeDeclaration('body', obj_num, lang.get_pred_by_name('rho'), [p_object, p_object, s_rho]),
+        ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_object, p_object, s_phi]),
+        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('area'), [p_object, p_object, s_area]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_0'), [s_area]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_1'), [s_area]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_2'), [s_area]),

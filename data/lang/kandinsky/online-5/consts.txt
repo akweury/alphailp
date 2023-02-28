@@ -1,3 +1,4 @@
 object:obj0,obj1,obj2,obj3,obj4
 image:img
-area:a0,a1,a2,a3,a4,a5,a6,a7
+rho:r1,r2
+phi:phi1,phi2,phi3,phi4

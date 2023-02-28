@@ -1,2 +1,3 @@
 in:2:object,image
-area:3:object,object,area
+phi:3:object,object,phi
+rho:3:object,object,rho

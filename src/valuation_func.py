@@ -167,6 +167,114 @@ class YOLOAreaValuationFunction(nn.Module):
         return torch.stack((x, y))
 
 
+class YOLORhoValuationFunction(nn.Module):
+    """The function v_area.
+    """
+
+    def __init__(self, device):
+        super(YOLORhoValuationFunction, self).__init__()
+        self.device = device
+        self.logi = LogisticRegression(input_dim=1)
+        self.logi.to(device)
+
+    def forward(self, z_1, z_2, dist_grade):
+        """
+        Args:
+            z_1 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+            z_2 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+
+        Returns:
+            A batch of probabilities.
+        """
+        c_1 = self.to_center(z_1)
+        c_2 = self.to_center(z_2)
+
+        dir_vec = c_2 - c_1
+        dir_vec[1] = -dir_vec[1]
+        rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
+
+        dist_id = torch.zeros(rho.shape)
+        dist_id[rho >= 0.12] = 1
+
+        dist_pred = torch.zeros(dist_grade.shape).to(dist_grade.device)
+        for i in range(dist_pred.shape[0]):
+            dist_pred[i, int(dist_id[i])] = 1
+
+        return (dist_grade * dist_pred).sum(dim=1)
+
+    def cart2pol(self, x, y):
+        rho = torch.sqrt(x ** 2 + y ** 2)
+        phi = torch.atan2(y, x)
+        phi = torch.rad2deg(phi)
+        return (rho, phi)
+
+    def to_center(self, z):
+        x = (z[:, 0] + z[:, 2]) / 2
+        y = (z[:, 1] + z[:, 3]) / 2
+        return torch.stack((x, y))
+
+
+class YOLOPhiValuationFunction(nn.Module):
+    """The function v_area.
+    """
+
+    def __init__(self, device):
+        super(YOLOPhiValuationFunction, self).__init__()
+        self.device = device
+        self.logi = LogisticRegression(input_dim=1)
+        self.logi.to(device)
+
+    def forward(self, z_1, z_2, dir):
+        """
+        Args:
+            z_1 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+            z_2 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+
+        Returns:
+            A batch of probabilities.
+        """
+        c_1 = self.to_center(z_1)
+        c_2 = self.to_center(z_2)
+
+        round_divide = 4
+        area_angle = int(360 / round_divide)
+        area_angle_half = area_angle * 0.5
+        # area_angle_half = 0
+        dir_vec = c_2 - c_1
+        dir_vec[1] = -dir_vec[1]
+        rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
+        phi_clock_shift = (90 - phi.long()) % 360
+        zone_id = (phi_clock_shift + area_angle_half) // area_angle % round_divide
+
+        # This is a threshold, but it can be decided automatically.
+        # zone_id[rho >= 0.12] = zone_id[rho >= 0.12] + round_divide
+
+        dir_pred = torch.zeros(dir.shape).to(dir.device)
+        for i in range(dir_pred.shape[0]):
+            dir_pred[i, int(zone_id[i])] = 1
+
+        return (dir * dir_pred).sum(dim=1)
+
+    def cart2pol(self, x, y):
+        rho = torch.sqrt(x ** 2 + y ** 2)
+        phi = torch.atan2(y, x)
+        phi = torch.rad2deg(phi)
+        return (rho, phi)
+
+    def to_center(self, z):
+        x = (z[:, 0] + z[:, 2]) / 2
+        y = (z[:, 1] + z[:, 3]) / 2
+        return torch.stack((x, y))
+
+
 class YOLOOnlineValuationFunction(nn.Module):
     """The function v_online.
     """
