@@ -2,3 +2,4 @@ object:O1,O2,O3,O4,O5
 color:red,yellow,blue
 shape:square,circle,triangle
 image:img
+area:a0,a1,a2,a3,a4,a5,a6,a7
