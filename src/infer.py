@@ -66,38 +66,35 @@ class InferModule(nn.Module):
         well as arbitrary operators on Tensors.
         """
         R = x
-        if self.I_bk is None:
-            for t in range(self.infer_step):
-                R = softor([R, self.r(R)], dim=1, gamma=self.gamma)
-        else:
-            for t in range(self.infer_step):
-                # R = softor([R, self.r_bk(R)], dim=1, gamma=self.gamma)
-                # a = R.detach().to("cpu").numpy().reshape(-1, 1)
 
-                # tic = time.perf_counter()
+        for t in range(self.infer_step):
+            # R = softor([R, self.r_bk(R)], dim=1, gamma=self.gamma)
+            # a = R.detach().to("cpu").numpy().reshape(-1, 1)
 
-                r_R = self.r(R)
-                # b = r_R.detach().to("cpu").numpy().reshape(-1, 1)
+            # tic = time.perf_counter()
 
-                # toc = time.perf_counter()
+            r_R = self.r(R)
+            # b = r_R.detach().to("cpu").numpy().reshape(-1, 1)
 
-                r_bk_R = self.r_bk(R)
-                # c = r_bk_R.detach().to("cpu").numpy().reshape(-1, 1)
+            # toc = time.perf_counter()
 
-                # toc_2 = time.perf_counter()
+            # r_bk_R = self.r_bk(R)
+            # c = r_bk_R.detach().to("cpu").numpy().reshape(-1, 1)
 
-                if self.I_pi is not None:
-                    r_pi_R = self.r_pi(R)
-                    # d = r_pi_R.detach().to("cpu").numpy().reshape(-1, 1)
-                    # toc_3 = time.perf_counter()
+            # toc_2 = time.perf_counter()
 
-                    R = softor([R, r_R, r_bk_R, r_pi_R], dim=1, gamma=self.gamma)
-                else:
-                    R = softor([R, r_R, r_bk_R], dim=1, gamma=self.gamma)
+            if self.I_pi is not None:
+                r_pi_R = self.r_pi(R)
+                # d = r_pi_R.detach().to("cpu").numpy().reshape(-1, 1)
+                # toc_3 = time.perf_counter()
 
-                # print(f"Calculate r_R in {toc - tic:0.4f} seconds")
-                # print(f"Calculate r_bk_R in {toc_2 - toc:0.4f} seconds")
-                # print(f"Calculate r_pi_R in {toc_3 - toc_2:0.4f} seconds")
+                R = softor([R, r_R, r_pi_R], dim=1, gamma=self.gamma)
+            else:
+                R = softor([R, r_R], dim=1, gamma=self.gamma)
+
+            # print(f"Calculate r_R in {toc - tic:0.4f} seconds")
+            # print(f"Calculate r_bk_R in {toc_2 - toc:0.4f} seconds")
+            # print(f"Calculate r_pi_R in {toc_3 - toc_2:0.4f} seconds")
 
         # z = R.detach().to("cpu").numpy().reshape(-1, 1)
         return R
@@ -223,32 +220,29 @@ class ClauseInferModule(nn.Module):
         B = x.size(0)
         # C * B * G
         R = x.unsqueeze(dim=0).expand(self.C, B, self.G)
-        if self.I_bk is None:
-            for t in range(self.infer_step):
-                R = softor([R, self.r(R)], dim=1, gamma=self.gamma)
-        else:
-            for t in range(self.infer_step):
-                # infer by background knowledge
-                # r_bk = self.r_bk(R[0])
-                # R_bk = self.r_bk(r_bk).unsqueeze(dim=0).expand(self.C, B, self.G)
-                # R = R_bk
-                # print("R: ", R.shape)
-                # print("r(R): ", self.r(R).shape)
-                # print("r_bk(R): ", self.r_bk(R).shape)
-                # shape? dim?
-                r_R = self.r(R)
-                # A_A = r_R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-                r_bk = self.r_bk(R).unsqueeze(dim=0).expand(self.C, B, self.G)
-                # A_B = r_bk.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-                if self.I_pi is not None:
 
-                    r_pi = self.r_pi(R).unsqueeze(dim=0).expand(self.C, B, self.G)
-                    R = softor([R, r_R, r_bk, r_pi], dim=2, gamma=self.gamma)
+        for t in range(self.infer_step):
+            # infer by background knowledge
+            # r_bk = self.r_bk(R[0])
+            # R_bk = self.r_bk(r_bk).unsqueeze(dim=0).expand(self.C, B, self.G)
+            # R = R_bk
+            # print("R: ", R.shape)
+            # print("r(R): ", self.r(R).shape)
+            # print("r_bk(R): ", self.r_bk(R).shape)
+            # shape? dim?
+            r_R = self.r(R)
+            # A_A = r_R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+            # r_bk = self.r_bk(R).unsqueeze(dim=0).expand(self.C, B, self.G)
+            # A_B = r_bk.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+            if self.I_pi is not None:
 
-                    # A_C = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-                    # A_D = R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-                else:
-                    R = softor([R, r_R, r_bk], dim=2, gamma=self.gamma)
+                r_pi = self.r_pi(R).unsqueeze(dim=0).expand(self.C, B, self.G)
+                R = softor([R, r_R, r_pi], dim=2, gamma=self.gamma)
+
+                # A_C = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+                # A_D = R.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+            else:
+                R = softor([R, r_R], dim=2, gamma=self.gamma)
         return R
 
     def r(self, x):

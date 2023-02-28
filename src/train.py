@@ -459,6 +459,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
     for c in clauses:
         log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
+
     NSFR = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=True)
     nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
     return NSFR
