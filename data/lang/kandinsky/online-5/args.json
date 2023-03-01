@@ -9,7 +9,7 @@
   "cim-step": 6,
   "epochs": 100,
   "sn_th": 0.97,
-  "nc_th": 0.5,
+  "nc_th": 0.4,
   "uc_th": 0.5,
   "sc_th": 0.9,
   "uc_top": 20,
