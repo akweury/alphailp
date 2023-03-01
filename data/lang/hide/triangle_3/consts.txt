@@ -3,4 +3,4 @@ color:red,yellow,blue
 shape:sphere,cube
 image:img
 rho:rho1,rho2
-phi:phi1,phi2,phi3,phi4
+phi:phi1,phi2,phi3,phi4,phi5,phi6,phi7,phi8
