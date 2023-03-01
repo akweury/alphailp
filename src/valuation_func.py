@@ -103,7 +103,6 @@ class FCNNShapeValuationFunction(nn.Module):
         return (a * z_shape).sum(dim=1)
 
 
-
 class YOLOInValuationFunction(nn.Module):
     """The function v_in.
     """
@@ -123,6 +122,7 @@ class YOLOInValuationFunction(nn.Module):
             A batch of probabilities.
         """
         return z[:, -1]
+
 
 class FCNNInValuationFunction(nn.Module):
     """The function v_in.
@@ -289,6 +289,7 @@ class YOLORhoValuationFunction(nn.Module):
         y = (z[:, 1] + z[:, 3]) / 2
         return torch.stack((x, y))
 
+
 class FCNNRhoValuationFunction(nn.Module):
     """The function v_area.
     """
@@ -335,10 +336,7 @@ class FCNNRhoValuationFunction(nn.Module):
         return (rho, phi)
 
     def to_center(self, z):
-        x = (z[:, 0] + z[:, 2]) / 2
-        y = (z[:, 1] + z[:, 3]) / 2
-        return torch.stack((x, y))
-
+        return torch.stack((z[:, 0], z[:, 2]))
 
 
 class YOLOPhiValuationFunction(nn.Module):
@@ -397,6 +395,7 @@ class YOLOPhiValuationFunction(nn.Module):
         y = (z[:, 1] + z[:, 3]) / 2
         return torch.stack((x, y))
 
+
 class FCNNPhiValuationFunction(nn.Module):
     """The function v_area.
     """
@@ -449,9 +448,8 @@ class FCNNPhiValuationFunction(nn.Module):
         return (rho, phi)
 
     def to_center(self, z):
-        x = (z[:, 0] + z[:, 2]) / 2
-        y = (z[:, 1] + z[:, 3]) / 2
-        return torch.stack((x, y))
+        return torch.stack((z[:, 0], z[:, 2]))
+
 
 class YOLOThreeOnLineValuationFunction(nn.Module):
     """The function v_area.

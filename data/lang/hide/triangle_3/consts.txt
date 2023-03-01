@@ -2,4 +2,5 @@ object:obj0,obj1,obj2,obj3,obj4,obj5
 color:red,yellow,blue
 shape:sphere,cube
 image:img
-area:a0,a1,a2,a3,a4,a5,a6,a7
+rho:rho1,rho2
+phi:phi1,phi2,phi3,phi4
