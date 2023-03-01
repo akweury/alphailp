@@ -47,8 +47,7 @@ def is_uc_th_good(score, threshold):
 
 
 def is_conflict(score, data_size, conflict_th):
-    if score[0] / data_size > conflict_th:
+    if score[0] / data_size > conflict_th or score[2] / data_size > conflict_th:
         return True
     else:
         return False
-
