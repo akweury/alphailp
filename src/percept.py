@@ -127,7 +127,6 @@ class FCNNPerceptionModule(nn.Module):
         return torch.stack(padded_list)
 
 
-
 class SlotAttentionPerceptionModule(nn.Module):
     """A perception module using Slot Attention.
 
@@ -364,5 +363,9 @@ def eval_images(args, model_file, device, pos_loader, neg_loader):
         pm_res = {'pos_res': pos_pred.detach(),
                   'neg_res': neg_pred.detach()}
         torch.save(pm_res, str(model_file))
-
+    pos_len = pos_pred.shape[0]
+    neg_len = neg_pred.shape[0]
+    fin_len = min(pos_len, neg_len)
+    pos_pred = pos_pred[:fin_len]
+    neg_pred = neg_pred[:fin_len]
     return pos_pred, neg_pred
