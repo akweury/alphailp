@@ -1,5 +1,5 @@
 {
-  "n_obj": 2,
+  "n_obj": 3,
   "batch-size-train": 10,
   "e": 6,
   "dataset": "triangle_3",
