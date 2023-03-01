@@ -542,6 +542,8 @@ class ClauseGenerator(object):
             elif eval_utils.is_sn_th_good(score, data_size, args.sn_th):
                 sn_good_clauses.append((clause, all_scores[c_i]))
                 log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
+            elif eval_utils.is_conflict(score, data_size, args.conflict_th):
+                log_utils.add_lines(f'(conflict) {clause}, {four_scores[c_i]}', args.log_file)
             # elif eval_utils.is_sc(score, data_size, 1):
             #     sufficient_clauses.append((clause, all_scores[c_i]))
             #     log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
