@@ -321,7 +321,7 @@ class FCNNRhoValuationFunction(nn.Module):
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
 
         dist_id = torch.zeros(rho.shape)
-        dist_id[rho >= 0.20] = 1
+        dist_id[rho >= 0.30] = 1
         dist_id[rho >= 0.40] = 2
         dist_id[rho >= 0.60] = 3
         dist_id[rho >= 0.80] = 4
