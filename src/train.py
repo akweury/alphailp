@@ -444,8 +444,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
             found_ns = True
             break
-        else:
-            clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
+        # else:
+        #     clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
 
         if args.no_pi:
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
