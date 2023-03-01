@@ -390,10 +390,10 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
         VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
     elif args.dataset_type == "hide":
         PM = FCNNPerceptionModule(e=args.e, d=8, device=args.device)
-        VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+        VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset,dataset_type=args.dataset_type)
     else:
         raise ValueError
-    PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+    PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type= args.dataset_type)
     FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
                                         pi_valuation_module=PI_VM, device=args.device)
     # Neuro-Symbolic Forward Reasoner for clause generation
@@ -415,6 +415,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     FC = None
     val_pos = pm_prediction_dict["val_pos"].to(args.device)
     val_neg = pm_prediction_dict["val_neg"].to(args.device)
+    args.data_size = val_pos.shape[0]
     lang, full_init_clauses, pi_clauses, atoms = get_lang(args)
 
     clauses = []

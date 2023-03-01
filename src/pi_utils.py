@@ -4,7 +4,7 @@
 
 import os
 import data_kandinsky
-from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
+from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule, FCNNPerceptionModule
 from facts_converter import FactsConverter
 from logic_utils import build_infer_module, build_clause_infer_module, build_pi_clause_infer_module
 from valuation import PIValuationModule
@@ -156,8 +156,13 @@ class PIReasoner(nn.Module):
 
 def get_pi_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
     device = args.device
-    PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-    PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
+    if args.dataset_type=="kandinsky":
+        PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
+    elif args.dataset_type=="hide":
+        PM = FCNNPerceptionModule(e=args.e, d=11, device=device)
+    else:
+        raise ValueError
+    PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset, dataset_type=args.dataset_type)
     IM = build_infer_module(clauses, pi_clauses, atoms, lang,
                             m=args.m, infer_step=2, device=device, train=train)
     CIM = build_clause_infer_module(clauses, pi_clauses, atoms, lang,

@@ -532,7 +532,7 @@ class ClauseGenerator(object):
         uc_good_clauses = []
 
         for c_i, clause in enumerate(clauses):
-            data_size = self.pos_loader.dataset.__len__()
+            data_size = args.data_size
             # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
             #     good_clauses.append((clause, scores))
             score = four_scores[c_i]

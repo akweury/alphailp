@@ -157,16 +157,16 @@ class FCNNValuationModule(nn.Module):
             dataset (str): The dataset.
     """
 
-    def __init__(self, lang, device, dataset):
+    def __init__(self, lang, device, dataset, dataset_type):
         super().__init__()
         self.lang = lang
         self.device = device
-        self.layers, self.vfs = self.init_valuation_functions(device, dataset)
+        self.layers, self.vfs = self.init_valuation_functions(device, dataset_type)
         # attr_term -> vector representation dic
         self.attrs = self.init_attr_encodings(device)
         self.dataset = dataset
 
-    def init_valuation_functions(self, device, dataset=None):
+    def init_valuation_functions(self, device, dataset_type=None):
         """
             Args:
                 device (device): The device.
@@ -198,6 +198,7 @@ class FCNNValuationModule(nn.Module):
         v_phi = valuation_func.FCNNPhiValuationFunction(device)
         vfs['phi'] = v_phi
         layers.append(v_phi)
+
         return nn.ModuleList(layers), vfs
 
     def init_attr_encodings(self, device):
@@ -272,16 +273,16 @@ class PIValuationModule(nn.Module):
             dataset (str): The dataset.
     """
 
-    def __init__(self, lang, device, dataset):
+    def __init__(self, lang, device, dataset, dataset_type):
         super().__init__()
         self.lang = lang
         self.device = device
-        self.layers, self.vfs = self.init_valuation_functions(device, dataset)
+        self.layers, self.vfs = self.init_valuation_functions(device, dataset_type)
         # attr_term -> vector representation dic
         self.attrs = self.init_attr_encodings(device)
         self.dataset = dataset
 
-    def init_valuation_functions(self, device, dataset=None):
+    def init_valuation_functions(self, device, dataset_type=None):
         """
             Args:
                 device (device): The device.
@@ -301,18 +302,22 @@ class PIValuationModule(nn.Module):
         # #     str(config.root) + '/src/weights/neural_predicates/area_pretrain.pt', map_location=device))
         # # vfs['area'].eval()
         # layers.append(v_area)
+        if dataset_type == "kandinsky":
+            v_phi = valuation_func.YOLOPhiValuationFunction(device)
+            vfs['phi'] = v_phi
+            layers.append(v_phi)
 
-        v_phi = valuation_func.YOLOPhiValuationFunction(device)
-        vfs['phi'] = v_phi
-        layers.append(v_phi)
+            v_rho = valuation_func.YOLORhoValuationFunction(device)
+            vfs['rho'] = v_rho
+            layers.append(v_rho)
+        elif dataset_type == "hide":
+            v_phi = valuation_func.FCNNPhiValuationFunction(device)
+            vfs['phi'] = v_phi
+            layers.append(v_phi)
 
-        v_rho = valuation_func.YOLORhoValuationFunction(device)
-        vfs['rho'] = v_rho
-        layers.append(v_rho)
-
-        # v_inv_1 = valuation_func.Inv1ValuationFunction(device)
-        # vfs['inv_1'] = v_inv_1
-        # layers.append(v_inv_1)
+            v_rho = valuation_func.FCNNRhoValuationFunction(device)
+            vfs['rho'] = v_rho
+            layers.append(v_rho)
 
         return nn.ModuleList(layers), vfs
 
