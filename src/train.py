@@ -20,8 +20,8 @@ from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
 from clause_generator import ClauseGenerator, PIClauseGenerator
 import facts_converter
-from percept import YOLOPerceptionModule
-from valuation import YOLOValuationModule, PIValuationModule
+from percept import YOLOPerceptionModule, FCNNPerceptionModule
+from valuation import YOLOValuationModule, PIValuationModule, FCNNValuationModule
 import chart_utils
 import log_utils
 from fol.data_utils import DataUtils
@@ -385,8 +385,14 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
 
 def get_models(args, lang, val_pos_loader, val_neg_loader,
                clauses, pi_clauses, atoms, obj_n):
-    PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
-    VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+    if args.dataset_type == "kandinsky":
+        PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
+        VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+    elif args.dataset_type == "hide":
+        PM = FCNNPerceptionModule(e=args.e, d=8, device=args.device)
+        VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+    else:
+        raise ValueError
     PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset)
     FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
                                         pi_valuation_module=PI_VM, device=args.device)
@@ -479,6 +485,8 @@ def main(n):
             name = str(Path("small_KP") / f"aILP_{args.dataset}_{str(n)}")
         else:
             name = str(Path("KP") / f"aILP_{args.dataset}_{str(n)}")
+    elif args.dataset_type == "hide":
+        name = str(Path("HIDE") / f"aILP_{args.dataset}_{str(n)}")
     else:
         if not args.no_xil:
             name = str(Path('CH') / Path(f"/aILP_{args.dataset}_{str(n)}"))
@@ -515,7 +523,7 @@ def main(n):
     rtpt.start()
 
     # get torch data loader
-    train_loader, val_loader, test_loader = get_data_loader(args)
+    # train_loader, val_loader, test_loader = get_data_loader(args)
 
     train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(args)
     train_neg_loader, val_neg_loader, test_neg_loader = nsfr_utils.get_data_neg_loader(args)

@@ -125,6 +125,8 @@ def to_plot_images_kandinsky(imgs):
 def get_data_loader(args):
     if args.dataset_type == 'kandinsky':
         return get_kandinsky_loader(args)
+    elif args.dataset_type == "hide":
+        return None
     elif args.dataset_type == 'clevr':
         return get_clevr_loader(args)
     else:
@@ -136,6 +138,8 @@ def get_data_pos_loader(args):
         return get_kandinsky_pos_loader(args)
     elif args.dataset_type == 'clevr':
         return get_clevr_pos_loader(args)
+    elif args.dataset_type == "hide":
+        return None, None, None
     else:
         assert 0, 'Invalid dataset type: ' + args.dataset_type
 
@@ -143,6 +147,8 @@ def get_data_pos_loader(args):
 def get_data_neg_loader(args):
     if args.dataset_type == 'kandinsky':
         return get_kandinsky_neg_loader(args)
+    else:
+        return None,None,None
 
 
 def get_clevr_loader(args):
@@ -310,6 +316,39 @@ def get_clevr_pos_loader(args):
     return train_loader, val_loader, test_loader
 
 
+def get_hide_loader(args, shuffle=False):
+    dataset_train = data_kandinsky.KANDINSKY(
+        args.dataset, 'train', small_data=args.small_data
+    )
+    dataset_val = data_kandinsky.KANDINSKY(
+        args.dataset, 'val', small_data=args.small_data
+    )
+    dataset_test = data_kandinsky.KANDINSKY(
+        args.dataset, 'test'
+    )
+
+    train_loader = torch.utils.data.DataLoader(
+        dataset_train,
+        shuffle=True,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+    )
+    val_loader = torch.utils.data.DataLoader(
+        dataset_val,
+        shuffle=False,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+    )
+    test_loader = torch.utils.data.DataLoader(
+        dataset_test,
+        shuffle=False,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+    )
+
+    return train_loader, val_loader, test_loader
+
+
 def get_prob(v_T, NSFR, args):
     """
     if args.dataset_type == 'kandinsky':
@@ -340,7 +379,6 @@ def get_prob_by_prednames(v_T, NSFR, prednames):
 
 
 def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
-
     device = args.device
     if args.dataset_type == 'kandinsky':
         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
@@ -350,7 +388,8 @@ def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
         PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
         # VM = SlotAttentionValuationModule(lang=lang, device=device)
         # PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
-
+    elif args.dataset_type == "hide":
+        PM = None
     else:
         assert False, "Invalid dataset type: " + str(args.dataset_type)
     IM = build_infer_module(clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,

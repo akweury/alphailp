@@ -148,10 +148,10 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
     modeb_list = [
         ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_object, s_color]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_object, s_shape]),
+        ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_object, s_color]),
+        ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_object, s_shape]),
         # ModeDeclaration('body', obj_num, lang.get_pred_by_name('rho'), [p_object, p_object, s_rho]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_object, p_object, s_phi]),
+        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_object, p_object, s_phi]),
         # ModeDeclaration('body', obj_num, lang.get_pred_by_name('area'), [p_object, p_object, s_area]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_0'), [s_area]),
         # ModeDeclaration('body', 1, lang.get_pred_by_name('area_1'), [s_area]),
@@ -192,5 +192,9 @@ def get_mode_declarations(args, lang, obj_num):
         return basic_mode_declarations + pi_model_declarations
     elif args.dataset_type == 'clevr':
         return get_mode_declarations_clevr(lang, obj_num)
+    elif args.dataset_type == "hide":
+        basic_mode_declarations = get_mode_declarations_kandinsky(lang, obj_num)
+        pi_model_declarations = get_pi_mode_declarations(lang)
+        return basic_mode_declarations + pi_model_declarations
     else:
         assert False, "Invalid data type."
