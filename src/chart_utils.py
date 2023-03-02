@@ -113,12 +113,13 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
     resolution = 2
 
     def heatmap2d(arr: np.ndarray):
-        img = ax1.imshow(arr, cmap='binary')
+        img = ax1.imshow(arr, cmap='viridis')
         plt.colorbar(img)
 
-    fig = plt.figure(figsize=(6, 6))
+    fig = plt.figure(figsize=(10, 10))
     ax1 = fig.add_axes((0.1, 0.2, 0.8, 0.7))
-
+    ax1.set_xticks([0, 1])
+    ax1.set_yticks([1, 0])
     if title is not None:
         ax1.set_title(title)
     if y_label is not None:
@@ -130,18 +131,22 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
     if log_x:
         ax1.set_xscale('log')
 
-    for i, data in enumerate(data_list):
-        data_map = np.zeros(shape=[resolution, resolution])
-        for index in range(len(data)):
-            x_index = int(data[index] * resolution)
-            y_index = int(data[index] * resolution)
-            data_map[x_index, y_index] += 1
-
-        heatmap2d(data_map)
+    # for i, data in enumerate(data_list):
+    #     data_map = np.zeros(shape=[resolution, resolution])
+    #     for index in range(len(data)):
+    #         x_index = int(data[index] * resolution)
+    #         y_index = int(data[index] * resolution)
+    #         data_map[x_index, y_index] += 1
+    data_map = np.zeros(shape=[resolution, resolution])
+    data_map[0, 0] = float(data_list[0])
+    data_map[0, 1] = float(data_list[1])
+    data_map[1, 0] = float(data_list[2])
+    data_map[1, 1] = float(data_list[3])
+    heatmap2d(data_map)
 
     if labels is not None:
         fig.text(0.1, 0.05, labels,
-                 bbox=dict(boxstyle="square", ec=(1., 0.5, 0.5), fc=(1., 0.8, 0.8)), fontsize=8)
+                 bbox=dict(boxstyle="square", ec=(1., 0.5, 0.5), fc=(1., 0.8, 0.8)), fontsize=15)
 
     # plt.legend()
 
@@ -179,4 +184,3 @@ def plot_4_zone(is_plot_4zone, B_new, p_score, step):
                                     sub_folder=str(step),
                                     labels=f"{str(clause)}",
                                     x_label="positive score", y_label="negative score")
-
