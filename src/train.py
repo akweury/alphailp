@@ -419,7 +419,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     val_neg = pm_prediction_dict["val_neg"].to(args.device)
     args.data_size = val_pos.shape[0]
     lang, full_init_clauses, pi_clauses, atoms = get_lang(args)
-
+    kp_pi_clauses = []
     clauses = []
     iteration = 0
     max_step = 0
@@ -465,12 +465,12 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'])
         else:
             # invent new predicate and generate pi clauses
-            pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
-                                                                val_neg, args, step=iteration)
+            pi_clauses, kp_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
+                                                                               val_neg, args, step=iteration)
             # add new predicates
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
-            clauses += log_utils.add_pi_clauses(pi_clauses)
+            clauses += log_utils.add_pi_clauses(kp_pi_clauses)
 
         iteration += 1
 
@@ -478,9 +478,9 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         for c in clauses:
             log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
     else:
-        clauses += log_utils.add_pi_clauses(pi_clauses)
         log_utils.add_lines(f"not found any useful clauses", args.log_file)
-
+        for c in kp_pi_clauses:
+            print(c)
     NSFR = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=True)
     nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
     return NSFR

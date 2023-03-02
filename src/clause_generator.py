@@ -795,7 +795,7 @@ class PIClauseGenerator(object):
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
                          nc_good_new_predicates + uc_good_new_predicates
         # convert to strings
-        new_clauses_str_list = self.generate_new_clauses_str_list(new_predicates)
+        new_clauses_str_list, kp_str_list = self.generate_new_clauses_str_list(new_predicates)
 
         # convert clauses from strings to objects
         # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
@@ -805,6 +805,7 @@ class PIClauseGenerator(object):
         for learned_p in self.lang.invented_preds:
             lang.invented_preds.append(learned_p)
         all_pi_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list)
+        all_pi_kp_clauses = du.gen_pi_clauses(lang, new_predicates, kp_str_list)
         # pos_pred = pos_pred.to(self.args.device)
         # neg_pred = neg_pred.to(self.args.device)
         # generate pi clauses
@@ -812,6 +813,7 @@ class PIClauseGenerator(object):
         # # passed_pi_languages = passed_pi_languages[:5]
         #
         all_pi_clauses = self.extract_pi(lang, all_pi_clauses, args) + pi_clauses
+        all_pi_kp_clauses = self.extract_pi(lang, all_pi_kp_clauses, args) + pi_clauses
 
         log_utils.add_lines(f"======  Total PI Number: {len(self.lang.invented_preds)}  ======", args.log_file)
         for p in self.lang.invented_preds:
@@ -820,7 +822,7 @@ class PIClauseGenerator(object):
         for c in all_pi_clauses:
             log_utils.add_lines(f"{c}", args.log_file)
 
-        return all_pi_clauses, found_ns
+        return all_pi_clauses,all_pi_kp_clauses, found_ns
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
 
@@ -1019,7 +1021,7 @@ class PIClauseGenerator(object):
 
     def generate_new_clauses_str_list(self, new_predicates):
         pi_str_lists = []
-
+        kp_str_lists = []
         for [new_predicate, p_score] in new_predicates:
             single_pi_str_list = []
             # head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
@@ -1027,11 +1029,12 @@ class PIClauseGenerator(object):
             head_args = "("
             for arg in new_predicate.args:
                 head_args += arg + ","
-                kp_clause += f"in({arg}, X),"
+                kp_clause += f"in({arg},X),"
             head_args = head_args[:-1]
             kp_clause = kp_clause[:-1]
             head_args += ")"
-            single_pi_str_list.append(kp_clause + ".")
+            kp_clause += "."
+            kp_str_lists.append(kp_clause)
 
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:
@@ -1048,7 +1051,7 @@ class PIClauseGenerator(object):
         # for p_i, p_list in enumerate(pi_str_lists):
         # for p in p_list:
         #     print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
-        return pi_str_lists
+        return pi_str_lists, kp_str_lists
 
     # def eval_pi_clause_single(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
     #
