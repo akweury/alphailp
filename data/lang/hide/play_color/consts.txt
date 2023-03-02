@@ -1,0 +1,6 @@
+object:obj0,obj1,obj2,obj3,obj4,obj5
+color:red,green,blue
+shape:sphere,cube
+image:img
+rho:rho1,rho2,rho3,rho4
+phi:phi1,phi2,phi3,phi4
