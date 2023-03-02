@@ -822,7 +822,7 @@ class PIClauseGenerator(object):
         for c in all_pi_clauses:
             log_utils.add_lines(f"{c}", args.log_file)
 
-        return all_pi_clauses,all_pi_kp_clauses, found_ns
+        return all_pi_clauses, all_pi_kp_clauses, found_ns
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
 
@@ -1034,7 +1034,7 @@ class PIClauseGenerator(object):
             kp_clause = kp_clause[:-1]
             head_args += ")"
             kp_clause += "."
-            kp_str_lists.append(kp_clause)
+            kp_str_lists.append([kp_clause, None])
 
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:
