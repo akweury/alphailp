@@ -50,7 +50,7 @@ class FCNNColorValuationFunction(nn.Module):
         Returns:
             A batch of probabilities.
         """
-        z_color = torch.zeros(size=z[:, 3:6].shape)
+        z_color = torch.zeros(size=z[:, 3:6].shape).to(z.device)
         colors = z[:, 3:6]
         for c in range(colors.shape[0]):
             c_index = torch.argmax(colors[c])
