@@ -1,11 +1,11 @@
 {
   "n_obj": 4,
   "batch_size_train": 1,
-  "top_data": 20,
+  "top_data": 60,
   "e": 6,
   "dataset": "online-5-pair",
   "dataset_type": "kandinsky",
-  "t_beam": 5,
+  "t_beam": 7,
   "n_beam": 5,
   "cim_step": 6,
   "epochs": 100,
