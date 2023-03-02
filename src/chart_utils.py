@@ -132,9 +132,9 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
 
     for i, data in enumerate(data_list):
         data_map = np.zeros(shape=[resolution, resolution])
-        for index in range(len(data[0])):
-            x_index = int(data[0][index] * resolution)
-            y_index = int(data[1][index] * resolution)
+        for index in range(len(data)):
+            x_index = int(data[index] * resolution)
+            y_index = int(data[index] * resolution)
             data_map[x_index, y_index] += 1
 
         heatmap2d(data_map)
@@ -173,7 +173,7 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
 def plot_4_zone(is_plot_4zone, B_new, p_score, step):
     if is_plot_4zone:
         for i, clause in enumerate(B_new):
-            plot_scatter_heat_chart([p_score[i]],
+            plot_scatter_heat_chart(p_score[i],
                                     config.buffer_path / "img",
                                     f"heat_ce_all_{len(B_new)}_{i}",
                                     sub_folder=str(step),
