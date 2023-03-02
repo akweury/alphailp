@@ -804,8 +804,8 @@ class PIClauseGenerator(object):
         lang, init_clauses, bk_pi_clauses, atoms = logic_utils.get_lang(args)
         for learned_p in self.lang.invented_preds:
             lang.invented_preds.append(learned_p)
-        all_pi_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list)
-        all_pi_kp_clauses = du.gen_pi_clauses(lang, new_predicates, kp_str_list)
+        all_pi_clauses,all_pi_kp_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list, kp_str_list)
+
         # pos_pred = pos_pred.to(self.args.device)
         # neg_pred = neg_pred.to(self.args.device)
         # generate pi clauses
