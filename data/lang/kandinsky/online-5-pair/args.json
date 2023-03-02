@@ -1,6 +1,6 @@
 {
   "n_obj": 5,
-  "batch-size-train":2,
+  "batch-size-train":1,
   "e": 6,
   "dataset": "online-5-pair",
   "dataset-type": "kandinsky",
