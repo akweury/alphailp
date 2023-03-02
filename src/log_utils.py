@@ -64,5 +64,3 @@ def write_predicate_to_file(invented_preds, inv_predicate_file):
                 f.write(str(clause_str) + "\n")
 
 
-def add_pi_clauses(pi_clauses):
-    return None

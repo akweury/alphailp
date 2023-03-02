@@ -470,7 +470,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             # add new predicates
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
-            clauses += log_utils.add_pi_clauses(kp_pi_clauses)
+            clauses += kp_pi_clauses
 
         iteration += 1
 

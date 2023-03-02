@@ -14,9 +14,9 @@
   "sc_th": 0.9,
   "uc_top": 20,
   "conflict_th": 0.8,
-  "uc_good_top": 10,
+  "uc_good_top": 5,
   "sc_good_top": 5,
-  "nc_good_top": 10,
+  "nc_good_top": 5,
   "pi_top": 5,
   "with_bk": false,
   "plot_four_zone": false
