@@ -19,5 +19,5 @@
   "nc_good_top": 20,
   "pi_top": 5,
   "with_bk": false,
-  "plot_four_zone": true
+  "plot_four_zone": false
 }
