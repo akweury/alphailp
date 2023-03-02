@@ -77,6 +77,8 @@ class DataUtils(object):
             clause = ExpTree(lang).transform(tree)
             clauses.append(clause)
 
+        for str in kp_str_list:
+            print(str)
         kp_clause = []
         for clause_str in kp_str_list:
             tree = self.lp_clause.parse(clause_str)
