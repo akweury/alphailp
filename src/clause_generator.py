@@ -1034,7 +1034,7 @@ class PIClauseGenerator(object):
             kp_clause = kp_clause[:-1]
             head_args += ")"
             kp_clause += "."
-            kp_str_lists.append([kp_clause, None])
+            kp_str_lists.append(kp_clause)
 
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:
