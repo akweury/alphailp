@@ -603,7 +603,7 @@ class ClauseGenerator(object):
         new_max, clause_dict, higher = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full,
                                                                       pos_pred.size(0), step,
                                                                       args, max_clause_score)
-        chart_utils.plot_4_zone(args.plot_four_zone, new_clauses, clause_scores_full, step)
+        chart_utils.plot_4_zone(args.plot_four_zone, new_clauses, clause_scores_full,all_predicates_scores, step)
         return clause_dict, new_max, higher
 
     def print_clauses(self, clause_dict, args):

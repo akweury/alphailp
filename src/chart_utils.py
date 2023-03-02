@@ -61,11 +61,18 @@ def plot_scatter_chart(data_list, path, title=None, x_scale=None, y_scale=None,
     color = ["#" + ''.join([random.choice('0123456789ABCDEF') for i in range(6)])
              for j in range(no_of_colors)]
 
-    plt.figure(figsize=(6, 6))
-    for i, data in enumerate(data_list):
-        data_x = data[0]
-        data_y = data[1]
-        plt.scatter(data_x, data_y, label=i, c=color[i])
+    fig = plt.figure(figsize=(10, 10))
+    ax1 = fig.add_axes((0.1, 0.2, 0.8, 0.7))
+
+    # for i, data in enumerate(data_list):
+    data_x = data_list[:, 0]
+    data_y = data_list[:, 1]
+    sc = ax1.scatter(data_x, data_y, label="PN Point", c=color[5])
+    # plt.colorbar(sc)
+
+    if labels is not None:
+        fig.text(0.1, 0.05, labels,
+                 bbox=dict(boxstyle="square", ec=(1., 0.5, 0.5), fc=(1., 0.8, 0.8)), fontsize=15)
 
     if title is not None:
         plt.title(title)
@@ -119,7 +126,7 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
     fig = plt.figure(figsize=(10, 10))
     ax1 = fig.add_axes((0.1, 0.2, 0.8, 0.7))
     ax1.set_xticks([0, 1])
-    ax1.set_yticks([1, 0])
+    ax1.set_yticks([0, 1])
     if title is not None:
         ax1.set_title(title)
     if y_label is not None:
@@ -175,12 +182,17 @@ def plot_scatter_heat_chart(data_list, path, title=None, x_scale=None, y_scale=N
         plt.cla()
 
 
-def plot_4_zone(is_plot_4zone, B_new, p_score, step):
+def plot_4_zone(is_plot_4zone, B_new, four_scores, all_scores, step):
     if is_plot_4zone:
         for i, clause in enumerate(B_new):
-            plot_scatter_heat_chart(p_score[i],
+            plot_scatter_heat_chart(four_scores[i],
                                     config.buffer_path / "img",
                                     f"heat_ce_all_{len(B_new)}_{i}",
                                     sub_folder=str(step),
                                     labels=f"{str(clause)}",
                                     x_label="positive score", y_label="negative score")
+
+            plot_scatter_chart(all_scores[i], config.buffer_path / "img", title=f"scatter_all_{len(B_new)}_{i}",
+                               x_scale=None, y_scale=None,
+                               sub_folder=str(step), labels=f"{str(clause)}",
+                               x_label=None, y_label=None, show=False, log_y=False, log_x=False, cla_leg=True)
