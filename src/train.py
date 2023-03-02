@@ -390,10 +390,10 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
         VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
     elif args.dataset_type == "hide":
         PM = FCNNPerceptionModule(e=args.e, d=8, device=args.device)
-        VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset,dataset_type=args.dataset_type)
+        VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
     else:
         raise ValueError
-    PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type= args.dataset_type)
+    PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
     FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
                                         pi_valuation_module=PI_VM, device=args.device)
     # Neuro-Symbolic Forward Reasoner for clause generation
@@ -453,8 +453,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
             found_ns = True
             break
-        # else:
-        #     clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
+        else:
+            clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
 
         if args.no_pi:
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
@@ -471,8 +471,11 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
 
         iteration += 1
 
-    for c in clauses:
-        log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
+    if len(clauses) > 0:
+        for c in clauses:
+            log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
+    else:
+        log_utils.add_lines(f"not found any useful clauses", args.log_file)
 
     NSFR = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=True)
     nsfr_loss_list = train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
