@@ -274,7 +274,15 @@ class YOLORhoValuationFunction(nn.Module):
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
 
         dist_id = torch.zeros(rho.shape)
-        dist_id[rho >= 0.12] = 1
+        dist_id[rho >= 0.10] = 1
+        dist_id[rho >= 0.20] = 2
+        dist_id[rho >= 0.30] = 3
+        dist_id[rho >= 0.40] = 4
+        dist_id[rho >= 0.50] = 5
+        dist_id[rho >= 0.60] = 6
+        dist_id[rho >= 0.70] = 7
+        dist_id[rho >= 0.80] = 8
+        dist_id[rho >= 0.90] = 9
 
         dist_pred = torch.zeros(dist_grade.shape).to(dist_grade.device)
         for i in range(dist_pred.shape[0]):

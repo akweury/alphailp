@@ -1,6 +1,6 @@
 {
   "n_obj": 2,
-  "batch-size-train": 20,
+  "batch-size-train": 10,
   "e": 6,
   "dataset": "red-triangle",
   "dataset-type": "kandinsky",
@@ -17,5 +17,6 @@
   "sc_good_top": 20,
   "nc_good_top": 10,
   "pi_top": 5,
-  "with_bk": true
+  "with_bk": false,
+  "plot_four_zone": true
 }
