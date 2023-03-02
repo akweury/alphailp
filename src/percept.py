@@ -368,4 +368,7 @@ def eval_images(args, model_file, device, pos_loader, neg_loader):
     fin_len = min(pos_len, neg_len)
     pos_pred = pos_pred[:fin_len]
     neg_pred = neg_pred[:fin_len]
+    if args.top_data < fin_len:
+        pos_pred = pos_pred[:args.top_data]
+        neg_pred = neg_pred[:args.top_data]
     return pos_pred, neg_pred

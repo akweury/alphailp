@@ -603,7 +603,7 @@ class ClauseGenerator(object):
         new_max, clause_dict, higher = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full,
                                                                       pos_pred.size(0), step,
                                                                       args, max_clause_score)
-        chart_utils.plot_4_zone(args.plot_four_zone, new_clauses, clause_scores_full,all_predicates_scores, step)
+        chart_utils.plot_4_zone(args.plot_four_zone, new_clauses, clause_scores_full, all_predicates_scores, step)
         return clause_dict, new_max, higher
 
     def print_clauses(self, clause_dict, args):
@@ -1022,14 +1022,16 @@ class PIClauseGenerator(object):
 
         for [new_predicate, p_score] in new_predicates:
             single_pi_str_list = []
-            # single_pi_str_list.append(f"kp(X):-" + new_predicate.name + "(O1,O2),in(O1,X),in(O2,X).")
             # head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
-
+            kp_clause = "kp(X):-"
             head_args = "("
             for arg in new_predicate.args:
                 head_args += arg + ","
+                kp_clause += f"in({arg}, X),"
             head_args = head_args[:-1]
+            kp_clause = kp_clause[:-1]
             head_args += ")"
+            single_pi_str_list.append(kp_clause + ".")
 
             head = new_predicate.name + head_args + ":-"
             for body in new_predicate.body:

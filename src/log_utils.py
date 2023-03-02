@@ -62,3 +62,7 @@ def write_predicate_to_file(invented_preds, inv_predicate_file):
                 clause_str = head + ":-" + str(body).replace(" ", "")[1:-1] + "."
                 print(str(clause_str))
                 f.write(str(clause_str) + "\n")
+
+
+def add_pi_clauses(pi_clauses):
+    return None

@@ -104,6 +104,8 @@ def get_args():
                         help="The number of data to be used.")
     parser.add_argument("--pre-searched", action="store_true",
                         help="Using pre searched clauses.")
+    parser.add_argument("--top_data", type=int, default=20,
+                        help="The maximum number of training data.")
     parser.add_argument("--with_bk", action="store_true",
                         help="Using background knowledge by PI.")
     args = parser.parse_args()
@@ -453,8 +455,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
             found_ns = True
             break
-        else:
-            clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
+        # else:
+        #     clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1])
 
         if args.no_pi:
             clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'])
@@ -468,6 +470,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             # add new predicates
             lang = pi_clause_generator.lang
             atoms = logic_utils.get_atoms(lang)
+            clauses += log_utils.add_pi_clauses(pi_clauses)
 
         iteration += 1
 
@@ -475,6 +478,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         for c in clauses:
             log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
     else:
+        clauses += log_utils.add_pi_clauses(pi_clauses)
         log_utils.add_lines(f"not found any useful clauses", args.log_file)
 
     NSFR = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=True)
