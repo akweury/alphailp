@@ -1,6 +1,6 @@
 {
   "n_obj": 4,
-  "batch_size_train": 5,
+  "batch_size_train": 1,
   "top_data": 20,
   "e": 6,
   "dataset": "online-5-pair",
