@@ -4,6 +4,7 @@
   "e": 6,
   "dataset": "nearby",
   "dataset-type": "hide",
+  "top_data": 60,
   "t-beam": 5,
   "n-beam": 5,
   "cim-step": 7,
