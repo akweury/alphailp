@@ -1,4 +1,5 @@
 in:2:object,image
-area:3:object,object,area
+phi:3:object,object,phi
+rho:3:object,object,rho
 color:2:object,color
 shape:2:object,shape

@@ -761,7 +761,7 @@ class PIClauseGenerator(object):
 
         if not found_ns and len(beam_search_clauses['nc']) > 0:
             nc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc"], pi_clauses,
-                                                                 pos_pred.shape[0], args, random_top=20)
+                                                                 pos_pred.shape[0], args, random_top=args.nc_good_top)
             log_utils.add_lines(f"\nnew PI from nc: {len(nc_new_predicates)}", args.log_file)
             for p in nc_new_predicates:
                 print(p)
@@ -780,7 +780,7 @@ class PIClauseGenerator(object):
                 print(p)
         if not found_ns:
             uc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["uc"], pi_clauses,
-                                                                 pos_pred.shape[0], args)
+                                                                 pos_pred.shape[0], args, random_top=args.uc_top)
             log_utils.add_lines(f"\nnew PI from UC: {len(uc_new_predicates)}", args.log_file)
             for p in uc_new_predicates:
                 print(p)
@@ -1027,13 +1027,13 @@ class PIClauseGenerator(object):
             # head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
             kp_clause = "kp(X):-"
             head_args = "("
+
             for arg in new_predicate.args:
                 head_args += arg + ","
                 kp_clause += f"in({arg},X),"
             head_args = head_args[:-1]
-            kp_clause = kp_clause[:-1]
             head_args += ")"
-            kp_clause += "."
+            kp_clause += f"{new_predicate.name}{head_args}."
             kp_str_lists.append(kp_clause)
 
             head = new_predicate.name + head_args + ":-"
