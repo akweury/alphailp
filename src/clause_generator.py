@@ -537,11 +537,11 @@ class ClauseGenerator(object):
             #     good_clauses.append((clause, scores))
             score = four_scores[c_i]
             if eval_utils.is_sn(score, data_size):
-                sufficient_necessary_clauses.append((clause, all_scores[c_i]))
-                log_utils.add_lines(f'(sn) {clause}, {four_scores[c_i]}', args.log_file)
+                sufficient_necessary_clauses.append((clause, score, all_scores[c_i]))
+                # log_utils.add_lines(f'(sn) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_sn_th_good(score, data_size, args.sn_th):
-                sn_good_clauses.append((clause, all_scores[c_i]))
-                log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
+                sn_good_clauses.append((clause, score, all_scores[c_i]))
+                # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_conflict(score, data_size, args.conflict_th):
                 continue
                 # log_utils.add_lines(f'(conflict) {clause}, {four_scores[c_i]}', args.log_file)
@@ -549,24 +549,29 @@ class ClauseGenerator(object):
             #     sufficient_clauses.append((clause, all_scores[c_i]))
             #     log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
-                sc_good_clauses.append((clause, all_scores[c_i]))
-                log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
+                sc_good_clauses.append((clause, score, all_scores[c_i]))
+                # log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_nc(score, data_size, 1):
-                necessary_clauses.append((clause, all_scores[c_i]))
-                log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
+                necessary_clauses.append((clause, score, all_scores[c_i]))
+                # log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
-                nc_good_clauses.append((clause, all_scores[c_i]))
-                log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
+                nc_good_clauses.append((clause, score, all_scores[c_i]))
+                # log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_uc_th_good(score, args.uc_th):
-                uc_good_clauses.append((clause, all_scores[c_i]))
-                log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+                uc_good_clauses.append((clause, score, all_scores[c_i]))
+                # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
             else:
-                unclassified_clauses.append((clause, all_scores[c_i]))
-                log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
+                unclassified_clauses.append((clause, score, all_scores[c_i]))
+                # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
 
-        clause_dict = {"sn": sufficient_necessary_clauses, "nc": necessary_clauses, "sc": sufficient_clauses,
-                       "uc": unclassified_clauses, "sn_good": sn_good_clauses,
-                       "nc_good": nc_good_clauses, 'sc_good': sc_good_clauses, 'uc_good': uc_good_clauses}
+        clause_dict = {"sn": sufficient_necessary_clauses,
+                       "nc": necessary_clauses,
+                       "sc": sufficient_clauses,
+                       "uc": unclassified_clauses,
+                       "sn_good": sn_good_clauses,
+                       "nc_good": nc_good_clauses,
+                       'sc_good': sc_good_clauses,
+                       'uc_good': uc_good_clauses}
         return clause_dict
 
     def remove_conflict_clauses(self, refs, pi_clauses, args):
@@ -639,29 +644,29 @@ class ClauseGenerator(object):
     def update_refs(self, clause_dict):
         refs = []
         if len(clause_dict['nc']) > 0:
-            nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args, self.args.nc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(nc_top)
+            # nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args, self.args.nc_good_top)
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
 
         if len(clause_dict['nc_good']) > 0:
-            nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
-                                                           self.args.nc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(nc_good_top)
+            # nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
+            #                                                self.args.nc_good_top)
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
 
         # if len(clause_dict['sc']) > 0:
         #     sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
         #     refs += logic_utils.extract_clauses_from_bs_clauses(sc_top)
         if len(clause_dict['sc_good']) > 0:
-            sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], "sc_good", self.args,
-                                                           self.args.sc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(sc_good_top)
+            # sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], "sc_good", self.args,
+            #                                                self.args.sc_good_top)
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
 
         if len(clause_dict['uc_good']) > 0:
-            uc_good_top = logic_utils.select_top_x_clauses(clause_dict['uc_good'], "uc_good", self.args,
-                                                           self.args.uc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(uc_good_top)
+            # uc_good_top = logic_utils.select_top_x_clauses(clause_dict['uc_good'], "uc_good", self.args,
+            #                                                self.args.uc_good_top)
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'])
 
-        uc_top = logic_utils.select_top_x_clauses(clause_dict['uc'], "uc", self.args, self.args.uc_top)
-        refs += logic_utils.extract_clauses_from_bs_clauses(uc_top)
+        # uc_top = logic_utils.select_top_x_clauses(clause_dict['uc'], "uc", self.args, self.args.uc_top)
+        refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
         # sort refs and select top ...
         return refs
 
@@ -1236,20 +1241,20 @@ class PIClauseGenerator(object):
 
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None, searching_for=None):
         found_ns = False
-        if random_top is not None:
-            if len(clause_candidates) > random_top:
-                clause_candidates = clause_candidates[:random_top]
-        elif args.uc_top is not None:
-            clause_candidates_with_scores = []
-            for c_i, c in enumerate(clause_candidates):
-                four_scores = logic_utils.get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
-                clause_candidates_with_scores.append([c, four_scores])
-            clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
-                                                          reverse=True)
-            clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:args.uc_top]
-            clause_candidates = []
-            for c in clause_candidates_with_scores_sorted:
-                clause_candidates.append(c[0])
+        # if random_top is not None:
+        #     if len(clause_candidates) > random_top:
+        #         clause_candidates = clause_candidates[:random_top]
+        # elif args.uc_top is not None:
+        #     clause_candidates_with_scores = []
+        #     for c_i, c in enumerate(clause_candidates):
+        #         four_scores = logic_utils.get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
+        #         clause_candidates_with_scores.append([c, four_scores])
+        #     clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
+        #                                                   reverse=True)
+        #     clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:args.uc_top]
+        #     clause_candidates = []
+        #     for c in clause_candidates_with_scores_sorted:
+        #         clause_candidates.append(c[0])
 
         n_clu, sn_clu, s_clu, sn_th_clu, nc_th_clu, sc_th_clu = logic_utils.search_independent_clauses_parallel(
             clause_candidates, total_score, args)

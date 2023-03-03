@@ -497,7 +497,7 @@ def is_repeat_clu(clu, clu_list):
 def search_independent_clauses_parallel(clauses, total_score, args):
     print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
     clauses_with_score = []
-    for clause_i, [clause, c_scores] in enumerate(clauses):
+    for clause_i, [clause,four_scores, c_scores] in enumerate(clauses):
         clauses_with_score.append([clause_i, clause, c_scores])
     # search clauses with no common bodies
     independent_clauses_all = []
@@ -1015,7 +1015,30 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
             for c_i in c_indices:
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
 
+    clause_dict["sn"] = sorted_clauses(clause_dict["sn"], "sn", args)
+    clause_dict["sn_good"] = sorted_clauses(clause_dict["sn_good"], "sn_good", args)
+    clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_good_top)
+    clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_good_top)
+    clause_dict["nc_good"] = sorted_clauses(clause_dict["nc_good"], "nc_good", args, args.nc_good_top)
+    clause_dict["sc_good"] = sorted_clauses(clause_dict["sc_good"], "sc_good", args, args.sc_good_top)
+    clause_dict["uc"] = sorted_clauses(clause_dict["uc"], "uc", args, args.uc_good_top)
+    clause_dict["uc_good"] = sorted_clauses(clause_dict["uc_good"], "uc_good", args, args.uc_good_top)
+
     return max_clause, clause_dict, higher
+
+
+def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
+    if len(clause_with_scores) > 0:
+
+        c_sorted = sorted(clause_with_scores, key=lambda x: x[1][1], reverse=True)
+        for c, c_score, all_scores in c_sorted:
+            log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
+
+        if threshold is not None and len(c_sorted) > threshold:
+            c_sorted = c_sorted[:threshold]
+        return c_sorted
+    else:
+        return []
 
 
 def extract_clauses_from_bs_clauses(bs_clauses):
