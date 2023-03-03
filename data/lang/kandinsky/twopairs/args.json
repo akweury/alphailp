@@ -3,6 +3,7 @@
   "e": 6,
   "dataset": "twopairs",
   "dataset-type": "kandinsky",
+  "top_data": 100,
   "t-beam": 4,
   "n-beam": 5,
   "cim-step": 5,
@@ -17,5 +18,6 @@
   "sc_good_top": 20,
   "nc_good_top": 30,
   "pi_top": 20,
-  "with_bk": false
+  "with_bk": false,
+  "plot_four_zone": false
 }
