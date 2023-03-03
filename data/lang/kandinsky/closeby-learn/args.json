@@ -13,11 +13,11 @@
   "nc_th": 0.9,
   "uc_th": 0.8,
   "sc_th": 0.9,
-  "uc_top": 6,
-  "uc_good_top": 10,
+  "uc_top": 20,
+  "uc_good_top": 20,
   "sc_good_top": 20,
   "nc_good_top": 10,
-  "pi_top": 5,
+  "pi_top": 10,
   "with_bk": false,
   "plot_four_zone": false
 }
