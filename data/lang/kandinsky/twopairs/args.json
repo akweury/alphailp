@@ -1,5 +1,5 @@
 {
-  "batch-size-train": 10,
+  "batch-size-train": 20,
   "e": 6,
   "dataset": "twopairs",
   "dataset-type": "kandinsky",
