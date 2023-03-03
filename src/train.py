@@ -505,6 +505,7 @@ def main(n):
     if not os.path.exists(exp_output_path):
         os.mkdir(exp_output_path)
     log_file = log_utils.create_log_file(exp_output_path)
+    print(f"log_file_path:{log_file}")
     args.log_file = log_file
     log_utils.add_lines(f"args: {args}", log_file)
 
