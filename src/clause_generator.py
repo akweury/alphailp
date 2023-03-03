@@ -813,7 +813,7 @@ class PIClauseGenerator(object):
         # # passed_pi_languages = passed_pi_languages[:5]
         #
         all_pi_clauses = self.extract_pi(lang, all_pi_clauses, args) + pi_clauses
-        all_pi_kp_clauses = self.extract_pi(lang, all_pi_kp_clauses, args) + pi_clauses
+        all_pi_kp_clauses = self.extract_kp_pi(lang, all_pi_kp_clauses, args) + pi_clauses
 
         log_utils.add_lines(f"======  Total PI Number: {len(self.lang.invented_preds)}  ======", args.log_file)
         for p in self.lang.invented_preds:
@@ -1225,6 +1225,13 @@ class PIClauseGenerator(object):
             pi_c_head_name = pi_c.head.pred.name
             if pi_c_head_name in new_p_names:
                 new_all_pi_clausese.append(pi_c)
+        return new_all_pi_clausese
+
+    def extract_kp_pi(self, new_lang, all_pi_clauses, args):
+        new_all_pi_clausese = []
+        for pi_c in all_pi_clauses:
+            pi_c_head_name = pi_c.head.pred.name
+            new_all_pi_clausese.append(pi_c)
         return new_all_pi_clausese
 
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None, searching_for=None):
