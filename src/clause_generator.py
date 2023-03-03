@@ -300,9 +300,9 @@ class ClauseGenerator(object):
             # refs = self.select_all_refs(clause_dict)
             step += 1
             # try to invent predicate if find any new high score clauses.
-            # if higher:
-            #     max_clause = new_max_clause
-            #     break
+            if higher:
+                max_clause = new_max_clause
+                break
 
         # self.print_clauses(clause_dict, args)
 
