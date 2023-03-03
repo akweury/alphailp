@@ -272,7 +272,15 @@ class DataUtils(object):
         line = line.replace('\n', '')
         dtype_name, const_names_str = line.split(':')
         dtype = DataType(dtype_name)
-        const_names = const_names_str.split(',')
+        if "num_" in const_names_str:
+            _, prefix, num = const_names_str.split("_")
+            const_names = []
+            for i in range(int(num)):
+                const_names.append(prefix + str(i))
+
+        else:
+            const_names = const_names_str.split(',')
+
         return [Const(const_name, dtype) for const_name in const_names]
 
     def parse_clause(self, clause_str, lang):

@@ -54,7 +54,7 @@ class FCNNColorValuationFunction(nn.Module):
         colors = z[:, 3:6]
         for c in range(colors.shape[0]):
             c_index = torch.argmax(colors[c])
-            z_color[c,c_index] = 1
+            z_color[c, c_index] = 1
         return (a * z_color).sum(dim=1)
 
 
@@ -274,15 +274,12 @@ class YOLORhoValuationFunction(nn.Module):
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
 
         dist_id = torch.zeros(rho.shape)
-        dist_id[rho >= 0.10] = 1
-        dist_id[rho >= 0.20] = 2
-        dist_id[rho >= 0.30] = 3
-        dist_id[rho >= 0.40] = 4
-        dist_id[rho >= 0.50] = 5
-        dist_id[rho >= 0.60] = 6
-        dist_id[rho >= 0.70] = 7
-        dist_id[rho >= 0.80] = 8
-        dist_id[rho >= 0.90] = 9
+
+        dist_grade_num = dist_grade.shape[1]
+        grade_weight = 1 / dist_grade_num
+        for i in range(1, dist_grade_num):
+            threshold = grade_weight * i
+            dist_id[rho >= threshold] = i
 
         dist_pred = torch.zeros(dist_grade.shape).to(dist_grade.device)
         for i in range(dist_pred.shape[0]):
@@ -385,7 +382,7 @@ class YOLOPhiValuationFunction(nn.Module):
         c_1 = self.to_center(z_1)
         c_2 = self.to_center(z_2)
 
-        round_divide = 12
+        round_divide = 10
         area_angle = int(360 / round_divide)
         area_angle_half = area_angle * 0.5
         # area_angle_half = 0

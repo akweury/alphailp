@@ -1,6 +1,6 @@
 {
   "n_obj": 2,
-  "batch-size-train": 20,
+  "batch-size-train": 10,
   "e": 6,
   "dataset": "closeby-learn",
   "dataset-type": "kandinsky",
