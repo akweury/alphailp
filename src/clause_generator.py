@@ -301,7 +301,7 @@ class ClauseGenerator(object):
             step += 1
             # try to invent predicate if find any new high score clauses.
             # if higher:
-            # max_clause = new_max_clause
+            max_clause = new_max_clause
             # break
 
         # self.print_clauses(clause_dict, args)
