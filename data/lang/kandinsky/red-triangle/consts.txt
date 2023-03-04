@@ -2,5 +2,5 @@ object:obj0,obj1,obj2,obj3,obj4,obj5
 color:red,yellow,blue
 shape:square,circle,triangle
 image:img
-rho:num_rho_100
+rho:num_rho_20
 phi:phi1,phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,phi10
