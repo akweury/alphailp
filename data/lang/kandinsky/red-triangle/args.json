@@ -5,7 +5,7 @@
   "dataset": "red-triangle",
   "dataset-type": "kandinsky",
   "top_data": 50,
-  "t-beam": 5,
+  "t-beam": 7,
   "n-beam": 5,
   "cim-step": 7,
   "epochs": 100,
