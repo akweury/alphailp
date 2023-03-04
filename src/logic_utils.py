@@ -1031,11 +1031,10 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
     if len(clause_with_scores) > 0:
 
         c_sorted = sorted(clause_with_scores, key=lambda x: x[1][1], reverse=True)
-        for c, c_score, all_scores in c_sorted:
-            log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
-
         if threshold is not None and len(c_sorted) > threshold:
             c_sorted = c_sorted[:threshold]
+        for c, c_score, all_scores in c_sorted:
+            log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
         return c_sorted
     else:
         return []
