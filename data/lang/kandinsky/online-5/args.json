@@ -5,7 +5,7 @@
   "dataset": "online-5",
   "dataset-type": "kandinsky",
   "top_data": 100,
-  "t_beam": 7,
+  "t_beam": 5,
   "n_beam": 5,
   "cim_step": 7,
   "epochs": 100,
