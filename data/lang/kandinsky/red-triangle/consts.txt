@@ -3,4 +3,3 @@ color:red,yellow,blue
 shape:square,circle,triangle
 image:img
 rho:num_rho_25
-phi:phi1,phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,phi10
