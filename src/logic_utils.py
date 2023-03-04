@@ -525,7 +525,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
 
     clause_clusters = []
     for independent_cluster in independent_clauses_all:
-        sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=6)
+        sub_clusters = sub_lists(independent_cluster, min_len=2, max_len=4)
         clause_clusters += sub_clusters
 
     # apply a meta-rule
