@@ -4,7 +4,7 @@
   "e": 6,
   "dataset": "red-triangle",
   "dataset-type": "kandinsky",
-  "top_data": 100,
+  "top_data": 50,
   "t-beam": 5,
   "n-beam": 5,
   "cim-step": 7,

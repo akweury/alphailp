@@ -96,6 +96,10 @@ def get_args():
                         help="The accept number for unclassified good clauses.")
     parser.add_argument("--sc_good_top", type=int, default=20,
                         help="The accept number for sufficient good clauses.")
+    parser.add_argument("--sc_top", type=int, default=20,
+                        help="The accept number for sufficient clauses.")
+    parser.add_argument("--nc_top", type=int, default=10,
+                        help="The accept number for necessary clauses.")
     parser.add_argument("--nc_good_top", type=int, default=30,
                         help="The accept number for necessary good clauses.")
     parser.add_argument("--pi_top", type=int, default=20,
