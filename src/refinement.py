@@ -145,7 +145,13 @@ class RefinementGenerator(object):
         if modeb.ordered:
             return itertools.product(*assignments_list)
         else:
-            return itertools.combinations(assignments_list[0], modeb.pred.arity)
+            arg_lists = []
+            if len(assignments_list) == 3:
+                for i_1, a_1 in enumerate(assignments_list[0]):
+                    for a_2 in assignments_list[1][i_1 + 1:]:
+                        for i_3, a_3 in enumerate(assignments_list[2]):
+                            arg_lists.append([a_1, a_2, a_3])
+            return arg_lists
 
     def refinement_clause(self, clause):
         C_refined = []
