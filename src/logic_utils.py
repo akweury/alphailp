@@ -1141,8 +1141,9 @@ def is_trivial_preds(preds_terms):
 
 def remove_3_zone_only_predicates(new_predicates):
     passed_predicates = []
-    if len(new_predicates) == 0:
-        return []
+    if len(new_predicates) > 0:
+        if len(new_predicates[0]) == 0:
+            return []
     for predicate in new_predicates:
         if torch.sum(predicate[1][:3]) > 0:
             passed_predicates.append(predicate)
