@@ -5,7 +5,7 @@
   "dataset": "red-triangle",
   "dataset-type": "kandinsky",
   "top_data": 30,
-  "t_beam": 5,
+  "t_beam": 7,
   "n_beam": 5,
   "cim_step": 7,
   "epochs": 100,
@@ -17,10 +17,10 @@
   "conflict_th": 0.7,
   "uc_good_top": 0,
   "sc_top": 2,
-  "sc_good_top":5,
+  "sc_good_top": 5,
   "nc_top": 2,
   "nc_good_top": 0,
-  "pi_top": 2,
+  "pi_top": 3,
   "with_bk": false,
   "plot_four_zone": false
 }
