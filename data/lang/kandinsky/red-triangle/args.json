@@ -15,10 +15,10 @@
   "sc_th": 0.9,
   "uc_top": 10,
   "conflict_th": 0.7,
-  "uc_good_top": 5,
-  "sc_good_top": 5,
-  "nc_good_top": 5,
-  "pi_top": 5,
+  "uc_good_top": 10,
+  "sc_good_top": 10,
+  "nc_good_top": 10,
+  "pi_top": 10,
   "with_bk": false,
   "plot_four_zone": false
 }
