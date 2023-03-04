@@ -18,9 +18,9 @@
   "uc_good_top": 0,
   "sc_top": 100,
   "sc_good_top":0,
-  "nc_top": 100,
+  "nc_top": 1000,
   "nc_good_top": 0,
-  "pi_top": 20,
+  "pi_top": 1,
   "with_bk": false,
   "plot_four_zone": false
 }
