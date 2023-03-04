@@ -1017,11 +1017,11 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
 
     clause_dict["sn"] = sorted_clauses(clause_dict["sn"], "sn", args)
     clause_dict["sn_good"] = sorted_clauses(clause_dict["sn_good"], "sn_good", args)
-    clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_good_top)
-    clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_good_top)
+    clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_top)
+    clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_top)
     clause_dict["nc_good"] = sorted_clauses(clause_dict["nc_good"], "nc_good", args, args.nc_good_top)
     clause_dict["sc_good"] = sorted_clauses(clause_dict["sc_good"], "sc_good", args, args.sc_good_top)
-    clause_dict["uc"] = sorted_clauses(clause_dict["uc"], "uc", args, args.uc_good_top)
+    clause_dict["uc"] = sorted_clauses(clause_dict["uc"], "uc", args, args.uc_top)
     clause_dict["uc_good"] = sorted_clauses(clause_dict["uc_good"], "uc_good", args, args.uc_good_top)
 
     return max_clause, clause_dict, higher
