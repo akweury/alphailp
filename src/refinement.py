@@ -113,6 +113,7 @@ class RefinementGenerator(object):
         Args:
             modeb (ModeDeclaration): A mode declaration for body.
         """
+
         assignments_list = []
         term_num = 0
         for mt in modeb.mode_terms:
@@ -151,6 +152,10 @@ class RefinementGenerator(object):
                     for a_2 in assignments_list[1][i_1 + 1:]:
                         for i_3, a_3 in enumerate(assignments_list[2]):
                             arg_lists.append([a_1, a_2, a_3])
+            if len(assignments_list) == 2:
+                a_1 = assignments_list[0][0]
+                for i_2, a_2 in enumerate(assignments_list[1]):
+                    arg_lists.append([a_1, a_2])
             return arg_lists
 
     def refinement_clause(self, clause):
