@@ -4,6 +4,7 @@
   "e": 6,
   "dataset": "online-5",
   "dataset-type": "kandinsky",
+  "top_data": 100,
   "t-beam": 5,
   "n-beam": 5,
   "cim-step": 6,
@@ -12,11 +13,12 @@
   "nc_th": 0.4,
   "uc_th": 0.5,
   "sc_th": 0.9,
-  "conflict_th": 0.8,
+  "conflict_th": 0.7,
   "uc_top": 10,
   "uc_good_top": 10,
-  "sc_good_top": 5,
-  "nc_good_top": 5,
+  "sc_good_top": 10,
+  "nc_good_top": 10,
   "pi_top": 10,
-  "with_bk": false
+  "with_bk": false,
+  "plot_four_zone": false
 }
