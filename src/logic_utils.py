@@ -571,31 +571,31 @@ def search_independent_clauses_parallel(clauses, total_score, args):
 
         # sufficient and necessary clauses
         if eval_utils.is_sn(clu_c_score, total_score):
-            log_utils.add_lines(f"(sn predicate) {clause_cluster} {clu_c_score}", args.log_file)
+            log_utils.add_lines(f"(sn predicate)  {clu_c_score}", args.log_file)
             sn_clusters.append([clause_cluster, clu_c_score])
         # almost a sufficient and necessary clauses
         elif eval_utils.is_sn_th_good(clu_c_score, total_score, args.sn_th):
-            log_utils.add_lines(f"(sn good predicate) {clause_cluster} {clu_c_score}", args.log_file)
+            log_utils.add_lines(f"(sn good predicate)  {clu_c_score}", args.log_file)
             sn_th_clusters.append([clause_cluster, clu_c_score])
         # necessary clauses
         if eval_utils.is_nc(clu_c_score, total_score, 0):
             if not is_repeat_clu(clause_cluster, necessary_clusters):
-                log_utils.add_lines(f"(nc predicate) {clause_cluster} {clu_c_score}", args.log_file)
+                log_utils.add_lines(f"(nc predicate)  {clu_c_score}", args.log_file)
                 necessary_clusters.append([clause_cluster, clu_c_score])
         # almost necessary clauses
         elif eval_utils.is_nc_th_good(clu_c_score, total_score, args.nc_th):
             if not is_repeat_clu(clause_cluster, nc_th_clusters):
-                log_utils.add_lines(f"(nc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
+                log_utils.add_lines(f"(nc good predicate)  {clu_c_score}", args.log_file)
                 nc_th_clusters.append([clause_cluster, clu_c_score])
         # sufficient clauses
         if eval_utils.is_sc(clu_c_score, total_score, 0):
             if not is_repeat_clu(clause_cluster, sufficient_clusters):
-                log_utils.add_lines(f"(sc predicate) {clause_cluster} {clu_c_score}", args.log_file)
+                log_utils.add_lines(f"(sc predicate) {clu_c_score}", args.log_file)
                 sufficient_clusters.append([clause_cluster, clu_c_score])
         # almost sufficient clauses
         elif eval_utils.is_sc_th_good(clu_c_score, total_score, args.sc_th):
             if not is_repeat_clu(clause_cluster, sc_th_clusters):
-                log_utils.add_lines(f"(sc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
+                log_utils.add_lines(f"(sc good predicate)  {clu_c_score}", args.log_file)
                 sc_th_clusters.append([clause_cluster, clu_c_score])
 
         else:
