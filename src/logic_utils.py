@@ -494,10 +494,23 @@ def is_repeat_clu(clu, clu_list):
     return is_repeat
 
 
+def has_same_preds(c1, c2):
+    if len(c1.body) != len(c2.body):
+        return False
+    same_preds = True
+    for i in range(len(c1.body)):
+        if not c1.body[i].pred.name == c2.body[i].pred.name:
+            same_preds = False
+    if same_preds:
+        return True
+    else:
+        return False
+
+
 def search_independent_clauses_parallel(clauses, total_score, args):
     print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
     clauses_with_score = []
-    for clause_i, [clause,four_scores, c_scores] in enumerate(clauses):
+    for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
         clauses_with_score.append([clause_i, clause, c_scores])
     # search clauses with no common bodies
     independent_clauses_all = []
@@ -514,6 +527,19 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     for independent_cluster in independent_clauses_all:
         sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=6)
         clause_clusters += sub_clusters
+
+    # apply a meta-rule
+    clause_clusters_aligned = []
+    for c_clu in clause_clusters:
+        is_aligned = True
+        if len(c_clu) > 1:
+            for c_i, c in enumerate(c_clu):
+                c[1].body = sorted(c[1].body)
+                if c_i > 0:
+                    if not has_same_preds(c[1], c_clu[0][1]):
+                        is_aligned = False
+        if is_aligned:
+            clause_clusters_aligned.append(c_clu)
 
     # TODO: find a parallel solution or prune trick
     # if len(clause_clusters) > 100000:
