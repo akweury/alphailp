@@ -547,7 +547,7 @@ class ClauseGenerator(object):
             elif eval_utils.is_nc(score, data_size, 1):
                 necessary_clauses.append((clause, score, all_scores[c_i]))
             elif eval_utils.is_sc(score, data_size, 1):
-                sufficient_clauses.append((clause,score, all_scores[c_i]))
+                sufficient_clauses.append((clause, score, all_scores[c_i]))
             elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
                 sc_good_clauses.append((clause, score, all_scores[c_i]))
                 # log_utils.add_lines(f'(conflict) {clause}, {four_scores[c_i]}', args.log_file)
@@ -650,14 +650,15 @@ class ClauseGenerator(object):
             # nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args, self.args.nc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
 
+        if len(clause_dict['sc']) > 0:
+            # sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
+
         if len(clause_dict['nc_good']) > 0:
             # nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
             #                                                self.args.nc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
 
-        # if len(clause_dict['sc']) > 0:
-        #     sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
-        #     refs += logic_utils.extract_clauses_from_bs_clauses(sc_top)
         if len(clause_dict['sc_good']) > 0:
             # sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], "sc_good", self.args,
             #                                                self.args.sc_good_top)
