@@ -1,6 +1,6 @@
 {
-  "n_obj": 5,
-  "batch-size-train": 5,
+  "n_obj": 3,
+  "batch_size_train": 10,
   "e": 6,
   "dataset": "online-5",
   "dataset-type": "kandinsky",
@@ -18,7 +18,7 @@
   "uc_good_top": 0,
   "sc_top": 10,
   "sc_good_top": 10,
-  "nc_top": 5,
+  "nc_top": 10,
   "nc_good_top": 0,
   "pi_top": 3,
   "with_bk": false,
