@@ -356,6 +356,55 @@ class FCNNRhoValuationFunction(nn.Module):
         return torch.stack((z[:, 0], z[:, 2]))
 
 
+class YOLOGroupShapeValuationFunction(nn.Module):
+    """The function v_area.
+    """
+
+    def __init__(self, device):
+        super(YOLOGroupShapeValuationFunction, self).__init__()
+        self.device = device
+        self.logi = LogisticRegression(input_dim=1)
+        self.logi.to(device)
+
+    def forward(self, z_1, z_2, z_3, group_shape):
+        """
+        Args:
+            z_1 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+            z_2 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+
+        Returns:
+            A batch of probabilities.
+        """
+        c_1 = self.to_center(z_1)
+        c_2 = self.to_center(z_2)
+        c_3 = self.to_center(z_3)
+
+        threshold = 0.001
+        area = 0.5 * (c_1[0] * (c_2[1] - c_3[1]) + c_2[0] * (c_3[1] - c_1[1]) + c_3[0] * (c_1[1] - c_2[1]))
+        group_shape_pred = torch.zeros(group_shape.shape).to(group_shape.device)
+        group_shape_id = torch.zeros(area.shape)
+        group_shape_id[area > threshold] = 1
+        for i in range(group_shape_pred.shape[0]):
+            group_shape_pred[i, int(group_shape_id[i])] = 1
+
+        return (group_shape * group_shape_pred).sum(dim=1)
+
+    def cart2pol(self, x, y):
+        rho = torch.sqrt(x ** 2 + y ** 2)
+        phi = torch.atan2(y, x)
+        phi = torch.rad2deg(phi)
+        return (rho, phi)
+
+    def to_center(self, z):
+        x = (z[:, 0] + z[:, 2]) / 2
+        y = (z[:, 1] + z[:, 3]) / 2
+        return torch.stack((x, y))
+
+
 class YOLOPhiValuationFunction(nn.Module):
     """The function v_area.
     """

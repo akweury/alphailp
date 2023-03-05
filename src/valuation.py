@@ -65,6 +65,10 @@ class YOLOValuationModule(nn.Module):
         v_phi = valuation_func.YOLOPhiValuationFunction(device)
         vfs['phi'] = v_phi
         layers.append(v_phi)
+
+        v_group_shape = valuation_func.YOLOGroupShapeValuationFunction(device)
+        vfs['group_shape'] = v_group_shape
+        layers.append(v_group_shape)
         # v_closeby = YOLOClosebyValuationFunction(device)
         # #if dataset in ['closeby', 'red-triangle']:
         # vfs['closeby'] = v_closeby
@@ -94,7 +98,7 @@ class YOLOValuationModule(nn.Module):
             Returns:
                 attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
         """
-        attr_names = ['color', 'shape', 'rho', 'phi']
+        attr_names = ['color', 'shape', 'rho', 'phi','group_shape']
         attrs = {}
         for dtype_name in attr_names:
             for term in self.lang.get_by_dtype_name(dtype_name):
@@ -137,7 +141,7 @@ class YOLOValuationModule(nn.Module):
         term_index = self.lang.term_index(term)
         if term.dtype.name == 'object':
             return zs[:, term_index].to(self.device)
-        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi":
+        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi" or term.dtype.name=="group_shape":
             return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1).to(self.device)
         elif term.dtype.name == 'image':
             return None
@@ -310,6 +314,11 @@ class PIValuationModule(nn.Module):
             v_rho = valuation_func.YOLORhoValuationFunction(device)
             vfs['rho'] = v_rho
             layers.append(v_rho)
+
+            v_group_shape = valuation_func.YOLOGroupShapeValuationFunction(device)
+            vfs['group_shape'] = v_group_shape
+            layers.append(v_group_shape)
+
         elif dataset_type == "hide":
             v_phi = valuation_func.FCNNPhiValuationFunction(device)
             vfs['phi'] = v_phi

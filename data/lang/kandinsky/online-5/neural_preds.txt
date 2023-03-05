@@ -1,5 +1,4 @@
 in:2:object,image
-phi:3:object,object,phi
-rho:3:object,object,rho
+group_shape:4:object,object,object,group_shape
 color:2:object,color
 shape:2:object,shape
