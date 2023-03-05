@@ -149,8 +149,8 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
     modeb_list = [
         ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_object, s_color]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_object, s_shape]),
+        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_object, s_color]),
+        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_object, s_shape]),
         # ModeDeclaration('body', obj_num, lang.get_pred_by_name('rho'), [p_object, p_object, s_rho], ordered=False),
         # ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_object, p_object, s_phi]),
         ModeDeclaration('body', obj_num, lang.get_pred_by_name('group_shape'), [p_object, p_object, p_object, s_group_shape], ordered=False),
