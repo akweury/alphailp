@@ -383,7 +383,7 @@ class YOLOGroupShapeValuationFunction(nn.Module):
         c_2 = self.to_center(z_2)
         c_3 = self.to_center(z_3)
 
-        threshold = 0.001
+        threshold = 0.01
         area = 0.5 * (c_1[0] * (c_2[1] - c_3[1]) + c_2[0] * (c_3[1] - c_1[1]) + c_3[0] * (c_1[1] - c_2[1]))
         group_shape_pred = torch.zeros(group_shape.shape).to(group_shape.device)
         group_shape_id = torch.zeros(area.shape)
