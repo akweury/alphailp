@@ -4,7 +4,7 @@
   "e": 6,
   "dataset": "closeby-learn",
   "dataset-type": "kandinsky",
-  "top_data": 100,
+  "top_data": 10,
   "t-beam": 8,
   "n-beam": 5,
   "cim-step": 5,
@@ -18,7 +18,7 @@
   "uc_good_top": 20,
   "sc_good_top": 20,
   "nc_good_top": 20,
-  "pi_top": 20,
+  "pi_top": 0,
   "with_bk": false,
   "plot_four_zone": false
 }
