@@ -5,7 +5,7 @@
   "dataset": "left_right",
   "dataset-type": "hide",
   "top_data": 70,
-  "t-beam": 5,
+  "t-beam": 7,
   "n-beam": 5,
   "cim-step": 7,
   "epochs": 100,

@@ -196,3 +196,12 @@ def plot_4_zone(is_plot_4zone, B_new, four_scores, all_scores, step):
                                x_scale=None, y_scale=None,
                                sub_folder=str(step), labels=f"{str(clause)}",
                                x_label=None, y_label=None, show=False, log_y=False, log_x=False, cla_leg=True)
+
+
+
+
+data = {
+    "twopairs":[0.28, 0.45, 0.70, 1.0 ],
+    "red-triangle":[]
+
+}
