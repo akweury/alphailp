@@ -368,15 +368,27 @@ def final_evaluation(NSFR, pm_prediction_dict, args):
 
 def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_loader, train_neg_loader,
                                test_pos_loader, test_neg_loader):
-    pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
-    pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
-    pm_test_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_test.pth.tar")
+    if args.dataset_type=="kandinsky":
+        pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
+        pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
+        pm_test_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_test.pth.tar")
 
-    val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, args.device, val_pos_loader, val_neg_loader)
-    train_pos_pred, train_neg_pred = percept.eval_images(args, pm_train_res_file, args.device, train_pos_loader,
-                                                         train_neg_loader)
-    test_pos_pred, test_neg_pred = percept.eval_images(args, pm_test_res_file, args.device, test_pos_loader,
-                                                       test_neg_loader)
+        val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, args.device, val_pos_loader, val_neg_loader)
+        train_pos_pred, train_neg_pred = percept.eval_images(args, pm_train_res_file, args.device, train_pos_loader,
+                                                             train_neg_loader)
+        test_pos_pred, test_neg_pred = percept.eval_images(args, pm_test_res_file, args.device, test_pos_loader,
+                                                           test_neg_loader)
+
+    elif args.dataset_type == "hide":
+        pos_dataset_folder = config.data_path / "hide" / args.dataset / 'true'
+        neg_dataset_folder = config.data_path / "hide" / args.dataset / 'false'
+        val_pos_pred = percept.convert_data_to_tensor(args,pos_dataset_folder)
+        val_neg_pred = percept.convert_data_to_tensor(args,neg_dataset_folder)
+        train_pos_pred = val_pos_pred
+        train_neg_pred = val_neg_pred
+        test_pos_pred = val_pos_pred
+        test_neg_pred = val_neg_pred
+
     pm_prediction_dict = {
         'val_pos': val_pos_pred,
         'val_neg': val_neg_pred,
