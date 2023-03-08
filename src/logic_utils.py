@@ -928,7 +928,8 @@ def is_conflict_bodies(pi_bodies, clause_bodies):
     # check for pi_bodies and clause_bodies confliction
     for i, p_b in enumerate(pi_bodies):
         for j, c_b in enumerate(clause_bodies):
-            is_conflict = check_conflict_body(p_b, c_b)
+            if p_b == c_b and p_b.pred.name!="in":
+                is_conflict = True
             if is_conflict:
                 return True
             # if "at_area" in p_b.pred.name and "at_area" in c_b.pred.name:
@@ -944,7 +945,7 @@ def is_conflict_bodies(pi_bodies, clause_bodies):
 
 
 def check_conflict_body(b1, b2):
-    if "at_area" in b1.pred.name and "at_area" in b2.pred.name:
+    if "phi" in b1.pred.name and "phi" in b2.pred.name:
         if list(b1.terms) == list(b2.terms):
             return True
         elif conflict_pred(b1.pred.name,
