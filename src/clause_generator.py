@@ -1235,7 +1235,7 @@ class PIClauseGenerator(object):
             for self_p in self.lang.invented_preds:
                 if new_p.body == self_p.body:
                     is_duplicate = True
-                    log_utils.add_lines(f"duplicate pi body {new_p.head} {new_p.body}", args.log_file)
+                    log_utils.add_lines(f"duplicate pi body {new_p.name} {new_p.body}", args.log_file)
             if not is_duplicate:
                 self.lang.invented_preds.append(new_p)
 
