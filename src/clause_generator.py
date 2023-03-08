@@ -812,7 +812,6 @@ class PIClauseGenerator(object):
         uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates)[:top_selector]
         uc_new_predicates = self.prune_predicates(uc_new_predicates)[:top_selector]
         nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates)[:top_selector]
-        print(f'len of nc sc new pi: {len(nc_sc_new_predicates)}')
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
                          nc_good_new_predicates + uc_good_new_predicates + nc_sc_new_predicates
         # convert to strings
@@ -1236,7 +1235,7 @@ class PIClauseGenerator(object):
             for self_p in self.lang.invented_preds:
                 if new_p.body == self_p.body:
                     is_duplicate = True
-                    log_utils.add_lines(f"duplicate pi body {new_p.body}", args.log_file)
+                    log_utils.add_lines(f"duplicate pi body {new_p.head} {new_p.body}", args.log_file)
             if not is_duplicate:
                 self.lang.invented_preds.append(new_p)
 
