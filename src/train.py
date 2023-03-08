@@ -384,6 +384,9 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
         neg_dataset_folder = config.data_path / "hide" / args.dataset / 'false'
         val_pos_pred = percept.convert_data_to_tensor(args,pos_dataset_folder)
         val_neg_pred = percept.convert_data_to_tensor(args,neg_dataset_folder)
+        if args.top_data < len(val_pos_pred):
+            val_pos_pred = val_pos_pred[:args.top_data]
+            val_neg_pred = val_neg_pred[:args.top_data]
         train_pos_pred = val_pos_pred
         train_neg_pred = val_neg_pred
         test_pos_pred = val_pos_pred

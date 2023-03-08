@@ -756,9 +756,9 @@ class PIClauseGenerator(object):
         nc_good_new_predicates = []
         uc_new_predicates = []
         uc_good_new_predicates = []
-
+        nc_sc_new_predicates = []
         # cluster sufficient clauses
-        if 100 > len(beam_search_clauses['sc']) > 0:
+        if len(beam_search_clauses['sc']) > 0:
             sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
                                                                  pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
@@ -776,6 +776,14 @@ class PIClauseGenerator(object):
             log_utils.add_lines(f"\nnew PI from nc: {len(nc_new_predicates)}", args.log_file)
             for p in nc_new_predicates:
                 print(p)
+
+        if not found_ns and len(beam_search_clauses['sc']) > 0 and len(beam_search_clauses['nc']) > 0:
+            nc_sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
+                                                                    pos_pred.shape[0], args)
+            log_utils.add_lines(f"\nnew PI from nc+sc: {len(nc_sc_new_predicates)}", args.log_file)
+            for p in nc_sc_new_predicates:
+                print(p)
+
         if not found_ns and len(beam_search_clauses['nc_good']) > 0:
             nc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc_good"], pi_clauses,
                                                                       pos_pred.shape[0], args)
@@ -803,8 +811,9 @@ class PIClauseGenerator(object):
         nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates)[:top_selector]
         uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates)[:top_selector]
         uc_new_predicates = self.prune_predicates(uc_new_predicates)[:top_selector]
+        nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates)[:top_selector]
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
-                         nc_good_new_predicates + uc_good_new_predicates
+                         nc_good_new_predicates + uc_good_new_predicates + nc_sc_new_predicates
         # convert to strings
         new_clauses_str_list, kp_str_list = self.generate_new_clauses_str_list(new_predicates)
 
