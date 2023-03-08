@@ -914,6 +914,14 @@ def eval_clause_sign(p_scores):
     return p_clauses_signs
 
 
+def check_repeat_conflict(atom1, atom2):
+    if atom1.terms[0] == atom2.terms[0] and atom1.terms[1] == atom2.terms[1]:
+        return True
+    if atom1.terms[0] == atom2.terms[1] and atom1.terms[1] == atom2.terms[0]:
+        return True
+    return False
+
+
 def is_conflict_bodies(pi_bodies, clause_bodies):
     is_conflict = False
     # check for pi_bodies confliction
@@ -930,6 +938,11 @@ def is_conflict_bodies(pi_bodies, clause_bodies):
         for j, c_b in enumerate(clause_bodies):
             if p_b == c_b and p_b.pred.name!="in":
                 is_conflict = True
+            elif p_b.pred.name==c_b.pred.name:
+                if p_b.pred.name == "rho":
+                    is_conflict = check_repeat_conflict(p_b, c_b)
+                elif p_b.pred.name=="phi":
+                    is_conflict = check_repeat_conflict(p_b, c_b)
             if is_conflict:
                 return True
             # if "at_area" in p_b.pred.name and "at_area" in c_b.pred.name:
