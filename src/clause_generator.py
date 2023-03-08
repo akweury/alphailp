@@ -650,27 +650,28 @@ class ClauseGenerator(object):
             # nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args, self.args.nc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
 
-        if len(clause_dict['sc']) > 0:
+        elif len(clause_dict['sc']) > 0:
             # sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
 
-        if len(clause_dict['nc_good']) > 0:
+        elif len(clause_dict['nc_good']) > 0:
             # nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
             #                                                self.args.nc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
 
-        if len(clause_dict['sc_good']) > 0:
+        elif len(clause_dict['sc_good']) > 0:
             # sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], "sc_good", self.args,
             #                                                self.args.sc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
 
-        if len(clause_dict['uc_good']) > 0:
+        elif len(clause_dict['uc_good']) > 0:
             # uc_good_top = logic_utils.select_top_x_clauses(clause_dict['uc_good'], "uc_good", self.args,
             #                                                self.args.uc_good_top)
             refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'])
 
         # uc_top = logic_utils.select_top_x_clauses(clause_dict['uc'], "uc", self.args, self.args.uc_top)
-        refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
+        else:
+            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
         # sort refs and select top ...
         return refs
 
