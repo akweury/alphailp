@@ -3,3 +3,4 @@ color:pink,green,blue
 shape:sphere,cube
 image:img
 phi:num_phi_25
+rho:num_rho_25
