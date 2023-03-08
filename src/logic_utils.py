@@ -520,7 +520,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
             if not len(common_body_pi_clauses(clause_j, clause_i)) > args.n_obj:
                 clause_cluster.append([j, clause_j, score_j])
-        clause_cluster = sorted(clause_cluster, key=lambda x: x[1])
+        clause_cluster = sorted(clause_cluster, key=lambda x: x[0])
         if clause_cluster not in independent_clauses_all:
             independent_clauses_all.append(clause_cluster)
 
