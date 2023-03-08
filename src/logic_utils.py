@@ -540,7 +540,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
                         is_aligned = False
         if is_aligned:
             clause_clusters_aligned.append(c_clu)
-    clause_clusters = clause_clusters_aligned
+    # clause_clusters = clause_clusters_aligned
     # TODO: find a parallel solution or prune trick
     # if len(clause_clusters) > 100000:
     #     clause_clusters = clause_clusters[:100000]
