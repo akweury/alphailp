@@ -1288,9 +1288,9 @@ class PIClauseGenerator(object):
         # else:
         #     new_predicates = new_predicates[:5]
 
-        first_zone_max = logic_utils.keep_1_zone_max_predicates(new_predicates)
-        if len(first_zone_max) > 0:
-            new_predicates = first_zone_max
+        # first_zone_max = logic_utils.keep_1_zone_max_predicates(new_predicates)
+        # if len(first_zone_max) > 0:
+        #     new_predicates = first_zone_max
         # else:
         #     new_predicates = new_predicates[:5]
 
