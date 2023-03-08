@@ -19,7 +19,7 @@
   "sc_top": 5,
   "sc_good_top": 2,
   "nc_top": 10,
-  "nc_good_top": 3,
+  "nc_good_top": 0,
   "pi_top": 1,
   "with_bk": false,
   "plot_four_zone": false
