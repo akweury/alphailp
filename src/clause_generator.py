@@ -812,6 +812,7 @@ class PIClauseGenerator(object):
         uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates)[:top_selector]
         uc_new_predicates = self.prune_predicates(uc_new_predicates)[:top_selector]
         nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates)[:top_selector]
+        print(f'len of nc sc new pi: {len(nc_sc_new_predicates)}')
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
                          nc_good_new_predicates + uc_good_new_predicates + nc_sc_new_predicates
         # convert to strings
