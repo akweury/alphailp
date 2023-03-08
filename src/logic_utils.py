@@ -974,7 +974,7 @@ def remove_duplicate_predicates(new_predicates):
     non_duplicate_pred = []
     for a_i, [p_a, a_score] in enumerate(new_predicates):
         is_duplicate = False
-        for b_i, [p_b, b_score] in enumerate(new_predicates[a_i:]):
+        for b_i, [p_b, b_score] in enumerate(new_predicates[a_i+1:]):
             if p_a.name == p_b.name:
                 continue
             p_a.body.sort()
