@@ -915,9 +915,9 @@ def eval_clause_sign(p_scores):
 
 
 def check_repeat_conflict(atom1, atom2):
-    if atom1.terms[0] == atom2.terms[0] and atom1.terms[1] == atom2.terms[1]:
+    if atom1.terms[0].name == atom2.terms[0].name and atom1.terms[1].name == atom2.terms[1].name:
         return True
-    if atom1.terms[0] == atom2.terms[1] and atom1.terms[1] == atom2.terms[0]:
+    if atom1.terms[0].name == atom2.terms[1].name and atom1.terms[1].name == atom2.terms[0].name:
         return True
     return False
 

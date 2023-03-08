@@ -17,7 +17,7 @@
   "conflict_th": 0.8,
   "uc_good_top": 0,
   "sc_top": 5,
-  "sc_good_top": 2,
+  "sc_good_top": 0,
   "nc_top": 10,
   "nc_good_top": 0,
   "pi_top": 1,
