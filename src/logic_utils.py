@@ -516,7 +516,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     independent_clauses_all = []
     for i_index, [i, clause_i, score_i] in enumerate(clauses_with_score):
         clause_cluster = [[i, clause_i, score_i]]
-        independent_clauses_all.append(clause_cluster)
+        independent_clauses_all.append([[i, clause_i, score_i]])
         for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
             if not len(common_body_pi_clauses(clause_j, clause_i)) > args.n_obj:
                 clause_cluster.append([j, clause_j, score_j])
