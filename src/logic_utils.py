@@ -507,6 +507,23 @@ def has_same_preds(c1, c2):
         return False
 
 
+def check_trivial_clusters(clause_clusters):
+    clause_clusters_untrivial = []
+    for c_clu in clause_clusters:
+        is_trivial = False
+        if len(c_clu) > 1:
+            for c_i, c in enumerate(c_clu):
+                c[1].body = sorted(c[1].body)
+                if c_i > 0:
+                    if has_same_preds(c[1], c_clu[0][1]):
+                        is_trivial = True
+                        break
+        if is_trivial:
+            clause_clusters_untrivial.append(c_clu)
+    return clause_clusters_untrivial
+
+
+
 def search_independent_clauses_parallel(clauses, total_score, args):
     print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
     clauses_with_score = []
@@ -530,18 +547,8 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         clause_clusters += sub_clusters
 
     # apply a meta-rule
-    # clause_clusters_aligned = []
-    # for c_clu in clause_clusters:
-    #     is_aligned = True
-    #     if len(c_clu) > 1:
-    #         for c_i, c in enumerate(c_clu):
-    #             c[1].body = sorted(c[1].body)
-    #             if c_i > 0:
-    #                 if not has_same_preds(c[1], c_clu[0][1]):
-    #                     is_aligned = False
-    #     if is_aligned:
-    #         clause_clusters_aligned.append(c_clu)
-    # clause_clusters = clause_clusters_aligned
+    clause_clusters = check_trivial_clusters(clause_clusters)
+
     # TODO: find a parallel solution or prune trick
     # if len(clause_clusters) > 100000:
     #     clause_clusters = clause_clusters[:100000]
