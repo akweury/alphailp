@@ -1,7 +1,7 @@
 {
   "n_obj": 5,
   "batch_size_train": 10,
-  "e": 6,
+  "e": 5,
   "dataset": "check_mark_en",
   "dataset-type": "kandinsky",
   "top_data": 30,
