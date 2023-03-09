@@ -518,7 +518,7 @@ def check_trivial_clusters(clause_clusters):
                     if has_same_preds(c[1], c_clu[0][1]):
                         is_trivial = True
                         break
-        if is_trivial:
+        if not is_trivial:
             clause_clusters_untrivial.append(c_clu)
     return clause_clusters_untrivial
 
