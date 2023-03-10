@@ -5,7 +5,7 @@
   "dataset": "triangleOfCircle",
   "dataset-type": "kandinsky",
   "top_data": 100,
-  "t_beam": 5,
+  "t_beam": 7,
   "n_beam": 5,
   "cim_step": 7,
   "epochs": 100,
