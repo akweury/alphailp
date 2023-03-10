@@ -1,7 +1,7 @@
 {
-  "n_obj":4,
+  "n_obj":3,
   "batch_size_train": 10,
-  "e": 4,
+  "e": 3,
   "dataset": "circle_3",
   "dataset-type": "kandinsky",
   "top_data": 80,
