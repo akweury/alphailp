@@ -1,10 +1,10 @@
 {
-  "n_obj":2,
+  "n_obj":4,
   "batch_size_train": 10,
-  "e": 2,
+  "e": 4,
   "dataset": "triangleOfCircle",
   "dataset-type": "kandinsky",
-  "top_data": 10,
+  "top_data": 100,
   "t_beam": 5,
   "n_beam": 5,
   "cim_step": 7,
