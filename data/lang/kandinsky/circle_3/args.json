@@ -4,7 +4,7 @@
   "e": 4,
   "dataset": "circle_3",
   "dataset-type": "kandinsky",
-  "top_data": 100,
+  "top_data": 80,
   "t_beam": 7,
   "n_beam": 5,
   "cim_step": 7,
