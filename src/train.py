@@ -52,6 +52,8 @@ def get_args():
                         help="Generate Clause without predicate invention.")
     parser.add_argument("--small-data", action="store_true",
                         help="Use small training data.")
+    parser.add_argument("--score_unique", action="store_false",
+                        help="prune same score clauses.")
     parser.add_argument("--no-xil", action="store_true",
                         help="Do not use confounding labels for clevr-hans.")
     parser.add_argument("--num-workers", type=int, default=4,
