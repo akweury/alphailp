@@ -296,7 +296,7 @@ class ClauseGenerator(object):
                 break
             elif (len(clause_dict["sn_good"]) > 0):
                 break
-            refs = self.update_refs(clause_dict)
+            refs = self.update_refs(clause_dict, args)
             # refs = self.select_all_refs(clause_dict)
             step += 1
             # try to invent predicate if find any new high score clauses.
@@ -644,35 +644,50 @@ class ClauseGenerator(object):
                 log_utils.add_lines(f"necessary clause with {args.nc_th * 100}%: {c[0]}, {score}", args.log_file)
         log_utils.add_lines('============= Beam search End ===================\n', args.log_file)
 
-    def update_refs(self, clause_dict):
+    def update_refs(self, clause_dict, args):
         refs = []
         if len(clause_dict['nc']) > 0:
             # nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args, self.args.nc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
+            nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
+            refs += nc_clauses
+            for c in nc_clauses:
+                log_utils.add_lines(f"extend candidate (nc): {c}", args.log_file)
 
         elif len(clause_dict['sc']) > 0:
             # sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
+            sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
+            refs += sc_clauses
+            for c in sc_clauses:
+                log_utils.add_lines(f"extend candidate (sc): {c}", args.log_file)
 
         elif len(clause_dict['nc_good']) > 0:
             # nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
             #                                                self.args.nc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
+
+            nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
+            refs += nc_good_clauses
+            for c in nc_good_clauses:
+                log_utils.add_lines(f"extend candidate (nc_good): {c}", args.log_file)
 
         elif len(clause_dict['sc_good']) > 0:
-            # sc_good_top = logic_utils.select_top_x_clauses(clause_dict['sc_good'], "sc_good", self.args,
-            #                                                self.args.sc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
+            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
+            refs += sc_good_clauses
+            for c in sc_good_clauses:
+                log_utils.add_lines(f"extend candidate (sc_good): {c}", args.log_file)
 
         elif len(clause_dict['uc_good']) > 0:
-            # uc_good_top = logic_utils.select_top_x_clauses(clause_dict['uc_good'], "uc_good", self.args,
-            #                                                self.args.uc_good_top)
-            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'])
+            uc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'])
+            refs += uc_good_clauses
+            for c in uc_good_clauses:
+                log_utils.add_lines(f"extend candidate (uc_good): {c}", args.log_file)
 
         # uc_top = logic_utils.select_top_x_clauses(clause_dict['uc'], "uc", self.args, self.args.uc_top)
         else:
-            refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
-        # sort refs and select top ...
+            uc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
+            refs += uc_clauses
+            for c in uc_clauses:
+                log_utils.add_lines(f"extend candidate (uc): {c}", args.log_file)
+
         return refs
 
     def select_all_refs(self, clause_dict):
