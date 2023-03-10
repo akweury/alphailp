@@ -523,7 +523,6 @@ def check_trivial_clusters(clause_clusters):
     return clause_clusters_untrivial
 
 
-
 def search_independent_clauses_parallel(clauses, total_score, args):
     print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
     clauses_with_score = []
@@ -546,7 +545,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=4)
         clause_clusters += sub_clusters
 
-    # apply a meta-rule
+    # trivial: contain multiple semantic identity bodies
     clause_clusters = check_trivial_clusters(clause_clusters)
 
     # TODO: find a parallel solution or prune trick
@@ -603,7 +602,6 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         # almost sufficient clauses
         elif eval_utils.is_sc_th_good(clu_c_score, total_score, args.sc_th):
             if not is_repeat_clu(clause_cluster, sc_th_clusters):
-
                 # log_utils.add_lines(f"(sc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
                 sc_th_clusters.append([clause_cluster, clu_c_score])
 
@@ -944,12 +942,12 @@ def is_conflict_bodies(pi_bodies, clause_bodies):
     # check for pi_bodies and clause_bodies confliction
     for i, p_b in enumerate(pi_bodies):
         for j, c_b in enumerate(clause_bodies):
-            if p_b == c_b and p_b.pred.name!="in":
+            if p_b == c_b and p_b.pred.name != "in":
                 is_conflict = True
-            elif p_b.pred.name==c_b.pred.name:
+            elif p_b.pred.name == c_b.pred.name:
                 if p_b.pred.name == "rho":
                     is_conflict = check_repeat_conflict(p_b, c_b)
-                elif p_b.pred.name=="phi":
+                elif p_b.pred.name == "phi":
                     is_conflict = check_repeat_conflict(p_b, c_b)
             if is_conflict:
                 return True
@@ -977,16 +975,29 @@ def check_conflict_body(b1, b2):
     return False
 
 
+def get_inv_body_preds(inv_body):
+    preds = []
+    for atom_list in inv_body:
+        for atom in atom_list:
+            preds.append(atom.pred.name)
+            for t in atom.terms:
+                if "O" not in t.name:
+                    preds.append(t.name)
+    return preds
+
+
 def remove_duplicate_predicates(new_predicates):
     non_duplicate_pred = []
     for a_i, [p_a, a_score] in enumerate(new_predicates):
         is_duplicate = False
-        for b_i, [p_b, b_score] in enumerate(new_predicates[a_i+1:]):
+        for b_i, [p_b, b_score] in enumerate(new_predicates[a_i + 1:]):
             if p_a.name == p_b.name:
                 continue
             p_a.body.sort()
             p_b.body.sort()
-            if p_a == p_b:
+            p_a_body_preds = get_inv_body_preds(p_a.body)
+            p_b_body_preds = get_inv_body_preds(p_b.body)
+            if p_a_body_preds == p_b_body_preds:
                 is_duplicate = True
         if not is_duplicate:
             non_duplicate_pred.append([p_a, a_score])
@@ -1066,7 +1077,7 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
 
         else:
-            max_clause = [0.0,[]]
+            max_clause = [0.0, []]
             log_utils.add_lines(f"(BS Step {step}) (local) max clause accuracy: {clause_accuracy.max()}", args.log_file)
             for c_i in c_indices:
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
