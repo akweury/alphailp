@@ -310,7 +310,7 @@ class ClauseGenerator(object):
                     refs += self.update_refs(clause_dict, args, priority="sc_good")
                 if len(refs) == 0 and len(clause_dict["nc"]) > 0:
                     refs += self.update_refs(clause_dict, args, priority="nc")
-                else:
+                if len(refs) == 0:
                     raise ValueError
 
             step += 1
