@@ -1150,7 +1150,7 @@ def remove_trivial_clauses(refs_non_conflict, args):
     return non_trivial_clauses
 
 
-def get_pred_names_from_clauses(clause,exclude_objects=False):
+def get_pred_names_from_clauses(clause, exclude_objects=False):
     preds = []
     for atom in clause.body:
         pred = atom.pred.name
@@ -1261,14 +1261,67 @@ def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
     return non_duplicate_c
 
 
+def replace_inv_to_equiv_preds(inv_pred):
+    equiv_preds = []
+    for atom_list in inv_pred.body:
+        equiv_preds.append(atom_list)
+    return equiv_preds
+
+
+def get_equivalent_clauses(c):
+    equivalent_clauses = [c]
+    inv_preds = []
+    usual_preds = []
+    for atom in c.body:
+        if "inv_pred" in atom.pred.name:
+            inv_preds.append(atom)
+        else:
+            usual_preds.append(atom)
+
+    if len(inv_preds) == 0:
+        return equivalent_clauses
+    else:
+        for inv_atom in inv_preds:
+            inv_pred_equiv_bodies = replace_inv_to_equiv_preds(inv_atom.pred)
+            for equiv_inv_body in inv_pred_equiv_bodies:
+                equiv_body = sorted(list(set(equiv_inv_body + usual_preds)))
+                equiv_c = Clause(head=c.head, body=equiv_body)
+                equivalent_clauses.append(equiv_c)
+
+    return equivalent_clauses
+
+
+def semantic_same_pred_lists(added_pred_list, new_pred_list):
+    is_same = True
+    for new_pred in new_pred_list:
+        for added_pred in added_pred_list:
+            if not new_pred == added_pred:
+                is_same = False
+                break
+    if is_same:
+        print("break")
+    return is_same
+
+
 def remove_same_semantic_clauses(clauses):
     semantic_diff_clauses = []
     for c in clauses:
-        is_same =False
+        c_equiv_cs = get_equivalent_clauses(c)
+        c.equiv_c_preds = []
+        for c_equiv in c_equiv_cs:
+            c_equiv_cs_preds = get_pred_names_from_clauses(c_equiv, exclude_objects=True)
+            if c_equiv_cs_preds not in c.equiv_c_preds:
+                c.equiv_c_preds.append(c_equiv_cs_preds)
+
+    for c in clauses:
+        is_same = False
         for added_c in semantic_diff_clauses:
             c_preds = get_pred_names_from_clauses(c, exclude_objects=True)
             added_c_preds = get_pred_names_from_clauses(added_c, exclude_objects=True)
             if c_preds == added_c_preds:
+                is_same = True
+                break
+            elif semantic_same_pred_lists(added_c.equiv_c_preds, c.equiv_c_preds):
                 is_same = True
                 break
         if not is_same:
