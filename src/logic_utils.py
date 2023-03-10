@@ -1150,13 +1150,16 @@ def remove_trivial_clauses(refs_non_conflict, args):
     return non_trivial_clauses
 
 
-def get_pred_names_from_clauses(clause):
+def get_pred_names_from_clauses(clause,exclude_objects=False):
     preds = []
     for atom in clause.body:
         pred = atom.pred.name
         if "in" == pred:
             continue
-        terms = [t.name for t in atom.terms]
+        if exclude_objects:
+            terms = [t.name for t in atom.terms if "O" not in t.name]
+        else:
+            terms = [t.name for t in atom.terms]
         if pred not in preds:
             preds.append([pred, terms])
     return preds
@@ -1256,3 +1259,19 @@ def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
         # else:
         # log_utils.add_lines(f'(duplicate clause) {clause}', args.log_file)
     return non_duplicate_c
+
+
+def remove_same_semantic_clauses(clauses):
+    semantic_diff_clauses = []
+    for c in clauses:
+        is_same =False
+        for added_c in semantic_diff_clauses:
+            c_preds = get_pred_names_from_clauses(c, exclude_objects=True)
+            added_c_preds = get_pred_names_from_clauses(added_c, exclude_objects=True)
+            if c_preds == added_c_preds:
+                is_same = True
+                break
+        if not is_same:
+            semantic_diff_clauses.append(c)
+
+    return semantic_diff_clauses

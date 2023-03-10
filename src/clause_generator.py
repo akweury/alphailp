@@ -287,9 +287,10 @@ class ClauseGenerator(object):
             log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step}",
                                 args.log_file)
 
-            extended_refs = self.extend_clauses(refs, args)
-            removed_refs = self.remove_conflict_clauses(extended_refs, pi_clauses, args)
-            clause_dict, new_max_clause, higher = self.eval_clauses_scores(removed_refs, pi_clauses, eval_pred,
+            refs_extended = self.extend_clauses(refs, args)
+            refs_diff_semantic = logic_utils.remove_same_semantic_clauses(refs_extended)
+            refs_no_conflict = self.remove_conflict_clauses(refs_diff_semantic, pi_clauses, args)
+            clause_dict, new_max_clause, higher = self.eval_clauses_scores(refs_no_conflict, pi_clauses, eval_pred,
                                                                            pos_pred,
                                                                            neg_pred, step, args, max_clause)
             if (len(clause_dict["sn"]) > 0):
@@ -310,6 +311,9 @@ class ClauseGenerator(object):
                     refs = self.update_refs(clause_dict, args, priority="nc")
                 else:
                     raise ValueError
+
+
+
             step += 1
 
         # self.print_clauses(clause_dict, args)
