@@ -658,6 +658,14 @@ class ClauseGenerator(object):
             refs += nc_clauses
             for c in nc_clauses:
                 log_utils.add_lines(f"extend candidate (nc): {c}", args.log_file)
+        elif len(clause_dict['nc_good']) > 0 and priority == "nc":
+            # nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
+            #                                                self.args.nc_good_top)
+
+            nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
+            refs += nc_good_clauses
+            for c in nc_good_clauses:
+                log_utils.add_lines(f"extend candidate (nc_good): {c}", args.log_file)
 
         if len(clause_dict['sc']) > 0 and priority == "sc":
             # sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
@@ -665,15 +673,12 @@ class ClauseGenerator(object):
             refs += sc_clauses
             for c in sc_clauses:
                 log_utils.add_lines(f"extend candidate (sc): {c}", args.log_file)
+        elif len(clause_dict['sc_good']) > 0 and priority == "sc":
+            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
+            refs += sc_good_clauses
+            for c in sc_good_clauses:
+                log_utils.add_lines(f"extend candidate (sc_good): {c}", args.log_file)
 
-        # elif len(clause_dict['nc_good']) > 0:
-        #     # nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
-        #     #                                                self.args.nc_good_top)
-        #
-        #     nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
-        #     refs += nc_good_clauses
-        #     for c in nc_good_clauses:
-        #         log_utils.add_lines(f"extend candidate (nc_good): {c}", args.log_file)
         #
         # elif len(clause_dict['sc_good']) > 0:
         #     sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
