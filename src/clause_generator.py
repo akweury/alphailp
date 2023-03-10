@@ -304,6 +304,8 @@ class ClauseGenerator(object):
             else:
                 if len(clause_dict["sc"]) > 0:
                     refs = self.update_refs(clause_dict, args, priority="sc")
+                elif len(clause_dict["sc_good"]) > 0:
+                    refs = self.update_refs(clause_dict, args, priority="sc_good")
                 elif len(clause_dict["nc"]) > 0:
                     refs = self.update_refs(clause_dict, args, priority="nc")
                 else:
@@ -658,7 +660,7 @@ class ClauseGenerator(object):
             refs += nc_clauses
             for c in nc_clauses:
                 log_utils.add_lines(f"extend candidate (nc): {c}", args.log_file)
-        elif len(clause_dict['nc_good']) > 0 and priority == "nc":
+        elif len(clause_dict['nc_good']) > 0 and priority == "nc_good":
             # nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
             #                                                self.args.nc_good_top)
 
@@ -673,7 +675,7 @@ class ClauseGenerator(object):
             refs += sc_clauses
             for c in sc_clauses:
                 log_utils.add_lines(f"extend candidate (sc): {c}", args.log_file)
-        elif len(clause_dict['sc_good']) > 0 and priority == "sc":
+        elif len(clause_dict['sc_good']) > 0 and priority == "sc_good":
             sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
             refs += sc_good_clauses
             for c in sc_good_clauses:
