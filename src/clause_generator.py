@@ -297,12 +297,17 @@ class ClauseGenerator(object):
             elif (len(clause_dict["sn_good"]) > 0):
                 break
 
-            if higher:
+            if higher and len(clause_dict["nc"]) > 0:
                 refs = self.update_refs(clause_dict, args, priority="nc")
                 max_clause = new_max_clause
 
             else:
-                refs = self.update_refs(clause_dict, args, priority="sc")
+                if len(clause_dict["sc"]) > 0:
+                    refs = self.update_refs(clause_dict, args, priority="sc")
+                elif len(clause_dict["nc"]) > 0:
+                    refs = self.update_refs(clause_dict, args, priority="nc")
+                else:
+                    raise ValueError
             step += 1
 
         # self.print_clauses(clause_dict, args)
