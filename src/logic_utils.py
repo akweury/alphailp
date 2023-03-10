@@ -1100,14 +1100,13 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
         if threshold is not None and len(c_sorted) > threshold:
             c_sorted = c_sorted[:threshold]
 
-
         if args.score_unique:
             score_unique_c = []
-            appeared_scores=[]
+            appeared_scores = []
             for c in c_sorted:
                 if c[1].tolist() not in appeared_scores:
                     score_unique_c.append(c)
-                    appeared_scores.append(c[1])
+                    appeared_scores.append(c[1].tolist())
             c_sorted = score_unique_c
         for c, c_score, all_scores in c_sorted:
             log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
