@@ -368,12 +368,13 @@ def final_evaluation(NSFR, pm_prediction_dict, args):
 
 def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_loader, train_neg_loader,
                                test_pos_loader, test_neg_loader):
-    if args.dataset_type=="kandinsky":
+    if args.dataset_type == "kandinsky":
         pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
         pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
         pm_test_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_test.pth.tar")
 
-        val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, args.device, val_pos_loader, val_neg_loader)
+        val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, args.device, val_pos_loader,
+                                                         val_neg_loader)
         train_pos_pred, train_neg_pred = percept.eval_images(args, pm_train_res_file, args.device, train_pos_loader,
                                                              train_neg_loader)
         test_pos_pred, test_neg_pred = percept.eval_images(args, pm_test_res_file, args.device, test_pos_loader,
@@ -382,8 +383,8 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
     elif args.dataset_type == "hide":
         pos_dataset_folder = config.data_path / "hide" / args.dataset / 'true'
         neg_dataset_folder = config.data_path / "hide" / args.dataset / 'false'
-        val_pos_pred = percept.convert_data_to_tensor(args,pos_dataset_folder)
-        val_neg_pred = percept.convert_data_to_tensor(args,neg_dataset_folder)
+        val_pos_pred = percept.convert_data_to_tensor(args, pos_dataset_folder)
+        val_neg_pred = percept.convert_data_to_tensor(args, neg_dataset_folder)
         if args.top_data < len(val_pos_pred):
             val_pos_pred = val_pos_pred[:args.top_data]
             val_neg_pred = val_neg_pred[:args.top_data]
@@ -446,16 +447,22 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     found_ns = False
     obj_n = args.n_obj
     init_clauses = update_initial_clauses(full_init_clauses, obj_n)
-
+    invented_pred_num = 0
+    no_new_preds = False
+    last_refs = []
     while max_step < args.t_beam:
         # if generate new predicates, start the bs deep from 0
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                init_clauses, pi_clauses, atoms, obj_n)
         # generate clauses # time-consuming code
-        bs_clauses, max_clause, max_step = clause_generator.beam_search_clause_quick(init_clauses, val_pos, val_neg,
-                                                                                     pi_clauses, args,
-                                                                                     max_clause, max_step=iteration,
-                                                                                     iteration=iteration)
+        bs_clauses, max_clause, max_step, last_refs = clause_generator.beam_search_clause_quick(init_clauses, val_pos,
+                                                                                                val_neg,
+                                                                                                pi_clauses, args,
+                                                                                                max_clause,
+                                                                                                max_step=iteration,
+                                                                                                iteration=iteration,
+                                                                                                no_new_preds=no_new_preds,
+                                                                                                last_refs=last_refs)
         if len(bs_clauses['sn']) > 0:
             log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
             clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]])
@@ -486,10 +493,15 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             # invent new predicate and generate pi clauses
             pi_clauses, kp_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
                                                                                val_neg, args, step=iteration)
-            # add new predicates
-            lang = pi_clause_generator.lang
-            atoms = logic_utils.get_atoms(lang)
-            clauses += kp_pi_clauses
+            new_pred_num = len(pi_clause_generator.lang.invented_preds) - invented_pred_num
+            invented_pred_num = len(pi_clause_generator.lang.invented_preds)
+            if new_pred_num > 0:
+                # add new predicates
+                lang = pi_clause_generator.lang
+                atoms = logic_utils.get_atoms(lang)
+                clauses += kp_pi_clauses
+            else:
+                no_new_preds = True
 
         iteration += 1
 

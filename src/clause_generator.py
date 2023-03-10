@@ -269,7 +269,7 @@ class ClauseGenerator(object):
         return refs
 
     def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause,
-                                 max_step=4, iteration=None):
+                                 max_step=4, iteration=None, no_new_preds=False, last_refs=[]):
         log_utils.add_lines(f"\n======== beam search iteration {iteration} ========", args.log_file)
         eval_pred = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
@@ -279,6 +279,10 @@ class ClauseGenerator(object):
         max_score = max_clause[0]
         refs = init_clauses
         # while (len(clause_dict["sc"]) == 0 and len(clause_dict["sn"]) == 0 and step < T_beam) or step <= min_step:
+        if no_new_preds:
+            step = max_step
+            refs = last_refs
+
         while step <= max_step:
 
             # log
@@ -317,7 +321,7 @@ class ClauseGenerator(object):
 
         # self.print_clauses(clause_dict, args)
 
-        return clause_dict, max_clause, step
+        return clause_dict, max_clause, step, refs
 
     def eval_images(self, save_path):
 
