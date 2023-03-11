@@ -809,12 +809,12 @@ class PIClauseGenerator(object):
             for p in nc_new_predicates:
                 print(p)
 
-        if not found_ns and len(beam_search_clauses['sc']) > 0 and len(beam_search_clauses['nc']) > 0:
-            nc_sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
-                                                                    pos_pred.shape[0], args)
-            log_utils.add_lines(f"\nnew PI from nc+sc: {len(nc_sc_new_predicates)}", args.log_file)
-            for p in nc_sc_new_predicates:
-                print(p)
+        # if not found_ns and len(beam_search_clauses['sc']) > 0 and len(beam_search_clauses['nc']) > 0:
+        #     nc_sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
+        #                                                             pos_pred.shape[0], args)
+        #     log_utils.add_lines(f"\nnew PI from nc+sc: {len(nc_sc_new_predicates)}", args.log_file)
+        #     for p in nc_sc_new_predicates:
+        #         print(p)
 
         # if not found_ns and len(beam_search_clauses['nc_good']) > 0:
         #     nc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc_good"], pi_clauses,

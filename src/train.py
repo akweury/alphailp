@@ -502,13 +502,13 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 found_ns = True
                 break
             else:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1],"unknown", args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1], "unknown", args)
 
             if args.no_pi:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'],"sn", args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'],"nc", args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'],"sc", args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'],"uc", args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'], "sn", args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'], "nc", args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'], "sc", args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'], "uc", args)
             else:
                 # invent new predicate and generate pi clauses
                 pi_clauses, kp_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
@@ -517,6 +517,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 invented_pred_num = len(pi_clause_generator.lang.invented_preds)
                 if new_pred_num > 0:
                     # add new predicates
+                    no_new_preds = False
                     lang = pi_clause_generator.lang
                     atoms = logic_utils.get_atoms(lang)
                     clauses += kp_pi_clauses
