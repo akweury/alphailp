@@ -484,7 +484,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                                                                                                 last_refs=last_refs)
             if len(bs_clauses['sn']) > 0:
                 log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
-                clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]], args)
+                clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]], "sn", args)
                 pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
                 inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
                 log_utils.write_clause_to_file(clauses, pi_clause_file)
@@ -493,7 +493,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 break
             elif len(bs_clauses['sn_good']) > 0:
                 log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'], args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'], "sn_good", args)
                 pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
                 inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
                 log_utils.write_clause_to_file(clauses, pi_clause_file)
@@ -501,13 +501,13 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 found_ns = True
                 break
             else:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1], args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1],"unknown", args)
 
             if args.no_pi:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'], args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'], args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'], args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'], args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'],"sn", args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'],"nc", args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'],"sc", args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'],"uc", args)
             else:
                 # invent new predicate and generate pi clauses
                 pi_clauses, kp_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
