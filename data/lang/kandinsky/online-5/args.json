@@ -5,7 +5,7 @@
   "dataset": "online-5",
   "dataset-type": "kandinsky",
   "score_unique": true,
-  "top_data": 80,
+  "top_data": 100,
   "t_beam": 6,
   "n_beam": 5,
   "cim_step": 7,
