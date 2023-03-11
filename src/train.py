@@ -80,6 +80,10 @@ def get_args():
                         help="The number of epochs.")
     parser.add_argument("--pi_epochs", type=int, default=3,
                         help="The number of epochs for predicate invention.")
+    parser.add_argument("--nc_max_step", type=int, default=3,
+                        help="The number of max steps for nc searching.")
+    parser.add_argument("--sc_max_step", type=int, default=5,
+                        help="The number of max steps for sc searching.")
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="The learning rate.")
     parser.add_argument("--sn_th", type=float, default=0.9,
@@ -444,7 +448,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     kp_pi_clauses = []
     clauses = []
     iteration = 0
-    max_step = 0
+    current_step = 0
     max_clause = [0.0, None]
     found_ns = False
     obj_n = args.n_obj
@@ -454,26 +458,33 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     last_refs = []
 
     for search_type in ['nc', 'sc']:
+        current_step = 0
+        if search_type == "nc":
+            max_step = args.nc_max_step
+        elif search_type == "sc":
+            max_step = args.sc_max_step
+        else:
+            raise ValueError
         log_utils.add_lines(f"searching for {search_type} clauses...", args.log_file)
-        while max_step < args.t_beam:
+        while current_step < max_step:
             # if generate new predicates, start the bs deep from 0
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, pi_clauses, atoms, obj_n)
             # generate clauses # time-consuming code
-            bs_clauses, max_clause, max_step, last_refs = clause_generator.clause_extension(init_clauses,
-                                                                                            val_pos,
-                                                                                            val_neg,
-                                                                                            pi_clauses,
-                                                                                            args,
-                                                                                            max_clause,
-                                                                                            search_type,
-                                                                                            max_step=iteration,
-                                                                                            iteration=iteration,
-                                                                                            no_new_preds=no_new_preds,
-                                                                                            last_refs=last_refs)
+            bs_clauses, max_clause, current_step, last_refs = clause_generator.clause_extension(init_clauses,
+                                                                                                val_pos,
+                                                                                                val_neg,
+                                                                                                pi_clauses,
+                                                                                                args,
+                                                                                                max_clause,
+                                                                                                search_type,
+                                                                                                max_step=iteration,
+                                                                                                iteration=iteration,
+                                                                                                no_new_preds=no_new_preds,
+                                                                                                last_refs=last_refs)
             if len(bs_clauses['sn']) > 0:
                 log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
-                clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]],args)
+                clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]], args)
                 pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
                 inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
                 log_utils.write_clause_to_file(clauses, pi_clause_file)
@@ -482,7 +493,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 break
             elif len(bs_clauses['sn_good']) > 0:
                 log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'],args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn_good'], args)
                 pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
                 inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
                 log_utils.write_clause_to_file(clauses, pi_clause_file)
@@ -490,13 +501,13 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 found_ns = True
                 break
             else:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1],args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(max_clause[1], args)
 
             if args.no_pi:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'],args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'],args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'],args)
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'],args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sn'], args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'], args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'], args)
+                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'], args)
             else:
                 # invent new predicate and generate pi clauses
                 pi_clauses, kp_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
