@@ -9,7 +9,7 @@ def load_args_from_file(args_file_path, given_args):
 
         # Replace given_args with the loaded default values
         for key, value in loaded_args.items():
-            if key not in ['conflict_th', 'sc_th']:  # Do not overwrite these keys
+            if key not in ['conflict_th', 'sc_th','nc_th']:  # Do not overwrite these keys
                 setattr(given_args, key, value)
 
         print('\n==> Args were loaded from file "{}".'.format(args_file_path))
