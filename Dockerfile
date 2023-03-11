@@ -18,3 +18,5 @@ RUN apt-get install --yes ttf-mscorefonts-installer
 RUN ln -snf /usr/share/zoneinfo/Etc/UTC /etc/localtime
 RUN apt-get install dvipng cm-super fonts-cmu --yes
 RUN apt-get install fonts-dejavu-core --yes
+RUN pip install opencv-python==4.5.5.64
+RUN git clone https://github.com/akweury/alphailp.git
