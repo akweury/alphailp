@@ -198,9 +198,9 @@ def plot_4_zone(is_plot_4zone, B_new, four_scores, all_scores, step):
                                x_label=None, y_label=None, show=False, log_y=False, log_x=False, cla_leg=True)
 
 
-data = {
+exp_result_data = {
     "twopairs": [0.28, 0.45, 0.70, 1.0],
     "red-triangle": [0.69, 0.76, 0.93, 0.93, 1.0],
-    "5-online": [0.5, 0.93, 1.0]
-
+    "5-online": [0.5, 0.93, 1.0],
+    "circle_3": {"nc_round": [0.27, 0.42], "sc_round": [0.42, 0.43, 0.43, 0.43, 0.66, 1.0]}
 }

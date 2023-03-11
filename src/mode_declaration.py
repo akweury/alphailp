@@ -125,7 +125,8 @@ def get_pi_mode_declarations(lang):
     for pi_index, pi in enumerate(lang.bk_inv_preds):
         pi_str = pi.name
         objects = [p_object] * pi.arity
-        mode_declarations = ModeDeclaration('body', 1, lang.get_bk_invented_pred_by_name(pi_str), objects, ordered=False)
+        mode_declarations = ModeDeclaration('body', 1, lang.get_bk_invented_pred_by_name(pi_str), objects,
+                                            ordered=False)
         pi_mode_declarations.append(mode_declarations)
     return pi_mode_declarations
 
@@ -146,44 +147,24 @@ def get_mode_declarations_kandinsky(lang, obj_num):
     s_group_shape = ModeTerm('#', DataType('group_shape'))
 
     # modeh_1 = ModeDeclaration('head', 'kp', p_image)
+    modeb_list = []
+    considered_pred_names = [p.name for p in lang.preds]
+    if "in" in considered_pred_names:
+        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]))
+    if "color" in considered_pred_names:
+        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_object, s_color]))
+    if "shape" in considered_pred_names:
+        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_object, s_shape]))
+    if "rho" in considered_pred_names:
+        modeb_list.append(
+            ModeDeclaration('body', obj_num, lang.get_pred_by_name('rho'), [p_object, p_object, s_rho], ordered=False))
+    if "phi" in considered_pred_names:
+        modeb_list.append(
+            ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_object, p_object, s_phi], ordered=False))
+    if "group_shape" in considered_pred_names:
+        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('group_shape'),
+                                          [p_object, p_object, p_object, s_group_shape], ordered=False))
 
-    modeb_list = [
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_object, s_color]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_object, s_shape]),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('rho'), [p_object, p_object, s_rho], ordered=False),
-        ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_object, p_object, s_phi], ordered=False),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('group_shape'), [p_object, p_object, p_object, s_group_shape], ordered=False),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('area'), [p_object, p_object, s_area]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_0'), [s_area]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_1'), [s_area]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_2'), [s_area]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_3'), [s_area]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_4'), [s_area]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_5'), [s_area]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_6'), [s_area]),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('area_7'), [s_area]),
-
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_0'), [p_object, p_object]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_1'), [p_object, p_object]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_2'), [p_object, p_object]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_3'), [p_object, p_object]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_4'), [p_object, p_object]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_5'), [p_object, p_object]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_6'), [p_object, p_object]),
-        # ModeDeclaration('body', obj_num, lang.get_pred_by_name('at_area_7'), [p_object, p_object]),
-
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('inv_1'), [p_object, p_object]),
-
-        # ModeDeclaration('body', 2, lang.get_pred_by_name('same_color_pair'), [p_object, p_object], ordered=False),
-        # ModeDeclaration('body', 2, lang.get_pred_by_name('same_shape_pair'), [p_object, p_object], ordered=False),
-        # ModeDeclaration('body', 2, lang.get_pred_by_name('diff_color_pair'), [p_object, p_object], ordered=False),
-        # ModeDeclaration('body', 2, lang.get_pred_by_name('diff_shape_pair'), [p_object, p_object], ordered=False),
-
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('closeby'), [p_object, p_object], ordered=False),
-        # ModeDeclaration('body', 1, lang.get_pred_by_name('online'), [p_object, p_object, p_object, p_object, p_object], ordered=False),
-        # ModeDeclaration('body', 2, lang.get_pred_by_name('diff_shape_pair'), [p_object, p_object]),
-    ]
     return modeb_list
 
 
