@@ -667,13 +667,12 @@ class ClauseGenerator(object):
             refs += sc_good_clauses
 
         if priority == "uc_good":
-            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc_good", args)
-            refs += sc_good_clauses
+            uc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc_good", args)
+            refs += uc_good_clauses
 
         if priority == "uc":
-            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc", args)
-            refs += sc_good_clauses
-
+            uc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc", args)
+            refs += uc_clauses
 
         return refs
 
@@ -730,6 +729,16 @@ class ClauseGenerator(object):
                 refs += self.update_refs(clause_dict, args, priority="nc")
             else:
                 log_utils.add_lines(f'no nc good for extension!', args.log_file)
+
+            if len(refs) == 0 and len(clause_dict["uc_good"]) > 0:
+                refs += self.update_refs(clause_dict, args, priority="uc_good")
+            else:
+                log_utils.add_lines(f'no uc good for extension!', args.log_file)
+
+            if len(refs) == 0 and len(clause_dict["uc"]) > 0:
+                refs += self.update_refs(clause_dict, args, priority="uc")
+            else:
+                log_utils.add_lines(f'no uc for extension!', args.log_file)
         else:
             raise ValueError
 
