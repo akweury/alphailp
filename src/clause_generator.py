@@ -268,8 +268,8 @@ class ClauseGenerator(object):
             #     C = C.union(set([c]))
         return refs
 
-    def beam_search_clause_quick(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause,
-                                 max_step=4, iteration=None, no_new_preds=False, last_refs=[]):
+    def clause_extension(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause, search_type,
+                         max_step=4, iteration=None, no_new_preds=False, last_refs=[]):
         log_utils.add_lines(f"\n======== beam search iteration {iteration} ========", args.log_file)
         eval_pred = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
@@ -286,40 +286,28 @@ class ClauseGenerator(object):
         while step <= max_step:
 
             # log
-            date_now = datetime.datetime.today().date()
-            time_now = datetime.datetime.now().strftime("%H_%M_%S")
-            log_utils.add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step}",
-                                args.log_file)
+            log_utils.print_time(args, iteration, step, max_step)
 
+            # clause extension
             refs_extended = self.extend_clauses(refs, args)
+
+            # remove semantic conflict clauses
             refs_diff_semantic = logic_utils.remove_same_semantic_clauses(refs_extended)
             refs_no_conflict = self.remove_conflict_clauses(refs_diff_semantic, pi_clauses, args)
+
+            # evaluate clauses
             clause_dict, new_max_clause, higher = self.eval_clauses_scores(refs_no_conflict, pi_clauses, eval_pred,
                                                                            pos_pred,
                                                                            neg_pred, step, args, max_clause)
-            if (len(clause_dict["sn"]) > 0):
-                break
-            elif (len(clause_dict["sn_good"]) > 0):
-                break
-
-            if higher and len(clause_dict["nc"]) > 0:
-                refs = self.update_refs(clause_dict, args, priority="nc")
-                max_clause = new_max_clause
-
-            else:
-                refs = []
-                if len(clause_dict["sc"]) > 0:
-                    refs += self.update_refs(clause_dict, args, priority="sc")
-                if len(clause_dict["sc_good"]) > 0:
-                    refs += self.update_refs(clause_dict, args, priority="sc_good")
-                if len(refs) == 0 and len(clause_dict["nc"]) > 0:
-                    refs += self.update_refs(clause_dict, args, priority="nc")
-                if len(refs) == 0:
-                    raise ValueError
+            max_clause, found_sn = self.check_result(clause_dict, higher, max_clause, new_max_clause)
+            refs = self.prune_clauses(clause_dict, search_type, args)
 
             step += 1
 
-        # self.print_clauses(clause_dict, args)
+            if found_sn:
+                break
+
+                # self.print_clauses(clause_dict, args)
 
         return clause_dict, max_clause, step, refs
 
@@ -735,6 +723,42 @@ class ClauseGenerator(object):
                 # print("duplicated: ", clause, ci)
                 break
         return y
+
+    def prune_clauses(self, clause_dict, search_type, args):
+        refs = []
+
+        if search_type == "nc":
+            if len(clause_dict["nc"]) > 0:
+                refs = self.update_refs(clause_dict, args, priority="nc")
+            else:
+                raise ValueError
+        elif search_type == "sc":
+            if len(clause_dict["sc"]) > 0:
+                refs += self.update_refs(clause_dict, args, priority="sc")
+            if len(clause_dict["sc_good"]) > 0:
+                refs += self.update_refs(clause_dict, args, priority="sc_good")
+            if len(refs) == 0 and len(clause_dict["nc"]) > 0:
+                refs += self.update_refs(clause_dict, args, priority="nc")
+            if len(refs) == 0:
+                raise ValueError
+
+        else:
+            raise ValueError
+
+        return refs
+
+    def check_result(self, clause_dict, higher, max_clause, new_max_clause):
+
+        if higher:
+            best_clause = new_max_clause
+        else:
+            best_clause = max_clause
+
+        if len(clause_dict["sn"]) > 0:
+            return best_clause, True
+        elif len(clause_dict["sn_good"]) > 0:
+            return best_clause, True
+        return best_clause, False
 
 
 def count_arity_from_clause_cluster(clause_cluster):
