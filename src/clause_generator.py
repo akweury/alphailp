@@ -790,7 +790,7 @@ class PIClauseGenerator(object):
         uc_good_new_predicates = []
         nc_sc_new_predicates = []
         # cluster sufficient clauses
-        if len(beam_search_clauses['sc']) > 0:
+        if len(beam_search_clauses['sc']) > 2:
             sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
                                                                  pos_pred.shape[0], args)
             log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
