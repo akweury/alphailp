@@ -67,6 +67,6 @@ def write_predicate_to_file(invented_preds, inv_predicate_file):
 def print_time(args, iteration, step, max_step):
     date_now = datetime.datetime.today().date()
     time_now = datetime.datetime.now().strftime("%H_%M_%S")
-    add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{max_step}",
+    add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{iteration}",
                         args.log_file)
     return None

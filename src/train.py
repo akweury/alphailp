@@ -447,18 +447,18 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
     lang, full_init_clauses, pi_clauses, atoms = get_lang(args)
     kp_pi_clauses = []
     clauses = []
-    iteration = 0
-    current_step = 0
-    max_clause = [0.0, None]
-    found_ns = False
+
     obj_n = args.n_obj
     init_clauses = update_initial_clauses(full_init_clauses, obj_n)
     invented_pred_num = 0
-    no_new_preds = False
     last_refs = []
 
     for search_type in ['nc', 'sc']:
         current_step = 0
+        iteration = 0
+        max_clause = [0.0, None]
+        no_new_preds = False
+
         if search_type == "nc":
             max_step = args.nc_max_step
         elif search_type == "sc":
