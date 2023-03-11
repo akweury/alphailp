@@ -666,6 +666,15 @@ class ClauseGenerator(object):
             sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'], "sc_good", args)
             refs += sc_good_clauses
 
+        if priority == "uc_good":
+            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc_good", args)
+            refs += sc_good_clauses
+
+        if priority == "uc":
+            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc", args)
+            refs += sc_good_clauses
+
+
         return refs
 
     # def select_all_refs(self, clause_dict,args):
@@ -702,6 +711,10 @@ class ClauseGenerator(object):
                 refs = self.update_refs(clause_dict, args, priority="nc")
             elif len(clause_dict["nc_good"]) > 0:
                 refs = self.update_refs(clause_dict, args, priority="nc_good")
+            elif len(clause_dict["uc_good"]) > 0:
+                refs = self.update_refs(clause_dict, args, priority="uc_good")
+            elif len(clause_dict["uc"]) > 0:
+                refs = self.update_refs(clause_dict, args, priority="uc")
             else:
                 raise ValueError
         elif search_type == "sc":
