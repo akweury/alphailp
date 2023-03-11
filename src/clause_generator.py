@@ -270,7 +270,9 @@ class ClauseGenerator(object):
 
     def clause_extension(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause, search_type,
                          max_step=4, iteration=None, no_new_preds=False, last_refs=[]):
-        log_utils.add_lines(f"\n======== beam search iteration {iteration} ========", args.log_file)
+        log_utils.add_lines(
+            f"\n======== beam search iteration {iteration}/{args.t_beam} searching for {search_type} ========",
+            args.log_file)
         eval_pred = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
         # extend clauses
@@ -650,31 +652,24 @@ class ClauseGenerator(object):
     def update_refs(self, clause_dict, args, priority="nc"):
         refs = []
         if len(clause_dict['nc']) > 0 and priority == "nc":
-            # nc_top = logic_utils.select_top_x_clauses(clause_dict['nc'], "nc", self.args, self.args.nc_good_top)
-            nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
+            nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'], args)
             refs += nc_clauses
-            for c in nc_clauses:
-                log_utils.add_lines(f"extend candidate (nc): {c}", args.log_file)
-        elif len(clause_dict['nc_good']) > 0 and priority == "nc_good":
-            # nc_good_top = logic_utils.select_top_x_clauses(clause_dict['nc_good'], "nc_good", self.args,
-            #                                                self.args.nc_good_top)
 
-            nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'])
+        elif len(clause_dict['nc_good']) > 0 and priority == "nc_good":
+            nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'], args)
             refs += nc_good_clauses
-            for c in nc_good_clauses:
-                log_utils.add_lines(f"extend candidate (nc_good): {c}", args.log_file)
 
         if len(clause_dict['sc']) > 0 and priority == "sc":
             # sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
-            sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
+            sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'], args)
             refs += sc_clauses
-            for c in sc_clauses:
-                log_utils.add_lines(f"extend candidate (sc): {c}", args.log_file)
+            # for c in sc_clauses:
+            #     log_utils.add_lines(f"extend candidate (sc): {c}", args.log_file)
         elif len(clause_dict['sc_good']) > 0 and priority == "sc_good":
-            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'])
+            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'], args)
             refs += sc_good_clauses
-            for c in sc_good_clauses:
-                log_utils.add_lines(f"extend candidate (sc_good): {c}", args.log_file)
+            # for c in sc_good_clauses:
+            #     log_utils.add_lines(f"extend candidate (sc_good): {c}", args.log_file)
 
         #
         # elif len(clause_dict['sc_good']) > 0:
@@ -698,12 +693,12 @@ class ClauseGenerator(object):
 
         return refs
 
-    def select_all_refs(self, clause_dict):
-        refs = []
-        refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'])
-        refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'])
-        refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'])
-        return refs
+    # def select_all_refs(self, clause_dict,args):
+    #     refs = []
+    #     refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'],args)
+    #     refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'],args)
+    #     refs += logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'],args)
+    #     return refs
 
     def is_in_beam_same_score(self, B, clause, c_i, scores):
 

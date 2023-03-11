@@ -1108,20 +1108,22 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
                     score_unique_c.append(c)
                     appeared_scores.append(c[1].tolist())
             c_sorted = score_unique_c
-        for c, c_score, all_scores in c_sorted:
-            log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
+        # for c, c_score, all_scores in c_sorted:
+        #     log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
         return c_sorted
     else:
         return []
 
 
-def extract_clauses_from_bs_clauses(bs_clauses):
+def extract_clauses_from_bs_clauses(bs_clauses, args):
     clauses = []
     if len(bs_clauses) == 0:
         return clauses
 
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
+        log_utils.add_lines(f"extend candidate (nc): {bs_clause[0]} {bs_clause[1]}", args.log_file)
+
     return clauses
 
 
