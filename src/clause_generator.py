@@ -651,26 +651,20 @@ class ClauseGenerator(object):
     def update_refs(self, clause_dict, args, priority="nc"):
         refs = []
         if priority == "nc":
-            if len(clause_dict['nc']) > 0:
-                nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'], args)
-                refs += nc_clauses
+            nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'],"nc", args)
+            refs += nc_clauses
 
-            elif len(clause_dict['nc_good']) > 0 and priority == "nc_good":
-                nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'], args)
-                refs += nc_good_clauses
+        if priority == "nc_good":
+            nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'],"nc_good", args)
+            refs += nc_good_clauses
 
         if priority == "sc":
-            if len(clause_dict['sc']) > 0:
-                # sc_top = logic_utils.select_top_x_clauses(clause_dict['sc'], "sc", self.args,self.args.sc_good_top)
-                sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'], args)
-                refs += sc_clauses
-                # for c in sc_clauses:
-                #     log_utils.add_lines(f"extend candidate (sc): {c}", args.log_file)
-            elif len(clause_dict['sc_good']) > 0 and priority == "sc_good":
-                sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'], args)
-                refs += sc_good_clauses
-                # for c in sc_good_clauses:
-                #     log_utils.add_lines(f"extend candidate (sc_good): {c}", args.log_file)
+            sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'],"sc", args)
+            refs += sc_clauses
+
+        if priority == "sc_good":
+            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'],"sc_good", args)
+            refs += sc_good_clauses
 
         return refs
 
@@ -711,10 +705,16 @@ class ClauseGenerator(object):
         elif search_type == "sc":
             if len(clause_dict["sc"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="sc")
+            else:
+                log_utils.add_lines(f'no sc for extension!', args.log_file)
             if len(clause_dict["sc_good"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="sc_good")
+            else:
+                log_utils.add_lines(f'no sc good for extension!', args.log_file)
             if len(refs) == 0 and len(clause_dict["nc"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="nc")
+            else:
+                log_utils.add_lines(f'no nc good for extension!', args.log_file)
         else:
             raise ValueError
 

@@ -1115,14 +1115,14 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
         return []
 
 
-def extract_clauses_from_bs_clauses(bs_clauses, args):
+def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
     clauses = []
     if len(bs_clauses) == 0:
         return clauses
 
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
-        log_utils.add_lines(f"extend candidate (nc): {bs_clause[0]} {bs_clause[1]}", args.log_file)
+        log_utils.add_lines(f"extend candidate ({c_type}): {bs_clause[0]} {bs_clause[1]}", args.log_file)
 
     return clauses
 
