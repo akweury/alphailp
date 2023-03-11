@@ -480,6 +480,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                                                                                                 search_type,
                                                                                                 max_step=iteration,
                                                                                                 iteration=iteration,
+                                                                                                max_iteration=max_step,
                                                                                                 no_new_preds=no_new_preds,
                                                                                                 last_refs=last_refs)
             if len(bs_clauses['sn']) > 0:

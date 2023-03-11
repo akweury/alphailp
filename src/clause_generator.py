@@ -269,9 +269,9 @@ class ClauseGenerator(object):
         return refs
 
     def clause_extension(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause, search_type,
-                         max_step=4, iteration=None, no_new_preds=False, last_refs=[]):
+                         max_step=4, iteration=None, max_iteration=None, no_new_preds=False, last_refs=[]):
         log_utils.add_lines(
-            f"\n======== beam search iteration {iteration}/{max_step} searching for {search_type} ========",
+            f"\n======== beam search iteration {iteration}/{max_iteration} searching for {search_type} ========",
             args.log_file)
         eval_pred = ['kp']
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
@@ -651,19 +651,19 @@ class ClauseGenerator(object):
     def update_refs(self, clause_dict, args, priority="nc"):
         refs = []
         if priority == "nc":
-            nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'],"nc", args)
+            nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'], "nc", args)
             refs += nc_clauses
 
         if priority == "nc_good":
-            nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'],"nc_good", args)
+            nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'], "nc_good", args)
             refs += nc_good_clauses
 
         if priority == "sc":
-            sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'],"sc", args)
+            sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'], "sc", args)
             refs += sc_clauses
 
         if priority == "sc_good":
-            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'],"sc_good", args)
+            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'], "sc_good", args)
             refs += sc_good_clauses
 
         return refs
