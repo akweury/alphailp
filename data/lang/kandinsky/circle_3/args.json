@@ -16,7 +16,7 @@
   "nc_th": 0.8,
   "uc_th": 0.8,
   "sc_th": 0.5,
-  "conflict_th": 0.7,
+  "conflict_th": 0.8,
   "sc_top": 3000,
   "nc_top": 5,
   "sc_good_top": 5000,
