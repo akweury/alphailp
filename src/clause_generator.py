@@ -671,7 +671,7 @@ class ClauseGenerator(object):
             refs += uc_good_clauses
 
         if priority == "uc":
-            uc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc", args)
+            uc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'], "uc", args)
             refs += uc_clauses
 
         return refs
