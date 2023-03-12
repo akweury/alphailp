@@ -1127,6 +1127,16 @@ def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
     return clauses
 
 
+def extract_clauses_from_max_clause(bs_clauses):
+    clauses = []
+    if len(bs_clauses) == 0:
+        return clauses
+
+    for bs_clause in bs_clauses:
+        clauses.append(bs_clause[0])
+    return clauses
+
+
 def select_top_x_clauses(clause_candidates, c_type, args, threshold=None):
     top_clauses_with_scores = []
     clause_candidates_with_scores_sorted = []
