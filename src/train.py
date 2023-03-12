@@ -26,6 +26,7 @@ import chart_utils
 import log_utils
 from fol.data_utils import DataUtils
 import file_utils
+import data_hide
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -387,17 +388,12 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
                                                            test_neg_loader)
 
     elif args.dataset_type == "hide":
-        pos_dataset_folder = config.data_path / "hide" / args.dataset / 'true'
-        neg_dataset_folder = config.data_path / "hide" / args.dataset / 'false'
-        val_pos_pred = percept.convert_data_to_tensor(args, pos_dataset_folder)
-        val_neg_pred = percept.convert_data_to_tensor(args, neg_dataset_folder)
-        if args.top_data < len(val_pos_pred):
-            val_pos_pred = val_pos_pred[:args.top_data]
-            val_neg_pred = val_neg_pred[:args.top_data]
-        train_pos_pred = val_pos_pred
-        train_neg_pred = val_neg_pred
-        test_pos_pred = val_pos_pred
-        test_neg_pred = val_neg_pred
+        train_pos_pred, train_neg_pred = data_hide.get_pred_res(args, "train")
+        test_pos_pred, test_neg_pred = data_hide.get_pred_res(args, "test")
+        val_pos_pred, val_neg_pred = data_hide.get_pred_res(args, "val")
+
+    else:
+        raise ValueError
 
     pm_prediction_dict = {
         'val_pos': val_pos_pred,
