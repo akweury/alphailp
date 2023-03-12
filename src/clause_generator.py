@@ -861,13 +861,13 @@ class PIClauseGenerator(object):
         #         print(p)
 
         top_selector = args.pi_top
-        sc_new_predicates = self.prune_predicates(sc_new_predicates, keep_all=True)[:top_selector]
-        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, keep_all=True)[:top_selector]
-        nc_new_predicates = self.prune_predicates(nc_new_predicates)[:top_selector]
-        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates)[:top_selector]
-        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates)[:top_selector]
-        uc_new_predicates = self.prune_predicates(uc_new_predicates)[:top_selector]
-        nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates)[:top_selector]
+        sc_new_predicates = self.prune_predicates(sc_new_predicates,args, keep_all=True)[:top_selector]
+        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates,args, keep_all=True)[:top_selector]
+        nc_new_predicates = self.prune_predicates(nc_new_predicates,args)[:top_selector]
+        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates,args)[:top_selector]
+        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates,args)[:top_selector]
+        uc_new_predicates = self.prune_predicates(uc_new_predicates,args)[:top_selector]
+        nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates,args)[:top_selector]
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
                          nc_good_new_predicates + uc_good_new_predicates + nc_sc_new_predicates
         # convert to strings
@@ -1350,9 +1350,9 @@ class PIClauseGenerator(object):
 
         return new_predicates, found_ns
 
-    def prune_predicates(self, new_predicates, keep_all=False):
+    def prune_predicates(self, new_predicates, args, keep_all=False):
 
-        no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates)
+        no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates, args)
         if len(no_3_zone_only) > 0:
             new_predicates = no_3_zone_only
         # else:
@@ -1370,13 +1370,13 @@ class PIClauseGenerator(object):
         # else:
         #     new_predicates = new_predicates[:5]
 
-        no_duplicate = logic_utils.remove_duplicate_predicates(new_predicates)
+        no_duplicate = logic_utils.remove_duplicate_predicates(new_predicates, args)
         if len(no_duplicate) > 0:
             new_predicates = no_duplicate
         # else:
         #     new_predicates = new_predicates[:5]
 
-        no_same_four = logic_utils.remove_same_four_score_predicates(new_predicates)
+        no_same_four = logic_utils.remove_same_four_score_predicates(new_predicates, args)
         if not keep_all and len(new_predicates) > 20:
             new_predicates = []
         return new_predicates

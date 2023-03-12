@@ -986,7 +986,7 @@ def get_inv_body_preds(inv_body):
     return preds
 
 
-def remove_duplicate_predicates(new_predicates):
+def remove_duplicate_predicates(new_predicates, args):
     non_duplicate_pred = []
     for a_i, [p_a, a_score] in enumerate(new_predicates):
         is_duplicate = False
@@ -1001,6 +1001,8 @@ def remove_duplicate_predicates(new_predicates):
                 is_duplicate = True
         if not is_duplicate:
             non_duplicate_pred.append([p_a, a_score])
+        else:
+            log_utils.add_lines(f"(remove duplicate predicate) {p_a} {a_score}", args.log_file)
     return non_duplicate_pred
 
 
@@ -1204,7 +1206,7 @@ def is_trivial_preds(preds_terms):
     return False
 
 
-def remove_3_zone_only_predicates(new_predicates):
+def remove_3_zone_only_predicates(new_predicates, args):
     passed_predicates = []
     if len(new_predicates) > 0:
         if len(new_predicates[0]) == 0:
@@ -1212,6 +1214,8 @@ def remove_3_zone_only_predicates(new_predicates):
     for predicate in new_predicates:
         if torch.sum(predicate[1][:3]) > 0:
             passed_predicates.append(predicate)
+        else:
+            log_utils.add_lines(f"(remove 3 zone only predicate) {predicate[0]} {predicate[1]}", args.log_file)
     return passed_predicates
 
 
@@ -1223,13 +1227,15 @@ def keep_1_zone_max_predicates(new_predicates):
     return passed_predicates
 
 
-def remove_same_four_score_predicates(new_predicates):
+def remove_same_four_score_predicates(new_predicates, args):
     passed_predicates = []
     passed_scores = []
     for predicate in new_predicates:
         if predicate[1].tolist() not in passed_scores:
             passed_scores.append(predicate[1].tolist())
             passed_predicates.append(predicate)
+        else:
+            log_utils.add_lines(f"(remove same four score predicate) {predicate[0]} {predicate[1]}", args.log_file)
     return passed_predicates
 
 
