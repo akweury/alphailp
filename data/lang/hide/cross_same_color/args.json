@@ -5,7 +5,7 @@
   "dataset": "cross_same_color",
   "dataset-type": "hide",
   "score_unique": true,
-  "top_data": 50,
+  "top_data": 100,
   "t_beam": 6,
   "n_beam": 5,
   "cim_step": 7,
