@@ -1127,13 +1127,14 @@ def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
     return clauses
 
 
-def extract_clauses_from_max_clause(bs_clauses):
+def extract_clauses_from_max_clause(bs_clauses, args):
     clauses = []
     if len(bs_clauses) == 0:
         return clauses
 
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
+        log_utils.add_lines(f"add max clause: {bs_clause[0]} {bs_clause[1]}", args.log_file)
     return clauses
 
 
