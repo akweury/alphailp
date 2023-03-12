@@ -1296,6 +1296,8 @@ class PIClauseGenerator(object):
             if not is_duplicate:
                 print(f"add new predicate: {new_p.name}")
                 self.lang.invented_preds.append(new_p)
+            else:
+                log_utils.add_lines(f"duplicate pi: {new_p}", args.log_file)
 
         new_p_names = [self_p.name for self_p in self.lang.invented_preds]
         new_all_pi_clausese = []
