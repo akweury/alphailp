@@ -1,6 +1,6 @@
 {
   "n_obj": 5,
-  "batch_size_train": 10,
+  "batch_size_train": 5,
   "e": 5,
   "dataset": "cross_same_color",
   "dataset-type": "hide",

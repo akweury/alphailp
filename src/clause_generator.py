@@ -299,8 +299,7 @@ class ClauseGenerator(object):
 
             # evaluate clauses
             clause_dict, new_max_clause, higher = self.eval_clauses_scores(refs_no_conflict, pi_clauses, eval_pred,
-                                                                           pos_pred,
-                                                                           neg_pred, step, args, max_clause)
+                                                                           pos_pred, neg_pred, step, args, max_clause)
             max_clause, found_sn = self.check_result(clause_dict, higher, max_clause, new_max_clause)
             refs = self.prune_clauses(clause_dict, search_type, args)
             step += 1
@@ -878,8 +877,8 @@ class PIClauseGenerator(object):
 
         # convert clauses from strings to objects
         # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
-        du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
-                       dataset_type=args.dataset_type, dataset=args.dataset)
+        du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
+                       dataset=args.dataset)
         lang, init_clauses, bk_pi_clauses, atoms = logic_utils.get_lang(args)
         for learned_p in self.lang.invented_preds:
             lang.invented_preds.append(learned_p)
