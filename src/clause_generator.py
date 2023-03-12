@@ -548,10 +548,10 @@ class ClauseGenerator(object):
                 # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_conflict(score, data_size, args.conflict_th):
                 continue
-            elif eval_utils.is_nc(score, data_size, 1):
-                necessary_clauses.append((clause, score, all_scores[c_i]))
             elif eval_utils.is_sc(score, data_size, 1):
                 sufficient_clauses.append((clause, score, all_scores[c_i]))
+            elif eval_utils.is_nc(score, data_size, 1):
+                necessary_clauses.append((clause, score, all_scores[c_i]))
             elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
                 sc_good_clauses.append((clause, score, all_scores[c_i]))
                 # log_utils.add_lines(f'(conflict) {clause}, {four_scores[c_i]}', args.log_file)
@@ -864,13 +864,13 @@ class PIClauseGenerator(object):
         #         print(p)
 
         top_selector = args.pi_top
-        sc_new_predicates = self.prune_predicates(sc_new_predicates,args, keep_all=True)[:top_selector]
-        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates,args, keep_all=True)[:top_selector]
-        nc_new_predicates = self.prune_predicates(nc_new_predicates,args)[:top_selector]
-        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates,args)[:top_selector]
-        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates,args)[:top_selector]
-        uc_new_predicates = self.prune_predicates(uc_new_predicates,args)[:top_selector]
-        nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates,args)[:top_selector]
+        sc_new_predicates = self.prune_predicates(sc_new_predicates, args, keep_all=True)[:top_selector]
+        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, args, keep_all=True)[:top_selector]
+        nc_new_predicates = self.prune_predicates(nc_new_predicates, args)[:top_selector]
+        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates, args)[:top_selector]
+        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates, args)[:top_selector]
+        uc_new_predicates = self.prune_predicates(uc_new_predicates, args)[:top_selector]
+        nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates, args)[:top_selector]
         new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
                          nc_good_new_predicates + uc_good_new_predicates + nc_sc_new_predicates
         # convert to strings
