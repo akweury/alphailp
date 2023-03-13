@@ -1,0 +1,318 @@
+Log from 2023-03-04, 20_38_23args: Namespace(batch_size=1, batch_size_bs=1, batch_size_train=5, cim_step=7, conflict_th=0.7, dataset='red-triangle', dataset_type='kandinsky', device='9', e=6, epochs=100, gamma=0.01, log_file='/aILP/alphailp/../buffer/red-triangle/log_2023-03-04_20_38_23.txt', lr=0.01, m=1, min_beam=0, n_beam=5, n_data=200, n_max=50, n_obj=2, nc_good_top=0, nc_th=0.8, nc_top=5, no_cuda=False, no_pi=False, no_xil=False, num_workers=4, pi_epochs=3, pi_top=3, plot=False, plot_four_zone=False, pre_searched=False, sc_good_top=10, sc_th=0.6, sc_top=10, small_data=False, sn_th=0.95, t_beam=7, top_data=30, uc_good_top=0, uc_th=0.8, uc_top=0, with_bk=False, **{'dataset-type': 'kandinsky'})
+device: cuda:9
+
+======== beam search iteration 0 ========
+
+(2023-03-04 20_38_32) Iteration: 0 Step 0/0
+Evaluating: 31 generated clauses.
+(BS Step 0) sn_c: 0, sn_c_good: 0, n_c: 3, s_c: 0, n_c_good: 4, s_c_good: 4, u_c_good: 3, u_c: 13.
+(BS Step 0) (global) max clause accuracy: 0.699999988079071
+kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([ 0., 21.,  0.,  9.])
+(nc) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([ 0., 21.,  0.,  9.])
+(nc) kp(X):-in(O1,X),in(O2,X),shape(O1,triangle)., tensor([ 0.,  0.,  0., 30.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X)., tensor([ 0.,  0.,  0., 30.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho3)., tensor([14., 11.,  4.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho4)., tensor([12.,  9.,  5.,  4.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho20)., tensor([15.,  5.,  9.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho22)., tensor([19.,  3.,  6.,  2.])
+new PI from sc_good: 0
+
+new PI from nc: 0
+
+new PI from UC: 0
+======  Total PI Number: 0  ======
+========== Total 0 PI Clauses ============= 
+
+======== beam search iteration 1 ========
+
+(2023-03-04 20_38_48) Iteration: 1 Step 0/1
+Evaluating: 31 generated clauses.
+(BS Step 0) sn_c: 0, sn_c_good: 0, n_c: 3, s_c: 0, n_c_good: 4, s_c_good: 4, u_c_good: 3, u_c: 13.
+(BS Step 0) (local) max clause accuracy: 0.699999988079071
+kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([ 0., 21.,  0.,  9.])
+(nc) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([ 0., 21.,  0.,  9.])
+(nc) kp(X):-in(O1,X),in(O2,X),shape(O1,triangle)., tensor([ 0.,  0.,  0., 30.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X)., tensor([ 0.,  0.,  0., 30.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho3)., tensor([14., 11.,  4.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho4)., tensor([12.,  9.,  5.,  4.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho20)., tensor([15.,  5.,  9.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho22)., tensor([19.,  3.,  6.,  2.])
+
+(2023-03-04 20_39_04) Iteration: 1 Step 1/1
+Evaluating: 231 generated clauses.
+(BS Step 1) sn_c: 0, sn_c_good: 0, n_c: 5, s_c: 0, n_c_good: 10, s_c_good: 42, u_c_good: 0, u_c: 28.
+(BS Step 1) (global) max clause accuracy: 0.7666666507720947
+kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,triangle)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,triangle)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-color(O2,red),in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,triangle)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),shape(O1,triangle)., tensor([ 0.,  0.,  0., 30.])
+(sc_good) kp(X):-color(O2,blue),in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([ 8., 17.,  2.,  3.])
+(sc_good) kp(X):-color(O1,blue),in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([ 8., 17.,  2.,  3.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,square)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,square)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,circle)., tensor([10., 14.,  3.,  3.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,circle)., tensor([10., 14.,  3.,  3.])
+(sc_good) kp(X):-color(O1,yellow),in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([13., 12.,  2.,  3.])
+(sc_good) kp(X):-color(O2,yellow),in(O1,X),in(O2,X),rho(O1,O2,rho2)., tensor([13., 12.,  2.,  3.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho6),shape(O1,triangle)., tensor([10., 10.,  5.,  5.])
+(sc_good) kp(X):-color(O2,blue),in(O1,X),in(O2,X),rho(O1,O2,rho3)., tensor([17., 10.,  3.,  0.])
+new PI from sc_good: 5
+
+new PI from nc: 0
+
+new PI from UC: 0
+======  Total PI Number: 3  ======
+inv_pred0/2/[object, object]
+inv_pred1/2/[object, object]
+inv_pred2/2/[object, object]
+========== Total 6 PI Clauses ============= 
+inv_pred0(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,circle).
+inv_pred0(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,square).
+inv_pred1(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,circle).
+inv_pred1(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,square).
+inv_pred2(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,square).
+inv_pred2(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,circle).
+
+======== beam search iteration 2 ========
+
+(2023-03-04 20_39_28) Iteration: 2 Step 0/2
+Evaluating: 37 generated clauses.
+(BS Step 0) sn_c: 0, sn_c_good: 0, n_c: 9, s_c: 0, n_c_good: 4, s_c_good: 4, u_c_good: 3, u_c: 13.
+(BS Step 0) (local) max clause accuracy: 0.7666666507720947
+kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred1(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho3)., tensor([14., 11.,  4.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho4)., tensor([12.,  9.,  5.,  4.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho20)., tensor([15.,  5.,  9.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho22)., tensor([19.,  3.,  6.,  2.])
+
+(2023-03-04 20_39_44) Iteration: 2 Step 1/2
+Evaluating: 309 generated clauses.
+(BS Step 1) sn_c: 0, sn_c_good: 0, n_c: 9, s_c: 0, n_c_good: 0, s_c_good: 49, u_c_good: 0, u_c: 0.
+(BS Step 1) (global) max clause accuracy: 0.8999999761581421
+kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 27.,  0.,  3.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 27.,  0.,  3.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle)., tensor([ 0., 25.,  0.,  5.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred1(O2,O1),inv_pred2(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,blue),in(O1,X),in(O2,X),inv_pred0(O1,O2)., tensor([11., 17.,  1.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred2(O2,O1)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O1,O2)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),shape(O1,square)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),inv_pred1(O2,O1)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),inv_pred2(O1,O2)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred1(O2,O1),shape(O1,square)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred2(O1,O2),shape(O1,square)., tensor([11., 16.,  2.,  1.])
+
+(2023-03-04 20_40_09) Iteration: 2 Step 2/2
+Evaluating: 532 generated clauses.
+(BS Step 2) sn_c: 0, sn_c_good: 0, n_c: 6, s_c: 5, n_c_good: 0, s_c_good: 64, u_c_good: 0, u_c: 0.
+(BS Step 2) (global) max clause accuracy: 0.9333333373069763
+kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle)., tensor([ 0., 28.,  0.,  2.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle)., tensor([ 0., 28.,  0.,  2.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2)., tensor([ 0., 27.,  0.,  3.])
+(nc) kp(X):-color(O2,red),in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2)., tensor([ 0., 27.,  0.,  3.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2),shape(O1,triangle)., tensor([ 0., 25.,  0.,  5.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2),shape(O2,triangle)., tensor([ 0., 25.,  0.,  5.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([16., 14.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([21.,  9.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([21.,  9.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([21.,  9.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([21.,  9.,  0.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred2(O1,O2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O2,O1)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1),inv_pred2(O1,O2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred2(O1,O2),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([12., 17.,  1.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O2,circle)., tensor([11., 17.,  2.,  0.])
+(sc_good) kp(X):-color(O2,blue),in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2)., tensor([11., 17.,  1.,  1.])
+(sc_good) kp(X):-color(O1,blue),in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2)., tensor([11., 17.,  1.,  1.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1),shape(O2,circle)., tensor([11., 17.,  2.,  0.])
+new PI from sc: 0
+
+new PI from sc_good: 0
+
+new PI from nc: 0
+
+new PI from UC: 0
+======  Total PI Number: 3  ======
+inv_pred0/2/[object, object]
+inv_pred1/2/[object, object]
+inv_pred2/2/[object, object]
+========== Total 6 PI Clauses ============= 
+inv_pred0(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,circle).
+inv_pred0(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,square).
+inv_pred1(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,circle).
+inv_pred1(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,square).
+inv_pred2(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,square).
+inv_pred2(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,circle).
+
+======== beam search iteration 3 ========
+
+(2023-03-04 20_40_49) Iteration: 3 Step 0/3
+Evaluating: 37 generated clauses.
+(BS Step 0) sn_c: 0, sn_c_good: 0, n_c: 9, s_c: 0, n_c_good: 4, s_c_good: 4, u_c_good: 3, u_c: 13.
+(BS Step 0) (local) max clause accuracy: 0.7666666507720947
+kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred1(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho3)., tensor([14., 11.,  4.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho4)., tensor([12.,  9.,  5.,  4.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho20)., tensor([15.,  5.,  9.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho22)., tensor([19.,  3.,  6.,  2.])
+
+(2023-03-04 20_41_05) Iteration: 3 Step 1/3
+Evaluating: 309 generated clauses.
+(BS Step 1) sn_c: 0, sn_c_good: 0, n_c: 9, s_c: 0, n_c_good: 0, s_c_good: 49, u_c_good: 0, u_c: 0.
+(BS Step 1) (local) max clause accuracy: 0.8999999761581421
+kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 27.,  0.,  3.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 27.,  0.,  3.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle)., tensor([ 0., 25.,  0.,  5.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred1(O2,O1),inv_pred2(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,blue),in(O1,X),in(O2,X),inv_pred0(O1,O2)., tensor([11., 17.,  1.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred2(O2,O1)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O1,O2)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),shape(O1,square)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),inv_pred1(O2,O1)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),inv_pred2(O1,O2)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred1(O2,O1),shape(O1,square)., tensor([11., 16.,  2.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),inv_pred2(O1,O2),shape(O1,square)., tensor([11., 16.,  2.,  1.])
+
+(2023-03-04 20_41_31) Iteration: 3 Step 2/3
+Evaluating: 532 generated clauses.
+(BS Step 2) sn_c: 0, sn_c_good: 0, n_c: 6, s_c: 5, n_c_good: 0, s_c_good: 64, u_c_good: 0, u_c: 0.
+(BS Step 2) (local) max clause accuracy: 0.9333333373069763
+kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle)., tensor([ 0., 28.,  0.,  2.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle)., tensor([ 0., 28.,  0.,  2.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2)., tensor([ 0., 27.,  0.,  3.])
+(nc) kp(X):-color(O2,red),in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2)., tensor([ 0., 27.,  0.,  3.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2),shape(O1,triangle)., tensor([ 0., 25.,  0.,  5.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2),shape(O2,triangle)., tensor([ 0., 25.,  0.,  5.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([16., 14.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([21.,  9.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([21.,  9.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([21.,  9.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([21.,  9.,  0.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred2(O1,O2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O2,O1)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1),inv_pred2(O1,O2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred2(O1,O2),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([12., 17.,  1.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O2,circle)., tensor([11., 17.,  2.,  0.])
+(sc_good) kp(X):-color(O2,blue),in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2)., tensor([11., 17.,  1.,  1.])
+(sc_good) kp(X):-color(O1,blue),in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2)., tensor([11., 17.,  1.,  1.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1),shape(O2,circle)., tensor([11., 17.,  2.,  0.])
+
+(2023-03-04 20_42_06) Iteration: 3 Step 3/3
+Evaluating: 705 generated clauses.
+(BS Step 3) sn_c: 0, sn_c_good: 0, n_c: 2, s_c: 22, n_c_good: 0, s_c_good: 59, u_c_good: 0, u_c: 0.
+(BS Step 3) (local) max clause accuracy: 0.9333333373069763
+kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2),shape(O1,triangle)., tensor([ 0., 28.,  0.,  2.])
+(nc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2),shape(O1,triangle)., tensor([ 0., 28.,  0.,  2.])
+(nc) kp(X):-color(O2,red),in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2),shape(O2,triangle)., tensor([ 0., 28.,  0.,  2.])
+(sc) kp(X):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle)., tensor([13., 17.,  0.,  0.])
+(sc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred2(O2,O1),shape(O1,triangle)., tensor([16., 14.,  0.,  0.])
+(sc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle),shape(O2,square)., tensor([16., 14.,  0.,  0.])
+(sc) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O1,O2),shape(O1,triangle)., tensor([16., 14.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle)., tensor([16., 14.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2)., tensor([16., 14.,  0.,  0.])
+(sc) kp(X):-color(O1,yellow),color(O2,red),in(O1,X),in(O2,X),inv_pred0(O1,O2),rho(O1,O2,rho2)., tensor([16., 14.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred2(O1,O2)., tensor([21.,  9.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O2,O1)., tensor([21.,  9.,  0.,  0.])
+(sc) kp(X):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O2,circle)., tensor([21.,  9.,  0.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred2(O1,O2),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O2,O1),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O2,red),in(O1,X),in(O2,X),inv_pred0(O1,O2),inv_pred2(O2,O1),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O2,red),in(O1,X),in(O2,X),inv_pred0(O1,O2),inv_pred1(O1,O2),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O2,O1),inv_pred2(O1,O2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred1(O2,O1),inv_pred2(O1,O2),rho(O1,O2,rho2)., tensor([10., 18.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle),shape(O2,circle)., tensor([11., 17.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred1(O2,O1),shape(O1,triangle)., tensor([11., 17.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),inv_pred2(O1,O2),shape(O1,triangle)., tensor([11., 17.,  2.,  0.])
+(sc_good) kp(X):-color(O1,red),in(O1,X),in(O2,X),inv_pred0(O2,O1),rho(O1,O2,rho2),shape(O2,circle)., tensor([11., 17.,  2.,  0.])
+new PI from sc: 8
+
+new PI from sc_good: 0
+
+new PI from nc: 0
+
+new PI from UC: 0
+duplicate pi body [[color(O1,red), color(O2,blue), in(O1,X), in(O2,X), inv_pred0(O2,O1), shape(O1,triangle)], [color(O1,red), color(O2,yellow), in(O1,X), in(O2,X), inv_pred0(O2,O1), shape(O1,triangle)]]
+======  Total PI Number: 5  ======
+inv_pred0/2/[object, object]
+inv_pred1/2/[object, object]
+inv_pred2/2/[object, object]
+inv_pred24/2/[object, object]
+inv_pred25/2/[object, object]
+========== Total 11 PI Clauses ============= 
+inv_pred24(O1,O2):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle).
+inv_pred24(O1,O2):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle).
+inv_pred25(O1,O2):-color(O1,red),color(O2,blue),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle).
+inv_pred25(O1,O2):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O1,triangle).
+inv_pred25(O1,O2):-color(O1,red),color(O2,yellow),in(O1,X),in(O2,X),inv_pred0(O2,O1),shape(O2,circle).
+inv_pred0(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,circle).
+inv_pred0(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,square).
+inv_pred1(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,circle).
+inv_pred1(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,square).
+inv_pred2(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O1,square).
+inv_pred2(O1,O2):-in(O1,X),in(O2,X),rho(O1,O2,rho2),shape(O2,circle).
+
+======== beam search iteration 4 ========
+
+(2023-03-04 20_42_49) Iteration: 4 Step 0/4
+Evaluating: 41 generated clauses.
+(BS Step 0) sn_c: 4, sn_c_good: 0, n_c: 9, s_c: 0, n_c_good: 4, s_c_good: 4, u_c_good: 3, u_c: 13.
+(BS Step 0) max clause accuracy: 1.0
+kp(X):-in(O1,X),in(O2,X),inv_pred25(O1,O2).
+(sn) kp(X):-in(O1,X),in(O2,X),inv_pred25(O1,O2)., tensor([ 0., 30.,  0.,  0.])
+(sn) kp(X):-in(O1,X),in(O2,X),inv_pred24(O1,O2)., tensor([ 0., 30.,  0.,  0.])
+(sn) kp(X):-in(O1,X),in(O2,X),inv_pred25(O2,O1)., tensor([ 0., 30.,  0.,  0.])
+(sn) kp(X):-in(O1,X),in(O2,X),inv_pred24(O2,O1)., tensor([ 0., 30.,  0.,  0.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O2,O1)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred0(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred1(O2,O1)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred2(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(nc) kp(X):-in(O1,X),in(O2,X),inv_pred1(O1,O2)., tensor([ 0., 23.,  0.,  7.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho3)., tensor([14., 11.,  4.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho4)., tensor([12.,  9.,  5.,  4.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho20)., tensor([15.,  5.,  9.,  1.])
+(sc_good) kp(X):-in(O1,X),in(O2,X),rho(O1,O2,rho22)., tensor([19.,  3.,  6.,  2.])
+found sufficient and necessary clause.
+(final NSFR clause) kp(X):-in(O1,X),in(O2,X),inv_pred25(O1,O2).
+(epoch 0/99) loss: 0.1482661496847868
+Predicting on validation data set...
+acc_val:1.0 
+Predi$lpha$ILPcting on training data set...
+acc_train: 1.0
+Predicting on test data set...
+acc_test: 1.0
+(epoch 1/99) loss: 0.1482661496847868
+(epoch 2/99) loss: 0.1482661496847868
+(epoch 3/99) loss: 0.1482661496847868
+(epoch 4/99) loss: 0.1482661496847868
+(epoch 5/99) loss: 0.1482661496847868
+(epoch 6/99) loss: 0.1482661496847868
+Predicting on validation data set...
+Predicting on training data set...
+Predicting on test data set...
+training acc: 1.0, threshold: 0.33, recall: [          1           1]
+val acc: 1.0, threshold: 0.33, recall: [          1           1]
+test acc: 1.0, threshold: 0.33, recall: [          1           1]
