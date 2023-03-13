@@ -9,12 +9,12 @@ def get_pred_res(args, data_type):
     neg_pred = percept.convert_data_to_tensor(args, neg_dataset_folder)
 
     # normalize the position
-    max_value = max(pos_pred.max(), neg_pred.max())
-    min_value = min(pos_pred.min(), neg_pred.min())
-    pos_pred_norm = percept.normalization(pos_pred, max_value, min_value)
-    neg_pred_norm = percept.normalization(neg_pred, max_value, min_value)
+    max_value = max(pos_pred[:, :, :3].max(), neg_pred[:, :, :3].max())
+    min_value = min(pos_pred[:, :, :3].min(), neg_pred[:, :, :3].min())
+    pos_pred[:, :, :3] = percept.normalization(pos_pred[:, :, :3], max_value, min_value)
+    neg_pred[:, :, :3] = percept.normalization(neg_pred[:, :, :3], max_value, min_value)
 
-    if args.top_data < len(pos_pred_norm):
-        pos_pred_norm = pos_pred_norm[:args.top_data]
-        neg_pred_norm = neg_pred_norm[:args.top_data]
-    return pos_pred_norm, neg_pred_norm
+    if args.top_data < len(pos_pred):
+        pos_pred = pos_pred[:args.top_data]
+        neg_pred = neg_pred[:args.top_data]
+    return pos_pred, neg_pred

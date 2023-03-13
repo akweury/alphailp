@@ -10,7 +10,7 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # Add cuda
-
+RUN pip3 install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
 # Add fonts for serif rendering in MPL plots
 RUN apt-get update
 RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections
