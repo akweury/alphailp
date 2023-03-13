@@ -416,9 +416,11 @@ def convert_data_to_tensor(args, pos_dataset_folder):
             data_tensor[0, o_i, 8] = 1
         data_tensors[d_i] = data_tensor[0]
 
-    # normalize the position
-    data_tensors[:, :, 0] = (data_tensors[:, :, 0] - data_tensors[:, :, 0].min()) / (
-            data_tensors[:, :, 0].max() - data_tensors[:, :, 0].min())
-    data_tensors[:, :, 2] = (data_tensors[:, :, 2] - data_tensors[:, :, 2].min()) / (
-            data_tensors[:, :, 2].max() - data_tensors[:, :, 2].min())
     return data_tensors
+
+
+def normalization(pred_res, max_value, min_vlaue):
+    pred_res_norm = torch.zeros(size=pred_res.shape)
+    pred_res_norm[:, :, 0] = (pred_res[:, :, 0] - min_vlaue) / (max_value - min_vlaue)
+    pred_res_norm[:, :, 2] = (pred_res[:, :, 2] - min_vlaue) / (max_value - min_vlaue)
+    return pred_res_norm
