@@ -1235,8 +1235,8 @@ def remove_3_zone_only_predicates(new_predicates, args):
     for predicate in new_predicates:
         if torch.sum(predicate[1][:3]) > 0:
             passed_predicates.append(predicate)
-        else:
-            log_utils.add_lines(f"(remove 3 zone only predicate) {predicate[0]} {predicate[1]}", args.log_file)
+        # else:
+        #     log_utils.add_lines(f"(remove 3 zone only predicate) {predicate[0]} {predicate[1]}", args.log_file)
     return passed_predicates
 
 
