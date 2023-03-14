@@ -57,6 +57,8 @@ def get_args():
                         help="prune same score clauses.")
     parser.add_argument("--no-xil", action="store_true",
                         help="Do not use confounding labels for clevr-hans.")
+    parser.add_argument("--small_data", action="store_false",
+                        help="Use small portion of valuation data.")
     parser.add_argument("--num-workers", type=int, default=4,
                         help="Number of threads for data loader")
     parser.add_argument('--gamma', default=0.01, type=float,
@@ -390,7 +392,10 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
     elif args.dataset_type == "hide":
         train_pos_pred, train_neg_pred = data_hide.get_pred_res(args, "train")
         test_pos_pred, test_neg_pred = data_hide.get_pred_res(args, "test")
-        val_pos_pred, val_neg_pred = data_hide.get_pred_res(args, "val")
+        if args.small_data:
+            val_pos_pred, val_neg_pred = data_hide.get_pred_res(args, "val_s")
+        else:
+            val_pos_pred, val_neg_pred = data_hide.get_pred_res(args, "val")
 
     else:
         raise ValueError

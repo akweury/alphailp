@@ -5,6 +5,7 @@
   "dataset": "cross_same",
   "dataset-type": "hide",
   "score_unique": true,
+  "small_data": true,
   "top_data": 40,
   "t_beam": 6,
   "n_beam": 5,
