@@ -506,6 +506,25 @@ def has_same_preds(c1, c2):
     else:
         return False
 
+def has_same_preds_and_atoms(c1, c2):
+    if len(c1.body) != len(c2.body):
+        return False
+    same_preds = True
+    for i in range(len(c1.body)):
+        if not same_preds:
+            break
+        if not c1.body[i].pred.name == c2.body[i].pred.name:
+            same_preds = False
+        else:
+            for j, term in enumerate(c1.body[i].terms):
+                if "O" not in term.name:
+                    if not term.name == c2.body[i].terms[j].name:
+                        same_preds = False
+    if same_preds:
+        return True
+    else:
+        return False
+
 
 def check_trivial_clusters(clause_clusters):
     clause_clusters_untrivial = []
@@ -515,7 +534,7 @@ def check_trivial_clusters(clause_clusters):
             for c_i, c in enumerate(c_clu):
                 c[1].body = sorted(c[1].body)
                 if c_i > 0:
-                    if has_same_preds(c[1], c_clu[0][1]):
+                    if has_same_preds_and_atoms(c[1], c_clu[0][1]):
                         is_trivial = True
                         break
         if not is_trivial:
@@ -523,20 +542,20 @@ def check_trivial_clusters(clause_clusters):
     return clause_clusters_untrivial
 
 
-def get_independent_clusters(clauses):
+def get_independent_clusters(clauses, args):
     print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
 
     clauses_with_score = []
     for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
         clauses_with_score.append([clause_i, clause, c_scores])
 
-    clause_clusters = sub_lists(clauses_with_score, min_len=1, max_len=7)
+    clause_clusters = sub_lists(clauses_with_score, min_len=1, max_len=args.max_cluster_size)
 
     return clause_clusters
 
 
 def search_independent_clauses_parallel(clauses, total_score, args):
-    clause_clusters = get_independent_clusters(clauses)
+    clause_clusters = get_independent_clusters(clauses, args)
 
     # print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
     # clauses_with_score = []
@@ -906,7 +925,7 @@ def eval_clause_sign(p_scores):
     p_clauses_signs = []
 
     # p_scores axis: batch_size, pred_names, clauses, pos_neg_labels, images
-    p_scores[p_scores==1]=0.98
+    p_scores[p_scores == 1] = 0.98
     resolution = 2
     ps_discrete = (p_scores * resolution).int()
     four_zone_scores = torch.zeros((p_scores.size(0), 4))
