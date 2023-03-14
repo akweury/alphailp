@@ -1052,12 +1052,6 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
     target_has_been_found = False
     higher = False
     clause_accuracy = check_accuracy(clause_scores, total_score)
-    log_utils.add_lines(
-        f"(BS Step {step}) sn_c: {len(clause_dict['sn'])}, sn_c_good: {len(clause_dict['sn_good'])}, "
-        f"n_c: {len(clause_dict['nc'])}, s_c: {len(clause_dict['sc'])}, "
-        f"n_c_good: {len(clause_dict['nc_good'])}, s_c_good: {len(clause_dict['sc_good'])}, "
-        f"u_c_good: {len(clause_dict['uc_good'])}, u_c: {len(clause_dict['uc'])}.",
-        args.log_file)
     if clause_accuracy.max() == 1.0:
         log_utils.add_lines(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}", args.log_file)
         target_has_been_found = True
@@ -1092,6 +1086,17 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
     clause_dict["sc_good"] = sorted_clauses(clause_dict["sc_good"], "sc_good", args, args.sc_good_top)
     clause_dict["uc"] = sorted_clauses(clause_dict["uc"], "uc", args, args.uc_top)
     clause_dict["uc_good"] = sorted_clauses(clause_dict["uc_good"], "uc_good", args, args.uc_good_top)
+
+    log_utils.add_lines(
+        f"(BS Step {step}) "
+        f"sn_c: {len(clause_dict['sn'])}, "
+        f"sn_c_good: {len(clause_dict['sn_good'])}, "
+        f"n_c: {len(clause_dict['nc'])}, "
+        f"s_c: {len(clause_dict['sc'])}, "
+        f"n_c_good: {len(clause_dict['nc_good'])}, "
+        f"s_c_good: {len(clause_dict['sc_good'])}, "
+        f"u_c_good: {len(clause_dict['uc_good'])}, "
+        f"u_c: {len(clause_dict['uc'])}.", args.log_file)
 
     return max_clause, clause_dict, higher
 
