@@ -299,7 +299,8 @@ class ClauseGenerator(object):
 
             # evaluate clauses
             clause_dict, new_max_clause, higher = self.eval_clauses_scores(refs_no_conflict, pi_clauses, eval_pred,
-                                                                           pos_pred, neg_pred, step, args, max_clause)
+                                                                           pos_pred, neg_pred, step, args, max_clause,
+                                                                           search_type)
             max_clause, found_sn = self.check_result(clause_dict, higher, max_clause, new_max_clause)
             refs = self.prune_clauses(clause_dict, search_type, args)
             step += 1
@@ -524,7 +525,7 @@ class ClauseGenerator(object):
     #         all_clause_scores.append(clause_scores)
     #     return all_clause_scores
 
-    def classify_clauses(self, clauses, four_scores, all_scores, args):
+    def classify_clauses(self, clauses, four_scores, all_scores, args, search_type):
         sufficient_necessary_clauses = []
         necessary_clauses = []
         sufficient_clauses = []
@@ -547,29 +548,36 @@ class ClauseGenerator(object):
                 # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_conflict(score, data_size, args.conflict_th):
                 continue
-            elif eval_utils.is_sc(score, data_size, 1):
-                sufficient_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_nc(score, data_size, 1):
-                necessary_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
-                sc_good_clauses.append((clause, score, all_scores[c_i]))
-                # log_utils.add_lines(f'(conflict) {clause}, {four_scores[c_i]}', args.log_file)
-
-                # log_utils.add_lines(f'(sc) {clause}, {four_scores[c_i]}', args.log_file)
-
-                # log_utils.add_lines(f'(sc_good) {clause}, {four_scores[c_i]}', args.log_file)
-
-                # log_utils.add_lines(f'(nc) {clause}, {four_scores[c_i]}', args.log_file)
-            elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
-                nc_good_clauses.append((clause, score, all_scores[c_i]))
-                # log_utils.add_lines(f'(nc_good) {clause}, {four_scores[c_i]}', args.log_file)
-            elif eval_utils.is_uc_th_good(score, args.uc_th):
-                uc_good_clauses.append((clause, score, all_scores[c_i]))
-                # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-            else:
-                unclassified_clauses.append((clause, score, all_scores[c_i]))
-                # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
-
+            elif search_type == "nc":
+                if eval_utils.is_nc(score, data_size, 1):
+                    necessary_clauses.append((clause, score, all_scores[c_i]))
+                elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
+                    nc_good_clauses.append((clause, score, all_scores[c_i]))
+                elif eval_utils.is_sc(score, data_size, 1):
+                    sufficient_clauses.append((clause, score, all_scores[c_i]))
+                elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
+                    sc_good_clauses.append((clause, score, all_scores[c_i]))
+                elif eval_utils.is_uc_th_good(score, args.uc_th):
+                    uc_good_clauses.append((clause, score, all_scores[c_i]))
+                    # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+                else:
+                    unclassified_clauses.append((clause, score, all_scores[c_i]))
+                    # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
+            elif search_type == "sc":
+                if eval_utils.is_sc(score, data_size, 1):
+                    sufficient_clauses.append((clause, score, all_scores[c_i]))
+                elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
+                    sc_good_clauses.append((clause, score, all_scores[c_i]))
+                elif eval_utils.is_nc(score, data_size, 1):
+                    necessary_clauses.append((clause, score, all_scores[c_i]))
+                elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
+                    nc_good_clauses.append((clause, score, all_scores[c_i]))
+                elif eval_utils.is_uc_th_good(score, args.uc_th):
+                    uc_good_clauses.append((clause, score, all_scores[c_i]))
+                    # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+                else:
+                    unclassified_clauses.append((clause, score, all_scores[c_i]))
+                    # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
         clause_dict = {"sn": sufficient_necessary_clauses,
                        "nc": necessary_clauses,
                        "sc": sufficient_clauses,
@@ -597,7 +605,7 @@ class ClauseGenerator(object):
         return refs_non_trivial
 
     def eval_clauses_scores(self, new_clauses, pi_clauses, eval_pred_names, pos_pred, neg_pred, step, args,
-                            max_clause_score):
+                            max_clause_score, search_type):
         # evaluate clauses
         if len(new_clauses) == 0:
             raise ValueError
@@ -608,7 +616,7 @@ class ClauseGenerator(object):
                                                                                 neg_pred)
 
         # classify clauses
-        clause_dict = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores, args)
+        clause_dict = self.classify_clauses(new_clauses, clause_scores_full, all_predicates_scores, args, search_type)
 
         # print best clauses that have been found...
         new_max, clause_dict, higher = logic_utils.print_best_clauses(new_clauses, clause_dict, clause_scores_full,
