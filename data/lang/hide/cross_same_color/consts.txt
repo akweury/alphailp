@@ -1,5 +1,5 @@
 object:obj0,obj1,obj2,obj3,obj4,obj5
 image:img
 color:pink,green,blue
-phi:num_phi_8
+phi:num_phi_4
 rho:num_rho_4

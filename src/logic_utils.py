@@ -522,8 +522,21 @@ def check_trivial_clusters(clause_clusters):
             clause_clusters_untrivial.append(c_clu)
     return clause_clusters_untrivial
 
+def get_independent_clusters(clauses):
+    print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
+
+    clauses_with_score = []
+    for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
+        clauses_with_score.append([clause_i, clause, c_scores])
+
+    clause_clusters = sub_lists(clauses_with_score, min_len=1, max_len=4)
+
+    return clause_clusters
 
 def search_independent_clauses_parallel(clauses, total_score, args):
+
+    independent_clauses_all = get_independent_clusters(clauses)
+
     print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
     clauses_with_score = []
     for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
@@ -539,6 +552,8 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         clause_cluster = sorted(clause_cluster, key=lambda x: x[0])
         if clause_cluster not in independent_clauses_all:
             independent_clauses_all.append(clause_cluster)
+
+
 
     clause_clusters = []
     for independent_cluster in independent_clauses_all:

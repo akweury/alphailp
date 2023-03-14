@@ -1,10 +1,10 @@
 {
   "n_obj": 5,
-  "batch_size_train": 5,
+  "batch_size_train": 20,
   "e": 5,
   "dataset": "cross_same_color",
   "dataset-type": "hide",
-  "score_unique": true,
+  "score_unique": false,
   "top_data": 100,
   "t_beam": 6,
   "n_beam": 5,
