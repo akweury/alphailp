@@ -1390,6 +1390,4 @@ class PIClauseGenerator(object):
         #     new_predicates = new_predicates[:5]
 
         no_same_four = logic_utils.remove_same_four_score_predicates(new_predicates, args)
-        if not keep_all and len(new_predicates) > 20:
-            new_predicates = []
         return new_predicates
