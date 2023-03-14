@@ -400,6 +400,8 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
     else:
         raise ValueError
 
+    log_utils.add_lines(f"==== positive image number: {len(val_pos_pred)}", args.log_file)
+    log_utils.add_lines(f"==== negative image number: {len(val_neg_pred)}", args.log_file)
     pm_prediction_dict = {
         'val_pos': val_pos_pred,
         'val_neg': val_neg_pred,
