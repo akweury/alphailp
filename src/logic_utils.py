@@ -530,7 +530,7 @@ def get_independent_clusters(clauses):
     for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
         clauses_with_score.append([clause_i, clause, c_scores])
 
-    clause_clusters = sub_lists(clauses_with_score, min_len=1, max_len=4)
+    clause_clusters = sub_lists(clauses_with_score, min_len=1, max_len=7)
 
     return clause_clusters
 
