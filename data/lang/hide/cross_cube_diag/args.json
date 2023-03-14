@@ -1,6 +1,6 @@
 {
   "n_obj": 5,
-  "batch_size_train": 20,
+  "batch_size_train": 10,
   "e": 5,
   "dataset": "cross_cube_diag",
   "dataset-type": "hide",
