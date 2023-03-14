@@ -906,10 +906,10 @@ def eval_clause_sign(p_scores):
     p_clauses_signs = []
 
     # p_scores axis: batch_size, pred_names, clauses, pos_neg_labels, images
+    p_scores[p_scores==1]=0.98
     resolution = 2
     ps_discrete = (p_scores * resolution).int()
     four_zone_scores = torch.zeros((p_scores.size(0), 4))
-
     img_total = p_scores.size(1)
 
     # low pos, low neg
