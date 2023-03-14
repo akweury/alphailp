@@ -121,7 +121,7 @@ def run(net, predict_net, loader, optimizer, criterion, writer, args, device, tr
         predicted_list.append(predicted.detach().cpu().numpy())
         target_set_list.append(target_set.detach().cpu().numpy())
 
-        # binary cross-entropy loss computation
+        # binary cross_same-entropy loss computation
         loss = be(predicted, target_set)
         loss_sum += loss.item()
         loss_list.append(loss.item())

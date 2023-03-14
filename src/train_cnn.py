@@ -166,7 +166,7 @@ def run(net, predict_net,  loader, optimizer, criterion, writer, args, device, t
         x = net(imgs)
         predicted = predict_net(x).squeeze()
 
-        # binary cross-entropy loss computation
+        # binary cross_same-entropy loss computation
         loss = be(predicted, target_set)
         loss_sum += loss.item()
         loss_list.append(loss.item())
