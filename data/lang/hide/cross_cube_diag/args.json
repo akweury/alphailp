@@ -2,7 +2,7 @@
   "n_obj": 5,
   "batch_size_train": 20,
   "e": 5,
-  "dataset": "cross_same_color",
+  "dataset": "cross_cube_diag",
   "dataset-type": "hide",
   "score_unique": false,
   "small_data": false,
