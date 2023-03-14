@@ -1255,8 +1255,8 @@ def remove_same_four_score_predicates(new_predicates, args):
         if predicate[1].tolist() not in passed_scores:
             passed_scores.append(predicate[1].tolist())
             passed_predicates.append(predicate)
-        else:
-            log_utils.add_lines(f"(remove same four score predicate) {predicate[0]} {predicate[1]}", args.log_file)
+        # else:
+        #     log_utils.add_lines(f"(remove same four score predicate) {predicate[0]} {predicate[1]}", args.log_file)
     return passed_predicates
 
 
