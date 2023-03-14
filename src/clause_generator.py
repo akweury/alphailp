@@ -720,7 +720,7 @@ class ClauseGenerator(object):
                 refs += self.update_refs(clause_dict, args, priority="sc")
             else:
                 log_utils.add_lines(f'no sc for extension!', args.log_file)
-            if len(clause_dict["sc_good"]) > 0:
+            if len(clause_dict["sc_good"]) > 2:
                 refs += self.update_refs(clause_dict, args, priority="sc_good")
             else:
                 log_utils.add_lines(f'no sc good for extension!', args.log_file)
