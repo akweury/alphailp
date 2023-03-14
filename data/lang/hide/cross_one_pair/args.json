@@ -1,6 +1,6 @@
 {
   "n_obj": 5,
-  "batch_size_train": 5,
+  "batch_size_train": 2,
   "e": 5,
   "dataset": "cross_one_pair",
   "dataset-type": "hide",
