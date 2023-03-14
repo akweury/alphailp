@@ -522,6 +522,7 @@ def check_trivial_clusters(clause_clusters):
             clause_clusters_untrivial.append(c_clu)
     return clause_clusters_untrivial
 
+
 def get_independent_clusters(clauses):
     print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
 
@@ -533,32 +534,32 @@ def get_independent_clusters(clauses):
 
     return clause_clusters
 
+
 def search_independent_clauses_parallel(clauses, total_score, args):
+    clause_clusters = get_independent_clusters(clauses)
 
-    independent_clauses_all = get_independent_clusters(clauses)
-
-    print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
-    clauses_with_score = []
-    for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
-        clauses_with_score.append([clause_i, clause, c_scores])
-    # search clauses with no common bodies
-    independent_clauses_all = []
-    for i_index, [i, clause_i, score_i] in enumerate(clauses_with_score):
-        clause_cluster = [[i, clause_i, score_i]]
-        independent_clauses_all.append([[i, clause_i, score_i]])
-        for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
-            if not len(common_body_pi_clauses(clause_j, clause_i)) > args.n_obj:
-                clause_cluster.append([j, clause_j, score_j])
-        clause_cluster = sorted(clause_cluster, key=lambda x: x[0])
-        if clause_cluster not in independent_clauses_all:
-            independent_clauses_all.append(clause_cluster)
-
-
-
-    clause_clusters = []
-    for independent_cluster in independent_clauses_all:
-        sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=4)
-        clause_clusters += sub_clusters
+    # print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
+    # clauses_with_score = []
+    # for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
+    #     clauses_with_score.append([clause_i, clause, c_scores])
+    # # search clauses with no common bodies
+    # independent_clauses_all = []
+    # for i_index, [i, clause_i, score_i] in enumerate(clauses_with_score):
+    #     clause_cluster = [[i, clause_i, score_i]]
+    #     independent_clauses_all.append([[i, clause_i, score_i]])
+    #     for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
+    #         if not len(common_body_pi_clauses(clause_j, clause_i)) > args.n_obj:
+    #             clause_cluster.append([j, clause_j, score_j])
+    #     clause_cluster = sorted(clause_cluster, key=lambda x: x[0])
+    #     if clause_cluster not in independent_clauses_all:
+    #         independent_clauses_all.append(clause_cluster)
+    #
+    #
+    #
+    # clause_clusters = []
+    # for independent_cluster in independent_clauses_all:
+    #     sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=4)
+    #     clause_clusters += sub_clusters
 
     # trivial: contain multiple semantic identity bodies
     clause_clusters = check_trivial_clusters(clause_clusters)
