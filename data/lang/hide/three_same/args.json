@@ -14,7 +14,7 @@
   "nc_max_step": 0,
   "sc_max_step": 10,
   "sn_th": 0.99,
-  "conflict_th": 0.70,
+  "conflict_th": 0.990,
   "nc_th": 0.0001,
   "uc_th": 0.8,
   "sc_th": 0.0001,
