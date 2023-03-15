@@ -4,7 +4,7 @@
   "e": 5,
   "dataset": "cross_same_shape",
   "dataset-type": "hide",
-  "score_unique": false,
+  "score_unique": true,
   "small_data": false,
   "top_data": 50,
   "t_beam": 6,

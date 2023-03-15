@@ -714,13 +714,13 @@ class ClauseGenerator(object):
 
         if search_type == "nc":
             if len(clause_dict["nc"]) > 0:
-                refs = self.update_refs(clause_dict, args, priority="nc")
+                refs += self.update_refs(clause_dict, args, priority="nc")
             elif len(clause_dict["nc_good"]) > 0:
-                refs = self.update_refs(clause_dict, args, priority="nc_good")
+                refs += self.update_refs(clause_dict, args, priority="nc_good")
             elif len(clause_dict["uc_good"]) > 0:
-                refs = self.update_refs(clause_dict, args, priority="uc_good")
+                refs += self.update_refs(clause_dict, args, priority="uc_good")
             elif len(clause_dict["uc"]) > 0:
-                refs = self.update_refs(clause_dict, args, priority="uc")
+                refs += self.update_refs(clause_dict, args, priority="uc")
             else:
                 raise ValueError
         elif search_type == "sc":
