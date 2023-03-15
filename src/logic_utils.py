@@ -506,6 +506,7 @@ def has_same_preds(c1, c2):
     else:
         return False
 
+
 def has_same_preds_and_atoms(c1, c2):
     if len(c1.body) != len(c2.body):
         return False
@@ -1131,7 +1132,8 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
         f"n_c_good: {len(clause_dict['nc_good'])}, "
         f"s_c_good: {len(clause_dict['sc_good'])}, "
         f"u_c_good: {len(clause_dict['uc_good'])}, "
-        f"u_c: {len(clause_dict['uc'])}.", args.log_file)
+        f"u_c: {len(clause_dict['uc'])}, "
+        f"conflict: {len(clause_dict['conflict'])}.", args.log_file)
 
     return max_clause, clause_dict, higher
 
@@ -1149,6 +1151,8 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
                 if c[1].tolist() not in appeared_scores:
                     score_unique_c.append(c)
                     appeared_scores.append(c[1].tolist())
+                else:
+                    log_utils.add_lines(f"repeat scoring clause: {c[0]}, {c[1]}.")
             c_sorted = score_unique_c
         # for c, c_score, all_scores in c_sorted:
         #     log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)

@@ -534,6 +534,7 @@ class ClauseGenerator(object):
         sc_good_clauses = []
         nc_good_clauses = []
         uc_good_clauses = []
+        conflict_clauses = []
 
         for c_i, clause in enumerate(clauses):
             data_size = args.data_size
@@ -547,7 +548,7 @@ class ClauseGenerator(object):
                 sn_good_clauses.append((clause, score, all_scores[c_i]))
                 # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
             elif eval_utils.is_conflict(score, data_size, args.conflict_th):
-                continue
+                conflict_clauses.append((clause, score, all_scores[c_i]))
             elif search_type == "nc":
                 if eval_utils.is_nc(score, data_size, 1):
                     necessary_clauses.append((clause, score, all_scores[c_i]))
@@ -585,7 +586,8 @@ class ClauseGenerator(object):
                        "sn_good": sn_good_clauses,
                        "nc_good": nc_good_clauses,
                        'sc_good': sc_good_clauses,
-                       'uc_good': uc_good_clauses}
+                       'uc_good': uc_good_clauses,
+                       "conflict":conflict_clauses}
         return clause_dict
 
     def remove_conflict_clauses(self, refs, pi_clauses, args):
