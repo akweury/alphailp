@@ -20,12 +20,12 @@
   "uc_th": 0.8,
   "sc_th": 0.6,
   "sc_top": 30,
-  "nc_top": 2,
+  "nc_top": 10,
   "sc_good_top": 30,
-  "nc_good_top": 2,
-  "uc_good_top": 5,
-  "uc_top": 5,
-  "pi_top": 1,
+  "nc_good_top": 10,
+  "uc_good_top": 10,
+  "uc_top": 10,
+  "pi_top": 4,
   "with_bk": false,
   "plot_four_zone": false
 }
