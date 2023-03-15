@@ -1114,8 +1114,7 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
             for c_i in c_indices:
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
 
-    clause_dict["sn"] = sorted_clauses(clause_dict["sn"], "sn", args)
-    clause_dict["sn_good"] = sorted_clauses(clause_dict["sn_good"], "sn_good", args)
+
     clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_top)
     clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_top)
     clause_dict["nc_good"] = sorted_clauses(clause_dict["nc_good"], "nc_good", args, args.nc_good_top)
