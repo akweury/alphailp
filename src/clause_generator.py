@@ -724,11 +724,11 @@ class ClauseGenerator(object):
             else:
                 raise ValueError
         elif search_type == "sc":
-            if len(clause_dict["sc"]) > 1:
+            if len(clause_dict["sc"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="sc")
             else:
                 log_utils.add_lines(f'no sc for extension!', args.log_file)
-            if len(clause_dict["sc_good"]) > 1:
+            if len(clause_dict["sc_good"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="sc_good")
             else:
                 log_utils.add_lines(f'no sc good for extension!', args.log_file)
