@@ -162,6 +162,10 @@ class RefinementGenerator(object):
                 a_1 = assignments_list[0][0]
                 for i_2, a_2 in enumerate(assignments_list[1]):
                     arg_lists.append([a_1, a_2])
+            elif len(assignments_list) == 1:
+                for a in assignments_list[0]:
+                    arg_lists.append([a])
+
             return arg_lists
 
     def refinement_clause(self, clause):
