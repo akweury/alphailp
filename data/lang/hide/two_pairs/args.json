@@ -6,7 +6,7 @@
   "dataset-type": "hide",
   "score_unique": false,
   "small_data": false,
-  "max_cluster_size": 10,
+  "max_cluster_size": 5,
   "top_data": 30,
   "t_beam": 6,
   "n_beam": 5,
