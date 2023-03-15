@@ -588,6 +588,17 @@ class ClauseGenerator(object):
                        'sc_good': sc_good_clauses,
                        'uc_good': uc_good_clauses,
                        "conflict":conflict_clauses}
+
+        log_utils.add_lines(
+            f"sn_c: {len(clause_dict['sn'])}, "
+            f"sn_c_good: {len(clause_dict['sn_good'])}, "
+            f"n_c: {len(clause_dict['nc'])}, "
+            f"s_c: {len(clause_dict['sc'])}, "
+            f"n_c_good: {len(clause_dict['nc_good'])}, "
+            f"s_c_good: {len(clause_dict['sc_good'])}, "
+            f"u_c_good: {len(clause_dict['uc_good'])}, "
+            f"u_c: {len(clause_dict['uc'])}, "
+            f"conflict: {len(clause_dict['conflict'])}.", args.log_file)
         return clause_dict
 
     def remove_conflict_clauses(self, refs, pi_clauses, args):
