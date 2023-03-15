@@ -746,22 +746,22 @@ class ClauseGenerator(object):
             else:
                 log_utils.add_lines(f'no sc good for extension!', args.log_file)
 
-            if len(refs) == 0 and len(clause_dict["nc"]) > 0:
+            if len(clause_dict["nc"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="nc")
             else:
                 log_utils.add_lines(f'no nc for extension!', args.log_file)
 
-            if len(refs) == 0 and len(clause_dict["nc_good"]) > 0:
+            if len(clause_dict["nc_good"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="nc_good")
             else:
                 log_utils.add_lines(f'no nc good for extension!', args.log_file)
 
-            if len(refs) == 0 and len(clause_dict["uc_good"]) > 0:
+            if len(clause_dict["uc_good"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="uc_good")
             else:
                 log_utils.add_lines(f'no uc good for extension!', args.log_file)
 
-            if len(refs) == 0 and len(clause_dict["uc"]) > 0:
+            if len(clause_dict["uc"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="uc")
             else:
                 log_utils.add_lines(f'no uc for extension!', args.log_file)
