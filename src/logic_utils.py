@@ -1152,7 +1152,7 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
                     score_unique_c.append(c)
                     appeared_scores.append(c[1].tolist())
                 else:
-                    log_utils.add_lines(f"repeat scoring clause: {c[0]}, {c[1]}.")
+                    log_utils.add_lines(f"repeat scoring clause: {c[0]}, {c[1]}.", args.log_file)
             c_sorted = score_unique_c
         # for c, c_score, all_scores in c_sorted:
         #     log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
