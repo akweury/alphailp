@@ -1141,8 +1141,10 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
 def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
     if len(clause_with_scores) > 0:
         c_sorted = sorted(clause_with_scores, key=lambda x: x[1][1], reverse=True)
+        log_utils.add_lines(f"{c_type} before top select: {len(c_sorted)}", args.log_file)
         if threshold is not None and len(c_sorted) > threshold:
             c_sorted = c_sorted[:threshold]
+        log_utils.add_lines(f"{c_type} after top select: {len(c_sorted)}", args.log_file)
 
         if args.score_unique:
             score_unique_c = []
