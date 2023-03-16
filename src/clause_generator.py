@@ -587,7 +587,7 @@ class ClauseGenerator(object):
                        "nc_good": nc_good_clauses,
                        'sc_good': sc_good_clauses,
                        'uc_good': uc_good_clauses,
-                       "conflict":conflict_clauses}
+                       "conflict": conflict_clauses}
 
         log_utils.add_lines(
             f"sn_c: {len(clause_dict['sn'])}, "
@@ -738,7 +738,7 @@ class ClauseGenerator(object):
                 refs += self.update_refs(clause_dict, args, priority="uc_good")
             if len(clause_dict["uc"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="uc")
-            else:
+            if (len(refs) == 0):
                 raise ValueError
         elif search_type == "sc":
             if len(clause_dict["sc"]) > 1:
