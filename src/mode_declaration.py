@@ -113,19 +113,19 @@ def get_mode_declarations_clevr(lang, obj_num):
     return modeb_list
 
 
-def get_pi_mode_declarations(lang):
+def get_pi_mode_declarations(lang, obj_num):
     p_object = ModeTerm('+', DataType('object'))
 
     pi_mode_declarations = []
     for pi_index, pi in enumerate(lang.invented_preds):
         pi_str = pi.name
         objects = [p_object] * pi.arity
-        mode_declarations = ModeDeclaration('body', 1, lang.get_invented_pred_by_name(pi_str), objects, ordered=False)
+        mode_declarations = ModeDeclaration('body', obj_num, lang.get_invented_pred_by_name(pi_str), objects, ordered=False)
         pi_mode_declarations.append(mode_declarations)
     for pi_index, pi in enumerate(lang.bk_inv_preds):
         pi_str = pi.name
         objects = [p_object] * pi.arity
-        mode_declarations = ModeDeclaration('body', 1, lang.get_bk_invented_pred_by_name(pi_str), objects,
+        mode_declarations = ModeDeclaration('body', obj_num, lang.get_bk_invented_pred_by_name(pi_str), objects,
                                             ordered=False)
         pi_mode_declarations.append(mode_declarations)
     return pi_mode_declarations
@@ -171,13 +171,13 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 def get_mode_declarations(args, lang, obj_num):
     if args.dataset_type == 'kandinsky':
         basic_mode_declarations = get_mode_declarations_kandinsky(lang, obj_num)
-        pi_model_declarations = get_pi_mode_declarations(lang)
+        pi_model_declarations = get_pi_mode_declarations(lang, obj_num)
         return basic_mode_declarations + pi_model_declarations
     elif args.dataset_type == 'clevr':
         return get_mode_declarations_clevr(lang, obj_num)
     elif args.dataset_type == "hide":
         basic_mode_declarations = get_mode_declarations_kandinsky(lang, obj_num)
-        pi_model_declarations = get_pi_mode_declarations(lang)
+        pi_model_declarations = get_pi_mode_declarations(lang, obj_num)
         return basic_mode_declarations + pi_model_declarations
     else:
         assert False, "Invalid data type."
