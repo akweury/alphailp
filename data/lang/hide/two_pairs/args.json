@@ -20,7 +20,7 @@
   "uc_th": 0.9,
   "sc_th": 0.49,
   "sc_top": 10,
-  "nc_top": 10,
+  "nc_top": 20,
   "sc_good_top": 5,
   "nc_good_top": 5,
   "uc_top": 5,
