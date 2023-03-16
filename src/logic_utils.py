@@ -1154,9 +1154,9 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
 
 
         log_utils.add_lines(f"{c_type} before top select: {len(c_sorted)}", args.log_file)
-        for i in range(threshold, len(c_sorted)):
-            log_utils.add_lines(f"({c_type}) low scoring clause to be pruned: {c_sorted[i][0]}, {c_sorted[i][1]}",
-                                args.log_file)
+        # for i in range(threshold, len(c_sorted)):
+        #     log_utils.add_lines(f"({c_type}) low scoring clause to be pruned: {c_sorted[i][0]}, {c_sorted[i][1]}",
+        #                         args.log_file)
         if threshold is not None and len(c_sorted) > threshold:
             c_sorted = c_sorted[:threshold]
         log_utils.add_lines(f"{c_type} after top select: {len(c_sorted)}", args.log_file)
