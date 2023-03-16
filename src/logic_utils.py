@@ -1037,8 +1037,8 @@ def remove_duplicate_predicates(new_predicates, args):
                 is_duplicate = True
         if not is_duplicate:
             non_duplicate_pred.append([p_a, a_score])
-        else:
-            log_utils.add_lines(f"(remove duplicate predicate) {p_a} {a_score}", args.log_file)
+        # else:
+        #     log_utils.add_lines(f"(remove duplicate predicate) {p_a} {a_score}", args.log_file)
     return non_duplicate_pred
 
 

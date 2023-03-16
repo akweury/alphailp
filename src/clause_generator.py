@@ -730,6 +730,10 @@ class ClauseGenerator(object):
                 refs += self.update_refs(clause_dict, args, priority="nc")
             elif len(clause_dict["nc_good"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="nc_good")
+            elif len(clause_dict["sc"]) > 1:
+                refs += self.update_refs(clause_dict, args, priority="sc")
+            elif len(clause_dict["sc_good"]) > 1:
+                refs += self.update_refs(clause_dict, args, priority="sc_good")
             elif len(clause_dict["uc_good"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="uc_good")
             elif len(clause_dict["uc"]) > 0:
