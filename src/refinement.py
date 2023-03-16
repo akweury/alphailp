@@ -159,9 +159,9 @@ class RefinementGenerator(object):
                         for i_3, a_3 in enumerate(assignments_list[2]):
                             arg_lists.append([a_1, a_2, a_3])
             elif len(assignments_list) == 2:
-                a_1 = assignments_list[0][0]
-                for i_2, a_2 in enumerate(assignments_list[1]):
-                    arg_lists.append([a_1, a_2])
+                for i_1, a_1 in enumerate(assignments_list[0]):
+                    for a_2 in assignments_list[1][i_1+1:]:
+                        arg_lists.append([a_1, a_2])
             elif len(assignments_list) == 1:
                 for a in assignments_list[0]:
                     arg_lists.append([a])

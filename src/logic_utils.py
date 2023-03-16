@@ -1395,8 +1395,8 @@ def remove_same_semantic_clauses(clauses):
     for c in clauses:
         is_same = False
         for added_c in semantic_diff_clauses:
-            c_preds = get_pred_names_from_clauses(c, exclude_objects=True)
-            added_c_preds = get_pred_names_from_clauses(added_c, exclude_objects=True)
+            c_preds = get_pred_names_from_clauses(c)
+            added_c_preds = get_pred_names_from_clauses(added_c)
             if c_preds == added_c_preds:
                 is_same = True
                 break
