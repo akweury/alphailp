@@ -147,6 +147,16 @@ class RefinementGenerator(object):
             return itertools.product(*assignments_list)
         else:
             arg_lists = []
+            if len(assignments_list) == 5:
+                for i_1, a_1 in enumerate(assignments_list[0]):
+                    for i_2 in range(i_1 + 1, len(assignments_list[1])):
+                        for i_3 in range(i_2 + 1, len(assignments_list[2])):
+                            for i_4 in range(i_3 + 1, len(assignments_list[3])):
+                                for a_5 in assignments_list[4]:
+                                    arg_lists.append([assignments_list[0][i_1],
+                                                      assignments_list[1][i_2],
+                                                      assignments_list[2][i_3],
+                                                      assignments_list[3][i_4], a_5])
             if len(assignments_list) == 4:
                 for i_1, a_1 in enumerate(assignments_list[0]):
                     for i_2 in range(i_1 + 1, len(assignments_list[1])):
@@ -160,7 +170,7 @@ class RefinementGenerator(object):
                             arg_lists.append([a_1, a_2, a_3])
             elif len(assignments_list) == 2:
                 for i_1, a_1 in enumerate(assignments_list[0]):
-                    for a_2 in assignments_list[1][i_1+1:]:
+                    for a_2 in assignments_list[1][i_1 + 1:]:
                         arg_lists.append([a_1, a_2])
             elif len(assignments_list) == 1:
                 for a in assignments_list[0]:
