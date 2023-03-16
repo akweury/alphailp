@@ -1,0 +1,371 @@
+Log from 2023-03-16, 09_37_34args: Namespace(batch_size=1, batch_size_bs=1, batch_size_train=10, cim_step=7, conflict_th=0.8, dataset='two_pairs', dataset_type='hide', device='1', e=4, epochs=100, gamma=0.01, log_file='/aILP/alphailp/../buffer/two_pairs/log_2023-03-16_09_37_34.txt', lr=0.01, m=1, max_cluster_size=7, min_beam=0, n_beam=5, n_data=200, n_max=50, n_obj=4, nc_good_top=5, nc_max_step=5, nc_th=0.7, nc_top=10, no_cuda=False, no_pi=False, no_xil=False, num_workers=4, pi_epochs=3, pi_top=2, plot=False, plot_four_zone=False, pre_searched=False, sc_good_top=5, sc_max_step=8, sc_th=0.49, sc_top=10, score_unique=False, small_data=False, sn_th=0.99, t_beam=6, top_data=80, uc_good_top=10, uc_th=0.9, uc_top=5, with_bk=False, **{'dataset-type': 'hide'})
+device: cuda:1
+==== positive image number: 80
+==== negative image number: 80
+searching for nc clauses...
+
+======== beam search iteration 0/5 searching for nc ========
+
+(2023-03-16 09_37_38) Iteration: 0 Step 0/0
+Evaluating: 5 generated clauses.
+sn_c: 0, sn_c_good: 0, n_c: 0, s_c: 0, n_c_good: 2, s_c_good: 0, u_c_good: 0, u_c: 3, conflict: 0.
+(BS Step 0) (global) max clause accuracy: 0.125
+kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X)., tensor([ 7., 10., 23., 40.])
+nc_good before top select: 2
+nc_good after top select: 2
+uc before top select: 3
+uc after top select: 3
+(BS Step 0) sn_c: 0, sn_c_good: 0, n_c: 0, s_c: 0, n_c_good: 2, s_c_good: 0, u_c_good: 0, u_c: 3, conflict: 0.
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,sphere). tensor([ 0.,  5., 13., 62.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,cube). tensor([ 0.,  3., 20., 57.])
+extend candidate (uc): kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7., 10., 23., 40.])
+extend candidate (uc): kp(X):-color(O1,pink),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7.,  5., 29., 39.])
+extend candidate (uc): kp(X):-color(O1,blue),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([11.,  4., 29., 36.])
+add max clause: kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7., 10., 23., 40.])
+
+new PI from nc_good: 1
+
+new PI from UC: 1
+======  Total PI Number: 2  ======
+inv_pred1/1/[object]
+inv_pred0/1/[object]
+========== Total 5 PI Clauses ============= 
+inv_pred1(O1):-color(O1,green),in(O1,X).
+inv_pred1(O1):-color(O1,pink),in(O1,X).
+inv_pred1(O1):-color(O1,blue),in(O1,X).
+inv_pred0(O1):-in(O1,X),shape(O1,sphere).
+inv_pred0(O1):-in(O1,X),shape(O1,cube).
+
+======== beam search iteration 1/5 searching for nc ========
+
+(2023-03-16 09_37_39) Iteration: 1 Step 0/1
+Evaluating: 7 generated clauses.
+sn_c: 0, sn_c_good: 0, n_c: 2, s_c: 0, n_c_good: 2, s_c_good: 0, u_c_good: 0, u_c: 3, conflict: 0.
+(BS Step 0) (local) max clause accuracy: 0.125
+kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X)., tensor([ 7., 10., 23., 40.])
+nc before top select: 2
+nc after top select: 2
+nc_good before top select: 2
+nc_good after top select: 2
+uc before top select: 3
+uc after top select: 3
+(BS Step 0) sn_c: 0, sn_c_good: 0, n_c: 2, s_c: 0, n_c_good: 2, s_c_good: 0, u_c_good: 0, u_c: 3, conflict: 0.
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred0(O1). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred1(O1). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,sphere). tensor([ 0.,  5., 13., 62.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,cube). tensor([ 0.,  3., 20., 57.])
+extend candidate (uc): kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7., 10., 23., 40.])
+extend candidate (uc): kp(X):-color(O1,pink),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7.,  5., 29., 39.])
+extend candidate (uc): kp(X):-color(O1,blue),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([11.,  4., 29., 36.])
+
+(2023-03-16 09_37_40) Iteration: 1 Step 1/1
+Evaluating: 46 generated clauses.
+sn_c: 0, sn_c_good: 0, n_c: 1, s_c: 0, n_c_good: 6, s_c_good: 6, u_c_good: 0, u_c: 29, conflict: 4.
+(BS Step 1) (global) max clause accuracy: 0.4000000059604645
+kp(X):-color(O1,green),color(O2,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X)., tensor([18., 32., 12., 18.])
+nc before top select: 1
+nc after top select: 1
+nc_good before top select: 6
+nc_good after top select: 5
+sc_good before top select: 6
+sc_good after top select: 5
+uc before top select: 29
+uc after top select: 5
+(BS Step 1) sn_c: 0, sn_c_good: 0, n_c: 1, s_c: 0, n_c_good: 5, s_c_good: 5, u_c_good: 0, u_c: 5, conflict: 4.
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred0(O1),inv_pred1(O1). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,sphere),shape(O2,sphere). tensor([ 5., 26.,  8., 41.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,cube),shape(O2,cube). tensor([ 7., 20., 13., 40.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred1(O1),shape(O1,sphere). tensor([ 0.,  5., 13., 62.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred1(O2),shape(O1,sphere). tensor([ 0.,  5., 13., 62.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred1(O1),shape(O1,cube). tensor([ 0.,  3., 20., 57.])
+extend candidate (sc_good): kp(X):-color(O1,green),color(O2,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([18., 32., 12., 18.])
+extend candidate (sc_good): kp(X):-color(O1,blue),color(O2,blue),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([28., 27., 12., 13.])
+extend candidate (sc_good): kp(X):-color(O1,pink),color(O2,pink),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([17., 23., 19., 21.])
+extend candidate (sc_good): kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,sphere). tensor([25., 16., 25., 14.])
+extend candidate (sc_good): kp(X):-color(O1,blue),in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,cube). tensor([30., 13., 27., 10.])
+extend candidate (uc): kp(X):-color(O2,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,cube). tensor([10., 13., 31., 26.])
+extend candidate (uc): kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O2,cube). tensor([10., 13., 31., 26.])
+extend candidate (uc): kp(X):-color(O2,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,sphere). tensor([12., 12., 28., 28.])
+extend candidate (uc): kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O2,sphere). tensor([12., 12., 28., 28.])
+extend candidate (uc): kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred0(O1). tensor([ 7., 10., 23., 40.])
+add max clause: kp(X):-color(O1,green),color(O2,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([18., 32., 12., 18.])
+new PI from sc_good: 4
+
+new PI from nc: 1
+
+new PI from nc_good: 20
+
+new PI from UC: 0
+======  Total PI Number: 7  ======
+inv_pred1/1/[object]
+inv_pred0/1/[object]
+inv_pred6/1/[object]
+inv_pred2/2/[object, object]
+inv_pred3/2/[object, object]
+inv_pred7/2/[object, object]
+inv_pred8/2/[object, object]
+========== Total 17 PI Clauses ============= 
+inv_pred6(O1):-in(O1,X),inv_pred0(O1),inv_pred1(O1).
+inv_pred2(O1,O2):-color(O1,blue),color(O2,blue),in(O1,X),in(O2,X).
+inv_pred2(O1,O2):-color(O1,green),color(O2,green),in(O1,X),in(O2,X).
+inv_pred2(O1,O2):-color(O1,pink),color(O2,pink),in(O1,X),in(O2,X).
+inv_pred3(O1,O2):-color(O1,blue),color(O2,blue),in(O1,X),in(O2,X).
+inv_pred3(O1,O2):-color(O1,green),color(O2,green),in(O1,X),in(O2,X).
+inv_pred3(O1,O2):-color(O1,green),in(O1,X),in(O2,X),shape(O1,sphere).
+inv_pred3(O1,O2):-color(O1,pink),color(O2,pink),in(O1,X),in(O2,X).
+inv_pred7(O1,O2):-in(O1,X),in(O2,X),shape(O1,cube),shape(O2,cube).
+inv_pred7(O1,O2):-in(O1,X),in(O2,X),shape(O1,sphere),shape(O2,sphere).
+inv_pred8(O1,O2):-in(O1,X),in(O2,X),inv_pred1(O1),shape(O1,cube).
+inv_pred8(O1,O2):-in(O1,X),in(O2,X),shape(O1,sphere),shape(O2,sphere).
+inv_pred1(O1):-color(O1,green),in(O1,X).
+inv_pred1(O1):-color(O1,pink),in(O1,X).
+inv_pred1(O1):-color(O1,blue),in(O1,X).
+inv_pred0(O1):-in(O1,X),shape(O1,sphere).
+inv_pred0(O1):-in(O1,X),shape(O1,cube).
+
+======== beam search iteration 2/5 searching for nc ========
+
+(2023-03-16 09_37_42) Iteration: 2 Step 0/2
+Evaluating: 32 generated clauses.
+sn_c: 0, sn_c_good: 0, n_c: 27, s_c: 0, n_c_good: 2, s_c_good: 0, u_c_good: 0, u_c: 3, conflict: 0.
+(BS Step 0) (local) max clause accuracy: 0.125
+kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X)., tensor([ 7., 10., 23., 40.])
+nc before top select: 27
+nc after top select: 10
+nc_good before top select: 2
+nc_good after top select: 2
+uc before top select: 3
+uc after top select: 3
+(BS Step 0) sn_c: 0, sn_c_good: 0, n_c: 10, s_c: 0, n_c_good: 2, s_c_good: 0, u_c_good: 0, u_c: 3, conflict: 0.
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O3). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred0(O1). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred7(O1,O2). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O3,O4). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O2). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred8(O2,O3). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred8(O3,O4). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,sphere). tensor([ 0.,  5., 13., 62.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,cube). tensor([ 0.,  3., 20., 57.])
+extend candidate (uc): kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7., 10., 23., 40.])
+extend candidate (uc): kp(X):-color(O1,pink),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7.,  5., 29., 39.])
+extend candidate (uc): kp(X):-color(O1,blue),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([11.,  4., 29., 36.])
+
+(2023-03-16 09_37_44) Iteration: 2 Step 1/2
+Evaluating: 296 generated clauses.
+sn_c: 0, sn_c_good: 0, n_c: 143, s_c: 0, n_c_good: 35, s_c_good: 28, u_c_good: 0, u_c: 86, conflict: 4.
+(BS Step 1) (global) max clause accuracy: 0.800000011920929
+kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4)., tensor([ 0., 64.,  0., 16.])
+nc before top select: 143
+nc after top select: 10
+nc_good before top select: 35
+nc_good after top select: 5
+sc_good before top select: 28
+sc_good after top select: 5
+uc before top select: 86
+uc after top select: 5
+(BS Step 1) sn_c: 0, sn_c_good: 0, n_c: 10, s_c: 0, n_c_good: 5, s_c_good: 5, u_c_good: 0, u_c: 5, conflict: 4.
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred2(O3,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred7(O1,O2),inv_pred7(O3,O4). tensor([ 0., 50.,  0., 30.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O1,O3). tensor([ 0., 36.,  0., 44.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred3(O3,O4). tensor([ 0., 36.,  0., 44.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O3,O4),inv_pred3(O1,O2). tensor([ 0., 36.,  0., 44.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred3(O2,O4). tensor([ 0., 36.,  0., 44.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O3),inv_pred3(O2,O4). tensor([ 0., 35.,  0., 45.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O2),inv_pred3(O3,O4). tensor([ 0., 35.,  0., 45.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred7(O1,O3). tensor([ 0., 29.,  0., 51.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,sphere),shape(O2,sphere). tensor([ 5., 26.,  8., 41.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,cube),shape(O2,cube). tensor([ 7., 20., 13., 40.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),shape(O1,sphere). tensor([ 5., 10.,  8., 57.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),shape(O1,sphere). tensor([ 5., 10.,  8., 57.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O4),shape(O1,sphere). tensor([ 5., 10.,  8., 57.])
+extend candidate (sc_good): kp(X):-color(O1,green),color(O2,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([18., 32., 12., 18.])
+extend candidate (sc_good): kp(X):-color(O1,blue),color(O2,blue),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([28., 27., 12., 13.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O2,O3). tensor([18., 23., 18., 21.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred3(O1,O3). tensor([18., 23., 18., 21.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O4),inv_pred3(O1,O3). tensor([18., 23., 18., 21.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O1,O2). tensor([14., 15., 22., 29.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O3,O4). tensor([14., 15., 22., 29.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O1,O4). tensor([14., 15., 22., 29.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O3,O4),inv_pred3(O1,O3). tensor([14., 15., 22., 29.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O3),inv_pred3(O1,O3). tensor([14., 15., 22., 29.])
+
+(2023-03-16 09_37_56) Iteration: 2 Step 2/2
+Evaluating: 539 generated clauses.
+sn_c: 0, sn_c_good: 0, n_c: 120, s_c: 0, n_c_good: 37, s_c_good: 276, u_c_good: 0, u_c: 90, conflict: 16.
+(BS Step 2) (global) max clause accuracy: 0.8374999761581421
+kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred7(O2,O4)., tensor([ 0., 67.,  0., 13.])
+nc before top select: 120
+nc after top select: 10
+nc_good before top select: 37
+nc_good after top select: 5
+sc_good before top select: 276
+sc_good after top select: 5
+uc before top select: 90
+uc after top select: 5
+(BS Step 2) sn_c: 0, sn_c_good: 0, n_c: 10, s_c: 0, n_c_good: 5, s_c_good: 5, u_c_good: 0, u_c: 5, conflict: 16.
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred7(O2,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred7(O1,O3). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred2(O3,O4),inv_pred7(O3,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred2(O3,O4),inv_pred7(O1,O2). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred8(O3,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred1(O1),inv_pred2(O1,O3),inv_pred2(O2,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred8(O1,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred3(O2,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred8(O1,O3). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred8(O2,O3). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),shape(O1,sphere). tensor([13., 51.,  0., 16.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred2(O3,O4),shape(O1,sphere). tensor([13., 51.,  0., 16.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O4),inv_pred2(O2,O3),shape(O1,sphere). tensor([13., 51.,  0., 16.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),shape(O1,cube). tensor([14., 50.,  6., 10.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred2(O3,O4),shape(O1,cube). tensor([14., 50.,  6., 10.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O3,O4),inv_pred3(O1,O3),inv_pred3(O2,O4). tensor([36., 42.,  0.,  2.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O1,O2),inv_pred3(O3,O4). tensor([36., 42.,  0.,  2.])
+extend candidate (sc_good): kp(X):-color(O1,green),color(O2,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred7(O3,O4). tensor([22., 42.,  8.,  8.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O1,O4),inv_pred3(O3,O4). tensor([36., 42.,  0.,  2.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O3,O4),inv_pred3(O1,O3),inv_pred3(O2,O3). tensor([36., 42.,  0.,  2.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O3),inv_pred3(O2,O4),inv_pred7(O1,O4). tensor([14., 24., 16., 26.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O3),inv_pred3(O2,O4),inv_pred7(O2,O3). tensor([14., 24., 16., 26.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O2),inv_pred3(O3,O4),inv_pred7(O2,O3). tensor([14., 24., 16., 26.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O2),inv_pred3(O3,O4),inv_pred7(O1,O4). tensor([14., 24., 16., 26.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred7(O1,O3),inv_pred7(O3,O4). tensor([19., 20., 28., 13.])
+add max clause: kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),inv_pred7(O2,O4). tensor([ 0., 67.,  0., 13.])
+new PI from sc_good: 0
+
+new PI from nc: 280
+
+new PI from nc_good: 9
+
+new PI from UC: 0
+======  Total PI Number: 11  ======
+inv_pred1/1/[object]
+inv_pred0/1/[object]
+inv_pred6/1/[object]
+inv_pred2/2/[object, object]
+inv_pred3/2/[object, object]
+inv_pred7/2/[object, object]
+inv_pred8/2/[object, object]
+inv_pred30/4/[object, object, object, object]
+inv_pred32/4/[object, object, object, object]
+inv_pred309/4/[object, object, object, object]
+inv_pred312/4/[object, object, object, object]
+========== Total 23 PI Clauses ============= 
+inv_pred30(O1,O2,O3,O4):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred2(O3,O4),inv_pred7(O1,O2).
+inv_pred32(O1,O2,O3,O4):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred1(O1),inv_pred2(O1,O3),inv_pred2(O2,O4).
+inv_pred309(O1,O2,O3,O4):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred2(O3,O4),shape(O1,sphere).
+inv_pred309(O1,O2,O3,O4):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O3),inv_pred2(O2,O4),shape(O1,cube).
+inv_pred312(O1,O2,O3,O4):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred2(O3,O4),shape(O1,cube).
+inv_pred312(O1,O2,O3,O4):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O4),inv_pred2(O2,O3),shape(O1,sphere).
+inv_pred6(O1):-in(O1,X),inv_pred0(O1),inv_pred1(O1).
+inv_pred2(O1,O2):-color(O1,blue),color(O2,blue),in(O1,X),in(O2,X).
+inv_pred2(O1,O2):-color(O1,green),color(O2,green),in(O1,X),in(O2,X).
+inv_pred2(O1,O2):-color(O1,pink),color(O2,pink),in(O1,X),in(O2,X).
+inv_pred3(O1,O2):-color(O1,blue),color(O2,blue),in(O1,X),in(O2,X).
+inv_pred3(O1,O2):-color(O1,green),color(O2,green),in(O1,X),in(O2,X).
+inv_pred3(O1,O2):-color(O1,green),in(O1,X),in(O2,X),shape(O1,sphere).
+inv_pred3(O1,O2):-color(O1,pink),color(O2,pink),in(O1,X),in(O2,X).
+inv_pred7(O1,O2):-in(O1,X),in(O2,X),shape(O1,cube),shape(O2,cube).
+inv_pred7(O1,O2):-in(O1,X),in(O2,X),shape(O1,sphere),shape(O2,sphere).
+inv_pred8(O1,O2):-in(O1,X),in(O2,X),inv_pred1(O1),shape(O1,cube).
+inv_pred8(O1,O2):-in(O1,X),in(O2,X),shape(O1,sphere),shape(O2,sphere).
+inv_pred1(O1):-color(O1,green),in(O1,X).
+inv_pred1(O1):-color(O1,pink),in(O1,X).
+inv_pred1(O1):-color(O1,blue),in(O1,X).
+inv_pred0(O1):-in(O1,X),shape(O1,sphere).
+inv_pred0(O1):-in(O1,X),shape(O1,cube).
+
+======== beam search iteration 3/5 searching for nc ========
+
+(2023-03-16 09_38_21) Iteration: 3 Step 0/3
+Evaluating: 36 generated clauses.
+sn_c: 0, sn_c_good: 0, n_c: 31, s_c: 0, n_c_good: 2, s_c_good: 0, u_c_good: 0, u_c: 3, conflict: 0.
+(BS Step 0) (local) max clause accuracy: 0.8374999761581421
+kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4)., tensor([ 0., 67.,  0., 13.])
+nc before top select: 31
+nc after top select: 10
+nc_good before top select: 2
+nc_good after top select: 2
+uc before top select: 3
+uc after top select: 3
+(BS Step 0) sn_c: 0, sn_c_good: 0, n_c: 10, s_c: 0, n_c_good: 2, s_c_good: 0, u_c_good: 0, u_c: 3, conflict: 0.
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred32(O1,O2,O3,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred309(O1,O2,O3,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred312(O1,O2,O3,O4). tensor([ 0., 64.,  0., 16.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O3). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred0(O1). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred7(O1,O2). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O3,O4). tensor([ 0.,  0.,  0., 80.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,sphere). tensor([ 0.,  5., 13., 62.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),shape(O1,cube). tensor([ 0.,  3., 20., 57.])
+extend candidate (uc): kp(X):-color(O1,green),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7., 10., 23., 40.])
+extend candidate (uc): kp(X):-color(O1,pink),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([ 7.,  5., 29., 39.])
+extend candidate (uc): kp(X):-color(O1,blue),in(O1,X),in(O2,X),in(O3,X),in(O4,X). tensor([11.,  4., 29., 36.])
+
+(2023-03-16 09_38_23) Iteration: 3 Step 1/3
+Evaluating: 338 generated clauses.
+sn_c: 1, sn_c_good: 0, n_c: 141, s_c: 0, n_c_good: 52, s_c_good: 62, u_c_good: 0, u_c: 78, conflict: 4.
+(BS Step 1) max clause accuracy: 1.0
+kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred7(O3,O4).
+nc before top select: 141
+nc after top select: 10
+nc_good before top select: 52
+nc_good after top select: 5
+sc_good before top select: 62
+sc_good after top select: 5
+uc before top select: 78
+uc after top select: 5
+(BS Step 1) sn_c: 1, sn_c_good: 0, n_c: 10, s_c: 0, n_c_good: 5, s_c_good: 5, u_c_good: 0, u_c: 5, conflict: 4.
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O2),inv_pred30(O1,O2,O3,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred8(O2,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred6(O1). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred1(O1),inv_pred30(O1,O2,O3,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred8(O3,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O3,O4),inv_pred30(O1,O2,O3,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred8(O1,O2). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O1,O2),inv_pred30(O1,O2,O3,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred7(O1,O2). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred0(O1),inv_pred30(O1,O2,O3,O4). tensor([ 0., 67.,  0., 13.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred312(O1,O2,O3,O4). tensor([11., 63.,  2.,  4.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred309(O1,O2,O3,O4). tensor([11., 61.,  0.,  8.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O3),inv_pred309(O1,O2,O3,O4). tensor([ 4., 60.,  1., 15.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O2,O4),inv_pred309(O1,O2,O3,O4). tensor([ 4., 60.,  1., 15.])
+extend candidate (nc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O2),inv_pred312(O1,O2,O3,O4). tensor([ 4., 60.,  1., 15.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O2,O4),inv_pred30(O1,O2,O3,O4). tensor([36., 43.,  0.,  1.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O3),inv_pred30(O1,O2,O3,O4). tensor([36., 43.,  0.,  1.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O2,O3),inv_pred30(O1,O2,O3,O4). tensor([36., 43.,  0.,  1.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred3(O1,O4),inv_pred30(O1,O2,O3,O4). tensor([36., 43.,  0.,  1.])
+extend candidate (sc_good): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred32(O1,O2,O3,O4),inv_pred7(O3,O4). tensor([23., 41.,  7.,  9.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O1,O2). tensor([14., 15., 22., 29.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O3,O4). tensor([14., 15., 22., 29.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O4),inv_pred3(O1,O4). tensor([14., 15., 22., 29.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O3,O4),inv_pred3(O1,O3). tensor([14., 15., 22., 29.])
+extend candidate (uc): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred2(O2,O3),inv_pred3(O1,O3). tensor([14., 15., 22., 29.])
+found sufficient and necessary clause.
+extend candidate (sn): kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred7(O3,O4). tensor([ 0., 80.,  0.,  0.])
+searching for sc clauses...
+(final NSFR clause) kp(X):-in(O1,X),in(O2,X),in(O3,X),in(O4,X),inv_pred30(O1,O2,O3,O4),inv_pred7(O3,O4).
+(epoch 0/99) loss: 0.10768160980660468
+Predicting on validation data set...
+acc_val:1.0 
+Predi$lpha$ILPcting on training data set...
+acc_train: 0.9875
+Predicting on test data set...
+acc_test: 0.9875
+(epoch 1/99) loss: 0.10768160980660468
+(epoch 2/99) loss: 0.10768160980660468
+(epoch 3/99) loss: 0.10768160980660468
+(epoch 4/99) loss: 0.10768160980660468
+(epoch 5/99) loss: 0.10768160980660468
+(epoch 6/99) loss: 0.10768160980660468
+Predicting on validation data set...
+Predicting on training data set...
+Predicting on test data set...
+training acc: 0.9875, threshold: 0.33, recall: [      0.975           1]
+val acc: 1.0, threshold: 0.33, recall: [          1           1]
+test acc: 0.9875, threshold: 0.33, recall: [      0.975           1]
