@@ -14,7 +14,6 @@ import nsfr_utils
 import percept
 from nsfr_utils import denormalize_kandinsky, get_data_loader, get_data_pos_loader, get_prob, get_nsfr_model, \
     update_initial_clauses
-from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, generate_captions
 import logic_utils
 from logic_utils import get_lang, get_searched_clauses
 from mode_declaration import get_mode_declarations
@@ -22,11 +21,10 @@ from clause_generator import ClauseGenerator, PIClauseGenerator
 import facts_converter
 from percept import YOLOPerceptionModule, FCNNPerceptionModule
 from valuation import YOLOValuationModule, PIValuationModule, FCNNValuationModule
-import chart_utils
 import log_utils
-from fol.data_utils import DataUtils
 import file_utils
 import data_hide
+import time
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -608,7 +606,13 @@ def main(n):
     args.lang_base_path = lang_base_path
 
     # main program
+
+    start = time.time()
     NSFR = train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path)
+    end = time.time()
+
+    log_utils.add_lines(f"experiment time: {end - start}", args.log_file)
+
     final_evaluation(NSFR, pm_prediction_dict, args)
     # update PI
     # PI = pi_utils.get_pi_model(args, lang, pi_clauses, atoms, bk, bk_clauses, device=device)
