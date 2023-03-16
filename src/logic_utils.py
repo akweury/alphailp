@@ -1148,8 +1148,8 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
                 if c[1].tolist() not in appeared_scores:
                     score_unique_c.append(c)
                     appeared_scores.append(c[1].tolist())
-                else:
-                    log_utils.add_lines(f"({c_type}) repeat scoring clause: {c[0]}, {c[1]}.", args.log_file)
+                # else:
+                #     log_utils.add_lines(f"({c_type}) repeat scoring clause: {c[0]}, {c[1]}.", args.log_file)
             c_sorted = score_unique_c
 
 
