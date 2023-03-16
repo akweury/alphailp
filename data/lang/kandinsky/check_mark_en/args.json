@@ -6,7 +6,7 @@
   "dataset-type": "kandinsky",
   "score_unique": true,
   "small_data": false,
-  "top_data": 50,
+  "top_data": 40,
   "t_beam": 6,
   "n_beam": 5,
   "cim_step": 7,
