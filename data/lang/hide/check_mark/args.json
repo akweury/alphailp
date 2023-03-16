@@ -1,6 +1,6 @@
 {
   "n_obj": 5,
-  "batch_size_train": 8,
+  "batch_size_train": 2,
   "e": 5,
   "dataset": "check_mark",
   "dataset-type": "hide",
