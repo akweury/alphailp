@@ -611,7 +611,9 @@ def main(n):
     NSFR = train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path)
     end = time.time()
 
-    log_utils.add_lines(f"experiment time: {end - start}", args.log_file)
+    log_utils.add_lines(f"=============================", args.log_file)
+    log_utils.add_lines(f"Experiment time: {end - start}", args.log_file)
+    log_utils.add_lines(f"=============================", args.log_file)
 
     final_evaluation(NSFR, pm_prediction_dict, args)
     # update PI
