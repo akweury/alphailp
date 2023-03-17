@@ -1,5 +1,5 @@
 in:2:object,image
-group_shape:4:object,object,object,group_shape
+group_shape:4:object,object,object
 phi:3:object,object,phi
 rho:3:object,object,rho
 color:2:object,color
