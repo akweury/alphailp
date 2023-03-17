@@ -23,7 +23,7 @@
   "nc_good_top": 10,
   "uc_good_top": 5,
   "uc_top": 5,
-  "pi_top": 5,
+  "pi_top": 3,
   "with_bk": false,
   "plot_four_zone": false
 }
