@@ -519,6 +519,9 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                                                                                    val_neg, args, step=iteration)
                 if found_ns and args.pi_top > 0:
                     log_utils.add_lines(f"found sufficient and necessary predicate!", args.log_file)
+                    for p in kp_pi_clauses:
+                        log_utils.add_lines(f'{p}', args.log_file)
+                    clauses = kp_pi_clauses
                 new_pred_num = len(pi_clause_generator.lang.invented_preds) - invented_pred_num
                 invented_pred_num = len(pi_clause_generator.lang.invented_preds)
                 if new_pred_num > 0:
