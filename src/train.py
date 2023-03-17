@@ -548,11 +548,11 @@ def main(n):
     args = get_args()
     if args.dataset_type == 'kandinsky':
         if args.small_data:
-            name = str(Path("small_KP") / f"aILP_{args.dataset}_{str(n)}")
+            name = str(Path("small_KP") / f"NeSy-PI_{args.dataset}_{str(n)}")
         else:
-            name = str(Path("KP") / f"aILP_{args.dataset}_{str(n)}")
+            name = str(Path("KP") / f"NeSy-PI_{args.dataset}_{str(n)}")
     elif args.dataset_type == "hide":
-        name = str(Path("HIDE") / f"aILP_{args.dataset}_{str(n)}")
+        name = str(Path("HIDE") / f"NeSy-PI_{args.dataset}_{str(n)}")
     else:
         if not args.no_xil:
             name = str(Path('CH') / Path(f"/aILP_{args.dataset}_{str(n)}"))
@@ -584,7 +584,7 @@ def main(n):
     writer = SummaryWriter(str(config.root / "runs" / name), purge_step=0)
 
     # Create RTPT object
-    rtpt = RTPT(name_initials='Jing', experiment_name=name,
+    rtpt = RTPT(name_initials='JS', experiment_name=name,
                 max_iterations=args.epochs)
     # Start the RTPT tracking
     rtpt.start()
