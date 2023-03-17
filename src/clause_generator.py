@@ -1382,9 +1382,9 @@ class PIClauseGenerator(object):
 
     def prune_predicates(self, new_predicates, args, keep_all=False):
 
-        no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates, args)
-        if len(no_3_zone_only) > 0:
-            new_predicates = no_3_zone_only
+        # no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates, args)
+        # if len(no_3_zone_only) > 0:
+        #     new_predicates = no_3_zone_only
         # else:
         #     new_predicates = new_predicates[:5]
 
