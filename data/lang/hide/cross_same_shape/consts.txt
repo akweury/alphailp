@@ -1,5 +1,5 @@
 object:obj0,obj1,obj2,obj3,obj4,obj5
 image:img
 shape:sphere,cube
-phi:num_phi_5
-rho:num_rho_5
+phi:num_phi_4
+rho:num_rho_4
