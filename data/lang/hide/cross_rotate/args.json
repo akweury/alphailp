@@ -1,6 +1,6 @@
 {
   "n_obj": 5,
-  "batch_size_train": 2,
+  "batch_size_train": 8,
   "e": 5,
   "dataset": "cross_rotate",
   "dataset-type": "hide",
@@ -13,7 +13,7 @@
   "epochs": 100,
   "nc_max_step": 4,
   "sc_max_step": 10,
-  "sn_th": 0.95,
+  "sn_th": 0.99,
   "conflict_th": 0.8,
   "nc_th": 0.45,
   "uc_th": 0.9,
