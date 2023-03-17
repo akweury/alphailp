@@ -1,7 +1,7 @@
 {
   "n_obj": 2,
   "batch_size_train": 8,
-  "e": 2,
+  "e": 6,
   "dataset": "red-triangle",
   "dataset-type": "kandinsky",
   "score_unique": true,
