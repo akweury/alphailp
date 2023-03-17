@@ -515,13 +515,13 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'], "uc", args)
             elif args.pi_top > 0:
                 # invent new predicate and generate pi clauses
-                pi_clauses, kp_pi_clauses, found_ns = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
+                pi_clauses, kp_pi_clauses, _ = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
                                                                                    val_neg, args, step=iteration)
-                if found_ns and args.pi_top > 0:
-                    log_utils.add_lines(f"found sufficient and necessary predicate!", args.log_file)
-                    for p in kp_pi_clauses:
-                        log_utils.add_lines(f'{p}', args.log_file)
-                    clauses = kp_pi_clauses
+                # if found_ns and args.pi_top > 0:
+                #     log_utils.add_lines(f"found sufficient and necessary predicate!", args.log_file)
+                #     for p in kp_pi_clauses:
+                #         log_utils.add_lines(f'{p}', args.log_file)
+                #     clauses = kp_pi_clauses
                 new_pred_num = len(pi_clause_generator.lang.invented_preds) - invented_pred_num
                 invented_pred_num = len(pi_clause_generator.lang.invented_preds)
                 if new_pred_num > 0:
@@ -529,7 +529,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                     no_new_preds = False
                     lang = pi_clause_generator.lang
                     atoms = logic_utils.get_atoms(lang)
-                    clauses += kp_pi_clauses
+                    clauses = kp_pi_clauses
                 else:
                     no_new_preds = True
 
