@@ -20,11 +20,11 @@
   "sc_th": 0.3,
   "sc_top": 10,
   "nc_top":10,
-  "sc_good_top": 15,
+  "sc_good_top": 20,
   "nc_good_top": 5,
   "uc_top": 5,
   "uc_good_top": 10,
-  "pi_top": 2,
+  "pi_top": 1,
   "max_cluster_size": 7,
   "with_bk": false,
   "plot_four_zone": false
