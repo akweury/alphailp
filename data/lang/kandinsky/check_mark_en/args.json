@@ -5,7 +5,7 @@
   "dataset": "check_mark_en",
   "dataset-type": "kandinsky",
   "score_unique": true,
-  "max_cluster_size": 3,
+  "max_cluster_size": 5,
   "top_data": 64,
   "t_beam": 6,
   "n_beam": 5,
