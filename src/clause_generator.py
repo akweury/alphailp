@@ -274,7 +274,7 @@ class ClauseGenerator(object):
             f"\n======== beam search iteration {iteration}/{max_iteration} searching for {search_type} ========",
             args.log_file)
         eval_pred = ['kp']
-        clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
+        clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": [], "nc_good": [], "uc_good": []}
         # extend clauses
         step = 0
         is_done = False
