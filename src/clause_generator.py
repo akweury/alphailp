@@ -296,7 +296,8 @@ class ClauseGenerator(object):
             # remove semantic conflict clauses
             # refs_diff_semantic = logic_utils.remove_same_semantic_clauses(refs_extended)
             refs_no_conflict = self.remove_conflict_clauses(refs_extended, pi_clauses, args)
-
+            if len(refs_no_conflict) == 0:
+                break
             # evaluate clauses
             clause_dict, new_max_clause, higher = self.eval_clauses_scores(refs_no_conflict, pi_clauses, eval_pred,
                                                                            pos_pred, neg_pred, step, args, max_clause,
