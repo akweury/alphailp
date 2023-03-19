@@ -20,7 +20,7 @@
   "sc_top": 10,
   "sc_good_top": 20,
   "nc_top": 0,
-  "nc_good_top": 20,
+  "nc_good_top": 100,
   "uc_good_top": 5,
   "uc_top": 5,
   "pi_top": 1,
