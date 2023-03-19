@@ -305,7 +305,10 @@ class ClauseGenerator(object):
                                                                            pos_pred, neg_pred, step, args, max_clause,
                                                                            search_type)
             max_clause, found_sn = self.check_result(clause_dict, higher, max_clause, new_max_clause)
-            refs,is_done = self.prune_clauses(clause_dict, search_type, args)
+            if args.pi_top > 0:
+                refs, is_done = self.prune_clauses(clause_dict, search_type, args)
+            else:
+                refs = logic_utils.top_select(clause_dict, args)
             step += 1
 
             if found_sn or len(refs) == 0:
@@ -775,7 +778,7 @@ class ClauseGenerator(object):
         else:
             return [], True
 
-        return refs,False
+        return refs, False
 
     def check_result(self, clause_dict, higher, max_clause, new_max_clause):
 
