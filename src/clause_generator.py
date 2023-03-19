@@ -312,6 +312,7 @@ class ClauseGenerator(object):
             step += 1
 
             if found_sn or len(refs) == 0:
+                is_done = True
                 break
 
                 # self.print_clauses(clause_dict, args)
