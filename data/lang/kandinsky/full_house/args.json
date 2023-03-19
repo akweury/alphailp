@@ -18,13 +18,13 @@
   "nc_th": 0.5,
   "uc_th": 0.5,
   "sc_th": 0.58,
-  "sc_top": 15,
-  "sc_good_top": 15,
-  "nc_top": 10,
-  "nc_good_top": 5,
+  "sc_top": 50,
+  "sc_good_top": 50,
+  "nc_top": 50,
+  "nc_good_top": 50,
   "uc_good_top": 10,
   "uc_top": 10,
-  "pi_top": 0,
+  "pi_top": 5,
   "with_bk": false,
   "plot_four_zone": false
 }
