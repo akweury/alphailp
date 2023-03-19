@@ -305,7 +305,7 @@ class ClauseGenerator(object):
                                                                            pos_pred, neg_pred, step, args, max_clause,
                                                                            search_type)
             max_clause, found_sn = self.check_result(clause_dict, higher, max_clause, new_max_clause)
-            refs = self.prune_clauses(clause_dict, search_type, args)
+            refs,is_done = self.prune_clauses(clause_dict, search_type, args)
             step += 1
 
             if found_sn or len(refs) == 0:
@@ -742,7 +742,7 @@ class ClauseGenerator(object):
             if len(clause_dict["uc"]) > 0:
                 refs += self.update_refs(clause_dict, args, priority="uc")
             if (len(refs) == 0):
-                raise ValueError
+                return [], True
         elif search_type == "sc":
             if len(clause_dict["sc"]) > 1:
                 refs += self.update_refs(clause_dict, args, priority="sc")
@@ -773,9 +773,9 @@ class ClauseGenerator(object):
             else:
                 log_utils.add_lines(f'no uc for extension!', args.log_file)
         else:
-            raise ValueError
+            return [], True
 
-        return refs
+        return refs,True
 
     def check_result(self, clause_dict, higher, max_clause, new_max_clause):
 
