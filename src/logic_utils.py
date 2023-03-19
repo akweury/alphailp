@@ -1410,6 +1410,6 @@ def top_select(bs_clauses, args):
     all_c = bs_clauses['sn'] + bs_clauses['nc'] + bs_clauses['sc'] + bs_clauses['nc_good'] + bs_clauses['sc_good'] + \
             bs_clauses['uc'] + bs_clauses['uc_good']
 
-    top_clauses = sorted_clauses(all_c, "all", args, 20)
+    top_clauses = sorted_clauses(all_c, "all", args, 5)
     top_clauses = extract_clauses_from_max_clause(top_clauses, args)
     return top_clauses
