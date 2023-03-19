@@ -1382,8 +1382,8 @@ class PIClauseGenerator(object):
             new_predicates += self.generate_new_predicate(sn_th_clu)
         if len(n_clu) > 0:
             new_predicates += self.generate_new_predicate(n_clu)
-        # if len(nc_th_clu) > 0:
-        #     new_predicates += self.generate_new_predicate(nc_th_clu)[:5]
+        if len(nc_th_clu) > 0:
+            new_predicates += self.generate_new_predicate(nc_th_clu)[:5]
         if len(s_clu) > 0:
             new_predicates += self.generate_new_predicate(s_clu)
         if len(sc_th_clu) > 0:
