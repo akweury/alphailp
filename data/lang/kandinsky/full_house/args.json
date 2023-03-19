@@ -1,7 +1,7 @@
 {
-  "n_obj": 9,
+  "n_obj": 4,
   "batch_size_train": 8,
-  "e": 9,
+  "e": 4,
   "dataset": "full_house",
   "dataset-type": "kandinsky",
   "score_unique": true,
