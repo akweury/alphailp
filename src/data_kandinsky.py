@@ -151,7 +151,7 @@ def load_images_and_labels_negative(dataset='twopairs', split='train', img_size=
     """
     image_paths = []
     labels = []
-    folder = str(config.root) + '/data/kandinsky/' + dataset + '/' + split + '/'
+    folder = str(config.root) + '/../buffer/kandinsky/' + dataset + '/' + split + '/'
     false_folder = folder + 'false/'
 
     filenames = sorted(os.listdir(false_folder))[:500]
