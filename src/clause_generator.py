@@ -775,7 +775,7 @@ class ClauseGenerator(object):
         else:
             return [], True
 
-        return refs,True
+        return refs,False
 
     def check_result(self, clause_dict, higher, max_clause, new_max_clause):
 
