@@ -133,7 +133,7 @@ def load_images_and_labels_positive(dataset='twopairs', split='train', img_size=
     """
     image_paths = []
     labels = []
-    folder = str(config.root) + '/data/kandinsky/' + dataset + '/' + split + '/'
+    folder = str(config.root) + '/../alphailp_output/kandinsky/' + dataset + '/' + split + '/'
     true_folder = folder + 'true/'
 
     filenames = sorted(os.listdir(true_folder))[:500]
