@@ -288,6 +288,7 @@ class ClauseGenerator(object):
 
         if args.pi_top == 0:
             step = max_step
+            refs = last_refs
         while step <= max_step:
 
             # log
