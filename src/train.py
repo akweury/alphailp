@@ -469,7 +469,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         else:
             raise ValueError
         log_utils.add_lines(f"searching for {search_type} clauses...", args.log_file)
-        while current_step < max_step and not found_ns:
+        while iteration < max_step and not found_ns:
             # if generate new predicates, start the bs deep from 0
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, pi_clauses, atoms, obj_n)
