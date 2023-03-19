@@ -1114,7 +1114,6 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
             for c_i in c_indices:
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
 
-
     clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_top)
     clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_top)
     clause_dict["nc_good"] = sorted_clauses(clause_dict["nc_good"], "nc_good", args, args.nc_good_top)
@@ -1152,7 +1151,6 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
                 #     log_utils.add_lines(f"({c_type}) repeat scoring clause: {c[0]}, {c[1]}.", args.log_file)
             c_sorted = score_unique_c
 
-
         log_utils.add_lines(f"{c_type} before top select: {len(c_sorted)}", args.log_file)
         # for i in range(threshold, len(c_sorted)):
         #     log_utils.add_lines(f"({c_type}) low scoring clause to be pruned: {c_sorted[i][0]}, {c_sorted[i][1]}",
@@ -1160,7 +1158,6 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
         if threshold is not None and len(c_sorted) > threshold:
             c_sorted = c_sorted[:threshold]
         log_utils.add_lines(f"{c_type} after top select: {len(c_sorted)}", args.log_file)
-
 
         # for c, c_score, all_scores in c_sorted:
         #     log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
@@ -1407,3 +1404,12 @@ def remove_same_semantic_clauses(clauses):
             semantic_diff_clauses.append(c)
 
     return semantic_diff_clauses
+
+
+def top_select(bs_clauses, args):
+    all_c = bs_clauses['sn'] + bs_clauses['nc'] + bs_clauses['sc'] + bs_clauses['nc_good'] + bs_clauses['sc_good'] + \
+            bs_clauses['uc'] + bs_clauses['uc_good']
+
+    top_clauses = sorted_clauses(all_c, "all", args, 5)
+    top_clauses = extract_clauses_from_max_clause(top_clauses, args)
+    return top_clauses
