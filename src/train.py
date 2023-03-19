@@ -475,6 +475,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
                 # if generate new predicates, start the bs deep from 0
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, pi_clauses, atoms, obj_n)
+            if args.pi_top == 0:
+                iteration = max_step
             # generate clauses # time-consuming code
             bs_clauses, max_clause, current_step, last_refs, is_done = clause_generator.clause_extension(init_clauses,
                                                                                                          val_pos,
