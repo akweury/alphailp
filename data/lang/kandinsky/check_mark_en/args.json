@@ -18,7 +18,7 @@
   "nc_th": 0.6,
   "uc_th": 0.4,
   "sc_th": 0.5,
-  "sc_top": 10,
+  "sc_top": 5,
   "sc_good_top": 5,
   "nc_top": 0,
   "nc_good_top": 5,
