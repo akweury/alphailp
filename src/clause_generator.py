@@ -277,6 +277,7 @@ class ClauseGenerator(object):
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": []}
         # extend clauses
         step = 0
+        is_done = False
         break_step = 5
         max_score = max_clause[0]
         refs = init_clauses
@@ -297,6 +298,7 @@ class ClauseGenerator(object):
             # refs_diff_semantic = logic_utils.remove_same_semantic_clauses(refs_extended)
             refs_no_conflict = self.remove_conflict_clauses(refs_extended, pi_clauses, args)
             if len(refs_no_conflict) == 0:
+                is_done = True
                 break
             # evaluate clauses
             clause_dict, new_max_clause, higher = self.eval_clauses_scores(refs_no_conflict, pi_clauses, eval_pred,
@@ -311,7 +313,7 @@ class ClauseGenerator(object):
 
                 # self.print_clauses(clause_dict, args)
 
-        return clause_dict, max_clause, step, refs
+        return clause_dict, max_clause, step, refs, is_done
 
     def eval_images(self, save_path):
 

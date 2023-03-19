@@ -461,7 +461,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         iteration = 0
         max_clause = [0.0, None]
         no_new_preds = False
-
+        is_done = False
         if search_type == "nc":
             max_step = args.nc_max_step
         elif search_type == "sc":
@@ -470,22 +470,24 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             raise ValueError
         log_utils.add_lines(f"searching for {search_type} clauses...", args.log_file)
         while iteration < max_step and not found_ns:
-            # if generate new predicates, start the bs deep from 0
+            if is_done:
+                break
+                # if generate new predicates, start the bs deep from 0
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, pi_clauses, atoms, obj_n)
             # generate clauses # time-consuming code
-            bs_clauses, max_clause, current_step, last_refs = clause_generator.clause_extension(init_clauses,
-                                                                                                val_pos,
-                                                                                                val_neg,
-                                                                                                pi_clauses,
-                                                                                                args,
-                                                                                                max_clause,
-                                                                                                search_type,
-                                                                                                max_step=iteration,
-                                                                                                iteration=iteration,
-                                                                                                max_iteration=max_step,
-                                                                                                no_new_preds=no_new_preds,
-                                                                                                last_refs=last_refs)
+            bs_clauses, max_clause, current_step, last_refs, is_done = clause_generator.clause_extension(init_clauses,
+                                                                                                         val_pos,
+                                                                                                         val_neg,
+                                                                                                         pi_clauses,
+                                                                                                         args,
+                                                                                                         max_clause,
+                                                                                                         search_type,
+                                                                                                         max_step=iteration,
+                                                                                                         iteration=iteration,
+                                                                                                         max_iteration=max_step,
+                                                                                                         no_new_preds=no_new_preds,
+                                                                                                         last_refs=last_refs)
             if len(bs_clauses['sn']) > 0:
                 log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
                 clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses['sn'][0]], "sn", args)
@@ -518,7 +520,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
             elif args.pi_top > 0:
                 # invent new predicate and generate pi clauses
                 pi_clauses, kp_pi_clauses, _ = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
-                                                                                   val_neg, args, step=iteration)
+                                                                            val_neg, args, step=iteration)
                 # if found_ns and args.pi_top > 0:
                 #     log_utils.add_lines(f"found sufficient and necessary predicate!", args.log_file)
                 #     for p in kp_pi_clauses:
