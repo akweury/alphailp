@@ -1,12 +1,11 @@
 import numpy as np
 import torch
-import itertools
 from infer import InferModule, ClauseInferModule
+from src.eval_clause_infer import eval_clause_sign
 from tensor_encoder import TensorEncoder
 from fol.logic import *
 from fol.data_utils import DataUtils
 from fol.language import DataType
-import datetime
 import glob
 
 import config
@@ -557,38 +556,6 @@ def eval_clause_clusters(clause_clusters, clause_scores_full):
     return new_pi_clauses
 
 
-def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
-
-    loss_i = 0
-    train_size = pos_pred.shape[0]
-    bz = args.batch_size_train
-    V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
-    V_T_neg = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
-    for i in range(int(train_size / args.batch_size_train)):
-        date_now = datetime.datetime.today().date()
-        time_now = datetime.datetime.now().strftime("%H_%M_%S")
-        print(f"({date_now} {time_now}) eval batch {i + 1}/{int(train_size / args.batch_size_train)}")
-        V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_pred[i * bz:(i + 1) * bz])
-        V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_pred[i * bz:(i + 1) * bz])
-
-    #
-    # V_T_pos = NSFR.clause_eval_quick(pos_pred)
-    # V_T_neg = NSFR.clause_eval_quick(neg_pred)
-    score_positive = NSFR.predict(V_T_pos, pred_names, args.device)
-    score_negative = NSFR.predict(V_T_neg, pred_names, args.device)
-
-    if score_positive.size(2) > 1:
-        score_positive = score_positive.max(dim=2, keepdim=True)[0]
-    if score_negative.size(2) > 1:
-        score_negative = score_negative.max(dim=2, keepdim=True)[0]
-    all_predicates_scores = torch.cat((score_negative, score_positive), 2)
-
-    p_clause_signs = eval_clause_sign(all_predicates_scores)
-    clause_score_list, clause_scores_full = p_clause_signs[0]
-
-    return all_predicates_scores, clause_scores_full
-
-
 def get_four_scores(predicate_scores):
     return eval_clause_sign(predicate_scores)[0][1]
 
@@ -674,40 +641,6 @@ def eval_predicates_sign(c_score):
             clause_sign_list.append(False)
 
     return clause_sign_list, clause_high_scores, clause_score_full_list
-
-
-def eval_clause_sign(p_scores):
-    p_clauses_signs = []
-
-    # p_scores axis: batch_size, pred_names, clauses, pos_neg_labels, images
-    p_scores[p_scores == 1] = 0.98
-    resolution = 2
-    ps_discrete = (p_scores * resolution).int()
-    four_zone_scores = torch.zeros((p_scores.size(0), 4))
-    img_total = p_scores.size(1)
-
-    # low pos, low neg
-    four_zone_scores[:, 0] = img_total - ps_discrete.sum(dim=2).count_nonzero(dim=1)
-
-    # high pos, low neg
-    four_zone_scores[:, 1] = img_total - (ps_discrete[:, :, 0] - ps_discrete[:, :, 1] + 1).count_nonzero(dim=1)
-
-    # low pos, high neg
-    four_zone_scores[:, 2] = img_total - (ps_discrete[:, :, 0] - ps_discrete[:, :, 1] - 1).count_nonzero(dim=1)
-
-    # high pos, high neg
-    four_zone_scores[:, 3] = img_total - (ps_discrete.sum(dim=2) - 2).count_nonzero(dim=1)
-
-    clause_score = four_zone_scores[:, 1] + four_zone_scores[:, 3]
-
-    # four_zone_scores[:, 0] = 0
-
-    # clause_sign_list = (four_zone_scores.max(dim=-1)[1] - 1) == 0
-
-    # TODO: find a better score evaluation function
-    p_clauses_signs.append([clause_score, four_zone_scores])
-
-    return p_clauses_signs
 
 
 def check_repeat_conflict(atom1, atom2):
