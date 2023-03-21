@@ -643,7 +643,7 @@ def strip_optimizer(f='best.pt', s=''):
 
 
 def print_mutation(hyp, results, yaml_file='hyp_evolved.yaml', bucket=''):
-    # Print mutation results to evolve.txt (for use with train.py --evolve)
+    # Print mutation results to evolve.txt (for use with pi.py --evolve)
     a = '%10s' * len(hyp) % tuple(hyp.keys())  # hyperparam keys
     b = '%10.3g' * len(hyp) % tuple(hyp.values())  # hyperparam values
     # results (P, R, mAP@0.5, mAP@0.5:0.95, val_losses x 3)

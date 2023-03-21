@@ -367,7 +367,7 @@ def get_prob(v_T, NSFR, args):
 
 def get_prob_by_prednames(v_T, NSFR, prednames):
     if args.dataset_type == 'kandinsky':
-        predicted = NSFR.predict(v=v_T, predname='kp')
+        predicted = NSFR.ilp_predict(v=v_T, predname='kp')
     elif args.dataset_type == 'clevr':
         if args.dataset == 'clevr-hans3':
             predicted = NSFR.predict_multi(

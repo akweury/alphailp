@@ -47,48 +47,6 @@ def get_atoms(lang):
     return atoms
 
 
-# def update_lang(lang, gen_pi_clauses_str_list):
-#     # update invented preds
-#
-#     # clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
-#     # bk_clauses = du.load_clauses(str(du.base_path / 'bk_clauses.txt'), lang)
-#     # pi_clauses = du.load_pi_clauses(str(du.base_path / 'pi_clauses.txt'), lang)
-#     #
-#     # # clauses += pi_clauses
-#     #
-#     # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
-#     # atoms = generate_atoms(lang)
-#     new_lang = None
-#     return new_lang
-
-
-# def get_pi_clauses_objs(args, cg_lang, clauses_str_list, new_predicates):
-#
-#     du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
-#                    dataset_type=args.dataset_type, dataset=args.dataset)
-#     pi_languages = []
-#     for c_index, [c_list, c_score] in enumerate(clauses_str_list):
-#         # create a new language with new pi clauses in c_list
-#         lang, init_clauses, bk_clauses, pi_clauses, bk, atoms = get_lang(args.lark_path, args.lang_base_path,
-#                                                                          args.dataset_type, args.dataset)
-#         # lang.invented_preds = cg_lang.invented_preds
-#         # lang.invented_preds_number = cg_lang.invented_preds_number + c_index
-#         # add predicates to new language
-#         lang.invented_preds = cg_lang.invented_preds + new_predicates[c_index]
-#
-#         # add pi clauses to new language
-#         pi_clauses = du.gen_pi_clauses(lang, c_list)
-#
-#         pi_languages.append([lang, pi_clauses])
-#
-#         # for pi_c in pi_clauses:
-#         #     print(f"(PI Clause Cluster {c_index} )" + str(pi_c))
-#
-#     # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
-#     # atoms = generate_atoms(lang)
-#     return pi_languages
-
-
 def get_searched_clauses(lark_path, lang_base_path, dataset_type, dataset):
     """Load the language of first-order logic from files.
 
@@ -359,132 +317,6 @@ def conflict_pred(p1, p2, t1, t2):
                 return True
     return False
 
-
-def common_body_pi_clauses(pi_clause_i, pi_clause_j):
-    i_body = []
-    for atom in pi_clause_i.body:
-        atom_str = str(atom)
-        i_body.append(atom_str)
-    j_body = []
-    for atom in pi_clause_j.body:
-        atom_str = str(atom)
-        j_body.append(atom_str)
-
-    common_body = set.intersection(set(i_body), set(j_body))
-    # i_body = set([(atom.pred.name, str(atom.terms)) for atom in pi_clause_i.body])
-    # j_body = set([(atom.pred.name, str(atom.terms)) for atom in pi_clause_j.body])
-    # common_body = set.intersection(i_body, j_body)
-    return common_body
-
-
-def remove_sub_clusters(clusters):
-    clusters_reduced = []
-    if len(clusters) > 0:
-        for cluster_i, c_score in clusters:
-            is_minimum = True
-            i_indices = [c[0] for c in cluster_i]
-            for cluster_j, c_score_j in clusters:
-                if cluster_i == cluster_j:
-                    continue
-                has_sublist = True
-                for [j_index, j_clause, j_score] in cluster_j:
-                    if j_index not in i_indices:
-                        has_sublist = False
-                if has_sublist:
-                    is_minimum = False
-                    break
-            if is_minimum:
-                clusters_reduced.append([cluster_i, c_score])
-
-    return clusters_reduced
-
-
-def search_independent_clauses(clauses, total_score):
-    clauses_with_score = []
-    for clause_i, [clause, c_scores] in enumerate(clauses):
-        clauses_with_score.append([clause_i, clause, c_scores])
-    # search clauses with no common bodies
-    independent_clauses_all = []
-    for i_index, [i, clause_i, score_i] in enumerate(clauses_with_score):
-        clause_cluster = [[i, clause_i, score_i]]
-        for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
-            if not len(common_body_pi_clauses(clause_j, clause_i)) > 2:
-                clause_cluster.append([j, clause_j, score_j])
-        clause_cluster = sorted(clause_cluster, key=lambda x: x[1])
-        if clause_cluster not in independent_clauses_all:
-            independent_clauses_all.append(clause_cluster)
-
-    clause_clusters = []
-    for independent_cluster in independent_clauses_all:
-        sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=5)
-        clause_clusters += sub_clusters
-
-    necessary_clusters = []
-    sufficient_clusters = []
-    ns_clusters = []
-    other_clusters = []
-    # TODO: parallel programming
-    for cc_i, clause_cluster in enumerate(clause_clusters):
-        if cc_i % 10000 == 0:
-            print(f"eval clause cluster: {cc_i + 1}/{len(clause_clusters)}")
-        score_neg = torch.zeros((1, total_score, 1))
-        score_pos = torch.zeros((1, total_score, 1))
-        for [c_i, c, c_score] in clause_cluster:
-            score_neg = torch.cat((score_neg[0, :, :], c_score[:, 0:1]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(
-                0)
-            score_pos = torch.cat((score_pos[0, :, :], c_score[:, 1:]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(0)
-        score_max = torch.cat((score_neg, score_pos), dim=2)
-        p_clause_signs = eval_clause_sign(score_max)
-        cluster_clause_score = p_clause_signs[0][1].reshape(4)
-        if cluster_clause_score[1] == total_score:
-            ns_clusters.append([clause_cluster, cluster_clause_score])
-        elif cluster_clause_score[1] + cluster_clause_score[3] == total_score:
-            necessary_clusters.append([clause_cluster, cluster_clause_score])
-        elif cluster_clause_score[0] + cluster_clause_score[1] == total_score:
-            sufficient_clusters.append([clause_cluster, cluster_clause_score])
-        else:
-            other_clusters.append([clause_cluster, cluster_clause_score])
-
-    # necessary_clusters_no_sub = remove_sub_clusters(necessary_clusters)
-    # ns_clusters_no_sub = remove_sub_clusters(ns_clusters)
-
-    # # remove subclauses
-    # non_sub_clauses = []
-    # for independent_cluster in independent_clauses_all:
-    #     pole_clauses = []
-    #     for clause_a in independent_cluster:
-    #         is_pole_clause = True
-    #         for clause_b in independent_cluster:
-    #             if clause_a == clause_b:
-    #                 continue
-    #             if sub_clause_of(clause_b, clause_a):
-    #                 is_pole_clause = False
-    #         if is_pole_clause:
-    #             pole_clauses.append(clause_a)
-    #     non_sub_clauses.append(pole_clauses)
-    #
-    # # remove duplicate clauses
-    # non_repeat_clauses = []
-    # for c_a in independent_clauses_all:
-    #     c_a.sort()
-    # for a_i, c_a in enumerate(independent_clauses_all):
-    #     is_repeat = False
-    #     for b_i, c_b in enumerate(independent_clauses_all[a_i + 1:]):
-    #         if c_a == c_b:
-    #             is_repeat = True
-    #             print("duplicate clauses:")
-    #             print(c_a)
-    #             print(c_b)
-    #             break
-    #     if not is_repeat:
-    #         non_repeat_clauses.append(c_a)
-    # for cluster, c_score in necessary_clusters_reduced:
-    #     if c_score[3] != total_score:
-    #         print(c_score)
-    #         print(cluster)
-    return necessary_clusters, ns_clusters
-
-
 def is_repeat_clu(clu, clu_list):
     is_repeat = False
     for ref_clu, clu_score in clu_list:
@@ -558,35 +390,9 @@ def get_independent_clusters(clauses, args):
 def search_independent_clauses_parallel(clauses, total_score, args):
     clause_clusters = get_independent_clusters(clauses, args)
 
-    # print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
-    # clauses_with_score = []
-    # for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
-    #     clauses_with_score.append([clause_i, clause, c_scores])
-    # # search clauses with no common bodies
-    # independent_clauses_all = []
-    # for i_index, [i, clause_i, score_i] in enumerate(clauses_with_score):
-    #     clause_cluster = [[i, clause_i, score_i]]
-    #     independent_clauses_all.append([[i, clause_i, score_i]])
-    #     for j_index, [j, clause_j, score_j] in enumerate(clauses_with_score):
-    #         if not len(common_body_pi_clauses(clause_j, clause_i)) > args.n_obj:
-    #             clause_cluster.append([j, clause_j, score_j])
-    #     clause_cluster = sorted(clause_cluster, key=lambda x: x[0])
-    #     if clause_cluster not in independent_clauses_all:
-    #         independent_clauses_all.append(clause_cluster)
-    #
-    #
-    #
-    # clause_clusters = []
-    # for independent_cluster in independent_clauses_all:
-    #     sub_clusters = sub_lists(independent_cluster, min_len=1, max_len=4)
-    #     clause_clusters += sub_clusters
-
     # trivial: contain multiple semantic identity bodies
     clause_clusters = check_trivial_clusters(clause_clusters)
 
-    # TODO: find a parallel solution or prune trick
-    # if len(clause_clusters) > 100000:
-    #     clause_clusters = clause_clusters[:100000]
 
     necessary_clusters = []
     sufficient_clusters = []
@@ -752,14 +558,7 @@ def eval_clause_clusters(clause_clusters, clause_scores_full):
 
 
 def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
-    # bz = args.batch_size
-    # device = args.device
-    # pos_img_num = pos_pred.shape[0]
-    # neg_img_num = neg_pred.shape[0]
-    # eval_pred_num = len(pred_names)
-    # clause_num = len(NSFR.clauses)
-    # # score_positive = torch.zeros((bz, pos_img_num, clause_num, eval_pred_num)).to(device)
-    # # score_negative = torch.zeros((bz, neg_img_num, clause_num, eval_pred_num)).to(device)
+
     loss_i = 0
     train_size = pos_pred.shape[0]
     bz = args.batch_size_train
@@ -782,9 +581,6 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
         score_positive = score_positive.max(dim=2, keepdim=True)[0]
     if score_negative.size(2) > 1:
         score_negative = score_negative.max(dim=2, keepdim=True)[0]
-    # axis: batch_size, pred_names, pos_neg_labels, clauses, images
-    # score_positive = score_positive.permute(0, 3, 2, 1).unsqueeze(2)
-    # score_negative = score_negative.permute(0, 3, 2, 1).unsqueeze(2)
     all_predicates_scores = torch.cat((score_negative, score_positive), 2)
 
     p_clause_signs = eval_clause_sign(all_predicates_scores)
@@ -795,48 +591,6 @@ def eval_predicates(NSFR, args, pred_names, pos_pred, neg_pred):
 
 def get_four_scores(predicate_scores):
     return eval_clause_sign(predicate_scores)[0][1]
-    # C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
-    # clause loop
-    # for clause_index, V_T in enumerate(V_T_list):
-    #     for pred_index, pred_name in enumerate(pred_names):
-    # score_positive = NSFR.predict(v=V_T_list, predname=pred_names).detach()
-    # C_score[:, clause_index, pred_index] = predicted
-    # sum over positive prob
-
-    # for image_index in range(pos_img_num):
-    #     V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
-    #     A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-    #
-    #     C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
-    #     # clause loop
-    #     for clause_index, V_T in enumerate(V_T_list):
-    #         for pred_index, pred_name in enumerate(pred_names):
-    #             predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
-    #             C_score[:, clause_index, pred_index] = predicted
-    #     # sum over positive prob
-    #     score_positive[:, image_index, :] = C_score
-    #
-    # # negative image loop
-    # for image_index in range(neg_img_num):
-    #     V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
-    #
-    #     C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
-    #     for clause_index, V_T in enumerate(V_T_list):
-    #         for pred_index, pred_name in enumerate(pred_names):
-    #             predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
-    #             C_score[:, clause_index, pred_index] = predicted
-    #         # C
-    #         # C_score = PI.clause_eval(C_score)
-    #         # sum over positive prob
-    #     score_negative[:, image_index, :] = C_score
-    #
-    # # axis: batch_size, pred_names, pos_neg_labels, clauses, images
-    # score_positive = score_positive.permute(0, 3, 2, 1).unsqueeze(2)
-    # score_negative = score_negative.permute(0, 3, 2, 1).unsqueeze(2)
-    # all_predicates_scores = torch.cat((score_negative, score_positive), 2)
-
-    # return all_predicates_scores
-
 
 def eval_predicates_slow(NSFR, args, pred_names, pos_pred, neg_pred):
     bz = args.batch_size
@@ -862,7 +616,7 @@ def eval_predicates_slow(NSFR, args, pred_names, pos_pred, neg_pred):
         # clause loop
         for clause_index, V_T in enumerate(V_T_list):
             for pred_index, pred_name in enumerate(pred_names):
-                predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
+                predicted = NSFR.ilp_predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
                 C_score[:, clause_index, pred_index] = predicted
         # sum over positive prob
         score_positive[:, image_index, :] = C_score
@@ -874,7 +628,7 @@ def eval_predicates_slow(NSFR, args, pred_names, pos_pred, neg_pred):
         C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
         for clause_index, V_T in enumerate(V_T_list):
             for pred_index, pred_name in enumerate(pred_names):
-                predicted = NSFR.predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
+                predicted = NSFR.ilp_predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
                 C_score[:, clause_index, pred_index] = predicted
             # C
             # C_score = PI.clause_eval(C_score)

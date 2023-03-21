@@ -447,7 +447,7 @@ class ClauseGenerator(object):
             V_T_list = NSFR.clause_eval_quick(pos_pm_res[i].unsqueeze(0)).detach()
             C_score = torch.zeros((C, batch_size)).to(self.device)
             for j, V_T in enumerate(V_T_list):
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                predicted = NSFR.ilp_predict(v=V_T, predname='kp').detach()
                 C_score[j] = predicted
             # C_score = PI.clause_eval(C_score)
             # sum over positive prob
@@ -459,7 +459,7 @@ class ClauseGenerator(object):
             V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
             C_score = torch.zeros((C, batch_size)).to(self.device)
             for j, V_T in enumerate(V_T_list):
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                predicted = NSFR.ilp_predict(v=V_T, predname='kp').detach()
                 C_score[j] = predicted
             # C_score = PI.clause_eval(C_score)
             # sum over positive prob
@@ -967,7 +967,7 @@ class PIClauseGenerator(object):
             # clause loop
             for clause_index, V_T in enumerate(V_T_list):
                 # TODO: eval inv pred
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                predicted = NSFR.ilp_predict(v=V_T, predname='kp').detach()
                 C_score[clause_index] = predicted
             # sum over positive prob
             score_positive[image_index, :] = C_score.squeeze(1)
@@ -977,7 +977,7 @@ class PIClauseGenerator(object):
             V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
             C_score = torch.zeros((C, batch_size)).to(self.device)
             for clause_index, V_T in enumerate(V_T_list):
-                predicted = NSFR.predict(v=V_T, predname='kp').detach()
+                predicted = NSFR.ilp_predict(v=V_T, predname='kp').detach()
                 C_score[clause_index] = predicted
                 # C
                 # C_score = PI.clause_eval(C_score)
