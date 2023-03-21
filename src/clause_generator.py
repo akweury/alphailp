@@ -299,7 +299,6 @@ class ClauseGenerator(object):
             refs_extended = self.extend_clauses(refs, args)
 
             # remove semantic conflict clauses
-            # refs_diff_semantic = logic_utils.remove_same_semantic_clauses(refs_extended)
             refs_no_conflict = self.remove_conflict_clauses(refs_extended, pi_clauses, args)
             if len(refs_no_conflict) == 0:
                 is_done = True
@@ -318,8 +317,6 @@ class ClauseGenerator(object):
             if found_sn or len(refs) == 0:
                 is_done = True
                 break
-
-                # self.print_clauses(clause_dict, args)
 
         return clause_dict, max_clause, step, refs, is_done
 
@@ -486,55 +483,6 @@ class ClauseGenerator(object):
             #                                x_label="positive score", y_label="negative score")
 
         return all_clauses_scores
-
-    # def eval_clauses_scores(self, clauses, pos_pm_res, neg_pm_res):
-    #     C = len(clauses)
-    #     print(f"Eval clauses on {len(clauses)} images...")
-    #     # update infer module with new clauses
-    #     # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
-    #     pi_clauses = []
-    #     batch_size = self.args.batch_size_bs
-    #     NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms,
-    #                           self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
-    #     # TODO: Compute loss for validation data , score is bce loss
-    #     pos_img_num = self.pos_loader.dataset.__len__()
-    #     neg_img_num = self.neg_loader.dataset.__len__()
-    #
-    #     positive_score = torch.zeros((pos_img_num, C)).to(self.device)
-    #     negative_score = torch.zeros((neg_img_num, C)).to(self.device)
-    #
-    #     for i in range(self.pos_loader.dataset.__len__()):
-    #         V_T_list = NSFR.clause_eval_quick(pos_pm_res[i].unsqueeze(0)).detach()
-    #         C_score = torch.zeros((C, batch_size)).to(self.device)
-    #         for j, V_T in enumerate(V_T_list):
-    #             predicted = NSFR.predict(v=V_T, predname='kp').detach()
-    #             C_score[j] = predicted
-    #         # C_score = PI.clause_eval(C_score)
-    #         # sum over positive prob
-    #         C_score = C_score.sum(dim=1)
-    #         positive_score[i, :] = C_score
-    #     a = positive_score.detach().to("cpu").numpy()
-    #
-    #     for i in range(self.neg_loader.dataset.__len__()):
-    #         V_T_list = NSFR.clause_eval_quick(neg_pm_res[i].unsqueeze(0)).detach()
-    #         C_score = torch.zeros((C, batch_size)).to(self.device)
-    #         for j, V_T in enumerate(V_T_list):
-    #             predicted = NSFR.predict(v=V_T, predname='kp').detach()
-    #             C_score[j] = predicted
-    #         # C_score = PI.clause_eval(C_score)
-    #         # sum over positive prob
-    #         # C_score = PI.clause_eval(C_score)
-    #         # sum over positive prob
-    #         C_score = C_score.sum(dim=1)
-    #         negative_score[i] = C_score
-    #     b = negative_score.detach().to("cpu").numpy()
-    #
-    #     positive_clauses = []
-    #     all_clause_scores = []
-    #     for c_index in range(positive_score.shape[1]):
-    #         clause_scores = [negative_score[:, c_index], positive_score[:, c_index]]
-    #         all_clause_scores.append(clause_scores)
-    #     return all_clause_scores
 
     def classify_clauses(self, clauses, four_scores, all_scores, args, search_type):
         sufficient_necessary_clauses = []
@@ -996,52 +944,6 @@ class PIClauseGenerator(object):
 
         return all_clause_scores
 
-    # def remove_conflict_clauses(self, clauses):
-    #     print("check for conflict clauses...")
-    #     non_conflict_clauses = []
-    #     for clause in clauses:
-    #         is_conflict = False
-    #         for i in range(len(clause.body)):
-    #             for j in range(i + 1, len(clause.body)):
-    #                 if clause.body[i].terms == clause.body[j].terms:
-    #                     is_conflict = True
-    #                     print(f'conflict clause: {clause}')
-    #                     break
-    #                 elif self.conflict_pred(clause.body[i].pred.name, clause.body[j].pred.name,
-    #                                         list(clause.body[i].terms), list(clause.body[j].terms)):
-    #                     is_conflict = True
-    #                     print(f'conflict clause: {clause}')
-    #                     break
-    #             if is_conflict:
-    #                 break
-    #         if not is_conflict:
-    #             non_conflict_clauses.append(clause)
-    #
-    #     print("end for checking.")
-    #     print("========= All non-conflict clauses ==========")
-    #     for each in non_conflict_clauses:
-    #         print(each)
-    #     print("=============================================")
-    #
-    #     return non_conflict_clauses
-    #
-    # def conflict_pred(self, p1, p2, t1, t2):
-    #     non_confliect_dict = {
-    #         "at_area_0": ["at_area_2"],
-    #         "at_area_1": ["at_area_3"],
-    #         "at_area_2": ["at_area_0"],
-    #         "at_area_3": ["at_area_1"],
-    #         "at_area_4": ["at_area_6"],
-    #         "at_area_5": ["at_area_7"],
-    #         "at_area_6": ["at_area_4"],
-    #         "at_area_7": ["at_area_5"],
-    #     }
-    #     if p1 in non_confliect_dict.keys():
-    #         if "at_area" in p2 and p2 not in non_confliect_dict[p1]:
-    #             if t1[0] == t2[1] and t2[0] == t1[1]:
-    #                 return True
-    #     return False
-
     def eval_clause_sign(self, clause_image_scores):
         # resolution = 2
         # data_map = np.zeros(shape=[resolution, resolution])
@@ -1170,58 +1072,6 @@ class PIClauseGenerator(object):
         #     print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
         return pi_str_lists, kp_str_lists
 
-    # def eval_pi_clause_single(self, lang, atoms, clauses, pi_clauses, pos_pred, neg_pred):
-    #
-    #     NSFR = get_nsfr_model(self.args, lang, clauses, atoms,
-    #                           self.NSFR.bk, self.bk_clauses, pi_clauses, self.NSFR.fc, self.device)
-    #
-    #     batch_size = self.args.batch_size_bs
-    #     pos_img_num = self.pos_loader.dataset.__len__()
-    #     neg_img_num = self.neg_loader.dataset.__len__()
-    #
-    #     # get predicates that need to be evaluated.
-    #     pred_names = ['kp']
-    #     for pi_c in pi_clauses:
-    #         for body_atom in pi_c.body:
-    #             if "inv_pred" in body_atom.pred.name:
-    #                 pred_names.append(body_atom.pred.name)
-    #
-    #     C = len(pred_names)
-    #     score_positive = torch.zeros((pos_img_num, C)).to(self.device)
-    #     score_negative = torch.zeros((neg_img_num, C)).to(self.device)
-    #
-    #     for image_index in range(self.pos_loader.dataset.__len__()):
-    #         V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
-    #         A = V_T_list.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
-    #
-    #         C_score = torch.zeros((C, batch_size)).to(self.device)
-    #         # clause loop
-    #         # for clause_index, V_T in enumerate(V_T_list):
-    #         for pred_index, pred_name in enumerate(pred_names):
-    #             predicted = NSFR.predict(v=V_T_list[0], predname=pred_name).detach()
-    #             C_score[pred_index] = predicted
-    #         # sum over positive prob
-    #         score_positive[image_index, :] = C_score.squeeze(1)
-    #
-    #     # negative image loop
-    #     for image_index in range(self.neg_loader.dataset.__len__()):
-    #         V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
-    #         C_score = torch.zeros((C, batch_size)).to(self.device)
-    #         for pred_index, pred_name in enumerate(pred_names):
-    #             predicted = NSFR.predict(v=V_T_list[0], predname=pred_name).detach()
-    #             C_score[pred_index] = predicted
-    #             # C
-    #             # C_score = PI.clause_eval(C_score)
-    #             # sum over positive prob
-    #         score_negative[image_index, :] = C_score.squeeze(1)
-    #
-    #     all_clause_scores = []
-    #     for c_index in range(score_positive.shape[1]):
-    #         clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
-    #         all_clause_scores.append(clause_scores)
-    #
-    #     return all_clause_scores
-
     def eval_pi_language(self, bs_clauses, pi_languages, pos_pred, neg_pred):
         print("Eval PI Languages: ", len(pi_languages))
         pi_language_scores = torch.zeros(len(pi_languages))
@@ -1257,72 +1107,7 @@ class PIClauseGenerator(object):
                 # print(f"unnecessary score: {pi_language_scores[index]}")
 
         return passed_languages
-        #     pred_type = None
-        #     if p_goodness_scores[0] == p_goodness_scores[1]:
-        #         # this is an output predicate
-        #         pred_type = "output_predicate"
-        #         output_pi_clauses.append(pi_clause)
-        #         output_scores.append([pi_index] + p_goodness_scores)
-        #         ip_names.append([pi_index, pred_names[1]])
-        #     elif p_goodness_scores[0] <= p_goodness_scores[1]:
-        #         # this is a hidden predicate
-        #         pred_type = "hidden_predicate"
-        #         hidden_pi_clauses.append(pi_clause)
-        #         hidden_scores.append([pi_index] + p_goodness_scores)
-        #         ip_names.append([pi_index, pred_names[1]])
-        #     else:
-        #         # this is not a good predicate
-        #         pred_type = "archive_predicate"
-        #         archive_pi_clauses.append(pi_clause)
-        #         archive_scores.append([pi_index] + p_goodness_scores)
-        #         ip_names.append([pi_index, pred_names[1]])
-        #
-        # # filter out predicates
-        # output_ip = []
-        # for output_score in output_scores:
-        #     output_clause = output_pi_clauses[output_score[0]]
-        #     ip_name = ip_names[output_score[0]]
-        #     output_ip.append(ip_name)
-        #     passed_pi_clauses_clusters.append(output_clause)
-        #
-        # hidden_ip = []
-        # goodness_scores_sorted = sorted(hidden_scores, key=itemgetter(2), reverse=True)
-        # goodness_scores_sorted_t5 = goodness_scores_sorted[:5]
-        # for goodness_score in goodness_scores_sorted_t5:
-        #     hidden_clause = hidden_pi_clauses[goodness_score[0]]
-        #     ip_name = ip_names[goodness_score[0]]
-        #     hidden_ip.append(ip_name)
-        #     passed_pi_clauses_clusters.append(hidden_clause)
-        #
-        # archive_ip = []
-        # for archive_score in archive_scores:
-        #     archive_clause = archive_pi_clauses[archive_score[0]]
-        #     unpassed_pi_clauses_clusters.append(archive_clause)
-        #     ip_name = ip_names[archive_score[0]]
-        #     archive_ip.append(ip_name)
-        #     unpassed_pi_clauses_clusters.append(archive_clause)
-        #
-        # ip_indices = []
-        # for ip_index, ip in enumerate(self.lang.invented_preds):
-        #     if ip.name in hidden_ip:
-        #         ip.ptype = "hidden_predicate"
-        #         ip_indices.append(ip_index)
-        #     elif ip.name in output_ip:
-        #         ip.ptype = "output_predicate"
-        #         ip_indices.append(ip_index)
-        #     else:
-        #         ip.ptype = "archive_predicate"
-        #
-        # hidden_predicates_indices = [ip[0] for ip in hidden_ip]
-        # hidden_predicates = [self.lang.invented_preds[i] for i in hidden_predicates_indices]
-        #
-        # output_predicates_indices = [ip[0] for ip in output_ip]
-        # output_predicates = [self.lang.invented_preds[i] for i in output_predicates_indices]
-        #
-        # self.lang.invented_preds = output_predicates + hidden_predicates
-        #
-        # passed_clauses = [c for c_cluster in passed_pi_clauses_clusters for c in c_cluster]
-        # unpassed_clauses = [c for c_cluster in unpassed_pi_clauses_clusters for c in c_cluster]
+
 
     def extract_pi(self, new_lang, all_pi_clauses, args):
         for index, new_p in enumerate(new_lang.invented_preds):
@@ -1357,20 +1142,6 @@ class PIClauseGenerator(object):
 
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None, searching_for=None):
         found_ns = False
-        # if random_top is not None:
-        #     if len(clause_candidates) > random_top:
-        #         clause_candidates = clause_candidates[:random_top]
-        # elif args.uc_top is not None:
-        #     clause_candidates_with_scores = []
-        #     for c_i, c in enumerate(clause_candidates):
-        #         four_scores = logic_utils.get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
-        #         clause_candidates_with_scores.append([c, four_scores])
-        #     clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
-        #                                                   reverse=True)
-        #     clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:args.uc_top]
-        #     clause_candidates = []
-        #     for c in clause_candidates_with_scores_sorted:
-        #         clause_candidates.append(c[0])
 
         n_clu, sn_clu, s_clu, sn_th_clu, nc_th_clu, sc_th_clu = logic_utils.search_independent_clauses_parallel(
             clause_candidates, total_score, args)
@@ -1393,29 +1164,9 @@ class PIClauseGenerator(object):
 
     def prune_predicates(self, new_predicates, args, keep_all=False):
 
-        # no_3_zone_only = logic_utils.remove_3_zone_only_predicates(new_predicates, args)
-        # if len(no_3_zone_only) > 0:
-        #     new_predicates = no_3_zone_only
-        # else:
-        #     new_predicates = new_predicates[:5]
-
-        # first_zone_max = logic_utils.keep_1_zone_max_predicates(new_predicates)
-        # if len(first_zone_max) > 0:
-        #     new_predicates = first_zone_max
-        # else:
-        #     new_predicates = new_predicates[:5]
-
-        # no_unaligned = logic_utils.remove_unaligned_predicates(new_predicates)
-        # if len(no_unaligned) > 0:
-        #     new_predicates = no_unaligned
-        # else:
-        #     new_predicates = new_predicates[:5]
-
         no_duplicate = logic_utils.remove_duplicate_predicates(new_predicates, args)
         if len(no_duplicate) > 0:
             new_predicates = no_duplicate
-        # else:
-        #     new_predicates = new_predicates[:5]
 
         no_same_four = logic_utils.remove_same_four_score_predicates(new_predicates, args)
         return new_predicates
