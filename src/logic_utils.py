@@ -843,7 +843,7 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
     else:
         sort_index = config.score_type_index["sn"]
     if len(clause_with_scores) > 0:
-        c_sorted = sorted(clause_with_scores, key=lambda x: x[1][sort_index], reverse=True)
+        c_sorted = sorted(clause_with_scores, key=lambda x: x[1][2], reverse=True)
 
         if args.score_unique:
             score_unique_c = []
