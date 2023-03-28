@@ -402,7 +402,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     sc_th_clusters = []
     other_clusters = []
     # TODO: parallel programming
-
+    clu_lists = []
     for cc_i, clause_cluster in enumerate(clause_clusters):
         if len(clause_clusters) < 10000:
             pass
@@ -423,47 +423,56 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         score_max[:, :, index_neg] = score_neg[:, :, 0]
 
         scores = eval_clause_infer.eval_clauses(score_pos, score_neg, args)
+        clu_lists.append([clause_cluster, scores])
+
+        # eval_utils.is_nc(scores)
+        # if not is_repeat_clu(clause_cluster, necessary_clusters):
+        #     # log_utils.add_lines(f"(nc predicate) {clause_cluster} {clu_c_score}", args.log_file)
+        #     necessary_clusters.append([clause_cluster, scores])
+
         # p_clause_signs = eval_clause_sign(score_max)
         # clu_c_score = p_clause_signs[0][1].reshape(4)
         # sufficient and necessary clauses
-        if eval_utils.is_sn(scores):
-            # log_utils.add_lines(f"(sn predicate) {clause_cluster} {clu_c_score}", args.log_file)
-            sn_clusters.append([clause_cluster, scores])
-        # almost a sufficient and necessary clauses
-        elif eval_utils.is_sn_th_good(scores, args.sn_th):
-            # log_utils.add_lines(f"(sn good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-            sn_th_clusters.append([clause_cluster, scores])
-        # necessary clauses
-        if eval_utils.is_nc(scores):
-            if not is_repeat_clu(clause_cluster, necessary_clusters):
-                # log_utils.add_lines(f"(nc predicate) {clause_cluster} {clu_c_score}", args.log_file)
-                necessary_clusters.append([clause_cluster, scores])
-        # almost necessary clauses
-        elif eval_utils.is_nc_th_good(scores, args.nc_th):
-            if not is_repeat_clu(clause_cluster, nc_th_clusters):
-                # log_utils.add_lines(f"(nc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-                nc_th_clusters.append([clause_cluster, scores])
-        # sufficient clauses
-        if eval_utils.is_sc(scores):
-            if not is_repeat_clu(clause_cluster, sufficient_clusters):
-                # log_utils.add_lines(f"(sc predicate) {clause_cluster} {clu_c_score}", args.log_file)
-                sufficient_clusters.append([clause_cluster, scores])
-        # almost sufficient clauses
-        elif eval_utils.is_sc_th_good(scores, args.sc_th):
-            if not is_repeat_clu(clause_cluster, sc_th_clusters):
-                # log_utils.add_lines(f"(sc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-                sc_th_clusters.append([clause_cluster, scores])
+        # if eval_utils.is_sn(scores):
+        #     # log_utils.add_lines(f"(sn predicate) {clause_cluster} {clu_c_score}", args.log_file)
+        #     sn_clusters.append([clause_cluster, scores])
+        # # almost a sufficient and necessary clauses
+        # elif eval_utils.is_sn_th_good(scores, args.sn_th):
+        #     # log_utils.add_lines(f"(sn good predicate) {clause_cluster} {clu_c_score}", args.log_file)
+        #     sn_th_clusters.append([clause_cluster, scores])
+        # # necessary clauses
+        # if eval_utils.is_nc(scores):
+        #     if not is_repeat_clu(clause_cluster, necessary_clusters):
+        #         # log_utils.add_lines(f"(nc predicate) {clause_cluster} {clu_c_score}", args.log_file)
+        #         necessary_clusters.append([clause_cluster, scores])
+        # # almost necessary clauses
+        # elif eval_utils.is_nc_th_good(scores, args.nc_th):
+        #     if not is_repeat_clu(clause_cluster, nc_th_clusters):
+        #         # log_utils.add_lines(f"(nc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
+        #         nc_th_clusters.append([clause_cluster, scores])
+        # # sufficient clauses
+        # if eval_utils.is_sc(scores):
+        #     if not is_repeat_clu(clause_cluster, sufficient_clusters):
+        #         # log_utils.add_lines(f"(sc predicate) {clause_cluster} {clu_c_score}", args.log_file)
+        #         sufficient_clusters.append([clause_cluster, scores])
+        # # almost sufficient clauses
+        # elif eval_utils.is_sc_th_good(scores, args.sc_th):
+        #     if not is_repeat_clu(clause_cluster, sc_th_clusters):
+        #         # log_utils.add_lines(f"(sc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
+        #         sc_th_clusters.append([clause_cluster, scores])
+        #
+        # else:
+        #     other_clusters.append([clause_cluster, scores])
 
-        else:
-            other_clusters.append([clause_cluster, scores])
-
-    sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)
-    sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)
-    sufficient_clusters = sorted(sufficient_clusters, key=lambda x: x[1][1], reverse=True)
-    sc_th_clusters = sorted(sc_th_clusters, key=lambda x: x[1][1], reverse=True)
-    necessary_clusters = sorted(necessary_clusters, key=lambda x: x[1][1], reverse=True)
-    nc_th_clusters = sorted(nc_th_clusters, key=lambda x: x[1][1], reverse=True)
-    return necessary_clusters, sn_clusters, sufficient_clusters, sn_th_clusters, nc_th_clusters, sc_th_clusters
+    clu_lists = sorted(clu_lists, key=lambda x: x[1][2], reverse=True)
+    # sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)
+    # sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)
+    # sufficient_clusters = sorted(sufficient_clusters, key=lambda x: x[1][1], reverse=True)
+    # sc_th_clusters = sorted(sc_th_clusters, key=lambda x: x[1][1], reverse=True)
+    # necessary_clusters = sorted(necessary_clusters, key=lambda x: x[1][1], reverse=True)
+    # nc_th_clusters = sorted(nc_th_clusters, key=lambda x: x[1][1], reverse=True)
+    # return necessary_clusters, sn_clusters, sufficient_clusters, sn_th_clusters, nc_th_clusters, sc_th_clusters
+    return clu_lists
 
 
 def sub_clause_of(clause_a, clause_b):
@@ -780,7 +789,7 @@ def check_accuracy(clause_scores_full, pair_num):
     return accuracy
 
 
-def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, args, max_clause):
+def get_best_clauses(clauses, clause_scores, step, args, max_clause):
     target_has_been_found = False
     higher = False
     # clause_accuracy = check_accuracy(clause_scores, total_score)
@@ -813,26 +822,26 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
             for c_i in c_indices:
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[:, c_i]}", args.log_file)
 
-    clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_top)
-    clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_top)
-    clause_dict["nc_good"] = sorted_clauses(clause_dict["nc_good"], "nc_good", args, args.nc_good_top)
-    clause_dict["sc_good"] = sorted_clauses(clause_dict["sc_good"], "sc_good", args, args.sc_good_top)
-    clause_dict["uc"] = sorted_clauses(clause_dict["uc"], "uc", args, args.uc_top)
-    clause_dict["uc_good"] = sorted_clauses(clause_dict["uc_good"], "uc_good", args, args.uc_good_top)
+    # clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_top)
+    # clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_top)
+    # clause_dict["nc_good"] = sorted_clauses(clause_dict["nc_good"], "nc_good", args, args.nc_good_top)
+    # clause_dict["sc_good"] = sorted_clauses(clause_dict["sc_good"], "sc_good", args, args.sc_good_top)
+    # clause_dict["uc"] = sorted_clauses(clause_dict["uc"], "uc", args, args.uc_top)
+    # clause_dict["uc_good"] = sorted_clauses(clause_dict["uc_good"], "uc_good", args, args.uc_good_top)
 
-    log_utils.add_lines(
-        f"(BS Step {step}) "
-        f"sn_c: {len(clause_dict['sn'])}, "
-        f"sn_c_good: {len(clause_dict['sn_good'])}, "
-        f"n_c: {len(clause_dict['nc'])}, "
-        f"s_c: {len(clause_dict['sc'])}, "
-        f"n_c_good: {len(clause_dict['nc_good'])}, "
-        f"s_c_good: {len(clause_dict['sc_good'])}, "
-        f"u_c_good: {len(clause_dict['uc_good'])}, "
-        f"u_c: {len(clause_dict['uc'])}, "
-        f"conflict: {len(clause_dict['conflict'])}.", args.log_file)
+    # log_utils.add_lines(
+    #     f"(BS Step {step}) "
+    #     f"sn_c: {len(clause_dict['sn'])}, "
+    #     f"sn_c_good: {len(clause_dict['sn_good'])}, "
+    #     f"n_c: {len(clause_dict['nc'])}, "
+    #     f"s_c: {len(clause_dict['sc'])}, "
+    #     f"n_c_good: {len(clause_dict['nc_good'])}, "
+    #     f"s_c_good: {len(clause_dict['sc_good'])}, "
+    #     f"u_c_good: {len(clause_dict['uc_good'])}, "
+    #     f"u_c: {len(clause_dict['uc'])}, "
+    #     f"conflict: {len(clause_dict['conflict'])}.", args.log_file)
 
-    return max_clause, clause_dict, higher
+    return max_clause, higher
 
 
 def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
@@ -1103,9 +1112,9 @@ def remove_same_semantic_clauses(clauses):
 
 
 def top_select(bs_clauses, args):
-    all_c = bs_clauses['sn'] + bs_clauses['nc'] + bs_clauses['sc'] + bs_clauses['nc_good'] + bs_clauses['sc_good'] + \
-            bs_clauses['uc'] + bs_clauses['uc_good']
+    # all_c = bs_clauses['sn'] + bs_clauses['nc'] + bs_clauses['sc'] + bs_clauses['nc_good'] + bs_clauses['sc_good'] + \
+    #         bs_clauses['uc'] + bs_clauses['uc_good']
 
-    top_clauses = sorted_clauses(all_c, "all", args, 3)
+    top_clauses = sorted_clauses(bs_clauses, "all", args, 3)
     top_clauses = extract_clauses_from_max_clause(top_clauses, args)
     return top_clauses

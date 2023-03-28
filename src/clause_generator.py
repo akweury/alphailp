@@ -128,8 +128,8 @@ class ClauseGenerator(object):
             args.log_file)
         eval_pred = ['kp']
 
-        clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": [], "nc_good": [], "uc_good": [],
-                       "sc_good": []}
+        clause_with_scores = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": [], "nc_good": [], "uc_good": [],
+                              "sc_good": []}
         # extend clauses
         step = 0
         is_done = False
@@ -158,29 +158,26 @@ class ClauseGenerator(object):
             scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args)
 
             # classify clauses
-            clause_dict = eval_clause_infer.classify_clauses(refs_extended, score_all, scores, args, search_type)
+            clause_with_scores = eval_clause_infer.classify_clauses(refs_extended, score_all, scores, args, search_type)
             # print best clauses that have been found...
-            new_max, clause_dict, higher = logic_utils.print_best_clauses(refs_extended, clause_dict,
-                                                                          scores,
-                                                                          pos_pred.size(0), step,
-                                                                          args, max_clause)
+            new_max, higher = logic_utils.get_best_clauses(refs_extended, scores, step, args, max_clause)
+            clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, "clause", args, args.nc_top)
 
             # plot charts
-            chart_utils.plot_4_zone(args.plot_four_zone, refs_extended, score_all, scores,
-                                    step)
+            chart_utils.plot_4_zone(args.plot_four_zone, refs_extended, score_all, scores, step)
 
-            max_clause, found_sn = self.check_result(clause_dict, higher, max_clause, new_max)
+            max_clause, found_sn = self.check_result(clause_with_scores, higher, max_clause, new_max)
             if args.pi_top > 0:
-                refs, is_done = self.prune_clauses(clause_dict, search_type, args)
+                refs, is_done = self.prune_clauses(clause_with_scores, search_type, args)
             else:
-                refs = logic_utils.top_select(clause_dict, args)
+                refs = logic_utils.top_select(clause_with_scores, args)
             step += 1
 
             if found_sn or len(refs) == 0:
                 is_done = True
                 break
 
-        return clause_dict, max_clause, step, refs, is_done
+        return clause_with_scores, max_clause, step, refs, is_done
 
     def eval_images(self, save_path):
 
@@ -384,31 +381,33 @@ class ClauseGenerator(object):
                 log_utils.add_lines(f"necessary clause with {args.nc_th * 100}%: {c[0]}, {score}", args.log_file)
         log_utils.add_lines('============= Beam search End ===================\n', args.log_file)
 
-    def update_refs(self, clause_dict, args, priority="nc"):
+    def update_refs(self, clause_with_scores, args, priority="nc"):
         refs = []
-        if priority == "nc":
-            nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'], "nc", args)
-            refs += nc_clauses
-
-        if priority == "nc_good":
-            nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'], "nc_good", args)
-            refs += nc_good_clauses
-
-        if priority == "sc":
-            sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'], "sc", args)
-            refs += sc_clauses
-
-        if priority == "sc_good":
-            sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'], "sc_good", args)
-            refs += sc_good_clauses
-
-        if priority == "uc_good":
-            uc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc_good", args)
-            refs += uc_good_clauses
-
-        if priority == "uc":
-            uc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'], "uc", args)
-            refs += uc_clauses
+        nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_with_scores, "clause", args)
+        refs += nc_clauses
+        # if priority == "nc":
+        #     nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc'], "nc", args)
+        #     refs += nc_clauses
+        #
+        # if priority == "nc_good":
+        #     nc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['nc_good'], "nc_good", args)
+        #     refs += nc_good_clauses
+        #
+        # if priority == "sc":
+        #     sc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc'], "sc", args)
+        #     refs += sc_clauses
+        #
+        # if priority == "sc_good":
+        #     sc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['sc_good'], "sc_good", args)
+        #     refs += sc_good_clauses
+        #
+        # if priority == "uc_good":
+        #     uc_good_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc_good'], "uc_good", args)
+        #     refs += uc_good_clauses
+        #
+        # if priority == "uc":
+        #     uc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_dict['uc'], "uc", args)
+        #     refs += uc_clauses
 
         return refs
 
@@ -438,7 +437,7 @@ class ClauseGenerator(object):
                 break
         return y
 
-    def prune_clauses(self, clause_dict, search_type, args):
+    def prune_clauses(self, clause_with_scores, search_type, args):
         refs = []
 
         # if search_type == "nc":
@@ -456,48 +455,49 @@ class ClauseGenerator(object):
         #         refs += self.update_refs(clause_dict, args, priority="uc")
         #     if (len(refs) == 0):
         #         return [], True
+        refs += self.update_refs(clause_with_scores, args, priority="sc")
 
-        if len(clause_dict["sc"]) > 1:
-            refs += self.update_refs(clause_dict, args, priority="sc")
-        else:
-            log_utils.add_lines(f'no sc for extension!', args.log_file)
-        if len(clause_dict["sc_good"]) > 1:
-            refs += self.update_refs(clause_dict, args, priority="sc_good")
-        else:
-            log_utils.add_lines(f'no sc good for extension!', args.log_file)
-
-        if len(clause_dict["nc"]) > 0:
-            refs += self.update_refs(clause_dict, args, priority="nc")
-        else:
-            log_utils.add_lines(f'no nc for extension!', args.log_file)
-
-        if len(clause_dict["nc_good"]) > 0:
-            refs += self.update_refs(clause_dict, args, priority="nc_good")
-        else:
-            log_utils.add_lines(f'no nc good for extension!', args.log_file)
-
-        if len(clause_dict["uc_good"]) > 0:
-            refs += self.update_refs(clause_dict, args, priority="uc_good")
-        else:
-            log_utils.add_lines(f'no uc good for extension!', args.log_file)
-
-        if len(clause_dict["uc"]) > 0:
-            refs += self.update_refs(clause_dict, args, priority="uc")
-        else:
-            log_utils.add_lines(f'no uc for extension!', args.log_file)
+        # if len(clause_with_scores["sc"]) > 1:
+        #     refs += self.update_refs(clause_with_scores, args, priority="sc")
+        # else:
+        #     log_utils.add_lines(f'no sc for extension!', args.log_file)
+        # if len(clause_with_scores["sc_good"]) > 1:
+        #     refs += self.update_refs(clause_with_scores, args, priority="sc_good")
+        # else:
+        #     log_utils.add_lines(f'no sc good for extension!', args.log_file)
+        #
+        # if len(clause_with_scores["nc"]) > 0:
+        #     refs += self.update_refs(clause_with_scores, args, priority="nc")
+        # else:
+        #     log_utils.add_lines(f'no nc for extension!', args.log_file)
+        #
+        # if len(clause_with_scores["nc_good"]) > 0:
+        #     refs += self.update_refs(clause_with_scores, args, priority="nc_good")
+        # else:
+        #     log_utils.add_lines(f'no nc good for extension!', args.log_file)
+        #
+        # if len(clause_with_scores["uc_good"]) > 0:
+        #     refs += self.update_refs(clause_with_scores, args, priority="uc_good")
+        # else:
+        #     log_utils.add_lines(f'no uc good for extension!', args.log_file)
+        #
+        # if len(clause_with_scores["uc"]) > 0:
+        #     refs += self.update_refs(clause_with_scores, args, priority="uc")
+        # else:
+        #     log_utils.add_lines(f'no uc for extension!', args.log_file)
 
         return refs, False
 
-    def check_result(self, clause_dict, higher, max_clause, new_max_clause):
+    def check_result(self, clause_with_scores, higher, max_clause, new_max_clause):
 
         if higher:
             best_clause = new_max_clause
         else:
             best_clause = max_clause
 
-        if len(clause_dict["sn"]) > 0:
+        if clause_with_scores[0][1][2] == 1.0:
             return best_clause, True
-        elif len(clause_dict["sn_good"]) > 0:
+        elif clause_with_scores[0][1][2] == self.args.sn_th:
             return best_clause, True
         return best_clause, False
 
@@ -557,63 +557,67 @@ class PIClauseGenerator(object):
         uc_new_predicates = []
         uc_good_new_predicates = []
         nc_sc_new_predicates = []
+
+        new_predicates, found_ns = self.cluster_invention(beam_search_clauses, pi_clauses, pos_pred.shape[0], args)
+        log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
+
         # cluster sufficient clauses
-        if len(beam_search_clauses['sc']) > 1:
-            sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
-                                                                 pos_pred.shape[0], args)
-            log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
-        if len(beam_search_clauses['sc_good']) > 0:
-            sc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc_good"], pi_clauses,
-                                                                      pos_pred.shape[0], args)
+        # if len(beam_search_clauses['sc']) > 1:
+        #     sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
+        #                                                          pos_pred.shape[0], args)
+        #     log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
+        # if len(beam_search_clauses['sc_good']) > 0:
+        #     sc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc_good"], pi_clauses,
+        #                                                               pos_pred.shape[0], args)
+        #
+        #     log_utils.add_lines(f"new PI from sc_good: {len(sc_good_new_predicates)}", args.log_file)
+        #     # for p in sc_good_new_predicates:
+        #     #     print(p)
+        #
+        # if not found_ns and len(beam_search_clauses['nc']) > 0:
+        #     nc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc"], pi_clauses,
+        #                                                          pos_pred.shape[0], args, random_top=args.nc_good_top)
+        #     log_utils.add_lines(f"\nnew PI from nc: {len(nc_new_predicates)}", args.log_file)
+        #     # for p in nc_new_predicates:
+        #     #     print(p)
+        #
+        # if not found_ns and len(beam_search_clauses['sc']) > 0 and len(beam_search_clauses['nc']) > 0:
+        #     nc_sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
+        #                                                             pos_pred.shape[0], args)
+        #     log_utils.add_lines(f"\nnew PI from nc+sc: {len(nc_sc_new_predicates)}", args.log_file)
+        #     # for p in nc_sc_new_predicates:
+        #     #     print(p)
+        #
+        # if not found_ns and len(beam_search_clauses['nc_good']) > 0:
+        #     nc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc_good"], pi_clauses,
+        #                                                               pos_pred.shape[0], args)
+        #     log_utils.add_lines(f"\nnew PI from nc_good: {len(nc_good_new_predicates)}", args.log_file)
+        #     # for p in nc_good_new_predicates:
+        #     #     print(p)
+        # # # cluster necessary clauses
+        # if not found_ns and len(beam_search_clauses['uc_good']) > 0:
+        #     uc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["uc_good"], pi_clauses,
+        #                                                               pos_pred.shape[0], args)
+        #     log_utils.add_lines(f"\nnew PI from UC_GOOD: {len(uc_good_new_predicates)}", args.log_file)
+        #     # for p in uc_good_new_predicates:
+        #     #     print(p)
+        # if not found_ns:
+        #     uc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["uc"], pi_clauses,
+        #                                                          pos_pred.shape[0], args, random_top=args.uc_top)
+        #     log_utils.add_lines(f"\nnew PI from UC: {len(uc_new_predicates)}", args.log_file)
+        #     # for p in uc_new_predicates:
+        #     #     print(p)
 
-            log_utils.add_lines(f"new PI from sc_good: {len(sc_good_new_predicates)}", args.log_file)
-            # for p in sc_good_new_predicates:
-            #     print(p)
-
-        if not found_ns and len(beam_search_clauses['nc']) > 0:
-            nc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc"], pi_clauses,
-                                                                 pos_pred.shape[0], args, random_top=args.nc_good_top)
-            log_utils.add_lines(f"\nnew PI from nc: {len(nc_new_predicates)}", args.log_file)
-            # for p in nc_new_predicates:
-            #     print(p)
-
-        if not found_ns and len(beam_search_clauses['sc']) > 0 and len(beam_search_clauses['nc']) > 0:
-            nc_sc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["sc"], pi_clauses,
-                                                                    pos_pred.shape[0], args)
-            log_utils.add_lines(f"\nnew PI from nc+sc: {len(nc_sc_new_predicates)}", args.log_file)
-            # for p in nc_sc_new_predicates:
-            #     print(p)
-
-        if not found_ns and len(beam_search_clauses['nc_good']) > 0:
-            nc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["nc_good"], pi_clauses,
-                                                                      pos_pred.shape[0], args)
-            log_utils.add_lines(f"\nnew PI from nc_good: {len(nc_good_new_predicates)}", args.log_file)
-            # for p in nc_good_new_predicates:
-            #     print(p)
-        # # cluster necessary clauses
-        if not found_ns and len(beam_search_clauses['uc_good']) > 0:
-            uc_good_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["uc_good"], pi_clauses,
-                                                                      pos_pred.shape[0], args)
-            log_utils.add_lines(f"\nnew PI from UC_GOOD: {len(uc_good_new_predicates)}", args.log_file)
-            # for p in uc_good_new_predicates:
-            #     print(p)
-        if not found_ns:
-            uc_new_predicates, found_ns = self.cluster_invention(beam_search_clauses["uc"], pi_clauses,
-                                                                 pos_pred.shape[0], args, random_top=args.uc_top)
-            log_utils.add_lines(f"\nnew PI from UC: {len(uc_new_predicates)}", args.log_file)
-            # for p in uc_new_predicates:
-            #     print(p)
-
-        top_selector = args.pi_top
-        sc_new_predicates = self.prune_predicates(sc_new_predicates, args, keep_all=True)[:top_selector]
-        sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, args, keep_all=True)[:top_selector]
-        nc_new_predicates = self.prune_predicates(nc_new_predicates, args)[:top_selector]
-        nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates, args)[:top_selector]
-        uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates, args)[:top_selector]
-        uc_new_predicates = self.prune_predicates(uc_new_predicates, args)[:top_selector]
-        nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates, args)[:top_selector]
-        new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
-                         nc_good_new_predicates + uc_good_new_predicates + nc_sc_new_predicates
+        # top_selector = args.pi_top
+        # sc_new_predicates = self.prune_predicates(sc_new_predicates, args, keep_all=True)[:top_selector]
+        # sc_good_new_predicates = self.prune_predicates(sc_good_new_predicates, args, keep_all=True)[:top_selector]
+        # nc_new_predicates = self.prune_predicates(nc_new_predicates, args)[:top_selector]
+        # nc_good_new_predicates = self.prune_predicates(nc_good_new_predicates, args)[:top_selector]
+        # uc_good_new_predicates = self.prune_predicates(uc_good_new_predicates, args)[:top_selector]
+        # uc_new_predicates = self.prune_predicates(uc_new_predicates, args)[:top_selector]
+        # nc_sc_new_predicates = self.prune_predicates(nc_sc_new_predicates, args)[:top_selector]
+        # new_predicates = sc_new_predicates + uc_new_predicates + nc_new_predicates + sc_good_new_predicates + \
+        #                  nc_good_new_predicates + uc_good_new_predicates + nc_sc_new_predicates
         # convert to strings
         new_clauses_str_list, kp_str_list = self.generate_new_clauses_str_list(new_predicates)
 
@@ -841,7 +845,7 @@ class PIClauseGenerator(object):
             NSFR = get_nsfr_model(self.args, lang, pi_clause, atoms,
                                   self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
 
-            scores = src.eval_clause_infer.eval_clause_on_scenes(NSFR, self.args, pred_names, pos_pred, neg_pred)
+            scores = eval_clause_infer.eval_clause_on_scenes(NSFR, self.args, pred_names, pos_pred, neg_pred)
 
             # = logic_utils.eval_predicates_sign(p_score)
             pi_language_scores[pi_index] = p_goodness_scores[0]
@@ -896,20 +900,19 @@ class PIClauseGenerator(object):
     def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None, searching_for=None):
         found_ns = False
 
-        n_clu, sn_clu, s_clu, sn_th_clu, nc_th_clu, sc_th_clu = logic_utils.search_independent_clauses_parallel(
-            clause_candidates, total_score, args)
-        new_predicates = []
-        if len(sn_clu) > 0:
-            found_ns = True
-            new_predicates = self.generate_new_predicate(sn_clu)
-        if len(sn_th_clu) > 0:
-            new_predicates += self.generate_new_predicate(sn_th_clu)
-        if len(n_clu) > 0:
-            new_predicates += self.generate_new_predicate(n_clu)
-        # if len(nc_th_clu) > 0:
-        #     new_predicates += self.generate_new_predicate(nc_th_clu)[:5]
-        if len(s_clu) > 0:
-            new_predicates += self.generate_new_predicate(s_clu)
+        clu_lists = logic_utils.search_independent_clauses_parallel(clause_candidates, total_score, args)
+        new_predicates = self.generate_new_predicate(clu_lists)
+        # if len(sn_clu) > 0:
+        #     found_ns = True
+        #     new_predicates = self.generate_new_predicate(sn_clu)
+        # if len(sn_th_clu) > 0:
+        #     new_predicates += self.generate_new_predicate(sn_th_clu)
+        # if len(n_clu) > 0:
+        #     new_predicates += self.generate_new_predicate(n_clu)
+        # # if len(nc_th_clu) > 0:
+        # #     new_predicates += self.generate_new_predicate(nc_th_clu)[:5]
+        # if len(s_clu) > 0:
+        #     new_predicates += self.generate_new_predicate(s_clu)
         # if len(sc_th_clu) > 0:
         #     new_predicates += self.generate_new_predicate(sc_th_clu)[:10]
 

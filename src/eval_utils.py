@@ -33,14 +33,14 @@ def is_nc_th_good(score, threshold):
 
 
 def is_sc(score):
-    if score[suff_index]==1:
+    if score[suff_index] == 1:
         return True
     else:
         return False
 
 
 def is_sc_th_good(score, threshold):
-    if score[suff_index] > threshold :
+    if score[suff_index] > threshold:
         return True
     else:
         return False
