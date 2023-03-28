@@ -836,15 +836,14 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
 
 
 def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
-    if c_type=="sc":
+    if c_type == "sc" or c_type == "sc_good":
         sort_index = config.score_type_index["suff"]
-    elif c_type == "nc":
+    elif c_type == "nc" or c_type == "nc_good":
         sort_index = config.score_type_index["ness"]
     else:
         sort_index = config.score_type_index["sn"]
     if len(clause_with_scores) > 0:
         c_sorted = sorted(clause_with_scores, key=lambda x: x[1][sort_index], reverse=True)
-
 
         if args.score_unique:
             score_unique_c = []
@@ -861,6 +860,7 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
         return c_sorted
     else:
         return []
+
 
 def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
     clauses = []
