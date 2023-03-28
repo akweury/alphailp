@@ -15,8 +15,8 @@ from nsfr_utils import get_data_pos_loader
 import log_utils
 import file_utils
 import pi
-from src.perception import get_perception_predictions
-from src.pi import final_evaluation
+from perception import get_perception_predictions
+from pi import final_evaluation
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")

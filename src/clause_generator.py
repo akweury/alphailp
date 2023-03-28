@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 import chart_utils
-import src.eval_clause_infer
+import eval_clause_infer
 from refinement import RefinementGenerator
 from percept import YOLOPerceptionModule
 from nsfr_utils import update_nsfr_clauses, get_prob, get_nsfr_model

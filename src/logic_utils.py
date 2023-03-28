@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from infer import InferModule, ClauseInferModule
-from src.eval_clause_infer import eval_clause_sign
+from eval_clause_infer import eval_clause_sign
 from tensor_encoder import TensorEncoder
 from fol.logic import *
 from fol.data_utils import DataUtils
