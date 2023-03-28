@@ -836,8 +836,15 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
 
 
 def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
+    if c_type=="sc":
+        sort_index = config.score_type_index["suff"]
+    elif c_type == "nc":
+        sort_index = config.score_type_index["ness"]
+    else:
+        sort_index = config.score_type_index["sn"]
     if len(clause_with_scores) > 0:
-        c_sorted = sorted(clause_with_scores, key=lambda x: x[1][1], reverse=True)
+        c_sorted = sorted(clause_with_scores, key=lambda x: x[1][sort_index], reverse=True)
+
 
         if args.score_unique:
             score_unique_c = []
@@ -846,24 +853,14 @@ def sorted_clauses(clause_with_scores, c_type, args, threshold=None):
                 if c[1].tolist() not in appeared_scores:
                     score_unique_c.append(c)
                     appeared_scores.append(c[1].tolist())
-                # else:
-                #     log_utils.add_lines(f"({c_type}) repeat scoring clause: {c[0]}, {c[1]}.", args.log_file)
             c_sorted = score_unique_c
-
         log_utils.add_lines(f"{c_type} before top select: {len(c_sorted)}", args.log_file)
-        # for i in range(threshold, len(c_sorted)):
-        #     log_utils.add_lines(f"({c_type}) low scoring clause to be pruned: {c_sorted[i][0]}, {c_sorted[i][1]}",
-        #                         args.log_file)
         if threshold is not None and len(c_sorted) > threshold:
             c_sorted = c_sorted[:threshold]
         log_utils.add_lines(f"{c_type} after top select: {len(c_sorted)}", args.log_file)
-
-        # for c, c_score, all_scores in c_sorted:
-        #     log_utils.add_lines(f'({c_type}) {c}, {c_score}', args.log_file)
         return c_sorted
     else:
         return []
-
 
 def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
     clauses = []
