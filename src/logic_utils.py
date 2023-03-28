@@ -783,34 +783,35 @@ def check_accuracy(clause_scores_full, pair_num):
 def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, args, max_clause):
     target_has_been_found = False
     higher = False
-    clause_accuracy = check_accuracy(clause_scores, total_score)
-    if clause_accuracy.max() == 1.0:
-        log_utils.add_lines(f"(BS Step {step}) max clause accuracy: {clause_accuracy.max()}", args.log_file)
+    # clause_accuracy = check_accuracy(clause_scores, total_score)
+    sn_scores = clause_scores[config.score_type_index["sn"]]
+    if sn_scores.max() == 1.0:
+        log_utils.add_lines(f"(BS Step {step}) max clause accuracy: {sn_scores.max()}", args.log_file)
         target_has_been_found = True
-        c_indices = [np.argmax(clause_accuracy)]
+        c_indices = [np.argmax(sn_scores)]
         for c_i in c_indices:
             log_utils.add_lines(f"{clauses[c_i]}", args.log_file)
     else:
-        new_max_score = clause_accuracy.max()
-        c_indices = [np.argmax(clause_accuracy)]
-        if len(clauses) != len(clause_scores):
-            print("break")
-        max_scoring_clauses = [[clauses[c_i], clause_scores[c_i]] for c_i in c_indices]
+        new_max_score = sn_scores.max()
+        c_indices = [np.argmax(sn_scores)]
+        # if len(clauses) != len(clause_scores):
+        #     print("break")
+        max_scoring_clauses = [[clauses[c_i], clause_scores[:, c_i]] for c_i in c_indices]
         new_max_clause = [new_max_score, max_scoring_clauses]
 
         if new_max_clause[0] > max_clause[0] and str(new_max_clause[1]) != str(max_clause[1]):
             max_clause = new_max_clause
             higher = True
-            log_utils.add_lines(f"(BS Step {step}) (global) max clause accuracy: {clause_accuracy.max()}",
+            log_utils.add_lines(f"(BS Step {step}) (global) max clause accuracy: {sn_scores.max()}",
                                 args.log_file)
             for c_i in c_indices:
-                log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
+                log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[:, c_i]}", args.log_file)
 
         else:
             max_clause = [0.0, []]
-            log_utils.add_lines(f"(BS Step {step}) (local) max clause accuracy: {clause_accuracy.max()}", args.log_file)
+            log_utils.add_lines(f"(BS Step {step}) (local) max clause accuracy: {sn_scores.max()}", args.log_file)
             for c_i in c_indices:
-                log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[c_i]}", args.log_file)
+                log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[:, c_i]}", args.log_file)
 
     clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_top)
     clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_top)

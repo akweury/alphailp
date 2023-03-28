@@ -160,7 +160,7 @@ class ClauseGenerator(object):
             clause_dict = eval_clause_infer.classify_clauses(refs_extended, score_all, scores, args, search_type)
             # print best clauses that have been found...
             new_max, clause_dict, higher = logic_utils.print_best_clauses(refs_extended, clause_dict,
-                                                                          score_all,
+                                                                          scores,
                                                                           pos_pred.size(0), step,
                                                                           args, max_clause)
 
