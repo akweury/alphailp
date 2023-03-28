@@ -1,14 +1,12 @@
 import datetime
-
 import torch
 
+import config
 import log_utils
-import logic_utils
-import chart_utils
 import eval_utils
 
 
-def classify_clauses(clauses, four_scores, all_scores, args, search_type):
+def classify_clauses(clauses, scores_all, scores, args, search_type):
     sufficient_necessary_clauses = []
     necessary_clauses = []
     sufficient_clauses = []
@@ -19,47 +17,49 @@ def classify_clauses(clauses, four_scores, all_scores, args, search_type):
     uc_good_clauses = []
     conflict_clauses = []
     for c_i, clause in enumerate(clauses):
-        data_size = args.data_size
+        # data_size = args.data_size
         # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
         #     good_clauses.append((clause, scores))
-        score = four_scores[c_i]
-        if eval_utils.is_sn(score, data_size):
-            sufficient_necessary_clauses.append((clause, score, all_scores[c_i]))
+
+        score = scores[:, c_i]
+
+        if eval_utils.is_sn(score):
+            sufficient_necessary_clauses.append((clause, score, scores_all[c_i]))
             # log_utils.add_lines(f'(sn) {clause}, {four_scores[c_i]}', args.log_file)
-        elif eval_utils.is_sn_th_good(score, data_size, args.sn_th):
-            sn_good_clauses.append((clause, score, all_scores[c_i]))
+        elif eval_utils.is_sn_th_good(score, args.sn_th):
+            sn_good_clauses.append((clause, score, scores_all[c_i]))
             # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-        elif eval_utils.is_conflict(score, data_size, args.conflict_th):
-            conflict_clauses.append((clause, score, all_scores[c_i]))
+        # elif eval_utils.is_conflict(score, args.conflict_th):
+        #     conflict_clauses.append((clause, score, scores_all[c_i]))
         elif search_type == "nc":
-            if eval_utils.is_nc(score, data_size, 1):
-                necessary_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
-                nc_good_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_sc(score, data_size, 1):
-                sufficient_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
-                sc_good_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_uc_th_good(score, args.uc_th):
-                uc_good_clauses.append((clause, score, all_scores[c_i]))
-                # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+            if eval_utils.is_nc(score):
+                necessary_clauses.append((clause, score, scores_all[c_i]))
+            elif eval_utils.is_nc_th_good(score, args.nc_th):
+                nc_good_clauses.append((clause, score, scores_all[c_i]))
+            elif eval_utils.is_sc(score):
+                sufficient_clauses.append((clause, score, scores_all[c_i]))
+            elif eval_utils.is_sc_th_good(score, args.sc_th):
+                sc_good_clauses.append((clause, score, scores_all[c_i]))
+            # elif eval_utils.is_uc_th_good(score, args.uc_th):
+            #     uc_good_clauses.append((clause, score, scores_all[c_i]))
+            # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
             else:
-                unclassified_clauses.append((clause, score, all_scores[c_i]))
+                unclassified_clauses.append((clause, score, scores_all[c_i]))
                 # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
         elif search_type == "sc":
-            if eval_utils.is_sc(score, data_size, 1):
-                sufficient_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_sc_th_good(score, data_size, args.sc_th):
-                sc_good_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_nc(score, data_size, 1):
-                necessary_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_nc_th_good(score, data_size, args.nc_th):
-                nc_good_clauses.append((clause, score, all_scores[c_i]))
-            elif eval_utils.is_uc_th_good(score, args.uc_th):
-                uc_good_clauses.append((clause, score, all_scores[c_i]))
-                # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+            if eval_utils.is_sc(score):
+                sufficient_clauses.append((clause, score, scores_all[c_i]))
+            elif eval_utils.is_sc_th_good(score, args.sc_th):
+                sc_good_clauses.append((clause, score, scores_all[c_i]))
+            elif eval_utils.is_nc(score):
+                necessary_clauses.append((clause, score, scores_all[c_i]))
+            elif eval_utils.is_nc_th_good(score, args.nc_th):
+                nc_good_clauses.append((clause, score, scores_all[c_i]))
+            # elif eval_utils.is_uc_th_good(score, args.uc_th):
+            #     uc_good_clauses.append((clause, score, scores_all[c_i]))
+            # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
             else:
-                unclassified_clauses.append((clause, score, all_scores[c_i]))
+                unclassified_clauses.append((clause, score, scores_all[c_i]))
                 # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
     clause_dict = {"sn": sufficient_necessary_clauses,
                    "nc": necessary_clauses,
@@ -117,12 +117,60 @@ def eval_clause_sign(p_scores):
     return p_clauses_signs
 
 
-def eval_clauses(NSFR, args, pred_names, pos_pred, neg_pred):
+def eval_ness(positive_scores):
+    positive_scores[positive_scores == 1] = 0.98
+    ness_scores = positive_scores.sum(dim=2).sum(dim=1) / positive_scores.shape[1]
+
+    return ness_scores
+
+
+def eval_suff(negative_scores):
+    negative_scores[negative_scores == 1] = 0.98
+
+    # negative scores are inversely proportional to sufficiency scores
+    negative_scores_inv = 1 - negative_scores
+    suff_scores = negative_scores_inv.sum(dim=2).sum(dim=1) / negative_scores_inv.shape[1]
+    return suff_scores
+
+
+def eval_sn(positive_scores, negative_scores):
+    negative_scores[negative_scores == 1] = 0.98
+    positive_scores[positive_scores == 1] = 0.98
+
+    # negative scores are inversely proportional to sufficiency scores
+    negative_scores_inv = 1 - negative_scores
+    ness_scores = positive_scores.sum(dim=2).sum(dim=1) / positive_scores.shape[1]
+    suff_scores = negative_scores_inv.sum(dim=2).sum(dim=1) * positive_scores.sum(dim=2).sum(dim=1) / \
+                  negative_scores_inv.shape[1]
+    return suff_scores
+
+
+def eval_clauses(score_pos, score_neg, args):
+    scores = torch.zeros(size=(3, score_pos.shape[0])).to(args.device)
+
+    # p_clause_signs = eval_clause_sign(score_all)
+
+    # negative scores are inversely proportional to sufficiency scores
+    score_negative_inv = 1 - score_neg
+
+    # calculate sufficient, necessary, sufficient and nessary scores
+    ness_index = config.score_type_index["ness"]
+    suff_index = config.score_type_index["suff"]
+    sn_index = config.score_type_index["sn"]
+    scores[ness_index, :] = score_pos.sum(dim=1) / score_pos.shape[1]
+    scores[suff_index, :] = score_negative_inv.sum(dim=1) / score_negative_inv.shape[1]
+    scores[sn_index, :] = scores[0, :] * scores[1, :]
+
+    return scores
+
+
+def eval_clause_on_scenes(NSFR, args, pred_names, pos_pred, neg_pred):
     loss_i = 0
     train_size = pos_pred.shape[0]
     bz = args.batch_size_train
-    V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
-    V_T_neg = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms))
+    V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms)).to(args.device)
+    V_T_neg = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms)).to(args.device)
+    score_all = torch.zeros(size=(V_T_pos.shape[0], V_T_pos.shape[1], 2)).to(args.device)
     for i in range(int(train_size / args.batch_size_train)):
         date_now = datetime.datetime.today().date()
         time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -133,13 +181,18 @@ def eval_clauses(NSFR, args, pred_names, pos_pred, neg_pred):
     score_positive = NSFR.predict(V_T_pos, pred_names, args.device)
     score_negative = NSFR.predict(V_T_neg, pred_names, args.device)
 
+    score_negative[score_negative == 1] = 0.98
+    score_positive[score_positive == 1] = 0.98
+
     if score_positive.size(2) > 1:
         score_positive = score_positive.max(dim=2, keepdim=True)[0]
     if score_negative.size(2) > 1:
         score_negative = score_negative.max(dim=2, keepdim=True)[0]
-    score_all = torch.cat((score_negative, score_positive), 2)
 
-    p_clause_signs = eval_clause_sign(score_all)
-    clause_score_list, clause_scores_full = p_clause_signs[0]
+    index_pos = config.score_example_index["pos"]
+    index_neg = config.score_example_index["neg"]
 
-    return score_all, clause_scores_full
+    score_all[:, :, index_pos] = score_positive[:, :, 0]
+    score_all[:, :, index_neg] = score_negative[:, :, 0]
+
+    return score_all

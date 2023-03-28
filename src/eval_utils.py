@@ -1,53 +1,46 @@
-def is_sn(score, data_size):
-    if score[1] == data_size:
+import config
+
+ness_index = config.score_type_index["ness"]
+suff_index = config.score_type_index["suff"]
+sn_index = config.score_type_index["sn"]
+
+
+def is_sn(score):
+    if score[sn_index] == 1:
         return True
     return False
 
 
-def is_sn_th_good(score, data_size, threshold):
-    if score[1] / data_size > threshold:
+def is_sn_th_good(score, threshold):
+    if score[sn_index] > threshold:
         return True
     else:
         return False
 
 
-def is_nc(score, data_size, threshold):
-    if score[1] + score[3] == score.sum():
+def is_nc(score):
+    if score[ness_index] == 1:
         return True
     else:
         return False
 
 
-def is_nc_th_good(score, data_size, threshold):
-    if (score[1] + score[3]) / score.sum() > threshold:
+def is_nc_th_good(score, threshold):
+    if score[ness_index] > threshold:
         return True
     else:
         return False
 
 
-def is_sc(score, data_size, threshold):
-    if score[0] + score[1] == score.sum() and score[1] > 0:
+def is_sc(score):
+    if score[suff_index]==1:
         return True
     else:
         return False
 
 
-def is_sc_th_good(score, data_size, threshold):
-    if (score[0] + score[1]) / score.sum() > threshold and score[1] > 0:
-        return True
-    else:
-        return False
-
-
-def is_uc_th_good(score, threshold):
-    if score[0] < score[1] and score[2] < score[1] and score[3] < score[1]:
-        return True
-    else:
-        return False
-
-
-def is_conflict(score, data_size, conflict_th):
-    if score[0] / score.sum() > conflict_th or score[2] / score.sum() > conflict_th:
+def is_sc_th_good(score, threshold):
+    if score[suff_index] > threshold :
         return True
     else:
         return False

@@ -11,6 +11,7 @@ import glob
 import config
 import log_utils
 import eval_utils
+import eval_clause_infer
 
 p_ = Predicate('.', 1, [DataType('spec')])
 false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
@@ -316,6 +317,7 @@ def conflict_pred(p1, p2, t1, t2):
                 return True
     return False
 
+
 def is_repeat_clu(clu, clu_list):
     is_repeat = False
     for ref_clu, clu_score in clu_list:
@@ -392,7 +394,6 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     # trivial: contain multiple semantic identity bodies
     clause_clusters = check_trivial_clusters(clause_clusters)
 
-
     necessary_clusters = []
     sufficient_clusters = []
     sn_clusters = []
@@ -407,47 +408,54 @@ def search_independent_clauses_parallel(clauses, total_score, args):
             pass
         elif cc_i % 10000 == 0 or cc_i == len(clause_clusters) - 1:
             print(f"eval clause cluster: {cc_i}/{len(clause_clusters) - 1}")
-        score_neg = torch.zeros((1, total_score, 1))
-        score_pos = torch.zeros((1, total_score, 1))
+        score_neg = torch.zeros((1, total_score, 1)).to(args.device)
+        score_pos = torch.zeros((1, total_score, 1)).to(args.device)
+        score_max = torch.zeros(size=(score_neg.shape[0], score_neg.shape[1], 2)).to(args.device)
         for [c_i, c, c_score] in clause_cluster:
             score_neg = torch.cat((score_neg[0, :, :], c_score[:, 0:1]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(
                 0)
             score_pos = torch.cat((score_pos[0, :, :], c_score[:, 1:]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(0)
-        score_max = torch.cat((score_neg, score_pos), dim=2)
-        p_clause_signs = eval_clause_sign(score_max)
-        clu_c_score = p_clause_signs[0][1].reshape(4)
 
+        index_neg = config.score_example_index["neg"]
+        index_pos = config.score_example_index["pos"]
+
+        score_max[:, :, index_pos] = score_pos[:, :, 0]
+        score_max[:, :, index_neg] = score_neg[:, :, 0]
+
+        scores = eval_clause_infer.eval_clauses(score_pos, score_neg, args)
+        # p_clause_signs = eval_clause_sign(score_max)
+        # clu_c_score = p_clause_signs[0][1].reshape(4)
         # sufficient and necessary clauses
-        if eval_utils.is_sn(clu_c_score, total_score):
+        if eval_utils.is_sn(scores):
             # log_utils.add_lines(f"(sn predicate) {clause_cluster} {clu_c_score}", args.log_file)
-            sn_clusters.append([clause_cluster, clu_c_score])
+            sn_clusters.append([clause_cluster, scores])
         # almost a sufficient and necessary clauses
-        elif eval_utils.is_sn_th_good(clu_c_score, total_score, args.sn_th):
+        elif eval_utils.is_sn_th_good(scores, args.sn_th):
             # log_utils.add_lines(f"(sn good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-            sn_th_clusters.append([clause_cluster, clu_c_score])
+            sn_th_clusters.append([clause_cluster, scores])
         # necessary clauses
-        if eval_utils.is_nc(clu_c_score, total_score, 0):
+        if eval_utils.is_nc(scores):
             if not is_repeat_clu(clause_cluster, necessary_clusters):
                 # log_utils.add_lines(f"(nc predicate) {clause_cluster} {clu_c_score}", args.log_file)
-                necessary_clusters.append([clause_cluster, clu_c_score])
+                necessary_clusters.append([clause_cluster, scores])
         # almost necessary clauses
-        elif eval_utils.is_nc_th_good(clu_c_score, total_score, args.nc_th):
+        elif eval_utils.is_nc_th_good(scores, args.nc_th):
             if not is_repeat_clu(clause_cluster, nc_th_clusters):
                 # log_utils.add_lines(f"(nc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-                nc_th_clusters.append([clause_cluster, clu_c_score])
+                nc_th_clusters.append([clause_cluster, scores])
         # sufficient clauses
-        if eval_utils.is_sc(clu_c_score, total_score, 0):
+        if eval_utils.is_sc(scores):
             if not is_repeat_clu(clause_cluster, sufficient_clusters):
                 # log_utils.add_lines(f"(sc predicate) {clause_cluster} {clu_c_score}", args.log_file)
-                sufficient_clusters.append([clause_cluster, clu_c_score])
+                sufficient_clusters.append([clause_cluster, scores])
         # almost sufficient clauses
-        elif eval_utils.is_sc_th_good(clu_c_score, total_score, args.sc_th):
+        elif eval_utils.is_sc_th_good(scores, args.sc_th):
             if not is_repeat_clu(clause_cluster, sc_th_clusters):
                 # log_utils.add_lines(f"(sc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-                sc_th_clusters.append([clause_cluster, clu_c_score])
+                sc_th_clusters.append([clause_cluster, scores])
 
         else:
-            other_clusters.append([clause_cluster, clu_c_score])
+            other_clusters.append([clause_cluster, scores])
 
     sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)
     sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)
@@ -558,6 +566,7 @@ def eval_clause_clusters(clause_clusters, clause_scores_full):
 
 def get_four_scores(predicate_scores):
     return eval_clause_sign(predicate_scores)[0][1]
+
 
 def eval_predicates_slow(NSFR, args, pred_names, pos_pred, neg_pred):
     bz = args.batch_size
@@ -784,6 +793,8 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
     else:
         new_max_score = clause_accuracy.max()
         c_indices = [np.argmax(clause_accuracy)]
+        if len(clauses) != len(clause_scores):
+            print("break")
         max_scoring_clauses = [[clauses[c_i], clause_scores[c_i]] for c_i in c_indices]
         new_max_clause = [new_max_score, max_scoring_clauses]
 
@@ -872,7 +883,7 @@ def extract_clauses_from_max_clause(bs_clauses, args):
 
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
-        log_utils.add_lines(f"add max clause: {bs_clause[0]} {bs_clause[1]}", args.log_file)
+        log_utils.add_lines(f"add max clause: {bs_clause[0]}", args.log_file)
     return clauses
 
 

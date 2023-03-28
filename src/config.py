@@ -3,6 +3,9 @@
 import os
 from pathlib import Path
 
+# dim0: ness, dim1: suff, dim2: sn
+score_type_index = {"ness": 0, "suff": 1, "sn": 2}
+score_example_index = {"neg": 0, "pos": 1}
 root = Path(__file__).parents[1]
 
 trivial_preds_dict = [

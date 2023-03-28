@@ -14,7 +14,7 @@ import log_utils
 import eval_utils
 from fol.data_utils import DataUtils
 import eval_clause_infer
-
+import config
 
 class ClauseGenerator(object):
     """
@@ -119,10 +119,14 @@ class ClauseGenerator(object):
 
     def clause_extension(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause, search_type,
                          max_step=4, iteration=None, max_iteration=None, no_new_preds=False, last_refs=[]):
+        index_pos = config.score_example_index["pos"]
+        index_neg = config.score_example_index["neg"]
+
         log_utils.add_lines(
             f"\n======== beam search iteration {iteration}/{max_iteration} searching for {search_type} ========",
             args.log_file)
         eval_pred = ['kp']
+
         clause_dict = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": [], "nc_good": [], "uc_good": [],
                        "sc_good": []}
         # extend clauses
@@ -149,19 +153,19 @@ class ClauseGenerator(object):
             self.NSFR = get_nsfr_model(args, self.lang, refs_extended, self.NSFR.atoms, pi_clauses, self.NSFR.fc)
 
             # evaluate new clauses
-            all_predicates_scores, clause_scores_full = eval_clause_infer.eval_clauses(self.NSFR, args, eval_pred,
-                                                                                       pos_pred, neg_pred)
+            score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred, pos_pred, neg_pred)
+            scores = eval_clause_infer.eval_clauses(score_all[:,:,index_pos], score_all[:,:,index_neg],args)
+
             # classify clauses
-            clause_dict = eval_clause_infer.classify_clauses(refs_extended, clause_scores_full, all_predicates_scores,
-                                                             args, search_type)
+            clause_dict = eval_clause_infer.classify_clauses(refs_extended, score_all, scores, args, search_type)
             # print best clauses that have been found...
             new_max, clause_dict, higher = logic_utils.print_best_clauses(refs_extended, clause_dict,
-                                                                          clause_scores_full,
+                                                                          score_all,
                                                                           pos_pred.size(0), step,
                                                                           args, max_clause)
 
             # plot charts
-            chart_utils.plot_4_zone(args.plot_four_zone, refs_extended, clause_scores_full, all_predicates_scores,
+            chart_utils.plot_4_zone(args.plot_four_zone, refs_extended, score_all, scores,
                                     step)
 
             max_clause, found_sn = self.check_result(clause_dict, higher, max_clause, new_max)
@@ -838,8 +842,7 @@ class PIClauseGenerator(object):
             NSFR = get_nsfr_model(self.args, lang, pi_clause, atoms,
                                   self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
 
-            p_goodness_scores, p_score_full_list = src.eval_clause_infer.eval_clauses(NSFR, self.args, pred_names,
-                                                                                      pos_pred, neg_pred)
+            scores = src.eval_clause_infer.eval_clause_on_scenes(NSFR, self.args, pred_names, pos_pred, neg_pred)
 
             # = logic_utils.eval_predicates_sign(p_score)
             pi_language_scores[pi_index] = p_goodness_scores[0]
