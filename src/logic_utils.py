@@ -784,7 +784,7 @@ def print_best_clauses(clauses, clause_dict, clause_scores, total_score, step, a
     target_has_been_found = False
     higher = False
     # clause_accuracy = check_accuracy(clause_scores, total_score)
-    sn_scores = clause_scores[config.score_type_index["sn"]]
+    sn_scores = clause_scores[config.score_type_index["sn"]].to("cpu")
     if sn_scores.max() == 1.0:
         log_utils.add_lines(f"(BS Step {step}) max clause accuracy: {sn_scores.max()}", args.log_file)
         target_has_been_found = True
