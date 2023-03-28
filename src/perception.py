@@ -1,5 +1,5 @@
 # Created by shaji on 21-Mar-23
-from src import config, percept, data_hide, log_utils
+import config, percept, data_hide, log_utils
 
 
 def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_loader, train_neg_loader,
