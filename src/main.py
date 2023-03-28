@@ -5,7 +5,7 @@ import time
 import torch
 import argparse
 from pathlib import Path
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from rtpt import RTPT
 import datetime
 
@@ -158,7 +158,7 @@ def main(n):
         args.pi_epochs = 1
 
     # run_name = 'predict/' + args.dataset
-    writer = SummaryWriter(str(config.root / "runs" / name), purge_step=0)
+    # writer = SummaryWriter(str(config.root / "runs" / name), purge_step=0)
 
     # Create RTPT object
     rtpt = RTPT(name_initials='JS', experiment_name=name,
@@ -186,7 +186,7 @@ def main(n):
     # main program
 
     start = time.time()
-    NSFR = pi.train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path)
+    NSFR = pi.train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path)
     end = time.time()
 
     log_utils.add_lines(f"=============================", args.log_file)

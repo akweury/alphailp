@@ -71,7 +71,7 @@ def ilp_predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
+def train_nsfr(args, NSFR, pm_prediction_dict, rtpt, exp_output_path):
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
@@ -103,7 +103,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
         loss_i = loss_i / (i + 1)
         loss_list.append(loss_i)
         rtpt.step(subtitle=f"loss={loss_i:2.2f}")
-        writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
+        # writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
         log_utils.add_lines(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss_i}", args.log_file)
 
         if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
@@ -115,19 +115,19 @@ def train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path):
 
             acc_val, rec_val, th_val = ilp_predict(NSFR, pm_prediction_dict['val_pos'],
                                                    pm_prediction_dict['val_neg'], args, th=0.33, split='val')
-            writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
+            # writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
             log_utils.add_lines(f"acc_val:{acc_val} ", args.log_file)
             log_utils.add_lines("Predi$\alpha$ILPcting on training data set...", args.log_file)
 
             acc, rec, th = ilp_predict(NSFR, pm_prediction_dict['train_pos'],
                                        pm_prediction_dict['train_neg'], args, th=th_val, split='train')
-            writer.add_scalar("metric/train_acc", acc, global_step=epoch)
+            # writer.add_scalar("metric/train_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_train: {acc}", args.log_file)
             log_utils.add_lines(f"Predicting on test data set...", args.log_file)
 
             acc, rec, th = ilp_predict(NSFR, pm_prediction_dict['test_pos'],
                                        pm_prediction_dict['test_neg'], args, th=th_val, split='train')
-            writer.add_scalar("metric/test_acc", acc, global_step=epoch)
+            # writer.add_scalar("metric/test_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_test: {acc}", args.log_file)
 
     return loss
@@ -160,7 +160,7 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
     return clause_generator, pi_clause_generator, FC
 
 
-def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, writer, rtpt, exp_output_path):
+def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
 
     # load perception result
     FC = None
@@ -264,7 +264,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, wri
         for c in kp_pi_clauses:
             print(c)
     NSFR = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=True)
-    train_nsfr(args, NSFR, pm_prediction_dict, writer, rtpt, exp_output_path)
+    train_nsfr(args, NSFR, pm_prediction_dict, rtpt, exp_output_path)
     return NSFR
 
 
