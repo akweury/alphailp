@@ -31,36 +31,35 @@ def classify_clauses(clauses, scores_all, scores, args, search_type):
             # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
         # elif eval_utils.is_conflict(score, args.conflict_th):
         #     conflict_clauses.append((clause, score, scores_all[c_i]))
-        elif search_type == "nc":
-            if eval_utils.is_nc(score):
-                necessary_clauses.append((clause, score, scores_all[c_i]))
-            elif eval_utils.is_nc_th_good(score, args.nc_th):
-                nc_good_clauses.append((clause, score, scores_all[c_i]))
-            elif eval_utils.is_sc(score):
-                sufficient_clauses.append((clause, score, scores_all[c_i]))
-            elif eval_utils.is_sc_th_good(score, args.sc_th):
-                sc_good_clauses.append((clause, score, scores_all[c_i]))
-            # elif eval_utils.is_uc_th_good(score, args.uc_th):
-            #     uc_good_clauses.append((clause, score, scores_all[c_i]))
-            # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-            else:
-                unclassified_clauses.append((clause, score, scores_all[c_i]))
-                # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
-        elif search_type == "sc":
-            if eval_utils.is_sc(score):
-                sufficient_clauses.append((clause, score, scores_all[c_i]))
-            elif eval_utils.is_sc_th_good(score, args.sc_th):
-                sc_good_clauses.append((clause, score, scores_all[c_i]))
-            elif eval_utils.is_nc(score):
-                necessary_clauses.append((clause, score, scores_all[c_i]))
-            elif eval_utils.is_nc_th_good(score, args.nc_th):
-                nc_good_clauses.append((clause, score, scores_all[c_i]))
-            # elif eval_utils.is_uc_th_good(score, args.uc_th):
-            #     uc_good_clauses.append((clause, score, scores_all[c_i]))
-            # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-            else:
-                unclassified_clauses.append((clause, score, scores_all[c_i]))
-                # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
+        # elif search_type == "nc":
+        #     if eval_utils.is_nc(score):
+        #         necessary_clauses.append((clause, score, scores_all[c_i]))
+        #     elif eval_utils.is_nc_th_good(score, args.nc_th):
+        #         nc_good_clauses.append((clause, score, scores_all[c_i]))
+        #     elif eval_utils.is_sc(score):
+        #         sufficient_clauses.append((clause, score, scores_all[c_i]))
+        #     elif eval_utils.is_sc_th_good(score, args.sc_th):
+        #         sc_good_clauses.append((clause, score, scores_all[c_i]))
+        #     # elif eval_utils.is_uc_th_good(score, args.uc_th):
+        #     #     uc_good_clauses.append((clause, score, scores_all[c_i]))
+        #     # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+        #     else:
+        #         unclassified_clauses.append((clause, score, scores_all[c_i]))
+        #         # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
+
+        if eval_utils.is_sc(score):
+            sufficient_clauses.append((clause, score, scores_all[c_i]))
+        elif eval_utils.is_sc_th_good(score, args.sc_th):
+            sc_good_clauses.append((clause, score, scores_all[c_i]))
+        elif eval_utils.is_nc(score):
+            necessary_clauses.append((clause, score, scores_all[c_i]))
+        elif eval_utils.is_nc_th_good(score, args.nc_th):
+            nc_good_clauses.append((clause, score, scores_all[c_i]))
+        # elif eval_utils.is_uc_th_good(score, args.uc_th):
+        #     uc_good_clauses.append((clause, score, scores_all[c_i]))
+        # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+        else:
+            unclassified_clauses.append((clause, score, scores_all[c_i]))
     clause_dict = {"sn": sufficient_necessary_clauses,
                    "nc": necessary_clauses,
                    "sc": sufficient_clauses,

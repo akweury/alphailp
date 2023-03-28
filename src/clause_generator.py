@@ -16,6 +16,7 @@ from fol.data_utils import DataUtils
 import eval_clause_infer
 import config
 
+
 class ClauseGenerator(object):
     """
     clause generator by refinement and beam search
@@ -154,7 +155,7 @@ class ClauseGenerator(object):
 
             # evaluate new clauses
             score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred, pos_pred, neg_pred)
-            scores = eval_clause_infer.eval_clauses(score_all[:,:,index_pos], score_all[:,:,index_neg],args)
+            scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args)
 
             # classify clauses
             clause_dict = eval_clause_infer.classify_clauses(refs_extended, score_all, scores, args, search_type)
@@ -440,52 +441,50 @@ class ClauseGenerator(object):
     def prune_clauses(self, clause_dict, search_type, args):
         refs = []
 
-        if search_type == "nc":
-            if len(clause_dict["nc"]) > 0:
-                refs += self.update_refs(clause_dict, args, priority="nc")
-            if len(clause_dict["nc_good"]) > 0:
-                refs += self.update_refs(clause_dict, args, priority="nc_good")
-            if len(clause_dict["sc"]) > 1:
-                refs += self.update_refs(clause_dict, args, priority="sc")
-            if len(clause_dict["sc_good"]) > 1:
-                refs += self.update_refs(clause_dict, args, priority="sc_good")
-            if len(clause_dict["uc_good"]) > 0:
-                refs += self.update_refs(clause_dict, args, priority="uc_good")
-            if len(clause_dict["uc"]) > 0:
-                refs += self.update_refs(clause_dict, args, priority="uc")
-            if (len(refs) == 0):
-                return [], True
-        elif search_type == "sc":
-            if len(clause_dict["sc"]) > 1:
-                refs += self.update_refs(clause_dict, args, priority="sc")
-            else:
-                log_utils.add_lines(f'no sc for extension!', args.log_file)
-            if len(clause_dict["sc_good"]) > 1:
-                refs += self.update_refs(clause_dict, args, priority="sc_good")
-            else:
-                log_utils.add_lines(f'no sc good for extension!', args.log_file)
+        # if search_type == "nc":
+        #     if len(clause_dict["nc"]) > 0:
+        #         refs += self.update_refs(clause_dict, args, priority="nc")
+        #     if len(clause_dict["nc_good"]) > 0:
+        #         refs += self.update_refs(clause_dict, args, priority="nc_good")
+        #     if len(clause_dict["sc"]) > 1:
+        #         refs += self.update_refs(clause_dict, args, priority="sc")
+        #     if len(clause_dict["sc_good"]) > 1:
+        #         refs += self.update_refs(clause_dict, args, priority="sc_good")
+        #     if len(clause_dict["uc_good"]) > 0:
+        #         refs += self.update_refs(clause_dict, args, priority="uc_good")
+        #     if len(clause_dict["uc"]) > 0:
+        #         refs += self.update_refs(clause_dict, args, priority="uc")
+        #     if (len(refs) == 0):
+        #         return [], True
 
-            if len(clause_dict["nc"]) > 0:
-                refs += self.update_refs(clause_dict, args, priority="nc")
-            else:
-                log_utils.add_lines(f'no nc for extension!', args.log_file)
-
-            if len(clause_dict["nc_good"]) > 0:
-                refs += self.update_refs(clause_dict, args, priority="nc_good")
-            else:
-                log_utils.add_lines(f'no nc good for extension!', args.log_file)
-
-            if len(clause_dict["uc_good"]) > 0:
-                refs += self.update_refs(clause_dict, args, priority="uc_good")
-            else:
-                log_utils.add_lines(f'no uc good for extension!', args.log_file)
-
-            if len(clause_dict["uc"]) > 0:
-                refs += self.update_refs(clause_dict, args, priority="uc")
-            else:
-                log_utils.add_lines(f'no uc for extension!', args.log_file)
+        if len(clause_dict["sc"]) > 1:
+            refs += self.update_refs(clause_dict, args, priority="sc")
         else:
-            return [], True
+            log_utils.add_lines(f'no sc for extension!', args.log_file)
+        if len(clause_dict["sc_good"]) > 1:
+            refs += self.update_refs(clause_dict, args, priority="sc_good")
+        else:
+            log_utils.add_lines(f'no sc good for extension!', args.log_file)
+
+        if len(clause_dict["nc"]) > 0:
+            refs += self.update_refs(clause_dict, args, priority="nc")
+        else:
+            log_utils.add_lines(f'no nc for extension!', args.log_file)
+
+        if len(clause_dict["nc_good"]) > 0:
+            refs += self.update_refs(clause_dict, args, priority="nc_good")
+        else:
+            log_utils.add_lines(f'no nc good for extension!', args.log_file)
+
+        if len(clause_dict["uc_good"]) > 0:
+            refs += self.update_refs(clause_dict, args, priority="uc_good")
+        else:
+            log_utils.add_lines(f'no uc good for extension!', args.log_file)
+
+        if len(clause_dict["uc"]) > 0:
+            refs += self.update_refs(clause_dict, args, priority="uc")
+        else:
+            log_utils.add_lines(f'no uc for extension!', args.log_file)
 
         return refs, False
 
