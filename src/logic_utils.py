@@ -468,8 +468,8 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     index_ness = config.score_type_index['ness']
     index_sn = config.score_type_index['sn']
 
-    suff_clus = [clu for clu in clu_lists if clu[1][index_suff] > args.sc_th and clu[1][index_sn]>args.sn_min_th]
-    ness_clus = [clu for clu in clu_lists if clu[1][index_ness] > args.nc_th and clu[1][index_sn]>args.sn_min_th]
+    suff_clus = [clu for clu in clu_lists if clu[1][index_suff] > args.sc_th and clu[1][index_sn] > args.sn_min_th]
+    ness_clus = [clu for clu in clu_lists if clu[1][index_ness] > args.nc_th and clu[1][index_sn] > args.sn_min_th]
     sn_clus = [clu for clu in clu_lists if clu[1][index_sn] > args.sn_th]
     clu_classified = sorted(suff_clus + ness_clus + sn_clus, key=lambda x: x[1][2], reverse=True)
     clu_lists_sorted = sorted(clu_lists, key=lambda x: x[1][index_ness], reverse=True)
