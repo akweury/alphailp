@@ -192,7 +192,7 @@ def main(n):
     end = time.time()
 
     log_utils.add_lines(f"=============================", args.log_file)
-    log_utils.add_lines(f"Experiment time: {end - start}", args.log_file)
+    log_utils.add_lines(f"Experiment time: {((end - start) / 60):.2f} minute(s)", args.log_file)
     log_utils.add_lines(f"=============================", args.log_file)
 
     final_evaluation(NSFR, pm_prediction_dict, args)
