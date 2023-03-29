@@ -161,13 +161,11 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
 
 
 def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
-
     # load perception result
     FC = None
     val_pos = pm_prediction_dict["val_pos"].to(args.device)
     val_neg = pm_prediction_dict["val_neg"].to(args.device)
     args.data_size = val_pos.shape[0]
-
     # load language module
     lang, full_init_clauses, pi_clauses, atoms = get_lang(args)
     kp_pi_clauses = []
@@ -179,82 +177,76 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
     found_ns = False
 
     # clause generation and predicate invention
-    for search_type in ['nc', 'sc']:
-        iteration = 0
-        max_clause = [0.0, None]
-        no_new_preds = False
-        is_done = False
-        if search_type == "nc":
-            max_step = args.nc_max_step
-        elif search_type == "sc":
-            max_step = args.sc_max_step
+    iteration = 0
+    max_clause = [0.0, None]
+    no_new_preds = False
+    is_done = False
+    max_step = args.max_step
+
+    log_utils.add_lines(f"searching for clauses...", args.log_file)
+    while iteration < max_step and not found_ns:
+        if is_done:
+            break
+        clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
+                                                               init_clauses, pi_clauses, atoms, obj_n)
+
+        # generate clauses # time-consuming code
+        bs_clauses, max_clause, current_step, last_refs, is_done = clause_generator.clause_extension(init_clauses,
+                                                                                                     val_pos,
+                                                                                                     val_neg,
+                                                                                                     pi_clauses,
+                                                                                                     args,
+                                                                                                     max_clause,
+                                                                                                     max_step=iteration,
+                                                                                                     iteration=iteration,
+                                                                                                     max_iteration=max_step,
+                                                                                                     no_new_preds=no_new_preds,
+                                                                                                     last_refs=last_refs)
+        if bs_clauses[0][1][2] == 1.0:
+            log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
+            clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn", args)
+            pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
+            inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
+            log_utils.write_clause_to_file(clauses, pi_clause_file)
+            log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
+            found_ns = True
+            break
+        elif bs_clauses[0][1][2] > args.sn_th:
+            log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
+            clauses += logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn_good", args)
+            pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
+            inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
+            log_utils.write_clause_to_file(clauses, pi_clause_file)
+            log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
+            found_ns = True
+            break
         else:
-            raise ValueError
-        log_utils.add_lines(f"searching for {search_type} clauses...", args.log_file)
-        while iteration < max_step and not found_ns:
-            if is_done:
-                break
-            clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                                   init_clauses, pi_clauses, atoms, obj_n)
+            if args.pi_top == 0:
+                clauses += logic_utils.top_select(bs_clauses, args)
+            elif max_clause[1] is not None:
+                clauses += logic_utils.extract_clauses_from_max_clause(max_clause[1], args)
 
-            # generate clauses # time-consuming code
-            bs_clauses, max_clause, current_step, last_refs, is_done = clause_generator.clause_extension(init_clauses,
-                                                                                                         val_pos,
-                                                                                                         val_neg,
-                                                                                                         pi_clauses,
-                                                                                                         args,
-                                                                                                         max_clause,
-                                                                                                         search_type,
-                                                                                                         max_step=iteration,
-                                                                                                         iteration=iteration,
-                                                                                                         max_iteration=max_step,
-                                                                                                         no_new_preds=no_new_preds,
-                                                                                                         last_refs=last_refs)
-            if bs_clauses[0][1][2] == 1.0:
-                log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
-                clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn", args)
-                pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
-                inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
-                log_utils.write_clause_to_file(clauses, pi_clause_file)
-                log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
-                found_ns = True
-                break
-            elif bs_clauses[0][1][2] > args.sn_th:
-                log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
-                clauses += logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn_good", args)
-                pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
-                inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
-                log_utils.write_clause_to_file(clauses, pi_clause_file)
-                log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
-                found_ns = True
-                break
+        if args.no_pi:
+            clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses, "clause", args)
+            # clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'], "nc", args)
+            # clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'], "sc", args)
+            # clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'], "uc", args)
+        elif args.pi_top > 0:
+            # invent new predicate and generate pi clauses
+            pi_clauses, kp_pi_clauses, _ = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
+                                                                        val_neg, args, step=iteration)
+            new_pred_num = len(pi_clause_generator.lang.invented_preds) - invented_pred_num
+            invented_pred_num = len(pi_clause_generator.lang.invented_preds)
+            if new_pred_num > 0:
+                # add new predicates
+                no_new_preds = False
+                lang = pi_clause_generator.lang
+                atoms = logic_utils.get_atoms(lang)
+                clauses = kp_pi_clauses
             else:
-                if args.pi_top == 0:
-                    clauses += logic_utils.top_select(bs_clauses, args)
-                elif max_clause[1] is not None:
-                    clauses += logic_utils.extract_clauses_from_max_clause(max_clause[1], args)
+                no_new_preds = True
 
-            if args.no_pi:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses, "clause", args)
-                # clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['nc'], "nc", args)
-                # clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['sc'], "sc", args)
-                # clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses['uc'], "uc", args)
-            elif args.pi_top > 0:
-                # invent new predicate and generate pi clauses
-                pi_clauses, kp_pi_clauses, _ = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
-                                                                            val_neg, args, step=iteration)
-                new_pred_num = len(pi_clause_generator.lang.invented_preds) - invented_pred_num
-                invented_pred_num = len(pi_clause_generator.lang.invented_preds)
-                if new_pred_num > 0:
-                    # add new predicates
-                    no_new_preds = False
-                    lang = pi_clause_generator.lang
-                    atoms = logic_utils.get_atoms(lang)
-                    clauses = kp_pi_clauses
-                else:
-                    no_new_preds = True
-
-            iteration += 1
+        iteration += 1
 
     if len(clauses) > 0:
         for c in clauses:

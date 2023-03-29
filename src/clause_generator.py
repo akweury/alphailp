@@ -118,7 +118,7 @@ class ClauseGenerator(object):
             is_done = True
         return refs, is_done
 
-    def clause_extension(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause, search_type,
+    def clause_extension(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause,
                          max_step=4, iteration=None, max_iteration=None, no_new_preds=False, last_refs=[]):
         index_pos = config.score_example_index["pos"]
         index_neg = config.score_example_index["neg"]
@@ -157,7 +157,7 @@ class ClauseGenerator(object):
 
             max_clause, found_sn = self.check_result(clause_with_scores, higher, max_clause, new_max)
             if args.pi_top > 0:
-                refs, is_done = self.prune_clauses(clause_with_scores, search_type, args)
+                refs, is_done = self.prune_clauses(clause_with_scores, args)
             else:
                 refs = logic_utils.top_select(clause_with_scores, args)
             step += 1
@@ -426,7 +426,7 @@ class ClauseGenerator(object):
                 break
         return y
 
-    def prune_clauses(self, clause_with_scores, search_type, args):
+    def prune_clauses(self, clause_with_scores, args):
         refs = []
 
         # if search_type == "nc":

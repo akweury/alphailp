@@ -75,8 +75,8 @@ def get_args():
                         help="The number of epochs for predicate invention.")
     parser.add_argument("--nc_max_step", type=int, default=3,
                         help="The number of max steps for nc searching.")
-    parser.add_argument("--sc_max_step", type=int, default=5,
-                        help="The number of max steps for sc searching.")
+    parser.add_argument("--max_step", type=int, default=5,
+                        help="The number of max steps for clause searching.")
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="The learning rate.")
     parser.add_argument("--sn_th", type=float, default=0.9,
