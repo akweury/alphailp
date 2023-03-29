@@ -151,7 +151,7 @@ class ClauseGenerator(object):
             clause_with_scores = eval_clause_infer.classify_clauses(refs_extended, score_all, scores)
             # print best clauses that have been found...
             new_max, higher = logic_utils.get_best_clauses(refs_extended, scores, step, args, max_clause)
-            clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args, args.nc_top)
+            clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args, args.c_top)
             # plot charts
             chart_utils.plot_4_zone(args.plot_four_zone, refs_extended, score_all, scores, step)
 
