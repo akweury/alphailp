@@ -394,13 +394,13 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     # trivial: contain multiple semantic identity bodies
     clause_clusters = check_trivial_clusters(clause_clusters)
 
-    necessary_clusters = []
-    sufficient_clusters = []
-    sn_clusters = []
-    sn_th_clusters = []
-    nc_th_clusters = []
-    sc_th_clusters = []
-    other_clusters = []
+    # necessary_clusters = []
+    # sufficient_clusters = []
+    # sn_clusters = []
+    # sn_th_clusters = []
+    # nc_th_clusters = []
+    # sc_th_clusters = []
+    # other_clusters = []
     # TODO: parallel programming
     clu_lists = []
     for cc_i, clause_cluster in enumerate(clause_clusters):

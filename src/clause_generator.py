@@ -559,7 +559,7 @@ class PIClauseGenerator(object):
         nc_sc_new_predicates = []
 
         new_predicates, found_ns = self.cluster_invention(beam_search_clauses, pi_clauses, pos_pred.shape[0], args)
-        log_utils.add_lines(f"new PI from sc: {len(sc_new_predicates)}\n", args.log_file)
+        log_utils.add_lines(f"new PI: {len(sc_new_predicates)}\n", args.log_file)
 
         # cluster sufficient clauses
         # if len(beam_search_clauses['sc']) > 1:
@@ -902,6 +902,7 @@ class PIClauseGenerator(object):
 
         clu_lists = logic_utils.search_independent_clauses_parallel(clause_candidates, total_score, args)
         new_predicates = self.generate_new_predicate(clu_lists)
+        new_predicates = new_predicates[:args.pi_top]
         # if len(sn_clu) > 0:
         #     found_ns = True
         #     new_predicates = self.generate_new_predicate(sn_clu)
