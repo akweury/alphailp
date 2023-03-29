@@ -870,9 +870,14 @@ def sorted_clauses(clause_with_scores, args, threshold=None):
             score_unique_c = []
             appeared_scores = []
             for c in c_sorted:
-                if c[1].tolist() not in appeared_scores:
+                is_repeat = False
+                for appeared_score in appeared_scores:
+                    if torch.abs(c[1][2] - appeared_score) / appeared_score < args.similar_th:
+                        is_repeat = True
+
+                if is_repeat:
                     score_unique_c.append(c)
-                    appeared_scores.append(c[1].tolist())
+                    appeared_scores.append(c[1][2])
             c_sorted = score_unique_c
         log_utils.add_lines(f"before top select: {len(c_sorted)}", args.log_file)
         if threshold is not None and len(c_sorted) > threshold:

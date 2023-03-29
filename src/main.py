@@ -89,6 +89,8 @@ def get_args():
                         help="The accept threshold for sufficient clauses.")
     parser.add_argument("--sn_min_th", type=float, default=0.2,
                         help="The accept sn threshold for sufficient or necessary clauses.")
+    parser.add_argument("--similar_th", type=float, default=1e-3,
+                        help="The minimum different requirement between any two clauses.")
     parser.add_argument("--conflict_th", type=float, default=0.9,
                         help="The accept threshold for conflict clauses.")
     parser.add_argument("--c_top", type=int, default=20,
