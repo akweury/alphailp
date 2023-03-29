@@ -91,8 +91,8 @@ def get_args():
                         help="The accept sn threshold for sufficient or necessary clauses.")
     parser.add_argument("--conflict_th", type=float, default=0.9,
                         help="The accept threshold for conflict clauses.")
-    parser.add_argument("--uc_top", type=int, default=20,
-                        help="The accept number for unclassified clauses.")
+    parser.add_argument("--c_top", type=int, default=20,
+                        help="The accept number for clauses.")
     parser.add_argument("--uc_good_top", type=int, default=10,
                         help="The accept number for unclassified good clauses.")
     parser.add_argument("--sc_good_top", type=int, default=20,

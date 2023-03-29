@@ -19,6 +19,7 @@
   "nc_th": 0.95,
   "uc_th": 0.95,
   "sc_th": 0.90,
+  "c_top": 20,
   "pi_top": 1,
   "with_bk": false,
   "plot_four_zone": false

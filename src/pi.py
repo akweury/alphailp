@@ -161,6 +161,7 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
 
 
 def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
+
     # load perception result
     FC = None
     val_pos = pm_prediction_dict["val_pos"].to(args.device)
