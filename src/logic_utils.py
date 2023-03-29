@@ -875,7 +875,7 @@ def sorted_clauses(clause_with_scores, args, threshold=None):
                     if torch.abs(c[1][2] - appeared_score) / appeared_score < args.similar_th:
                         is_repeat = True
 
-                if is_repeat:
+                if not is_repeat:
                     score_unique_c.append(c)
                     appeared_scores.append(c[1][2])
             c_sorted = score_unique_c
