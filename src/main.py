@@ -109,6 +109,8 @@ def get_args():
                         help="The accept number for pi on each classes.")
     parser.add_argument("--max_cluster_size", type=int, default=7,
                         help="The max size of clause cluster.")
+    parser.add_argument("--min_cluster_size", type=int, default=2,
+                        help="The min size of clause cluster.")
     parser.add_argument("--n-data", type=float, default=200,
                         help="The number of data to be used.")
     parser.add_argument("--pre-searched", action="store_true",

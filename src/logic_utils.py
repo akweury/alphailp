@@ -387,7 +387,7 @@ def get_independent_clusters(clauses, args):
     for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
         clauses_with_score.append([clause_i, clause, c_scores])
 
-    clause_clusters = sub_lists(clauses_with_score, min_len=1, max_len=args.max_cluster_size)
+    clause_clusters = sub_lists(clauses_with_score, min_len=args.min_cluster_size, max_len=args.max_cluster_size)
 
     return clause_clusters
 
