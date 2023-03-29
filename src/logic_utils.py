@@ -464,7 +464,15 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         # else:
         #     other_clusters.append([clause_cluster, scores])
 
-    clu_lists = sorted(clu_lists, key=lambda x: x[1][2], reverse=True)
+    index_suff = config.score_type_index['suff']
+    index_ness = config.score_type_index['ness']
+    index_sn = config.score_type_index['sn']
+
+    suff_clus = [clu for clu in clu_lists if clu[1][index_suff] == 1.0]
+    ness_clus = [clu for clu in clu_lists if clu[1][index_ness] == 1.0]
+    sn_clus = [clu for clu in clu_lists if clu[1][index_sn] == 1.0]
+    clu_classified = sorted(suff_clus+ness_clus+sn_clus, key=lambda x: x[1][2], reverse=True)
+    # clu_lists = sorted(clu_lists, key=lambda x: x[1][2], reverse=True)
     # sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)
     # sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)
     # sufficient_clusters = sorted(sufficient_clusters, key=lambda x: x[1][1], reverse=True)
@@ -472,7 +480,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     # necessary_clusters = sorted(necessary_clusters, key=lambda x: x[1][1], reverse=True)
     # nc_th_clusters = sorted(nc_th_clusters, key=lambda x: x[1][1], reverse=True)
     # return necessary_clusters, sn_clusters, sufficient_clusters, sn_th_clusters, nc_th_clusters, sc_th_clusters
-    return clu_lists
+    return clu_classified
 
 
 def sub_clause_of(clause_a, clause_b):

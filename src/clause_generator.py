@@ -550,16 +550,16 @@ class PIClauseGenerator(object):
         # clause_candidates = logic_utils.eval_clause_clusters(clause_clusters, p_scores_list)
 
         # generate new clauses
-        sc_new_predicates = []
-        sc_good_new_predicates = []
-        nc_new_predicates = []
-        nc_good_new_predicates = []
-        uc_new_predicates = []
-        uc_good_new_predicates = []
-        nc_sc_new_predicates = []
+        # sc_new_predicates = []
+        # sc_good_new_predicates = []
+        # nc_new_predicates = []
+        # nc_good_new_predicates = []
+        # uc_new_predicates = []
+        # uc_good_new_predicates = []
+        # nc_sc_new_predicates = []
 
         new_predicates, found_ns = self.cluster_invention(beam_search_clauses, pi_clauses, pos_pred.shape[0], args)
-        log_utils.add_lines(f"new PI: {len(sc_new_predicates)}\n", args.log_file)
+        log_utils.add_lines(f"new PI: {len(new_predicates)}\n", args.log_file)
 
         # cluster sufficient clauses
         # if len(beam_search_clauses['sc']) > 1:
