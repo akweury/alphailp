@@ -6,16 +6,16 @@ import log_utils
 import eval_utils
 
 
-def classify_clauses(clauses, scores_all, scores, args, search_type):
-    sufficient_necessary_clauses = []
-    necessary_clauses = []
-    sufficient_clauses = []
-    unclassified_clauses = []
-    sn_good_clauses = []
-    sc_good_clauses = []
-    nc_good_clauses = []
-    uc_good_clauses = []
-    conflict_clauses = []
+def classify_clauses(clauses, scores_all, scores):
+    # sufficient_necessary_clauses = []
+    # necessary_clauses = []
+    # sufficient_clauses = []
+    # unclassified_clauses = []
+    # sn_good_clauses = []
+    # sc_good_clauses = []
+    # nc_good_clauses = []
+    # uc_good_clauses = []
+    # conflict_clauses = []
     clause_with_scores = []
     for c_i, clause in enumerate(clauses):
         score = scores[:, c_i]

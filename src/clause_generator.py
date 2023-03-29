@@ -123,13 +123,9 @@ class ClauseGenerator(object):
         index_pos = config.score_example_index["pos"]
         index_neg = config.score_example_index["neg"]
 
-        log_utils.add_lines(
-            f"\n======== beam search iteration {iteration}/{max_iteration} searching for {search_type} ========",
-            args.log_file)
+        log_utils.add_lines(f"\n=== beam search iteration {iteration}/{max_iteration} ===", args.log_file)
         eval_pred = ['kp']
-
-        clause_with_scores = {"sn": [], "nc": [], "sc": [], "uc": [], "sn_good": [], "nc_good": [], "uc_good": [],
-                              "sc_good": []}
+        clause_with_scores = []
         # extend clauses
         step = 0
         is_done = False
@@ -137,32 +133,25 @@ class ClauseGenerator(object):
         if no_new_preds:
             step = max_step
             refs = last_refs
-
         if args.pi_top == 0:
             step = max_step
             if len(last_refs) > 0:
                 refs = last_refs
         while step <= max_step:
-
             # log
             log_utils.print_time(args, iteration, step, max_step)
-
             # clause extension
             refs_extended, is_done = self.extend_clauses(refs, args, pi_clauses)
-
             # update NSFR
             self.NSFR = get_nsfr_model(args, self.lang, refs_extended, self.NSFR.atoms, pi_clauses, self.NSFR.fc)
-
             # evaluate new clauses
             score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred, pos_pred, neg_pred)
             scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args)
-
             # classify clauses
-            clause_with_scores = eval_clause_infer.classify_clauses(refs_extended, score_all, scores, args, search_type)
+            clause_with_scores = eval_clause_infer.classify_clauses(refs_extended, score_all, scores)
             # print best clauses that have been found...
             new_max, higher = logic_utils.get_best_clauses(refs_extended, scores, step, args, max_clause)
             clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, "clause", args, args.nc_top)
-
             # plot charts
             chart_utils.plot_4_zone(args.plot_four_zone, refs_extended, score_all, scores, step)
 
@@ -381,7 +370,7 @@ class ClauseGenerator(object):
                 log_utils.add_lines(f"necessary clause with {args.nc_th * 100}%: {c[0]}, {score}", args.log_file)
         log_utils.add_lines('============= Beam search End ===================\n', args.log_file)
 
-    def update_refs(self, clause_with_scores, args, priority="nc"):
+    def update_refs(self, clause_with_scores, args):
         refs = []
         nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_with_scores, "clause", args)
         refs += nc_clauses
@@ -455,7 +444,7 @@ class ClauseGenerator(object):
         #         refs += self.update_refs(clause_dict, args, priority="uc")
         #     if (len(refs) == 0):
         #         return [], True
-        refs += self.update_refs(clause_with_scores, args, priority="sc")
+        refs += self.update_refs(clause_with_scores, args)
 
         # if len(clause_with_scores["sc"]) > 1:
         #     refs += self.update_refs(clause_with_scores, args, priority="sc")
