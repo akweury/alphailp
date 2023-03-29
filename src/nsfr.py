@@ -89,7 +89,7 @@ class NSFReasoner(nn.Module):
 
         return zs
 
-    def predict(self, v, prednames, device):
+    def get_target_prediciton(self, v, prednames, device):
         """Extracting a value from the valuation tensor using a given predicate.
         """
         # v: batch * |atoms|

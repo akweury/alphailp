@@ -366,9 +366,13 @@ def check_trivial_clusters(clause_clusters):
         is_trivial = False
         if len(c_clu) > 1:
             for c_i, c in enumerate(c_clu):
-                c[1].body = sorted(c[1].body)
+                clause = c[1]
+                clause.body = sorted(clause.body)
                 if c_i > 0:
-                    if has_same_preds_and_atoms(c[1], c_clu[0][1]):
+                    if has_same_preds_and_atoms(clause, c_clu[0][1]):
+                        is_trivial = True
+                        break
+                    if not has_same_preds(clause, c_clu[0][1]):
                         is_trivial = True
                         break
         if not is_trivial:
@@ -389,10 +393,9 @@ def get_independent_clusters(clauses, args):
 
 
 def search_independent_clauses_parallel(clauses, total_score, args):
-    clause_clusters = get_independent_clusters(clauses, args)
-
+    patterns = get_independent_clusters(clauses, args)
     # trivial: contain multiple semantic identity bodies
-    clause_clusters = check_trivial_clusters(clause_clusters)
+    patterns = check_trivial_clusters(patterns)
 
     # necessary_clusters = []
     # sufficient_clusters = []
@@ -402,28 +405,28 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     # sc_th_clusters = []
     # other_clusters = []
     # TODO: parallel programming
+    index_neg = config.score_example_index["neg"]
+    index_pos = config.score_example_index["pos"]
+
+    # evaluate each new pattern
     clu_lists = []
-    for cc_i, clause_cluster in enumerate(clause_clusters):
-        if len(clause_clusters) < 10000:
-            pass
-        elif cc_i % 10000 == 0 or cc_i == len(clause_clusters) - 1:
-            print(f"eval clause cluster: {cc_i}/{len(clause_clusters) - 1}")
-        score_neg = torch.zeros((1, total_score, 1)).to(args.device)
-        score_pos = torch.zeros((1, total_score, 1)).to(args.device)
-        score_max = torch.zeros(size=(score_neg.shape[0], score_neg.shape[1], 2)).to(args.device)
-        for [c_i, c, c_score] in clause_cluster:
-            score_neg = torch.cat((score_neg[0, :, :], c_score[:, 0:1]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(
-                0)
-            score_pos = torch.cat((score_pos[0, :, :], c_score[:, 1:]), dim=1).max(dim=1, keepdims=True)[0].unsqueeze(0)
+    for cc_i, pattern in enumerate(patterns):
+        score_neg = torch.zeros((1, total_score, len(pattern))).to(args.device)
+        score_pos = torch.zeros((1, total_score, len(pattern))).to(args.device)
+        # score_max = torch.zeros(size=(score_neg.shape[0], score_neg.shape[1], 2)).to(args.device)
 
-        index_neg = config.score_example_index["neg"]
-        index_pos = config.score_example_index["pos"]
+        for f_i, [c_i, c, c_score] in enumerate(pattern):
+            score_neg[0, :, f_i] = c_score[:, index_neg]
+            score_pos[0, :, f_i] = c_score[:, index_pos]
 
-        score_max[:, :, index_pos] = score_pos[:, :, 0]
-        score_max[:, :, index_neg] = score_neg[:, :, 0]
+        score_neg = score_neg.max(dim=2, keepdims=True)[0]
+        score_pos = score_pos.max(dim=2, keepdims=True)[0]
+
+        # score_max[:, :, index_pos] = score_pos[:, :, 0]
+        # score_max[:, :, index_neg] = score_neg[:, :, 0]
 
         scores = eval_clause_infer.eval_clauses(score_pos, score_neg, args)
-        clu_lists.append([clause_cluster, scores])
+        clu_lists.append([pattern, scores])
 
         # eval_utils.is_nc(scores)
         # if not is_repeat_clu(clause_cluster, necessary_clusters):

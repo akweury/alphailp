@@ -497,7 +497,7 @@ class ClauseGenerator(object):
 
         if clause_with_scores[0][1][2] == 1.0:
             return best_clause, True
-        elif clause_with_scores[0][1][2] == self.args.sn_th:
+        elif clause_with_scores[0][1][2] > self.args.sn_th:
             return best_clause, True
         return best_clause, False
 

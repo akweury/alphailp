@@ -182,8 +182,8 @@ def eval_clause_on_scenes(NSFR, args, pred_names, pos_pred, neg_pred):
         V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_pred[i * bz:(i + 1) * bz])
         V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_pred[i * bz:(i + 1) * bz])
 
-    score_positive = NSFR.predict(V_T_pos, pred_names, args.device)
-    score_negative = NSFR.predict(V_T_neg, pred_names, args.device)
+    score_positive = NSFR.get_target_prediciton(V_T_pos, pred_names, args.device)
+    score_negative = NSFR.get_target_prediciton(V_T_neg, pred_names, args.device)
 
     score_negative[score_negative == 1] = 0.98
     score_positive[score_positive == 1] = 0.98
