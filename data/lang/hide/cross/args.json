@@ -1,6 +1,6 @@
 {
   "n_obj": 5,
-  "batch_size_train": 2,
+  "batch_size_train": 8,
   "e": 5,
   "dataset": "cross",
   "dataset-type": "hide",
@@ -18,7 +18,7 @@
   "nc_th": 0.95,
   "uc_th": 0.95,
   "sc_th": 0.90,
-  "c_top": 20,
+  "c_top": 10,
   "pi_top": 1,
   "with_bk": false,
   "plot_four_zone": false
