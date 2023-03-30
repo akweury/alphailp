@@ -13,7 +13,6 @@
   "epochs": 100,
   "max_step": 6,
   "sn_min_th": 0.002,
-  "sc_max_step": 0,
   "sn_th": 0.80,
   "conflict_th": 0.8,
   "nc_th": 0.95,
