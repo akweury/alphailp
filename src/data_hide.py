@@ -3,10 +3,8 @@ import percept
 
 
 def get_pred_res(args, data_type):
-    pos_dataset_folder = config.buffer_path / "hide" / args.dataset / data_type / 'true'
-    neg_dataset_folder = config.buffer_path / "hide" / args.dataset / data_type / 'false'
-    pred_pos = percept.convert_data_to_tensor(args, pos_dataset_folder)
-    pred_neg = percept.convert_data_to_tensor(args, neg_dataset_folder)
+    od_res = config.buffer_path / "hide" / f"{args.dataset}_pm_res_{data_type}.pth.tar"
+    pred_pos,pred_neg = percept.convert_data_to_tensor(args, od_res)
 
     # normalize the position
     value_max = max(pred_pos[:, :, :3].max(), pred_neg[:, :, :3].max())
