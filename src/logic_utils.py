@@ -409,7 +409,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     index_pos = config.score_example_index["pos"]
 
     # evaluate each new pattern
-    clu_lists = []
+    clu_all = []
     for cc_i, pattern in enumerate(patterns):
         score_neg = torch.zeros((1, total_score, len(pattern))).to(args.device)
         score_pos = torch.zeros((1, total_score, len(pattern))).to(args.device)
@@ -425,8 +425,8 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         # score_max[:, :, index_pos] = score_pos[:, :, 0]
         # score_max[:, :, index_neg] = score_neg[:, :, 0]
 
-        scores = eval_clause_infer.eval_clauses(score_pos, score_neg, args)
-        clu_lists.append([pattern, scores])
+        score_all = eval_clause_infer.eval_clauses(score_pos, score_neg, args)
+        clu_all.append([pattern, score_all])
 
         # eval_utils.is_nc(scores)
         # if not is_repeat_clu(clause_cluster, necessary_clusters):
@@ -471,11 +471,11 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     index_ness = config.score_type_index['ness']
     index_sn = config.score_type_index['sn']
 
-    suff_clus = [clu for clu in clu_lists if clu[1][index_suff] > args.sc_th and clu[1][index_sn] > args.sn_min_th]
-    ness_clus = [clu for clu in clu_lists if clu[1][index_ness] > args.nc_th and clu[1][index_sn] > args.sn_min_th]
-    sn_clus = [clu for clu in clu_lists if clu[1][index_sn] > args.sn_th]
-    clu_classified = sorted(suff_clus + ness_clus + sn_clus, key=lambda x: x[1][2], reverse=True)
-    clu_lists_sorted = sorted(clu_lists, key=lambda x: x[1][index_ness], reverse=True)
+    clu_suff = [clu for clu in clu_all if clu[1][index_suff] > args.sc_th and clu[1][index_sn] > args.sn_min_th]
+    clu_ness = [clu for clu in clu_all if clu[1][index_ness] > args.nc_th and clu[1][index_sn] > args.sn_min_th]
+    clu_sn = [clu for clu in clu_all if clu[1][index_sn] > args.sn_th]
+    clu_classified = sorted(clu_suff + clu_ness + clu_sn, key=lambda x: x[1][2], reverse=True)
+    clu_lists_sorted = sorted(clu_all, key=lambda x: x[1][index_ness], reverse=True)
     # clu_lists = sorted(clu_lists, key=lambda x: x[1][2], reverse=True)
     # sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)
     # sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)
