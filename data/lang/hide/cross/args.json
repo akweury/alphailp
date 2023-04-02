@@ -16,7 +16,7 @@
   "sn_th": 0.70,
   "nc_th": 0.70,
   "sc_th": 0.70,
-  "c_top": 15,
+  "c_top": 10,
   "pi_top": 1,
   "with_bk": false,
   "plot_four_zone": false
