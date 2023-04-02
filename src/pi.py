@@ -240,7 +240,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
                 no_new_preds = False
                 lang = pi_clause_generator.lang
                 atoms = logic_utils.get_atoms(lang)
-                clauses = kp_pi_clauses
+                clauses += kp_pi_clauses
             else:
                 no_new_preds = True
 
