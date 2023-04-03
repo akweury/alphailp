@@ -880,6 +880,8 @@ def sorted_clauses(clause_with_scores, args, threshold=None):
                     appeared_scores.append(c[1][2])
             c_sorted = score_unique_c
         log_utils.add_lines(f"before top select: {len(c_sorted)}", args.log_file)
+        for c in c_sorted[threshold:]:
+            log_utils.add_lines(f"discarded clause: {c[0]} {c[1]}", args.log_file)
         if threshold is not None and len(c_sorted) > threshold:
             c_sorted = c_sorted[:threshold]
         log_utils.add_lines(f"after top select: {len(c_sorted)}", args.log_file)
