@@ -68,6 +68,7 @@ class DataUtils(object):
         clause_str_list = []
         for c_str, c_score in clause_str_list_with_score:
             clause_str_list += c_str
+
         clauses = []
         for clause_str in clause_str_list:
             tree = self.lp_clause.parse(clause_str)
