@@ -161,7 +161,6 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
 
 
 def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
-
     # load perception result
     FC = None
     val_pos = pm_prediction_dict["val_pos"].to(args.device)
@@ -224,6 +223,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
         else:
             if args.pi_top == 0:
                 clauses += logic_utils.top_select(bs_clauses, args)
+            elif iteration == max_step:
+                clauses += logic_utils.extract_clauses_from_max_clause(bs_clauses, args)
             elif max_clause[1] is not None:
                 clauses += logic_utils.extract_clauses_from_max_clause(max_clause[1], args)
 
