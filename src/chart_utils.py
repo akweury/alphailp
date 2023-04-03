@@ -67,7 +67,7 @@ def plot_scatter_chart(data_list, path, title=None, x_scale=None, y_scale=None,
     # for i, data in enumerate(data_list):
     data_x = data_list[:, 0]
     data_y = data_list[:, 1]
-    sc = ax1.scatter(data_x, data_y, label="PN Point", c=color[5])
+    sc = ax1.scatter(data_x, data_y, label="PN Point")
     # plt.colorbar(sc)
 
     if labels is not None:
@@ -88,8 +88,8 @@ def plot_scatter_chart(data_list, path, title=None, x_scale=None, y_scale=None,
         plt.xscale('log')
 
     plt.legend()
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
+    # plt.xlim([0, 1])
+    # plt.ylim([0, 1])
     # plt.figure(figsize=(1000, 1000 * 0.618))
     if not os.path.exists(str(path)):
         os.mkdir(path)
