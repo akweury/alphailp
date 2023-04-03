@@ -8,7 +8,6 @@ import torch
 def vertex_normalization(data):
     if len(data.shape) != 3:
         raise ValueError
-    torch.set_printoptions(precision=2)
 
     ax = 0
     data[:, :, :3] = (data[:, :, :3] - data[:, :, ax:ax + 1].min(axis=1, keepdims=True)[0]) / (
