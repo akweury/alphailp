@@ -169,7 +169,6 @@ def eval_clauses(score_pos, score_neg, args):
 
 
 def eval_clause_on_scenes(NSFR, args, pred_names, pos_pred, neg_pred):
-    loss_i = 0
     train_size = pos_pred.shape[0]
     bz = args.batch_size_train
     V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms)).to(args.device)
