@@ -114,7 +114,8 @@ class ClauseGenerator(object):
 
         # remove semantic conflict clauses
         refs_no_conflict = self.remove_conflict_clauses(refs, pi_clauses, args)
-        if len(refs_no_conflict) == 0:
+        refs_no_semantic_similar = self.remove_semantic_similar_clauses(refs_no_conflict, args)
+        if len(refs_no_semantic_similar) == 0:
             is_done = True
         return refs, is_done
 
@@ -443,34 +444,34 @@ class ClauseGenerator(object):
             c_score_pruned = clause_with_scores
 
         # prune predicate similar clauses
-        log_utils.add_lines(f"=============== semantic pruning ==========", args.log_file)
-        if args.semantic_unique:
-            semantic_unique_c = []
-            semantic_repeat_c = []
-            appeared_semantics = []
-            for c in c_score_pruned:
-                c_semantic = logic_utils.get_semantic_from_c(c[0])
-                if not eval_clause_infer.eval_semantic_similarity(c_semantic, appeared_semantics, args):
-                    semantic_unique_c.append(c)
-                    appeared_semantics.append(c_semantic)
-                else:
-                    semantic_repeat_c.append(c)
-            c_semantic_pruned = semantic_unique_c
+        # log_utils.add_lines(f"=============== semantic pruning ==========", args.log_file)
+        # if args.semantic_unique:
+        #     semantic_unique_c = []
+        #     semantic_repeat_c = []
+        #     appeared_semantics = []
+        #     for c in c_score_pruned:
+        #         c_semantic = logic_utils.get_semantic_from_c(c[0])
+        #         if not eval_clause_infer.eval_semantic_similarity(c_semantic, appeared_semantics, args):
+        #             semantic_unique_c.append(c)
+        #             appeared_semantics.append(c_semantic)
+        #         else:
+        #             semantic_repeat_c.append(c)
+        #     c_semantic_pruned = semantic_unique_c
             # for c in c_semantic_pruned:
             #     log_utils.add_lines(f"(unique semantic clause) {c[0]}", args.log_file)
             # for c in semantic_repeat_c:
             #     log_utils.add_lines(f"(repeat semantic clause) {c[0]}", args.log_file)
-        else:
-            c_semantic_pruned = c_score_pruned
+        # else:
+        #     c_semantic_pruned = c_score_pruned
 
         # select top N clauses
-        if args.c_top is not None and len(c_semantic_pruned) > args.c_top:
-            c_semantic_pruned = c_semantic_pruned[:args.c_top]
-        log_utils.add_lines(f"after top select: {len(c_semantic_pruned)}", args.log_file)
+        if args.c_top is not None and len(c_score_pruned) > args.c_top:
+            c_score_pruned = c_score_pruned[:args.c_top]
+        log_utils.add_lines(f"after top select: {len(c_score_pruned)}", args.log_file)
 
-        refs += self.update_refs(c_semantic_pruned, args)
+        refs += self.update_refs(c_score_pruned, args)
 
-        return refs, c_semantic_pruned, False
+        return refs, c_score_pruned, False
 
     def check_result(self, clause_with_scores, higher, max_clause, new_max_clause):
 
@@ -484,6 +485,25 @@ class ClauseGenerator(object):
         elif clause_with_scores[0][1][2] > self.args.sn_th:
             return best_clause, True
         return best_clause, False
+
+    def remove_semantic_similar_clauses(self, refs, args):
+        # prune predicate similar clauses
+        log_utils.add_lines(f"=============== semantic pruning ==========", args.log_file)
+        if args.semantic_unique:
+            semantic_unique_c = []
+            semantic_repeat_c = []
+            appeared_semantics = []
+            for c in refs:
+                c_semantic = logic_utils.get_semantic_from_c(c)
+                if not eval_clause_infer.eval_semantic_similarity(c_semantic, appeared_semantics, args):
+                    semantic_unique_c.append(c)
+                    appeared_semantics.append(c_semantic)
+                else:
+                    semantic_repeat_c.append(c)
+            c_semantic_pruned = semantic_unique_c
+        else:
+            c_semantic_pruned = refs
+        return c_semantic_pruned
 
 
 def count_arity_from_clause_cluster(clause_cluster):
