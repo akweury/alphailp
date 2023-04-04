@@ -220,6 +220,9 @@ def eval_semantic_similarity(semantic, appeared_semantics, args):
                     if a_i < len(semantic[p_i]):
                         if semantic[p_i][a_i] == appeared_semantic[p_i][a_i]:
                             similar_counter += 1
+                        elif isinstance(semantic[p_i][a_i], list):
+                            if semantic[p_i][a_i][-1] == appeared_semantic[p_i][a_i][-1]:
+                                similar_counter += 1
         similarity = similar_counter / (len(semantic) * 2)
         if similarity > args.semantic_th:
             is_repeat = True
