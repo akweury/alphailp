@@ -117,7 +117,7 @@ class ClauseGenerator(object):
         refs_no_semantic_similar = self.remove_semantic_similar_clauses(refs_no_conflict, args)
         if len(refs_no_semantic_similar) == 0:
             is_done = True
-        return refs, is_done
+        return refs_no_semantic_similar, is_done
 
     def clause_extension(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause,
                          max_step=4, iteration=None, max_iteration=None, no_new_preds=False, last_refs=[]):
