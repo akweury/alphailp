@@ -47,34 +47,6 @@ def get_atoms(lang):
     return atoms
 
 
-def get_searched_clauses(lark_path, lang_base_path, dataset_type, dataset):
-    """Load the language of first-order logic from files.
-
-    Read the language, clauses, background knowledge from files.
-    Atoms are generated from the language.
-    """
-    du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
-                   dataset_type=dataset_type, dataset=dataset)
-    lang = du.load_language()
-    clauses = du.load_clauses(str(du.base_path / dataset / 'beam_searched.txt'), lang)
-    return clauses
-
-
-def _get_lang(lark_path, lang_base_path, dataset_type, dataset):
-    """Load the language of first-order logic from files.
-
-    Read the language, clauses, background knowledge from files.
-    Atoms are generated from the language.
-    """
-    du = DataUtils(lark_path=lark_path, lang_base_path=lang_base_path,
-                   dataset_type=dataset_type, dataset=dataset)
-    lang = du.load_language()
-    clauses = du.get_clauses(lang)
-    bk = du.get_bk(lang)
-    atoms = generate_atoms(lang)
-    return lang, clauses, bk, atoms
-
-
 def build_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
     I = te.encode()

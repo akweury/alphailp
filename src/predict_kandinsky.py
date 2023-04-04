@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from nsfr_utils import denormalize_kandinsky, get_data_loader, get_prob, get_nsfr_model
 from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, generate_captions
-from logic_utils import get_lang
+
 
 
 def get_args():
@@ -92,60 +92,3 @@ def predict(NSFR, loader, args, device, writer, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def main():
-    args = get_args()
-
-    print('args ', args)
-    if args.no_cuda:
-        device = torch.device('cpu')
-    elif len(args.device.split(',')) > 1:
-        # multi gpu
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cuda:' + args.device)
-
-    print('device: ', device)
-    run_name = 'predict/' + args.dataset
-    writer = SummaryWriter(f"runs/{run_name}", purge_step=0)
-
-    # get torch data loader
-    train_loader, val_loader,  test_loader = get_data_loader(args)
-
-    # load logical representations
-    lark_path = 'src/lark/exp.lark'
-    lang_base_path = 'data/lang/'
-
-    lang, clauses, bk_clauses, bk, atoms = get_lang(
-        lark_path, lang_base_path, args.dataset_type, args.dataset)
-    print("clauses: ", clauses)
-
-    # Neuro-Symbolic Forward Reasoner for clause generation
-    NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, bk_clauses, device=device)
-    #lang, clauses, bk, atoms = get_lang(
-    #    lark_path, lang_base_path, args.dataset_type, args.dataset)
-
-    # Neuro-Symbolic Forward Reasoner
-    #NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, device)
-
-    # validation split
-    print("Predicting on validation data set...")
-    acc_val, rec_val, th_val = predict(
-        NSFR, val_loader, args, device, writer, th=0.33, split='val')
-
-    print("Predicting on training data set...")
-    # training split
-    acc, rec, th = predict(
-        NSFR, train_loader, args, device, writer, th=th_val, split='train')
-
-    print("Predicting on test data set...")
-    # test split
-    acc_test, rec_test, th_test = predict(
-        NSFR, test_loader, args, device, writer, th=th_val, split='test')
-
-    print("training acc: ", acc, "threashold: ", th, "recall: ", rec)
-    print("val acc: ", acc_val, "threashold: ", th_val, "recall: ", rec_val)
-    print("test acc: ", acc_test, "threashold: ", th_test, "recall: ", rec_test)
-
-
-if __name__ == "__main__":
-    main()

@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 from nsfr_utils import denormalize_clevr, get_data_loader, get_prob, get_nsfr_model
 from nsfr_utils import save_images_with_captions, to_plot_images_clevr, generate_captions
-from logic_utils import get_lang
 
 
 def get_args():
@@ -74,62 +73,3 @@ def predict(NSFR, loader, args, device, writer, split='train'):
     target = target_list
     return accuracy_score(target, predicted), confusion_matrix(target, predicted)
 
-
-def main():
-    args = get_args()
-    assert args.dataset_type == 'clevr', 'Use clever dataset for this script.'
-    print('args ', args)
-    if args.no_cuda:
-        device = torch.device('cpu')
-    else:
-        device = torch.device('cuda:' + args.device)
-
-    print('device: ', device)
-    run_name = 'predict/' + args.dataset
-    writer = SummaryWriter(f"runs/{run_name}", purge_step=0)
-
-    # get torch data loader
-    train_loader, val_loader, test_loader = get_data_loader(args)
-
-    # load logical representations
-    lark_path = 'src/lark/exp.lark'
-    lang_base_path = 'data/lang/'
-    lang, clauses, bk, atoms = get_lang(
-        lark_path, lang_base_path, args.dataset_type, args.dataset)
-
-    # Neuro-Symbolic Forward Reasoner
-    NSFR = get_nsfr_model(args, lang, clauses, atoms, bk, device)
-    if len(args.device.split(',')) > 1:
-        NSFR = nn.DataParallel(NSFR)
-
-    # validation split
-    print("Predicting on validation data set...")
-    acc_val, cmat_val = predict(
-        NSFR, val_loader, args, device, writer, split='val')
-
-    print("Predicting on training data set...")
-    # training split
-    acc, cmat = predict(
-        NSFR, train_loader, args, device, writer, split='train')
-
-    print("Predicting on test data set...")
-    # test split
-    acc_test, cmat_test = predict(
-        NSFR, test_loader, args, device, writer, split='test')
-
-    print("=== ACCURACY ===")
-    print("training acc: ", acc)
-    print("val acc: ", acc_val)
-    print("test acc: ", acc_test)
-
-    print("=== CONFUSION MATRIX ===")
-    print('training:')
-    print(cmat)
-    print('val:')
-    print(cmat_val)
-    print('test:')
-    print(cmat_test)
-
-
-if __name__ == "__main__":
-    main()

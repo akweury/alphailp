@@ -298,7 +298,7 @@ class DataUtils(object):
         """Load language, background knowledge, and clauses from files.
         """
         preds = self.load_preds(str(self.base_path / 'preds.txt'))
-        preds += self.load_neural_preds(str(self.base_path / 'neural_preds.txt'))
+        preds += self.load_neural_preds(str(self.base_path / 'neural_preds.txt'))[0:1]
         pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
         consts = self.load_consts(str(self.base_path / 'consts.txt'))
         bk_inv_preds = []
