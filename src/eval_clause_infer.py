@@ -33,37 +33,37 @@ def classify_clauses(clauses, scores_all, scores):
     #         # log_utils.add_lines(f'(sn) {clause}, {four_scores[c_i]}', args.log_file)
     #     elif eval_utils.is_sn_th_good(score, args.sn_th):
     #         sn_good_clauses.append((clause, score, scores_all[c_i]))
-            # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-        # elif eval_utils.is_conflict(score, args.conflict_th):
-        #     conflict_clauses.append((clause, score, scores_all[c_i]))
-        # elif search_type == "nc":
-        #     if eval_utils.is_nc(score):
-        #         necessary_clauses.append((clause, score, scores_all[c_i]))
-        #     elif eval_utils.is_nc_th_good(score, args.nc_th):
-        #         nc_good_clauses.append((clause, score, scores_all[c_i]))
-        #     elif eval_utils.is_sc(score):
-        #         sufficient_clauses.append((clause, score, scores_all[c_i]))
-        #     elif eval_utils.is_sc_th_good(score, args.sc_th):
-        #         sc_good_clauses.append((clause, score, scores_all[c_i]))
-        #     # elif eval_utils.is_uc_th_good(score, args.uc_th):
-        #     #     uc_good_clauses.append((clause, score, scores_all[c_i]))
-        #     # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-        #     else:
-        #         unclassified_clauses.append((clause, score, scores_all[c_i]))
-        #         # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
+    # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
+    # elif eval_utils.is_conflict(score, args.conflict_th):
+    #     conflict_clauses.append((clause, score, scores_all[c_i]))
+    # elif search_type == "nc":
+    #     if eval_utils.is_nc(score):
+    #         necessary_clauses.append((clause, score, scores_all[c_i]))
+    #     elif eval_utils.is_nc_th_good(score, args.nc_th):
+    #         nc_good_clauses.append((clause, score, scores_all[c_i]))
+    #     elif eval_utils.is_sc(score):
+    #         sufficient_clauses.append((clause, score, scores_all[c_i]))
+    #     elif eval_utils.is_sc_th_good(score, args.sc_th):
+    #         sc_good_clauses.append((clause, score, scores_all[c_i]))
+    #     # elif eval_utils.is_uc_th_good(score, args.uc_th):
+    #     #     uc_good_clauses.append((clause, score, scores_all[c_i]))
+    #     # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+    #     else:
+    #         unclassified_clauses.append((clause, score, scores_all[c_i]))
+    #         # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
 
-        # if eval_utils.is_sc(score):
-        #     sufficient_clauses.append((clause, score, scores_all[c_i]))
-        # elif eval_utils.is_sc_th_good(score, args.sc_th):
-        #     sc_good_clauses.append((clause, score, scores_all[c_i]))
-        # elif eval_utils.is_nc(score):
-        #     necessary_clauses.append((clause, score, scores_all[c_i]))
-        # elif eval_utils.is_nc_th_good(score, args.nc_th):
-        #     nc_good_clauses.append((clause, score, scores_all[c_i]))
-        # # elif eval_utils.is_uc_th_good(score, args.uc_th):
-        # #     uc_good_clauses.append((clause, score, scores_all[c_i]))
-        # # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-        # else:
+    # if eval_utils.is_sc(score):
+    #     sufficient_clauses.append((clause, score, scores_all[c_i]))
+    # elif eval_utils.is_sc_th_good(score, args.sc_th):
+    #     sc_good_clauses.append((clause, score, scores_all[c_i]))
+    # elif eval_utils.is_nc(score):
+    #     necessary_clauses.append((clause, score, scores_all[c_i]))
+    # elif eval_utils.is_nc_th_good(score, args.nc_th):
+    #     nc_good_clauses.append((clause, score, scores_all[c_i]))
+    # # elif eval_utils.is_uc_th_good(score, args.uc_th):
+    # #     uc_good_clauses.append((clause, score, scores_all[c_i]))
+    # # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
+    # else:
     #     unclassified_clauses.append((clause, score, scores_all[c_i]))
     # clause_dict = {"sn": sufficient_necessary_clauses,
     #                "nc": necessary_clauses,
@@ -199,3 +199,26 @@ def eval_clause_on_scenes(NSFR, args, pred_names, pos_pred, neg_pred):
     score_all[:, :, index_neg] = score_negative[:, :, 0]
 
     return score_all
+
+
+def eval_score_similarity(score, appeared_scores, threshold):
+    is_repeat = False
+    for appeared_score in appeared_scores:
+        if torch.abs(score - appeared_score) / appeared_score < threshold:
+            is_repeat = True
+
+    return is_repeat
+
+
+def eval_semantic_similarity(semantic, appeared_semantics, args):
+    is_repeat = False
+    for appeared_semantic in appeared_semantics:
+        diff_counter = 0
+        for i in range(len(appeared_semantic[0])):
+            if i < len(semantic[0]):
+                if semantic[0][i] == appeared_semantic[0][i]:
+                    diff_counter += 1
+        similarity = diff_counter / len(semantic[0])
+        if similarity > args.semantic_th:
+            is_repeat = True
+    return is_repeat

@@ -45,6 +45,8 @@ def get_args():
                         help="Use small training data.")
     parser.add_argument("--score_unique", action="store_false",
                         help="prune same score clauses.")
+    parser.add_argument("--semantic_unique", action="store_false",
+                        help="prune same semantic clauses.")
     parser.add_argument("--no-xil", action="store_true",
                         help="Do not use confounding labels for clevr-hans.")
     parser.add_argument("--small_data", action="store_false",
@@ -91,6 +93,8 @@ def get_args():
                         help="The accept sn threshold for sufficient or necessary clauses.")
     parser.add_argument("--similar_th", type=float, default=1e-3,
                         help="The minimum different requirement between any two clauses.")
+    parser.add_argument("--semantic_th", type=float, default=0.75,
+                        help="The minimum semantic different requirement between any two clauses.")
     parser.add_argument("--conflict_th", type=float, default=0.9,
                         help="The accept threshold for conflict clauses.")
     parser.add_argument("--c_top", type=int, default=20,

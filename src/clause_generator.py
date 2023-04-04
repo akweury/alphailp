@@ -150,12 +150,11 @@ class ClauseGenerator(object):
             # classify clauses
             clause_with_scores = eval_clause_infer.classify_clauses(refs_extended, score_all, scores)
             # print best clauses that have been found...
-            new_max, higher = logic_utils.get_best_clauses(refs_extended, scores, step, args, max_clause)
-            clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args, args.c_top)
-            # plot charts
-            chart_utils.plot_4_zone(args.plot_four_zone, refs_extended, score_all, scores, step)
+            clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args)
 
+            new_max, higher = logic_utils.get_best_clauses(refs_extended, scores, step, args, max_clause)
             max_clause, found_sn = self.check_result(clause_with_scores, higher, max_clause, new_max)
+
             if args.pi_top > 0:
                 refs, is_done = self.prune_clauses(clause_with_scores, args)
             else:
@@ -429,51 +428,45 @@ class ClauseGenerator(object):
     def prune_clauses(self, clause_with_scores, args):
         refs = []
 
-        # if search_type == "nc":
-        #     if len(clause_dict["nc"]) > 0:
-        #         refs += self.update_refs(clause_dict, args, priority="nc")
-        #     if len(clause_dict["nc_good"]) > 0:
-        #         refs += self.update_refs(clause_dict, args, priority="nc_good")
-        #     if len(clause_dict["sc"]) > 1:
-        #         refs += self.update_refs(clause_dict, args, priority="sc")
-        #     if len(clause_dict["sc_good"]) > 1:
-        #         refs += self.update_refs(clause_dict, args, priority="sc_good")
-        #     if len(clause_dict["uc_good"]) > 0:
-        #         refs += self.update_refs(clause_dict, args, priority="uc_good")
-        #     if len(clause_dict["uc"]) > 0:
-        #         refs += self.update_refs(clause_dict, args, priority="uc")
-        #     if (len(refs) == 0):
-        #         return [], True
-        refs += self.update_refs(clause_with_scores, args)
+        # prune score similar clauses
+        if args.score_unique:
+            score_unique_c = []
+            appeared_scores = []
+            for c in clause_with_scores:
+                if not eval_clause_infer.eval_score_similarity(c[1][2], appeared_scores, args.similar_th):
+                    score_unique_c.append(c)
+                    appeared_scores.append(c[1][2])
+            c_score_pruned = score_unique_c
+        else:
+            c_score_pruned = clause_with_scores
 
-        # if len(clause_with_scores["sc"]) > 1:
-        #     refs += self.update_refs(clause_with_scores, args, priority="sc")
-        # else:
-        #     log_utils.add_lines(f'no sc for extension!', args.log_file)
-        # if len(clause_with_scores["sc_good"]) > 1:
-        #     refs += self.update_refs(clause_with_scores, args, priority="sc_good")
-        # else:
-        #     log_utils.add_lines(f'no sc good for extension!', args.log_file)
-        #
-        # if len(clause_with_scores["nc"]) > 0:
-        #     refs += self.update_refs(clause_with_scores, args, priority="nc")
-        # else:
-        #     log_utils.add_lines(f'no nc for extension!', args.log_file)
-        #
-        # if len(clause_with_scores["nc_good"]) > 0:
-        #     refs += self.update_refs(clause_with_scores, args, priority="nc_good")
-        # else:
-        #     log_utils.add_lines(f'no nc good for extension!', args.log_file)
-        #
-        # if len(clause_with_scores["uc_good"]) > 0:
-        #     refs += self.update_refs(clause_with_scores, args, priority="uc_good")
-        # else:
-        #     log_utils.add_lines(f'no uc good for extension!', args.log_file)
-        #
-        # if len(clause_with_scores["uc"]) > 0:
-        #     refs += self.update_refs(clause_with_scores, args, priority="uc")
-        # else:
-        #     log_utils.add_lines(f'no uc for extension!', args.log_file)
+        # prune predicate similar clauses
+        log_utils.add_lines(f"=============== semantic pruning ==========", args.log_file)
+        if args.semantic_unique:
+            semantic_unique_c = []
+            semantic_repeat_c = []
+            appeared_semantics = []
+            for c in c_score_pruned:
+                c_semantic = logic_utils.get_semantic_from_c(c[0])
+                if not eval_clause_infer.eval_semantic_similarity(c_semantic, appeared_semantics, args):
+                    semantic_unique_c.append(c)
+                    appeared_semantics.append(c_semantic)
+                else:
+                    semantic_repeat_c.append(c)
+            c_semantic_pruned = semantic_unique_c
+            for c in c_semantic_pruned:
+                log_utils.add_lines(f"(unique semantic clause) {c[0]}", args.log_file)
+            for c in semantic_repeat_c:
+                log_utils.add_lines(f"(repeat semantic clause) {c[0]}", args.log_file)
+        else:
+            c_semantic_pruned = c_score_pruned
+
+        # select top N clauses
+        if args.c_top is not None and len(c_semantic_pruned) > args.c_top:
+            c_semantic_pruned = c_semantic_pruned[:args.c_top]
+        log_utils.add_lines(f"after top select: {len(c_semantic_pruned)}", args.log_file)
+
+        refs += self.update_refs(c_semantic_pruned, args)
 
         return refs, False
 

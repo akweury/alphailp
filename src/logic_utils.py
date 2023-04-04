@@ -856,35 +856,12 @@ def get_best_clauses(clauses, clause_scores, step, args, max_clause):
     return max_clause, higher
 
 
-def sorted_clauses(clause_with_scores, args, threshold=None):
-    # if c_type == "sc" or c_type == "sc_good":
-    #     sort_index = config.score_type_index["suff"]
-    # elif c_type == "nc" or c_type == "nc_good":
-    #     sort_index = config.score_type_index["ness"]
-    # else:
-    #     sort_index = config.score_type_index["sn"]
+def sorted_clauses(clause_with_scores, args):
     if len(clause_with_scores) > 0:
         c_sorted = sorted(clause_with_scores, key=lambda x: x[1][2], reverse=True)
-
-        if args.score_unique:
-            score_unique_c = []
-            appeared_scores = []
-            for c in c_sorted:
-                is_repeat = False
-                for appeared_score in appeared_scores:
-                    if torch.abs(c[1][2] - appeared_score) / appeared_score < args.similar_th:
-                        is_repeat = True
-
-                if not is_repeat:
-                    score_unique_c.append(c)
-                    appeared_scores.append(c[1][2])
-            c_sorted = score_unique_c
-        log_utils.add_lines(f"before top select: {len(c_sorted)}", args.log_file)
-        for c in c_sorted[threshold:]:
-            log_utils.add_lines(f"discarded clause: {c[0]} {c[1]}", args.log_file)
-        if threshold is not None and len(c_sorted) > threshold:
-            c_sorted = c_sorted[:threshold]
-        log_utils.add_lines(f"after top select: {len(c_sorted)}", args.log_file)
+        log_utils.add_lines(f"clause number: {len(c_sorted)}", args.log_file)
+        for c in c_sorted:
+            log_utils.add_lines(f"clause: {c[0]} {c[1]}", args.log_file)
         return c_sorted
     else:
         return []
@@ -1134,6 +1111,13 @@ def top_select(bs_clauses, args):
     # all_c = bs_clauses['sn'] + bs_clauses['nc'] + bs_clauses['sc'] + bs_clauses['nc_good'] + bs_clauses['sc_good'] + \
     #         bs_clauses['uc'] + bs_clauses['uc_good']
 
-    top_clauses = sorted_clauses(bs_clauses, args, 3)
+    top_clauses = sorted_clauses(bs_clauses, args)
+    top_clauses = top_clauses[:args.c_top]
     top_clauses = extract_clauses_from_max_clause(top_clauses, args)
     return top_clauses
+
+
+def get_semantic_from_c(clause):
+    semantic = []
+    semantic += get_pred_names_from_clauses(clause)
+    return semantic
