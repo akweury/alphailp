@@ -83,6 +83,10 @@ class NSFReasoner(nn.Module):
         V_T = self.cim(V_0)
         return V_T
 
+    def clause_eval_v_0(self, x):
+        V_0 = self.fc(x, self.atoms, self.bk)
+        return V_0
+
     def img_eval(self, x):
         # obtain the object-centric representation
         zs = self.pm(x)
@@ -99,11 +103,11 @@ class NSFReasoner(nn.Module):
             # target_all = torch.zeros((len(target_indices), v.size(0)))
             # target_max = torch.zeros((len(target_indices)))
 
-                # target_all[t_counter] = v[:, :, t_index]
-                # target_max[t_counter] = v[:, :, t_index]
-                # max_value = torch.max(target_max)
+            # target_all[t_counter] = v[:, :, t_index]
+            # target_max[t_counter] = v[:, :, t_index]
+            # max_value = torch.max(target_max)
             values[0] = v[0, :, target_indices[0]].max(dim=-1, keepdim=True)[0]
-            values[1:] = v[1:,:, target_indices[1]].max(dim=-1, keepdim=True)[0]
+            values[1:] = v[1:, :, target_indices[1]].max(dim=-1, keepdim=True)[0]
 
         else:
             target_index_list = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
