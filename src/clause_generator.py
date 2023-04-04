@@ -503,6 +503,7 @@ class ClauseGenerator(object):
             c_semantic_pruned = semantic_unique_c
         else:
             c_semantic_pruned = refs
+        log_utils.add_lines(f"after removing semantic similar clauses: {len(c_semantic_pruned)} clauses left", args.log_file)
         return c_semantic_pruned
 
 
