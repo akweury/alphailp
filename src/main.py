@@ -111,7 +111,7 @@ def get_args():
                         help="The accept number for necessary good clauses.")
     parser.add_argument("--pi_top", type=int, default=20,
                         help="The accept number for pi on each classes.")
-    parser.add_argument("--max_cluster_size", type=int, default=7,
+    parser.add_argument("--max_cluster_size", type=int, default=4,
                         help="The max size of clause cluster.")
     parser.add_argument("--min_cluster_size", type=int, default=2,
                         help="The min size of clause cluster.")
