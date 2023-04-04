@@ -897,7 +897,7 @@ def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
 
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
-        log_utils.add_lines(f"({c_type}): {bs_clause[0]} {bs_clause[1][:3]}\n", args.log_file)
+        log_utils.add_lines(f"({c_type}): {bs_clause[0]} {bs_clause[1][:3].to_list()}", args.log_file)
 
     return clauses
 
