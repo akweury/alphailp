@@ -213,12 +213,14 @@ def eval_score_similarity(score, appeared_scores, threshold):
 def eval_semantic_similarity(semantic, appeared_semantics, args):
     is_repeat = False
     for appeared_semantic in appeared_semantics:
-        diff_counter = 0
-        for i in range(len(appeared_semantic[0])):
-            if i < len(semantic[0]):
-                if semantic[0][i] == appeared_semantic[0][i]:
-                    diff_counter += 1
-        similarity = diff_counter / len(semantic[0])
+        similar_counter = 0
+        for p_i in range(len(appeared_semantic)):
+            if p_i < len(semantic):
+                for a_i in range(len(appeared_semantic[p_i])):
+                    if a_i < len(semantic[p_i]):
+                        if semantic[p_i][a_i] == appeared_semantic[p_i][a_i]:
+                            similar_counter += 1
+        similarity = similar_counter / (len(semantic) * 2)
         if similarity > args.semantic_th:
             is_repeat = True
     return is_repeat

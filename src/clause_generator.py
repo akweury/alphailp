@@ -156,7 +156,7 @@ class ClauseGenerator(object):
             max_clause, found_sn = self.check_result(clause_with_scores, higher, max_clause, new_max)
 
             if args.pi_top > 0:
-                refs, is_done = self.prune_clauses(clause_with_scores, args)
+                refs, clause_with_scores, is_done = self.prune_clauses(clause_with_scores, args)
             else:
                 refs = logic_utils.top_select(clause_with_scores, args)
             step += 1
@@ -454,10 +454,10 @@ class ClauseGenerator(object):
                 else:
                     semantic_repeat_c.append(c)
             c_semantic_pruned = semantic_unique_c
-            for c in c_semantic_pruned:
-                log_utils.add_lines(f"(unique semantic clause) {c[0]}", args.log_file)
-            for c in semantic_repeat_c:
-                log_utils.add_lines(f"(repeat semantic clause) {c[0]}", args.log_file)
+            # for c in c_semantic_pruned:
+            #     log_utils.add_lines(f"(unique semantic clause) {c[0]}", args.log_file)
+            # for c in semantic_repeat_c:
+                # log_utils.add_lines(f"(repeat semantic clause) {c[0]}", args.log_file)
         else:
             c_semantic_pruned = c_score_pruned
 
@@ -468,7 +468,7 @@ class ClauseGenerator(object):
 
         refs += self.update_refs(c_semantic_pruned, args)
 
-        return refs, False
+        return refs, c_semantic_pruned, False
 
     def check_result(self, clause_with_scores, higher, max_clause, new_max_clause):
 
