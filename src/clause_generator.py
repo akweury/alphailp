@@ -429,6 +429,8 @@ class ClauseGenerator(object):
         refs = []
 
         # prune score similar clauses
+        log_utils.add_lines(f"=============== score pruning ==========", args.log_file)
+
         if args.score_unique:
             score_unique_c = []
             appeared_scores = []
@@ -456,8 +458,8 @@ class ClauseGenerator(object):
             c_semantic_pruned = semantic_unique_c
             # for c in c_semantic_pruned:
             #     log_utils.add_lines(f"(unique semantic clause) {c[0]}", args.log_file)
-            # for c in semantic_repeat_c:
-                # log_utils.add_lines(f"(repeat semantic clause) {c[0]}", args.log_file)
+            for c in semantic_repeat_c:
+                log_utils.add_lines(f"(repeat semantic clause) {c[0]}", args.log_file)
         else:
             c_semantic_pruned = c_score_pruned
 
