@@ -18,7 +18,7 @@
   "sn_th": 0.75,
   "nc_th": 0.85,
   "sc_th": 0.85,
-  "sn_min_th": 0.1,
+  "sn_min_th": 0.2,
   "c_top": 10,
   "pi_top": 2,
   "with_bk": false,
