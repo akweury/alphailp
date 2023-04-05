@@ -231,7 +231,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
         if (neural_pred_i < len(args.neural_preds) - 1):
             lang.preds = lang.preds[:2]
             lang.invented_preds = []
-            lang.preds.append(args.neural_preds[neural_pred_i])
+            lang.preds.append(args.neural_preds[neural_pred_i][0])
             pi_clauses = []
             pi_p = []
         else:
