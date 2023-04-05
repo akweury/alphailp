@@ -266,8 +266,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
             args.iteration += 1
 
         p_inv_best = sorted(p_inv_with_scores, key=lambda x: x[1][2], reverse=True)
-        p_inv_best = logic_utils.extract_clauses_from_bs_clauses(p_inv_best, "best inv clause", args)
         p_inv_best = p_inv_best[:args.pi_top]
+        p_inv_best = logic_utils.extract_clauses_from_bs_clauses(p_inv_best, "best inv clause", args)
 
         for new_p in p_inv_best:
             if new_p not in invented_preds:
