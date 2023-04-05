@@ -307,5 +307,5 @@ class DataUtils(object):
             for bk_i, bk_file in enumerate(bk_pred_files):
                 bk_inv_preds += self.load_invented_preds(bk_i, bk_file)
 
-        lang = Language(preds, [], consts, bk_inv_preds, pi_templates)
+        lang = Language(args,preds, [], consts, bk_inv_preds, pi_templates)
         return lang

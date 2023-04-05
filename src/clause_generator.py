@@ -661,7 +661,7 @@ class PIClauseGenerator(object):
 
         return clause_sign_list, clause_score_list, clause_score_full_list
 
-    def generate_new_predicate(self, clause_clusters, clause_type=None):
+    def generate_new_predicate(self, args, clause_clusters, clause_type=None):
         new_predicate = None
         # positive_clauses_exchange = [(c[1], c[0]) for c in positive_clauses]
         # no_hn_ = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0 and c[0][3] == 0]
@@ -671,10 +671,10 @@ class PIClauseGenerator(object):
         new_predicates = []
         # cluster predicates
         for pi_index, [clause_cluster, cluster_score] in enumerate(clause_clusters):
-            args = count_arity_from_clause_cluster(clause_cluster)
-            dtypes = [DataType("object")] * len(args)
-            new_predicate = self.lang.get_new_invented_predicate(arity=len(args), pi_dtypes=dtypes, args=args,
-                                                                 pi_types=clause_type)
+            p_args = count_arity_from_clause_cluster(clause_cluster)
+            dtypes = [DataType("object")] * len(p_args)
+            new_predicate = self.lang.get_new_invented_predicate(args, arity=len(p_args), pi_dtypes=dtypes,
+                                                                 p_args=p_args, pi_types=clause_type)
             new_predicate.body = []
             for [c_i, clause, c_score] in clause_cluster:
                 atoms = []
@@ -683,7 +683,7 @@ class PIClauseGenerator(object):
                     terms = sorted(terms)
                     if "X" in terms:
                         terms.remove("X")
-                    obsolete_term = [t for t in terms if t not in args]
+                    obsolete_term = [t for t in terms if t not in p_args]
                     if len(obsolete_term) == 0:
                         atoms.append(atom)
                 new_predicate.body.append(atoms)
@@ -693,23 +693,6 @@ class PIClauseGenerator(object):
                 body = (new_predicate.body)[0]
                 if len(body) > new_predicate.arity + 1:
                     new_predicates.append([new_predicate, cluster_score])
-            # # symmetric invent
-            # new_sym_predicate = self.lang.get_new_invented_predicate(arity=arity, pi_dtypes=dtypes)
-            # symmetry_bodies = []
-            # for b_list in new_predicate.body:
-            #     symmetry_b = []
-            #     for b in b_list:
-            #         if "at_area" in b.pred.name:
-            #             sym_b_pred = logic.Predicate(b.pred.name, arity, dtypes)
-            #             sym_b_terms = (logic.Var(b.terms[1].name), logic.Var(b.terms[0].name))
-            #             sym_b = logic.Atom(sym_b_pred, sym_b_terms)
-            #             symmetry_b.append(sym_b)
-            #         else:
-            #             symmetry_b.append(b)
-            #     symmetry_bodies.append(symmetry_b)
-            # new_sym_predicate.body = symmetry_bodies + new_predicate.body
-            # new_predicates.append(new_sym_predicate)
-
         return new_predicates
 
     def generate_new_clauses_str_list(self, new_predicates):
@@ -816,7 +799,7 @@ class PIClauseGenerator(object):
         found_ns = False
 
         clu_lists = logic_utils.search_independent_clauses_parallel(clause_candidates, total_score, args)
-        new_predicates = self.generate_new_predicate(clu_lists)
+        new_predicates = self.generate_new_predicate(args, clu_lists)
         new_predicates = new_predicates[:args.pi_top]
         # if len(sn_clu) > 0:
         #     found_ns = True

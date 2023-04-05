@@ -19,14 +19,14 @@ class Language(object):
         consts (List[Const]): A set of constants.
     """
 
-    def __init__(self, preds, funcs, consts, bk_inv_preds, pi_templates):
+    def __init__(self, args, preds, funcs, consts, bk_inv_preds, pi_templates):
         self.preds = preds
         self.funcs = funcs
         self.consts = consts
         self.pi_templates = pi_templates
         self.bk_inv_preds = bk_inv_preds
         self.invented_preds = []
-        self.invented_preds_number = 0
+        self.invented_preds_number = args.p_inv_counter
 
     def __str__(self):
         s = "===Predicates===\n"
@@ -156,7 +156,7 @@ class Language(object):
             raise ValueError('Too less match in ' + invented_pred_name)
         return invented_pred[0]
 
-    def get_new_invented_predicate(self, arity, pi_dtypes, args, pi_types):
+    def get_new_invented_predicate(self, args,arity, pi_dtypes, p_args, pi_types):
         """Get the predicate by its id.
 
         Args:
@@ -167,10 +167,11 @@ class Language(object):
         """
         prefix = "inv_pred"
         new_predicate_id = self.invented_preds_number
-        self.invented_preds_number += 1
+        args.p_inv_counter += 1
+        self.invented_preds_number = args.p_inv_counter
         pred_with_id = prefix + str(new_predicate_id)
         #
-        new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, args, pi_types)
+        new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, p_args, pi_types)
         # self.invented_preds.append(new_predicate)
         return new_predicate
 

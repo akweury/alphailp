@@ -214,12 +214,12 @@ def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, new
 
 def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
     FC = None
-    clauses = []
     invented_preds = []
     all_pi_clauses = []
 
 
     for neural_pred_i in range(len(args.neural_preds)):
+        clauses = []
         # load language module
         lang, full_init_clauses, atoms = get_lang(args)
         init_clauses = update_initial_clauses(full_init_clauses, args.n_obj)
@@ -255,6 +255,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
                                                                              pi_clause_generator,
                                                                              pi_clauses, pi_p,
                                                                              args.neural_preds[neural_pred_i])
+            atoms = logic_utils.get_atoms(lang)
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, pi_clauses, atoms, args.n_obj)
             args.iteration += 1
