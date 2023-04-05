@@ -128,9 +128,9 @@ class ClauseGenerator(object):
         step = 0
         is_done = False
         refs = init_clauses
-        if args.no_new_preds:
-            step = args.iteration
-            refs = args.last_refs
+        # if args.no_new_preds:
+        step = args.iteration
+        refs = args.last_refs
         if args.pi_top == 0:
             step = args.iteration
             if len(args.last_refs) > 0:
