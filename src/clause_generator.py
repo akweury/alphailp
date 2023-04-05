@@ -531,7 +531,7 @@ class PIClauseGenerator(object):
 
     def generate(self, beam_search_clauses, pi_clauses, pos_pred, neg_pred, args, neural_pred, step):
 
-        new_predicates, found_ns = self.cluster_invention(beam_search_clauses, pi_clauses, pos_pred.shape[0], args)
+        new_predicates, found_ns = self.cluster_invention(beam_search_clauses, pos_pred.shape[0], args)
         log_utils.add_lines(f"new PI: {len(new_predicates)}\n", args.log_file)
         for new_c, new_c_score in new_predicates:
             log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
@@ -818,7 +818,7 @@ class PIClauseGenerator(object):
             new_all_pi_clausese.append(pi_c)
         return new_all_pi_clausese
 
-    def cluster_invention(self, clause_candidates, pi_clauses, total_score, args, random_top=None, searching_for=None):
+    def cluster_invention(self, clause_candidates, total_score, args):
         found_ns = False
 
         clu_lists = logic_utils.search_independent_clauses_parallel(clause_candidates, total_score, args)

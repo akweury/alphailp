@@ -400,45 +400,6 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         score_all = eval_clause_infer.eval_clauses(score_pos, score_neg, args)
         clu_all.append([pattern, score_all])
 
-        # eval_utils.is_nc(scores)
-        # if not is_repeat_clu(clause_cluster, necessary_clusters):
-        #     # log_utils.add_lines(f"(nc predicate) {clause_cluster} {clu_c_score}", args.log_file)
-        #     necessary_clusters.append([clause_cluster, scores])
-
-        # p_clause_signs = eval_clause_sign(score_max)
-        # clu_c_score = p_clause_signs[0][1].reshape(4)
-        # sufficient and necessary clauses
-        # if eval_utils.is_sn(scores):
-        #     # log_utils.add_lines(f"(sn predicate) {clause_cluster} {clu_c_score}", args.log_file)
-        #     sn_clusters.append([clause_cluster, scores])
-        # # almost a sufficient and necessary clauses
-        # elif eval_utils.is_sn_th_good(scores, args.sn_th):
-        #     # log_utils.add_lines(f"(sn good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-        #     sn_th_clusters.append([clause_cluster, scores])
-        # # necessary clauses
-        # if eval_utils.is_nc(scores):
-        #     if not is_repeat_clu(clause_cluster, necessary_clusters):
-        #         # log_utils.add_lines(f"(nc predicate) {clause_cluster} {clu_c_score}", args.log_file)
-        #         necessary_clusters.append([clause_cluster, scores])
-        # # almost necessary clauses
-        # elif eval_utils.is_nc_th_good(scores, args.nc_th):
-        #     if not is_repeat_clu(clause_cluster, nc_th_clusters):
-        #         # log_utils.add_lines(f"(nc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-        #         nc_th_clusters.append([clause_cluster, scores])
-        # # sufficient clauses
-        # if eval_utils.is_sc(scores):
-        #     if not is_repeat_clu(clause_cluster, sufficient_clusters):
-        #         # log_utils.add_lines(f"(sc predicate) {clause_cluster} {clu_c_score}", args.log_file)
-        #         sufficient_clusters.append([clause_cluster, scores])
-        # # almost sufficient clauses
-        # elif eval_utils.is_sc_th_good(scores, args.sc_th):
-        #     if not is_repeat_clu(clause_cluster, sc_th_clusters):
-        #         # log_utils.add_lines(f"(sc good predicate) {clause_cluster} {clu_c_score}", args.log_file)
-        #         sc_th_clusters.append([clause_cluster, scores])
-        #
-        # else:
-        #     other_clusters.append([clause_cluster, scores])
-
     index_suff = config.score_type_index['suff']
     index_ness = config.score_type_index['ness']
     index_sn = config.score_type_index['sn']
@@ -448,14 +409,6 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     clu_sn = [clu for clu in clu_all if clu[1][index_sn] > args.sn_th]
     clu_classified = sorted(clu_suff + clu_ness + clu_sn, key=lambda x: x[1][2], reverse=True)
     clu_lists_sorted = sorted(clu_all, key=lambda x: x[1][index_ness], reverse=True)
-    # clu_lists = sorted(clu_lists, key=lambda x: x[1][2], reverse=True)
-    # sn_clusters = sorted(sn_clusters, key=lambda x: x[1][1], reverse=True)
-    # sn_th_clusters = sorted(sn_th_clusters, key=lambda x: x[1][1], reverse=True)
-    # sufficient_clusters = sorted(sufficient_clusters, key=lambda x: x[1][1], reverse=True)
-    # sc_th_clusters = sorted(sc_th_clusters, key=lambda x: x[1][1], reverse=True)
-    # necessary_clusters = sorted(necessary_clusters, key=lambda x: x[1][1], reverse=True)
-    # nc_th_clusters = sorted(nc_th_clusters, key=lambda x: x[1][1], reverse=True)
-    # return necessary_clusters, sn_clusters, sufficient_clusters, sn_th_clusters, nc_th_clusters, sc_th_clusters
     return clu_classified
 
 
