@@ -236,7 +236,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
             pi_p = []
         else:
             print('last round')
-            lang.preds = lang.preds[:2] + args.neural_preds[:-1]
+            lang.preds = lang.preds[:2] + args.neural_preds[-1]
             lang.invented_preds = invented_preds
             pi_clauses = all_pi_clauses
             pi_p = invented_preds
