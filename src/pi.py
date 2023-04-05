@@ -160,123 +160,113 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
     return clause_generator, pi_clause_generator, FC
 
 
-def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
-    # load perception result
-    FC = None
-    val_pos = pm_prediction_dict["val_pos"].to(args.device)
-    val_neg = pm_prediction_dict["val_neg"].to(args.device)
-    args.data_size = val_pos.shape[0]
-    # load language module
-    lang, full_init_clauses, pi_clauses, atoms = get_lang(args)
-
-    kp_pi_clauses = []
-    clauses = []
-    obj_n = args.n_obj
-    init_clauses = update_initial_clauses(full_init_clauses, obj_n)
-    invented_pred_num = 0
-    last_refs = []
-    found_ns = False
-    # clause generation and predicate invention
-
-    log_utils.add_lines(f"searching for clauses...", args.log_file)
-
-    lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
-    neural_preds = file_utils.load_neural_preds(str(lang_data_path / 'neural_preds.txt'))[1:]
-    neural_preds.append(None)
-    for neural_pred_i in range(len(neural_preds)):
-        if found_ns:
-            break
-            # update language with neural predicate: shape/color/dir/dist
-        lang.preds = lang.preds[:2]
-
-        if (neural_pred_i < len(neural_preds) - 1):
-            lang.preds.append(neural_preds[neural_pred_i])
+def extend_clauses(args, clause_generator, init_clauses, pi_c, max_c, clauses):
+    log_utils.add_lines(f"\n=== beam search iteration {args.iteration}/{args.max_step} ===", args.log_file)
+    # generate clauses # time-consuming code
+    bs_clauses, max_clause, current_step, args = clause_generator.clause_extension(init_clauses, pi_c, args,
+                                                                                   max_c)
+    if len(bs_clauses) == 0:
+        args.is_done = True
+    elif len(bs_clauses) > 0 and bs_clauses[0][1][2] == 1.0:
+        log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
+        clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn", args)
+        args.is_done = True
+        # break
+    elif len(bs_clauses) > 0 and bs_clauses[0][1][2] > args.sn_th:
+        log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
+        clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn_good", args)
+        args.is_done = True
+        # break
+    else:
+        if args.pi_top == 0:
+            clauses += logic_utils.top_select(bs_clauses, args)
+        elif args.iteration == args.max_step:
+            clauses += logic_utils.extract_clauses_from_max_clause(bs_clauses, args)
+        elif max_clause[1] is not None:
+            clauses += logic_utils.extract_clauses_from_max_clause(max_clause[1], args)
         else:
-            lang.preds += neural_preds[:-1]
+            raise ValueError
+
+    return bs_clauses, clauses, args
+
+
+def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, neural_preds):
+    args.no_new_preds = True
+    lang = pi_clause_generator.lang
+    atoms = logic_utils.get_atoms(lang)
+    if args.no_pi:
+        clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses, "clause", args)
+    elif args.pi_top > 0:
+        # invent new predicate and generate pi clauses
+        new_c, new_p, is_done = pi_clause_generator.invent_predicate(bs_clauses, new_c, args, neural_preds)
+        new_pred_num = len(pi_clause_generator.lang.invented_preds) - args.invented_pred_num
+        args.invented_pred_num = len(pi_clause_generator.lang.invented_preds)
+        if new_pred_num > 0:
+            # add new predicates
+            args.no_new_preds = False
+            lang = pi_clause_generator.lang
+            atoms = logic_utils.get_atoms(lang)
+            for c in new_c:
+                if c not in clauses:
+                    clauses.append(c)
+    return clauses, new_c, args, atoms, lang
+
+
+def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
+    FC = None
+    clauses = []
+    invented_preds = []
+    all_pi_clauses = []
+    # load language module
+    lang, full_init_clauses, atoms = get_lang(args)
+    init_clauses = update_initial_clauses(full_init_clauses, args.n_obj)
+
+    for neural_pred_i in range(len(args.neural_preds)):
+        # update language with neural predicate: shape/color/dir/dist
+
+        if (neural_pred_i < len(args.neural_preds) - 1):
+            lang.preds = lang.preds[:2]
+            lang.invented_preds = []
+            lang.preds.append(args.neural_preds[neural_pred_i])
+            pi_clauses = []
+        else:
             print('last round')
+            lang.preds = lang.preds[:2] + args.neural_preds[:-1] + invented_preds
+            lang.invented_preds = invented_preds
+            pi_clauses = all_pi_clauses
 
         atoms = logic_utils.get_atoms(lang)
 
-        is_done = False
-        iteration = 0
+        args.is_done = False
+        args.iteration = 0
         max_clause = [0.0, None]
-        no_new_preds = False
-        max_step = args.max_step
+        args.no_new_preds = False
+        clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
+                                                               init_clauses, pi_clauses, atoms, args.n_obj)
 
-        while iteration < max_step and not found_ns:
-            if is_done:
-                break
+        while args.iteration < args.max_step and not args.is_done:
+            bs_clauses, clauses, args = extend_clauses(args, clause_generator,
+                                                       init_clauses, pi_clauses, max_clause, clauses)
+            clauses, pi_clauses, args, atoms, lang = invent_predicates(args, clauses, bs_clauses, pi_clause_generator,
+                                                                       pi_clauses, args.neural_preds[neural_pred_i])
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                                   init_clauses, pi_clauses, atoms, obj_n)
+                                                                   init_clauses, pi_clauses, atoms, args.n_obj)
+            args.iteration += 1
 
-            # generate clauses # time-consuming code
-            bs_clauses, max_clause, current_step, last_refs, is_done = clause_generator.clause_extension(init_clauses,
-                                                                                                         val_pos,
-                                                                                                         val_neg,
-                                                                                                         pi_clauses,
-                                                                                                         args,
-                                                                                                         max_clause,
-                                                                                                         max_step=iteration,
-                                                                                                         iteration=iteration,
-                                                                                                         max_iteration=max_step,
-                                                                                                         no_new_preds=no_new_preds,
-                                                                                                         last_refs=last_refs)
-            if len(bs_clauses) == 0:
-                break
-            if len(bs_clauses) > 0 and bs_clauses[0][1][2] == 1.0:
-                log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
-                clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn", args)
-                pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
-                inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
-                log_utils.write_clause_to_file(clauses, pi_clause_file)
-                log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
-                found_ns = True
-                break
-            elif len(bs_clauses) > 0 and bs_clauses[0][1][2] > args.sn_th:
-                log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
-                clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn_good", args)
-                pi_clause_file = log_utils.create_file(exp_output_path, "pi_clause")
-                inv_predicate_file = log_utils.create_file(exp_output_path, "inv_pred")
-                log_utils.write_clause_to_file(clauses, pi_clause_file)
-                log_utils.write_predicate_to_file(lang.invented_preds, inv_predicate_file)
-                found_ns = True
-                break
-            else:
-                if args.pi_top == 0:
-                    clauses += logic_utils.top_select(bs_clauses, args)
-                elif iteration == max_step:
-                    clauses += logic_utils.extract_clauses_from_max_clause(bs_clauses, args)
-                elif max_clause[1] is not None:
-                    clauses += logic_utils.extract_clauses_from_max_clause(max_clause[1], args)
+        for new_p in pi_clause_generator.lang.invented_preds:
+            if new_p not in invented_preds:
+                invented_preds.append(new_p)
+        for new_c in pi_clauses:
+            if new_c not in all_pi_clauses:
+                all_pi_clauses.append(new_c)
 
-            if args.no_pi:
-                clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses, "clause", args)
-            elif args.pi_top > 0:
-                # invent new predicate and generate pi clauses
-                pi_clauses, kp_pi_clauses, _ = pi_clause_generator.generate(bs_clauses, pi_clauses, val_pos,
-                                                                            val_neg, args, neural_preds[neural_pred_i],
-                                                                            step=iteration)
-                new_pred_num = len(pi_clause_generator.lang.invented_preds) - invented_pred_num
-                invented_pred_num = len(pi_clause_generator.lang.invented_preds)
-                if new_pred_num > 0:
-                    # add new predicates
-                    no_new_preds = False
-                    lang = pi_clause_generator.lang
-                    atoms = logic_utils.get_atoms(lang)
-                    clauses += kp_pi_clauses
-                else:
-                    no_new_preds = True
-
-            iteration += 1
+        if args.found_ns:
+            break
 
     if len(clauses) > 0:
         for c in clauses:
             log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
-    else:
-        log_utils.add_lines(f"not found any useful clauses", args.log_file)
-        for c in kp_pi_clauses:
-            print(c)
-    NSFR = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=True)
+    NSFR = get_nsfr_model(args, lang, clauses, atoms, all_pi_clauses, FC, train=True)
     train_nsfr(args, NSFR, pm_prediction_dict, rtpt, exp_output_path)
     return NSFR
 

@@ -118,37 +118,36 @@ class ClauseGenerator(object):
             is_done = True
         return refs_no_conflict, is_done
 
-    def clause_extension(self, init_clauses, pos_pred, neg_pred, pi_clauses, args, max_clause,
-                         max_step=4, iteration=None, max_iteration=None, no_new_preds=False, last_refs=[]):
+    def clause_extension(self, init_clauses, pi_clauses, args, max_clause):
         index_pos = config.score_example_index["pos"]
         index_neg = config.score_example_index["neg"]
 
-        log_utils.add_lines(f"\n=== beam search iteration {iteration}/{max_iteration} ===", args.log_file)
         eval_pred = ['kp']
         clause_with_scores = []
         # extend clauses
         step = 0
         is_done = False
         refs = init_clauses
-        if no_new_preds:
-            step = max_step
-            refs = last_refs
+        if args.no_new_preds:
+            step = args.iteration
+            refs = args.last_refs
         if args.pi_top == 0:
-            step = max_step
-            if len(last_refs) > 0:
-                refs = last_refs
-        while step <= max_step:
+            step = args.iteration
+            if len(args.last_refs) > 0:
+                refs = args.last_refs
+        while step <= args.iteration:
             # log
-            log_utils.print_time(args, iteration, step, max_step)
+            log_utils.print_time(args, args.iteration, step, args.iteration)
             # clause extension
             refs_extended, is_done = self.extend_clauses(refs, args, pi_clauses)
             if is_done:
                 break
-
+            # self.lang.preds += self.lang.invented_preds
             # update NSFR
             self.NSFR = get_nsfr_model(args, self.lang, refs_extended, self.NSFR.atoms, pi_clauses, self.NSFR.fc)
             # evaluate new clauses
-            score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred, pos_pred, neg_pred)
+            score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred, args.val_pos,
+                                                                args.val_neg)
             scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args)
             # classify clauses
             clause_with_scores = eval_clause_infer.classify_clauses(refs_extended, score_all, scores)
@@ -168,7 +167,9 @@ class ClauseGenerator(object):
                 is_done = True
                 break
 
-        return clause_with_scores, max_clause, step, refs, is_done
+        args.is_done = is_done
+        args.last_refs = refs
+        return clause_with_scores, max_clause, step, args
 
     def eval_images(self, save_path):
 
@@ -529,45 +530,37 @@ class PIClauseGenerator(object):
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
 
-    def generate(self, beam_search_clauses, pi_clauses, pos_pred, neg_pred, args, neural_pred, step):
+    def invent_predicate(self, beam_search_clauses, pi_clauses, args, neural_pred):
 
-        new_predicates, found_ns = self.cluster_invention(beam_search_clauses, pos_pred.shape[0], args)
+        new_predicates, is_done = self.cluster_invention(beam_search_clauses, args.val_pos.shape[0], args)
         log_utils.add_lines(f"new PI: {len(new_predicates)}\n", args.log_file)
         for new_c, new_c_score in new_predicates:
             log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
 
         # convert to strings
         new_clauses_str_list, kp_str_list = self.generate_new_clauses_str_list(new_predicates)
-
         # convert clauses from strings to objects
         # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
         du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
                        dataset=args.dataset)
-        lang, init_clauses, bk_pi_clauses, atoms = logic_utils.get_lang(args)
-        if neural_pred is not None:
-            lang.preds.append(neural_pred)
-        for learned_p in self.lang.invented_preds:
-            lang.invented_preds.append(learned_p)
-
+        lang, init_clauses, atoms = logic_utils.get_lang(args)
+        lang.preds.append(neural_pred)
         all_pi_clauses, all_pi_kp_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list, kp_str_list)
 
-        # pos_pred = pos_pred.to(self.args.device)
-        # neg_pred = neg_pred.to(self.args.device)
-        # generate pi clauses
-        # passed_pi_languages = self.eval_pi_language(beam_search_clauses, pi_languages, pos_pred, neg_pred)
-        # # passed_pi_languages = passed_pi_languages[:5]
-        #
         all_pi_clauses = self.extract_pi(lang, all_pi_clauses, args) + pi_clauses
-        all_pi_kp_clauses = self.extract_kp_pi(lang, all_pi_kp_clauses, args) + pi_clauses
+        all_pi_kp_clauses = self.extract_kp_pi(lang, all_pi_kp_clauses, args)
 
-        log_utils.add_lines(f"======  Total PI Number: {len(self.lang.invented_preds)}  ======", args.log_file)
-        for p in self.lang.invented_preds:
+        new_p = self.lang.invented_preds
+        new_c = all_pi_clauses
+
+        log_utils.add_lines(f"======  Total PI Number: {len(new_p)}  ======", args.log_file)
+        for p in new_p:
             log_utils.add_lines(f"{p}", args.log_file)
-        log_utils.add_lines(f"========== Total {len(all_pi_clauses)} PI Clauses ============= ", args.log_file)
-        for c in all_pi_clauses:
+        log_utils.add_lines(f"========== Total {len(new_c)} PI Clauses ============= ", args.log_file)
+        for c in new_c:
             log_utils.add_lines(f"{c}", args.log_file)
 
-        return all_pi_clauses, all_pi_kp_clauses, found_ns
+        return new_c, new_p, is_done
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
 

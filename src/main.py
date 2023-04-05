@@ -131,6 +131,20 @@ def get_args():
     return args
 
 
+def init_args(args, pm_prediction_dict):
+    args.val_pos = pm_prediction_dict["val_pos"].to(args.device)
+    args.val_neg = pm_prediction_dict["val_neg"].to(args.device)
+    args.data_size = args.val_pos.shape[0]
+    args.invented_pred_num = 0
+    args.last_refs = []
+    args.found_ns = False
+
+    # clause generation and predicate invention
+    lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
+    args.neural_preds = file_utils.load_neural_preds(str(lang_data_path / 'neural_preds.txt'))[1:]
+    args.neural_preds.append(None)
+
+
 def main(n):
     args = get_args()
     if args.dataset_type == 'kandinsky':
@@ -193,8 +207,9 @@ def main(n):
     lang_base_path = config.root / 'data' / 'lang'
     args.lang_base_path = lang_base_path
 
-    # main program
+    init_args(args, pm_prediction_dict)
 
+    # main program
     start = time.time()
     NSFR = pi.train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path)
     end = time.time()
