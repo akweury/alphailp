@@ -142,7 +142,7 @@ def init_args(args, pm_prediction_dict):
     # clause generation and predicate invention
     lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
     args.neural_preds = file_utils.load_neural_preds(str(lang_data_path / 'neural_preds.txt'))[1:]
-    args.neural_preds.append(None)
+    args.neural_preds.append(args.neural_preds)
     args.p_inv_counter = 0
 
 

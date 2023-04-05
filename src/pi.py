@@ -239,7 +239,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
             lang.preds = lang.preds[:2] + args.neural_preds[:-1]
             lang.invented_preds = invented_preds
             pi_clauses = all_pi_clauses
-            pi_p = []
+            pi_p = invented_preds
 
         atoms = logic_utils.get_atoms(lang)
 

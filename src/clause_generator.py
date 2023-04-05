@@ -544,7 +544,8 @@ class PIClauseGenerator(object):
         du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
                        dataset=args.dataset)
         lang, init_clauses, atoms = logic_utils.get_lang(args)
-        lang.preds.append(neural_pred)
+        if neural_pred is not None:
+            lang.preds += neural_pred
         lang.invented_preds = invented_p
         all_pi_clauses, all_pi_kp_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list, kp_str_list)
 
