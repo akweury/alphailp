@@ -149,7 +149,7 @@ def eval_sn(positive_scores, negative_scores):
     return suff_scores
 
 
-def eval_clauses(score_pos, score_neg, args):
+def eval_clauses(score_pos, score_neg, args, c_length):
     scores = torch.zeros(size=(3, score_pos.shape[0])).to(args.device)
 
     # p_clause_signs = eval_clause_sign(score_all)
@@ -163,7 +163,7 @@ def eval_clauses(score_pos, score_neg, args):
     sn_index = config.score_type_index["sn"]
     scores[ness_index, :] = score_pos.sum(dim=1) / score_pos.shape[1]
     scores[suff_index, :] = score_negative_inv.sum(dim=1) / score_negative_inv.shape[1]
-    scores[sn_index, :] = scores[0, :] * scores[1, :]
+    scores[sn_index, :] = scores[0, :] * scores[1, :] + (c_length + 1) * args.length_weight
 
     return scores
 

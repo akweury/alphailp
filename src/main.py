@@ -97,6 +97,8 @@ def get_args():
                         help="The minimum semantic different requirement between any two clauses.")
     parser.add_argument("--conflict_th", type=float, default=0.9,
                         help="The accept threshold for conflict clauses.")
+    parser.add_argument("--length_weight", type=float, default=0.05,
+                        help="The weight of clause length for clause evaluation.")
     parser.add_argument("--c_top", type=int, default=20,
                         help="The accept number for clauses.")
     parser.add_argument("--uc_good_top", type=int, default=10,

@@ -384,7 +384,7 @@ def search_independent_clauses_parallel(clauses, total_score, args):
         # score_max[:, :, index_pos] = score_pos[:, :, 0]
         # score_max[:, :, index_neg] = score_neg[:, :, 0]
 
-        score_all = eval_clause_infer.eval_clauses(score_pos, score_neg, args)
+        score_all = eval_clause_infer.eval_clauses(score_pos, score_neg, args, len(pattern[0][1].body) - args.e)
         clu_all.append([pattern, score_all])
 
     index_suff = config.score_type_index['suff']

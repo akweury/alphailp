@@ -148,7 +148,7 @@ class ClauseGenerator(object):
             # evaluate new clauses
             score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred, args.val_pos,
                                                                 args.val_neg)
-            scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args)
+            scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args, step)
             # classify clauses
             clause_with_scores = eval_clause_infer.classify_clauses(refs_extended, score_all, scores)
             # print best clauses that have been found...
