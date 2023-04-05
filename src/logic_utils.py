@@ -29,17 +29,8 @@ def get_lang(args):
                    dataset_type=args.dataset_type, dataset=args.dataset)
     lang = du.load_language(args)
     init_clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
-    # bk_clauses = du.load_clauses(str(du.base_path / 'bk_clauses.txt'), lang)
-    pi_clauses = []
-    if args.with_bk:
-        bk_pred_files = glob.glob(str(du.base_path / ".." / "bg_predicates" / "*.txt"))
-        for bk_i, bk_file in enumerate(bk_pred_files):
-            pi_clauses += du.load_invented_clauses(bk_i, bk_file, lang)
-    # clauses += pi_clauses
-
-    # bk = du.load_atoms(str(du.base_path / 'bk.txt'), lang)
     atoms = generate_atoms(lang)
-    return lang, init_clauses, pi_clauses, atoms
+    return lang, init_clauses, atoms
 
 
 def get_atoms(lang):
