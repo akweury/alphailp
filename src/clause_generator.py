@@ -561,7 +561,7 @@ class PIClauseGenerator(object):
         for c in new_c:
             log_utils.add_lines(f"{c}", args.log_file)
 
-        return new_c, new_p, is_done
+        return new_c, new_p, new_predicates, is_done
 
     def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
 
@@ -729,40 +729,40 @@ class PIClauseGenerator(object):
         #     print(f"{p_i}/{len(pi_str_lists)} Invented Predicate: {p}")
         return pi_str_lists, kp_str_lists
 
-    def eval_pi_language(self, bs_clauses, pi_languages, pos_pred, neg_pred):
-        print("Eval PI Languages: ", len(pi_languages))
-        pi_language_scores = torch.zeros(len(pi_languages))
-
-        # scoring predicates
-        for pi_index, pi_language in enumerate(pi_languages):
-            lang, pi_clause = pi_language[0], pi_language[1]
-
-            pred_names = [pi_clause[0].head.pred.name]
-            # clauses = pi_clause
-            atoms = logic_utils.get_atoms(lang)
-            NSFR = get_nsfr_model(self.args, lang, pi_clause, atoms,
-                                  self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
-
-            scores = eval_clause_infer.eval_clause_on_scenes(NSFR, self.args, pred_names, pos_pred, neg_pred)
-
-            # = logic_utils.eval_predicates_sign(p_score)
-            pi_language_scores[pi_index] = p_goodness_scores[0]
-
-            # print(f"- Eval pi language {pi_index + 1}/{len(pi_languages)}")
-            # for pi_c in pi_clause:
-            #     print(pi_c)
-            # print(f"- language score: {pi_language_scores[pi_index]}")
-        pi_language_scores_sorted, pi_language_scores_sorted_indices = torch.sort(pi_language_scores, descending=True)
-        passed_languages = []
-        for index in pi_language_scores_sorted_indices:
-            if pi_language_scores[index] == pos_pred.size(0):
-                passed_languages.append(pi_languages[index])
-            else:
-                A = 12
-                # print(f"unnecessary language: {pi_languages[index][1]}")
-                # print(f"unnecessary score: {pi_language_scores[index]}")
-
-        return passed_languages
+    # def eval_pi_language(self, bs_clauses, pi_languages, pos_pred, neg_pred):
+    #     print("Eval PI Languages: ", len(pi_languages))
+    #     pi_language_scores = torch.zeros(len(pi_languages))
+    #
+    #     # scoring predicates
+    #     for pi_index, pi_language in enumerate(pi_languages):
+    #         lang, pi_clause = pi_language[0], pi_language[1]
+    #
+    #         pred_names = [pi_clause[0].head.pred.name]
+    #         # clauses = pi_clause
+    #         atoms = logic_utils.get_atoms(lang)
+    #         NSFR = get_nsfr_model(self.args, lang, pi_clause, atoms,
+    #                               self.NSFR.bk, self.bk_clauses, pi_clause, self.NSFR.fc, self.device)
+    #
+    #         scores = eval_clause_infer.eval_clause_on_scenes(NSFR, self.args, pred_names, pos_pred, neg_pred)
+    #
+    #         # = logic_utils.eval_predicates_sign(p_score)
+    #         pi_language_scores[pi_index] = p_goodness_scores[0]
+    #
+    #         # print(f"- Eval pi language {pi_index + 1}/{len(pi_languages)}")
+    #         # for pi_c in pi_clause:
+    #         #     print(pi_c)
+    #         # print(f"- language score: {pi_language_scores[pi_index]}")
+    #     pi_language_scores_sorted, pi_language_scores_sorted_indices = torch.sort(pi_language_scores, descending=True)
+    #     passed_languages = []
+    #     for index in pi_language_scores_sorted_indices:
+    #         if pi_language_scores[index] == pos_pred.size(0):
+    #             passed_languages.append(pi_languages[index])
+    #         else:
+    #             A = 12
+    #             # print(f"unnecessary language: {pi_languages[index][1]}")
+    #             # print(f"unnecessary score: {pi_language_scores[index]}")
+    #
+    #     return passed_languages
 
     def extract_pi(self, new_lang, all_pi_clauses, args):
         for index, new_p in enumerate(new_lang.invented_preds):

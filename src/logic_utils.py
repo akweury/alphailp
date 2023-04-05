@@ -121,10 +121,6 @@ def generate_atoms(lang):
         args_str_list = []
 
         for args in args_list:
-            # check if args and pred correspond are in the same area
-            if pred.dtypes[0].name == 'area':
-                if pred.name[0] + pred.name[5:] != args[0].name:
-                    continue
             if len(args) == 1 or len(set(args)) == len(args):
                 pi_atoms.append(Atom(pred, args))
     bk_pi_atoms = []
@@ -790,7 +786,7 @@ def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
 
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
-        log_utils.add_lines(f"({c_type}): {bs_clause[0]} {bs_clause[1]}", args.log_file)
+        log_utils.add_lines(f"({c_type}): {bs_clause[0]} {bs_clause[1].reshape(-1)}", args.log_file)
 
     return clauses
 

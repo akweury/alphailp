@@ -190,7 +190,7 @@ def main(n):
                 max_iterations=args.epochs)
     # Start the RTPT tracking
     rtpt.start()
-    torch.set_printoptions(precision=3)
+    torch.set_printoptions(precision=4)
     # get torch data loader
     # train_loader, val_loader, test_loader = get_data_loader(args)
 
