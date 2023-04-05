@@ -217,11 +217,12 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
     clauses = []
     invented_preds = []
     all_pi_clauses = []
-    # load language module
-    lang, full_init_clauses, atoms = get_lang(args)
-    init_clauses = update_initial_clauses(full_init_clauses, args.n_obj)
+
 
     for neural_pred_i in range(len(args.neural_preds)):
+        # load language module
+        lang, full_init_clauses, atoms = get_lang(args)
+        init_clauses = update_initial_clauses(full_init_clauses, args.n_obj)
         # update language with neural predicate: shape/color/dir/dist
 
         if (neural_pred_i < len(args.neural_preds) - 1):
@@ -243,6 +244,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
         args.iteration = 0
         max_clause = [0.0, None]
         args.no_new_preds = False
+        args.last_refs = init_clauses
         clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                init_clauses, pi_clauses, atoms, args.n_obj)
 
