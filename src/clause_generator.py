@@ -530,10 +530,10 @@ class PIClauseGenerator(object):
         self.pos_loader = pos_data_loader
         self.neg_loader = neg_data_loader
 
-    def invent_predicate(self, beam_search_clauses, pi_clauses, args, neural_pred):
+    def invent_predicate(self, beam_search_clauses, pi_clauses, args, neural_pred, invented_p):
 
         new_predicates, is_done = self.cluster_invention(beam_search_clauses, args.val_pos.shape[0], args)
-        log_utils.add_lines(f"new PI: {len(new_predicates)}\n", args.log_file)
+        log_utils.add_lines(f"new PI: {len(new_predicates)}", args.log_file)
         for new_c, new_c_score in new_predicates:
             log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
 
@@ -545,6 +545,7 @@ class PIClauseGenerator(object):
                        dataset=args.dataset)
         lang, init_clauses, atoms = logic_utils.get_lang(args)
         lang.preds.append(neural_pred)
+        lang.invented_preds = invented_p
         all_pi_clauses, all_pi_kp_clauses = du.gen_pi_clauses(lang, new_predicates, new_clauses_str_list, kp_str_list)
 
         all_pi_clauses = self.extract_pi(lang, all_pi_clauses, args) + pi_clauses

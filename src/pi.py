@@ -190,7 +190,7 @@ def extend_clauses(args, clause_generator, init_clauses, pi_c, max_c, clauses):
     return bs_clauses, clauses, args
 
 
-def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, neural_preds):
+def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, new_p, neural_preds):
     args.no_new_preds = True
     lang = pi_clause_generator.lang
     atoms = logic_utils.get_atoms(lang)
@@ -198,7 +198,7 @@ def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, neu
         clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses, "clause", args)
     elif args.pi_top > 0:
         # invent new predicate and generate pi clauses
-        new_c, new_p, is_done = pi_clause_generator.invent_predicate(bs_clauses, new_c, args, neural_preds)
+        new_c, new_p, is_done = pi_clause_generator.invent_predicate(bs_clauses, new_c, args, neural_preds, new_p)
         new_pred_num = len(pi_clause_generator.lang.invented_preds) - args.invented_pred_num
         args.invented_pred_num = len(pi_clause_generator.lang.invented_preds)
         if new_pred_num > 0:
@@ -209,7 +209,7 @@ def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, neu
             for c in new_c:
                 if c not in clauses:
                     clauses.append(c)
-    return clauses, new_c, args, atoms, lang
+    return clauses, new_c, new_p, args, atoms, lang
 
 
 def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
@@ -229,11 +229,13 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
             lang.invented_preds = []
             lang.preds.append(args.neural_preds[neural_pred_i])
             pi_clauses = []
+            pi_p = []
         else:
             print('last round')
             lang.preds = lang.preds[:2] + args.neural_preds[:-1] + invented_preds
             lang.invented_preds = invented_preds
             pi_clauses = all_pi_clauses
+            pi_p = invented_preds
 
         atoms = logic_utils.get_atoms(lang)
 
@@ -247,8 +249,10 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
         while args.iteration < args.max_step and not args.is_done:
             bs_clauses, clauses, args = extend_clauses(args, clause_generator,
                                                        init_clauses, pi_clauses, max_clause, clauses)
-            clauses, pi_clauses, args, atoms, lang = invent_predicates(args, clauses, bs_clauses, pi_clause_generator,
-                                                                       pi_clauses, args.neural_preds[neural_pred_i])
+            clauses, pi_clauses, pi_p, args, atoms, lang = invent_predicates(args, clauses, bs_clauses,
+                                                                             pi_clause_generator,
+                                                                             pi_clauses, pi_p,
+                                                                             args.neural_preds[neural_pred_i])
             clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
                                                                    init_clauses, pi_clauses, atoms, args.n_obj)
             args.iteration += 1
