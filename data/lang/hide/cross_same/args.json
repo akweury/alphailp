@@ -19,8 +19,8 @@
   "nc_th": 0.8,
   "sc_th": 0.8,
   "sn_min_th": 0.1,
-  "c_top": 10,
-  "pi_top": 2,
+  "c_top": 5,
+  "pi_top": 1,
   "with_bk": false,
   "plot_four_zone": false
 }
