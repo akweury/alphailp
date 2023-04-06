@@ -73,7 +73,7 @@ def softand(xs, dim=0, gamma=0.01):
     log_sum_exp = (-gamma) * logsumexp(-xs * (1 / gamma), dim=dim)
     if log_sum_exp.min() < 0:
         log_sum_exp += - log_sum_exp.min()
-        return log_sum_exp / log_sum_exp.max()
+        return log_sum_exp
     else:
         return log_sum_exp
 
