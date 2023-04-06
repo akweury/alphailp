@@ -4,7 +4,7 @@ import torch
 import config
 import log_utils
 import eval_utils
-
+from torch_utils import softor,softand
 
 def classify_clauses(clauses, scores_all, scores):
     # sufficient_necessary_clauses = []
