@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import time
-from torch_utils import softor, weight_sum
+from torch_utils import softor,softand, weight_sum
 
 
 def init_identity_weights(X, device):
@@ -425,6 +425,8 @@ class ClauseFunction(nn.Module):
 
         # B * G
         gather_res = torch.gather(V_tild, 1, I_i_tild.to(torch.int64))
-        prod_res = torch.prod(gather_res, 3)
+        # prod_res = torch.prod(gather_res, 3)
+
+        prod_res = softand(gather_res, dim=3, gamma=self.gamma)
         C = softor(prod_res, dim=2, gamma=self.gamma)
         return C

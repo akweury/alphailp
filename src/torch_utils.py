@@ -50,8 +50,29 @@ def softor(xs, dim=0, gamma=0.01):
     # xs is List[Tensor] or Tensor
     if not torch.is_tensor(xs):
         xs = torch.stack(xs, dim)
-    log_sum_exp = gamma*logsumexp(xs * (1/gamma), dim=dim)
+    log_sum_exp = gamma * logsumexp(xs * (1 / gamma), dim=dim)
     if log_sum_exp.max() > 1.0:
+        return log_sum_exp / log_sum_exp.max()
+    else:
+        return log_sum_exp
+
+
+def softand(xs, dim=0, gamma=0.01):
+    """The softor function.
+
+    Args:
+        xs (tensor or list(tensor)): The input tensor.
+        dim (int): The dimension to be removed.
+        gamma (float: The smooth parameter for logsumexp.
+    Returns:
+        log_sum_exp (tensor): The result of taking or along dim.
+    """
+    # xs is List[Tensor] or Tensor
+    if not torch.is_tensor(xs):
+        xs = torch.stack(xs, dim)
+    log_sum_exp = (-gamma) * logsumexp(-xs * (1 / gamma), dim=dim)
+    if log_sum_exp.min() < 0:
+        log_sum_exp += - log_sum_exp.min()
         return log_sum_exp / log_sum_exp.max()
     else:
         return log_sum_exp
