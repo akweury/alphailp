@@ -438,11 +438,18 @@ class ClauseGenerator(object):
             log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
         if args.score_unique:
             score_unique_c = []
+            score_repeat_c = []
             appeared_scores = []
             for c in clause_with_scores:
                 if not eval_clause_infer.eval_score_similarity(c[1][2], appeared_scores, args.similar_th):
                     score_unique_c.append(c)
                     appeared_scores.append(c[1][2])
+                else:
+                    score_repeat_c.append(c)
+            for c in score_unique_c:
+                log_utils.add_lines(f"(unique score) {c[0]} {c[1].reshape(3)}", args.log_file)
+            for c in score_repeat_c:
+                log_utils.add_lines(f"(repeat score) {c[0]} {c[1].reshape(3)}", args.log_file)
             c_score_pruned = score_unique_c
         else:
             c_score_pruned = clause_with_scores
