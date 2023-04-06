@@ -2,3 +2,4 @@ object:obj0,obj1,obj2,obj3,obj4
 image:img
 shape:sphere,cube
 color:pink,green,blue
+phi:num_phi_4
