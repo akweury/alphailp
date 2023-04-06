@@ -21,7 +21,7 @@
   "sn_min_th": 0.1,
   "c_top": 5,
   "pi_top": 1,
-  "length_weight": 0.05,
+  "length_weight": 0.02,
   "with_bk": false,
   "plot_four_zone": false
 }
