@@ -14,7 +14,7 @@ def init_identity_weights(X, device):
 
 
 class InferModule(nn.Module):
-    def __init__(self, I, infer_step, gamma=0.01, device=None, train=False, m=1, I_bk=None, I_pi=None):
+    def __init__(self, I, infer_step, gamma=0.001, device=None, train=False, m=1, I_bk=None, I_pi=None):
         """
         In the constructor we instantiate two nn.Linear modules and assign them as
         member variables.
@@ -172,7 +172,7 @@ class InferModule(nn.Module):
 
 
 class ClauseInferModule(nn.Module):
-    def __init__(self, I, infer_step, gamma=0.01, device=None, train=False, m=1, I_bk=None, I_pi=None):
+    def __init__(self, I, infer_step, gamma=0.001, device=None, train=False, m=1, I_bk=None, I_pi=None):
         """
         Infer module using each clause.
         The result is not amalgamated in terms of clauses.
@@ -403,7 +403,7 @@ class ClauseFunction(nn.Module):
     A class of the clause function.
     """
 
-    def __init__(self, I_i, gamma=0.01):
+    def __init__(self, I_i, gamma=0.001):
         super(ClauseFunction, self).__init__()
         # self.i = i  # clause index
         self.I_i = I_i  # index tensor C * S * G, S is the number of possible substituions

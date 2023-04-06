@@ -53,7 +53,7 @@ def get_args():
                         help="Use small portion of valuation data.")
     parser.add_argument("--num-workers", type=int, default=4,
                         help="Number of threads for data loader")
-    parser.add_argument('--gamma', default=0.01, type=float,
+    parser.add_argument('--gamma', default=0.001, type=float,
                         help='Smooth parameter in the softor function')
     parser.add_argument("--plot", action="store_true",
                         help="Plot images with captions.")

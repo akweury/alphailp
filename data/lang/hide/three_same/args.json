@@ -1,6 +1,6 @@
 {
   "n_obj": 3,
-  "batch_size_train": 8,
+  "batch_size_train": 16,
   "e": 3,
   "dataset": "three_same",
   "dataset-type": "hide",
