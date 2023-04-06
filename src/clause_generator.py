@@ -434,7 +434,8 @@ class ClauseGenerator(object):
 
         # prune score similar clauses
         log_utils.add_lines(f"=============== score pruning ==========", args.log_file)
-
+        for c in clause_with_scores:
+            log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
         if args.score_unique:
             score_unique_c = []
             appeared_scores = []
