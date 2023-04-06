@@ -174,7 +174,9 @@ def extend_clauses(args, clause_generator, init_clauses, pi_c, max_c, clauses):
         # break
     elif len(bs_clauses) > 0 and bs_clauses[0][1][2] > args.sn_th:
         log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
-        clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn_good", args)
+        for c in bs_clauses:
+            if c[1][2] > args.sn_th:
+                clauses += logic_utils.extract_clauses_from_bs_clauses([c], "sn_good", args)
         args.is_done = True
         # break
     else:
