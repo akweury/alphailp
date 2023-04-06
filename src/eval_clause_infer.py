@@ -184,8 +184,8 @@ def eval_clause_on_scenes(NSFR, args, pred_names, pos_pred, neg_pred):
     score_positive = NSFR.get_target_prediciton(V_T_pos, pred_names, args.device)
     score_negative = NSFR.get_target_prediciton(V_T_neg, pred_names, args.device)
 
-    score_negative[score_negative == 1] = 0.98
-    score_positive[score_positive == 1] = 0.98
+    score_negative[score_negative == 1] = 0.99
+    score_positive[score_positive == 1] = 0.99
 
     if score_positive.size(2) > 1:
         score_positive = score_positive.max(dim=2, keepdim=True)[0]
