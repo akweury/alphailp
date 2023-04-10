@@ -28,7 +28,7 @@ def get_lang(args):
     du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
                    dataset_type=args.dataset_type, dataset=args.dataset)
     lang = du.load_language(args)
-    init_clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang)
+    init_clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang, args)
     atoms = generate_atoms(lang)
     return lang, init_clauses, atoms
 

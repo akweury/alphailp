@@ -28,7 +28,7 @@ class DataUtils(object):
         with open(lark_path, encoding="utf-8") as grammar:
             self.lp_clause = Lark(grammar.read(), start="clause")
 
-    def load_clauses(self, path, lang):
+    def load_clauses(self, path, lang, args):
         """Read lines and parse to Atom objects.
         """
         clauses = []
@@ -37,6 +37,12 @@ class DataUtils(object):
                 for line in f:
                     if line[-1] == '\n':
                         line = line[:-1]
+                    if line == 'Oi,X':
+                        line = "kp(X):-"
+                        for i in range(args.e):
+                            line += f"in(O{i + 1},X),"
+                        line = line[:-1]
+                        line += "."
                     tree = self.lp_clause.parse(line)
                     clause = ExpTree(lang).transform(tree)
                     clauses.append(clause)
@@ -278,7 +284,6 @@ class DataUtils(object):
             const_names = []
             for i in range(int(num)):
                 const_names.append(prefix + str(i))
-
         else:
             const_names = const_names_str.split(',')
 
@@ -307,5 +312,5 @@ class DataUtils(object):
             for bk_i, bk_file in enumerate(bk_pred_files):
                 bk_inv_preds += self.load_invented_preds(bk_i, bk_file)
 
-        lang = Language(args,preds, [], consts, bk_inv_preds, pi_templates)
+        lang = Language(args, preds, [], consts, bk_inv_preds, pi_templates)
         return lang
