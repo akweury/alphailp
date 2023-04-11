@@ -150,7 +150,7 @@ class ClauseGenerator(object):
                                                                 args.val_neg)
             scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args, step)
             # classify clauses
-            clause_with_scores = eval_clause_infer.classify_clauses(refs_extended, score_all, scores)
+            clause_with_scores = eval_clause_infer.prune_low_score_clauses(refs_extended, score_all, scores, args)
             # print best clauses that have been found...
             clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args)
 

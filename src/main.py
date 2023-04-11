@@ -81,6 +81,8 @@ def get_args():
                         help="The number of max steps for clause searching.")
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="The learning rate.")
+    parser.add_argument("--suff_min", type=float, default=0.1,
+                        help="The minimum accept threshold for sufficient clauses.")
     parser.add_argument("--sn_th", type=float, default=0.9,
                         help="The accept threshold for sufficient and necessary clauses.")
     parser.add_argument("--nc_th", type=float, default=0.9,

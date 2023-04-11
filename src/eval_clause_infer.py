@@ -4,86 +4,16 @@ import torch
 import config
 import log_utils
 import eval_utils
-from torch_utils import softor,softand
+from torch_utils import softor, softand
 
-def classify_clauses(clauses, scores_all, scores):
-    # sufficient_necessary_clauses = []
-    # necessary_clauses = []
-    # sufficient_clauses = []
-    # unclassified_clauses = []
-    # sn_good_clauses = []
-    # sc_good_clauses = []
-    # nc_good_clauses = []
-    # uc_good_clauses = []
-    # conflict_clauses = []
+
+def prune_low_score_clauses(clauses, scores_all, scores, args):
     clause_with_scores = []
     for c_i, clause in enumerate(clauses):
         score = scores[:, c_i]
-        clause_with_scores.append((clause, score, scores_all[c_i]))
+        if score[0] > args.suff_min:
+            clause_with_scores.append((clause, score, scores_all[c_i]))
 
-    # for c_i, clause in enumerate(clauses):
-    #     # data_size = args.data_size
-    #     # if torch.max(last_3, dim=-1)[0] == last_3[0] and last_3[0] > last_3[2]:
-    #     #     good_clauses.append((clause, scores))
-    #
-    #     score = scores[:, c_i]
-    #
-    #     if eval_utils.is_sn(score):
-    #         sufficient_necessary_clauses.append((clause, score, scores_all[c_i]))
-    #         # log_utils.add_lines(f'(sn) {clause}, {four_scores[c_i]}', args.log_file)
-    #     elif eval_utils.is_sn_th_good(score, args.sn_th):
-    #         sn_good_clauses.append((clause, score, scores_all[c_i]))
-    # log_utils.add_lines(f'(sn_good) {clause}, {four_scores[c_i]}', args.log_file)
-    # elif eval_utils.is_conflict(score, args.conflict_th):
-    #     conflict_clauses.append((clause, score, scores_all[c_i]))
-    # elif search_type == "nc":
-    #     if eval_utils.is_nc(score):
-    #         necessary_clauses.append((clause, score, scores_all[c_i]))
-    #     elif eval_utils.is_nc_th_good(score, args.nc_th):
-    #         nc_good_clauses.append((clause, score, scores_all[c_i]))
-    #     elif eval_utils.is_sc(score):
-    #         sufficient_clauses.append((clause, score, scores_all[c_i]))
-    #     elif eval_utils.is_sc_th_good(score, args.sc_th):
-    #         sc_good_clauses.append((clause, score, scores_all[c_i]))
-    #     # elif eval_utils.is_uc_th_good(score, args.uc_th):
-    #     #     uc_good_clauses.append((clause, score, scores_all[c_i]))
-    #     # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-    #     else:
-    #         unclassified_clauses.append((clause, score, scores_all[c_i]))
-    #         # log_utils.add_lines(f'(uc) {clause}, {four_scores[c_i]}', args.log_file)
-
-    # if eval_utils.is_sc(score):
-    #     sufficient_clauses.append((clause, score, scores_all[c_i]))
-    # elif eval_utils.is_sc_th_good(score, args.sc_th):
-    #     sc_good_clauses.append((clause, score, scores_all[c_i]))
-    # elif eval_utils.is_nc(score):
-    #     necessary_clauses.append((clause, score, scores_all[c_i]))
-    # elif eval_utils.is_nc_th_good(score, args.nc_th):
-    #     nc_good_clauses.append((clause, score, scores_all[c_i]))
-    # # elif eval_utils.is_uc_th_good(score, args.uc_th):
-    # #     uc_good_clauses.append((clause, score, scores_all[c_i]))
-    # # log_utils.add_lines(f"(uc_good) {clause}, {four_scores[c_i]}", args.log_file)
-    # else:
-    #     unclassified_clauses.append((clause, score, scores_all[c_i]))
-    # clause_dict = {"sn": sufficient_necessary_clauses,
-    #                "nc": necessary_clauses,
-    #                "sc": sufficient_clauses,
-    #                "uc": unclassified_clauses,
-    #                "sn_good": sn_good_clauses,
-    #                "nc_good": nc_good_clauses,
-    #                'sc_good': sc_good_clauses,
-    #                'uc_good': uc_good_clauses,
-    #                "conflict": conflict_clauses}
-    # log_utils.add_lines(
-    #     f"sn_c: {len(clause_dict['sn'])}, "
-    #     f"sn_c_good: {len(clause_dict['sn_good'])}, "
-    #     f"n_c: {len(clause_dict['nc'])}, "
-    #     f"s_c: {len(clause_dict['sc'])}, "
-    #     f"n_c_good: {len(clause_dict['nc_good'])}, "
-    #     f"s_c_good: {len(clause_dict['sc_good'])}, "
-    #     f"u_c_good: {len(clause_dict['uc_good'])}, "
-    #     f"u_c: {len(clause_dict['uc'])}, "
-    #     f"conflict: {len(clause_dict['conflict'])}.", args.log_file)
     return clause_with_scores
 
 
