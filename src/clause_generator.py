@@ -434,8 +434,8 @@ class ClauseGenerator(object):
 
         # prune score similar clauses
         log_utils.add_lines(f"=============== score pruning ==========", args.log_file)
-        for c in clause_with_scores:
-            log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
+        # for c in clause_with_scores:
+        #     log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
         if args.score_unique:
             score_unique_c = []
             score_repeat_c = []
@@ -446,10 +446,10 @@ class ClauseGenerator(object):
                     appeared_scores.append(c[1][2])
                 else:
                     score_repeat_c.append(c)
-            for c in score_unique_c:
-                log_utils.add_lines(f"(unique score) {c[0]} {c[1].reshape(3)}", args.log_file)
-            for c in score_repeat_c:
-                log_utils.add_lines(f"(repeat score) {c[0]} {c[1].reshape(3)}", args.log_file)
+            # for c in score_unique_c:
+            #     log_utils.add_lines(f"(unique score) {c[0]} {c[1].reshape(3)}", args.log_file)
+            # for c in score_repeat_c:
+            #     log_utils.add_lines(f"(repeat score) {c[0]} {c[1].reshape(3)}", args.log_file)
             c_score_pruned = score_unique_c
         else:
             c_score_pruned = clause_with_scores
@@ -468,10 +468,10 @@ class ClauseGenerator(object):
                 else:
                     semantic_repeat_c.append(c)
             c_semantic_pruned = semantic_unique_c
-            for c in c_semantic_pruned:
-                log_utils.add_lines(f"(unique semantic clause) {c[0]}", args.log_file)
-            for c in semantic_repeat_c:
-                log_utils.add_lines(f"(repeat semantic clause) {c[0]}", args.log_file)
+            # for c in c_semantic_pruned:
+            #     log_utils.add_lines(f"(unique semantic clause) {c[0]}", args.log_file)
+            # for c in semantic_repeat_c:
+            #     log_utils.add_lines(f"(repeat semantic clause) {c[0]}", args.log_file)
         else:
             c_semantic_pruned = c_score_pruned
 
