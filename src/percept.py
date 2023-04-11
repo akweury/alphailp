@@ -396,8 +396,8 @@ def eval_images(args, model_file, device, pos_loader, neg_loader):
 def convert_data_to_tensor(args, od_res):
     if os.path.exists(od_res):
         pm_res = torch.load(od_res)
-        pos_pred = pm_res['pos_res'][:,:args.e,:]
-        neg_pred = pm_res['neg_res'][:,:args.e,:]
+        pos_pred = pm_res['pos_res'][:, :args.e, :]
+        neg_pred = pm_res['neg_res'][:, :args.e, :]
     else:
         raise ValueError
     # data_files = glob.glob(str(pos_dataset_folder / '*.json'))
@@ -421,8 +421,6 @@ def convert_data_to_tensor(args, od_res):
     #             data_tensor[0, o_i, 7] = 0.99
     #         data_tensor[0, o_i, 8] = 0.99
     #     data_tensors[d_i] = data_tensor[0]
-
-
 
     return pos_pred, neg_pred
 
