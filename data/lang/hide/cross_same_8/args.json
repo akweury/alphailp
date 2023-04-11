@@ -2,7 +2,7 @@
   "n_obj": 8,
   "batch_size_train": 8,
   "e": 8,
-  "dataset": "cross_same",
+  "dataset": "cross_same_8",
   "dataset-type": "hide",
   "score_unique": true,
   "semantic_unique": true,
