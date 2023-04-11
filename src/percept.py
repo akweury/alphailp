@@ -66,7 +66,7 @@ class YOLOPerceptionModule(nn.Module):
         for objs in output:
             if objs.size(0) < self.e:
                 diff = self.e - objs.size(0)
-                zero_tensor = torch.zeros((diff, 6)).to(self.device)
+                zero_tensor = torch.zeros((diff, self.e)).to(self.device)
                 padded = torch.cat([objs, zero_tensor], dim=0)
                 padded_list.append(padded)
             else:
@@ -121,7 +121,7 @@ class FCNNPerceptionModule(nn.Module):
         for objs in output:
             if objs.size(0) < self.e:
                 diff = self.e - objs.size(0)
-                zero_tensor = torch.zeros((diff, 6)).to(self.device)
+                zero_tensor = torch.zeros((diff, self.e)).to(self.device)
                 padded = torch.cat([objs, zero_tensor], dim=0)
                 padded_list.append(padded)
             else:
