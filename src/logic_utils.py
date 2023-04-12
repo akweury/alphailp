@@ -38,14 +38,14 @@ def get_atoms(lang):
     return atoms
 
 
-def build_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False, gamma=None):
+def build_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False, gamma=None):
     te = TensorEncoder(lang, atoms, clauses, device=device)
-    I = te.encode()
+    I = te.encode(args)
     te_bk = None
     I_bk = None
     if len(pi_clauses) > 0:
         te_pi = TensorEncoder(lang, atoms, pi_clauses, device=device)
-        I_pi = te_pi.encode()
+        I_pi = te_pi.encode(args)
     else:
         te_pi = None
         I_pi = None
@@ -54,9 +54,10 @@ def build_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, infer_step
     return im
 
 
-def build_clause_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, infer_step=5, train=False, gamma=None):
+def build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=5, train=False,
+                              gamma=None):
     te = TensorEncoder(lang, atoms, clauses, device=device)
-    I = te.encode()
+    I = te.encode(args)
     te_bk = None
     I_bk = None
 
@@ -64,15 +65,15 @@ def build_clause_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, inf
     I_pi = None
     if len(pi_clauses) > 0:
         te_pi = TensorEncoder(lang, atoms, pi_clauses, device=device)
-        I_pi = te_pi.encode()
+        I_pi = te_pi.encode(args)
 
     im = ClauseInferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk, I_pi=I_pi, gamma=gamma)
     return im
 
 
-def build_pi_clause_infer_module(clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
+def build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
-    I = te.encode()
+    I = te.encode(args)
 
     te_bk = None
     I_bk = None

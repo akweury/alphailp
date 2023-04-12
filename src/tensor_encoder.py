@@ -1,7 +1,8 @@
 import itertools
 import torch
-from tqdm import tqdm
-from fol.logic_ops import unify, subs_list, subs
+from fol.logic_ops import unify, subs_list
+import config
+import os
 
 
 class TensorEncoder(object):
@@ -35,7 +36,7 @@ class TensorEncoder(object):
         self.G = len(facts)
         self.C = len(clauses)
         # call before computing S and L
-        #self.head_unifier_dic = self.build_head_unifier_dic()
+        # self.head_unifier_dic = self.build_head_unifier_dic()
         self.fact_index_dic = self.build_fact_index_dic()
         self.S = self.get_max_subs_num(clauses)
         self.L = max([len(clause.body)
@@ -52,10 +53,10 @@ class TensorEncoder(object):
         """
         S_list = []
         for clause in clauses:
-            #print("clause: ", clause)
+            # print("clause: ", clause)
             for fi, fact in enumerate(self.facts):
-                #if (clause.head, fact) in self.head_unifier_dic:
-                #theta = self.head_unifier_dic[(clause.head, fact)]
+                # if (clause.head, fact) in self.head_unifier_dic:
+                # theta = self.head_unifier_dic[(clause.head, fact)]
                 unify_flag, theta = unify([clause.head, fact])
                 if unify_flag:
                     clause_ = subs_list(clause, theta)
@@ -64,7 +65,7 @@ class TensorEncoder(object):
                     S_list.append(len(theta_list))
         return max(S_list)
 
-    def encode(self):
+    def encode(self, args):
         """Compute the index tensor for the differentiable inference.
 
         Returns
@@ -73,12 +74,12 @@ class TensorEncoder(object):
         I = torch.zeros((self.C, self.G, self.S, self.L),
                         dtype=torch.int16).to(self.device)
         for ci, clause in enumerate(self.clauses):
-            #print("CLAUSE: ", clause)
-            I_c = self.build_I_c(clause)
+            # print("CLAUSE: ", clause)
+            I_c = self.build_I_c(clause, args)
             I[ci, :, :, :] = I_c
         return I
 
-    def build_I_c(self, clause):
+    def build_I_c(self, clause, args):
         """Build index tensor for a given clause.
 
         Args:
@@ -88,18 +89,28 @@ class TensorEncoder(object):
             I_c (tensor): The index tensor for the given clause (G, S, L).
         """
         # G * S * L
-        I_c = torch.zeros((self.G, self.S, self.L),
-                          dtype=torch.int16).to(self.device)
-        #print("CLAUSE: ", clause)
+        I_c = torch.zeros((self.G, self.S, self.L), dtype=torch.int16).to(self.device)
+        # print("CLAUSE: ", clause)
         for fi, fact in enumerate(self.facts):
-            #if (clause.head, fact) in self.head_unifier_dic:
+            # if (clause.head, fact) in self.head_unifier_dic:
             unify_flag, theta = unify([clause.head, fact])
             if unify_flag:
-                #theta = self.head_unifier_dic[(clause.head, fact)]
+                # theta = self.head_unifier_dic[(clause.head, fact)]
                 clause_ = subs_list(clause, theta)
+
+                I_c_b_file = str(config.buffer_path / "hide" / f"{args.dataset}" / f"I_c_b.pth.tar")
+
+                if os.path.exists(I_c_b_file) and len(clause_.body) > args.e:
+                    I_dict = torch.load(I_c_b_file)
+                    buffer = I_dict[f"I_c_b_{len(clause_.body) - 1}"]
+                else:
+                    buffer = None
                 # convert body atoms into indices
-                I_c_b = self.body_to_tensor(clause_.body)
-                I_c[fi] = I_c_b
+                buffer = self.body_to_tensor_faster(clause_.body, args, buffer)
+                I_dict = {f'I_c_b_{len(clause_.body)}': buffer}
+                torch.save(I_dict, I_c_b_file)
+
+                I_c[fi] = buffer
         return I_c
 
     def build_fact_index_dic(self):
@@ -130,7 +141,7 @@ class TensorEncoder(object):
 
     # taking constant modes to reduce the number of substituions
 
-    def body_to_tensor(self, body):
+    def body_to_tensor(self, body, args):
         """Convert the body atoms into a tensor.
 
         Args:
@@ -140,8 +151,8 @@ class TensorEncoder(object):
             I_c_b (tensor;(S * L)): The tensor representation of the body atoms.
         """
         # S * L
-        I_c_b = torch.zeros(
-            (self.S, self.L), dtype=torch.int16).to(self.device)
+
+        I_c_b = torch.zeros((self.S, self.L), dtype=torch.int16).to(self.device)
 
         # extract all vars in the body atoms
         var_list = []
@@ -158,27 +169,78 @@ class TensorEncoder(object):
             I_c_b[0] = self.pad_by_true(x_b)
 
             for i in range(1, self.S):
-                I_c_b[i] = torch.zeros(self.L, dtype=torch.int16).to(
-                    self.device)  # fill by FALSE
+                I_c_b[i] = torch.zeros(self.L, dtype=torch.int16).to(self.device)  # fill by FALSE
         else:
             # the body has existentially quantified variable!!
             # e.g. body atoms: [in(img,O1),shape(O1,square)]
             # theta_list: [(O1,obj1), (O1,obj2)]
             theta_list = self.generate_subs(body)
             n_substs = len(theta_list)
-            assert n_substs <= self.S, 'Exceeded the maximum number of substitution patterns to existential variables: n_substs is: ' + \
-                str(n_substs) + ' but max num is: ' + str(self.S)
+            assert n_substs <= self.S, 'Exceeded the maximum number of substitution patterns to ' \
+                                       'existential variables: n_substs is: ' \
+                                       '' + str(n_substs) + ' but max num is: ' + str(self.S)
 
             # compute the grounded clause for each possible substitution, convert to the index tensor, and store it.
             for i, theta in enumerate(theta_list):
                 ground_body = [subs_list(bi, theta) for bi in body]
-                I_c_b[i] = self.pad_by_true(
-                    self.facts_to_index(ground_body))
+                I_c_b[i] = self.pad_by_true(self.facts_to_index(ground_body))
             # if the number of substitutions is less than the maximum number of substitions (S),
             # the rest of the tensor is filled 0, which is the index of FALSE
             for i in range(n_substs, self.S):
-                I_c_b[i] = torch.zeros(
-                    self.L, dtype=torch.int16).to(self.device)
+                I_c_b[i] = torch.zeros(self.L, dtype=torch.int16).to(self.device)
+        return I_c_b
+
+    def body_to_tensor_faster(self, body, args, buffer):
+        """Convert the body atoms into a tensor.
+
+        Args:
+            body (list(atom)): The body atoms.
+
+        Returns:
+            I_c_b (tensor;(S * L)): The tensor representation of the body atoms.
+        """
+        # S * L
+
+        I_c_b = torch.zeros((self.S, self.L), dtype=torch.int16).to(self.device)
+
+        # extract all vars in the body atoms
+        var_list = []
+        for atom in body:
+            var_list += atom.all_vars()
+        var_list = list(set(var_list))
+
+        assert len(
+            var_list) <= 10, 'Too many existentially quantified variables in an atom: ' + str(atom)
+
+        if len(var_list) == 0:
+            # the case of the body atoms are already grounded
+            x_b = self.facts_to_index(body)
+            I_c_b[0] = self.pad_by_true(x_b)
+
+            for i in range(1, self.S):
+                I_c_b[i] = torch.zeros(self.L, dtype=torch.int16).to(self.device)  # fill by FALSE
+        else:
+            # the body has existentially quantified variable!!
+            # e.g. body atoms: [in(img,O1),shape(O1,square)]
+            # theta_list: [(O1,obj1), (O1,obj2)]
+            theta_list = self.generate_subs(body)
+            n_substs = len(theta_list)
+            assert n_substs <= self.S, 'Exceeded the maximum number of substitution patterns to ' \
+                                       'existential variables: n_substs is: ' \
+                                       '' + str(n_substs) + ' but max num is: ' + str(self.S)
+
+            # compute the grounded clause for each possible substitution, convert to the index tensor, and store it.
+            for i, theta in enumerate(theta_list):
+                ground_body = [subs_list(bi, theta) for bi in body]
+                if buffer is None:
+                    I_c_b[i] = self.pad_by_true(self.facts_to_index(ground_body))
+                else:
+                    I_c_b[i, 0] = self.pad_by_true(self.facts_to_index([ground_body[0]]))[0]
+                    I_c_b[i, 1:] = buffer[i, :]
+            # if the number of substitutions is less than the maximum number of substitions (S),
+            # the rest of the tensor is filled 0, which is the index of FALSE
+            for i in range(n_substs, self.S):
+                I_c_b[i] = torch.zeros(self.L, dtype=torch.int16).to(self.device)
         return I_c_b
 
     def pad_by_true(self, x):
@@ -232,7 +294,8 @@ class TensorEncoder(object):
             return []
         # check the data type consistency
         assert len(list(set(dtypes))) == 1, "Invalid existentially quantified variables. " + \
-            str(len(list(set(dtypes)))) + " data types in the body: " + str(body) + " dypes: " + str(dtypes)
+                                            str(len(list(set(dtypes)))) + " data types in the body: " + str(
+            body) + " dypes: " + str(dtypes)
 
         vars = list(set(vars))
         n_vars = len(vars)
@@ -250,7 +313,7 @@ class TensorEncoder(object):
                 theta.append(s)
             theta_list.append(theta)
         # e.g. theta_list: [[(Z, red)], [(Z, yellow)], [(Z, blue)]]
-        #print("theta_list: ", theta_list)
+        # print("theta_list: ", theta_list)
         return theta_list
 
     def facts_to_index(self, atoms):

@@ -156,19 +156,19 @@ class PIReasoner(nn.Module):
 
 def get_pi_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
     device = args.device
-    if args.dataset_type=="kandinsky":
+    if args.dataset_type == "kandinsky":
         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-    elif args.dataset_type=="hide":
+    elif args.dataset_type == "hide":
         PM = FCNNPerceptionModule(e=args.e, d=11, device=device)
     else:
         raise ValueError
     PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset, dataset_type=args.dataset_type)
-    IM = build_infer_module(clauses, pi_clauses, atoms, lang,
+    IM = build_infer_module(args, clauses, pi_clauses, atoms, lang,
                             m=args.m, infer_step=2, device=device, train=train)
-    CIM = build_clause_infer_module(clauses, pi_clauses, atoms, lang,
+    CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang,
                                     m=len(clauses), infer_step=2, device=device)
 
-    PICIM = build_pi_clause_infer_module(clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=2,
+    PICIM = build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=2,
                                          device=device)
 
     PI = PIReasoner(perception_module=PM, facts_converter=FC,

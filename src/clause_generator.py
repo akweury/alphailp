@@ -3,15 +3,12 @@ import torch
 import numpy as np
 from PIL import Image
 
-import chart_utils
-import eval_clause_infer
 from refinement import RefinementGenerator
 from percept import YOLOPerceptionModule
-from nsfr_utils import update_nsfr_clauses, get_prob, get_nsfr_model
+from nsfr_utils import get_nsfr_model
 import logic_utils
 from fol.language import DataType
 import log_utils
-import eval_utils
 from fol.data_utils import DataUtils
 import eval_clause_infer
 import config

@@ -148,7 +148,7 @@ def get_data_neg_loader(args):
     if args.dataset_type == 'kandinsky':
         return get_kandinsky_neg_loader(args)
     else:
-        return None,None,None
+        return None, None, None
 
 
 def get_clevr_loader(args):
@@ -392,9 +392,9 @@ def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
         PM = None
     else:
         assert False, "Invalid dataset type: " + str(args.dataset_type)
-    IM = build_infer_module(clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,
+    IM = build_infer_module(args, clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,
                             train=train, gamma=args.gamma)
-    CIM = build_clause_infer_module(clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
+    CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
                                     device=device, gamma=args.gamma)
 
     # Neuro-Symbolic Forward Reasoner
@@ -403,28 +403,8 @@ def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
     return NSFR
 
 
-def __get_nsfr_model_from_nsfr(NSFR, lang, clauses, atoms, bk, bk_clauses, pi_clauses, device):
-    lang = NSFR.lang
-    PM = YOLOPerceptionModule(e=NSFR.pm.e, d=11, device=device)
-    VM = YOLOValuationModule(lang=lang, device=device)
-    PI_VM = PIValuationModule(lang=lang, device=device)
-
-    # elif args.dataset_type == 'clevr':
-    #    PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
-    #    VM = SlotAttentionValuationModule(lang=lang,  device=device)
-    FC = FactsConverter(lang=lang, perception_module=PM,
-                        valuation_module=VM, pi_valuation_module=PI_VM, device=device)
-    IM = build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=4, device=device)
-    CIM = build_infer_module(clauses, bk_clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=4, device=device)
-    # Neuro-Symbolic Forward Reasoner
-    NSFR = NSFReasoner(perception_module=PM, facts_converter=FC,
-                       infer_module=IM, clause_infer_module=CIM, atoms=atoms, bk=bk, clauses=clauses)
-    return NSFR
-
-
-def update_nsfr_clauses(nsfr, clauses, bk_clauses, device):
-    CIM = build_clause_infer_module(
-        clauses, bk_clauses, nsfr.atoms, nsfr.fc.lang, m=len(clauses), device=device)
+def update_nsfr_clauses(args, nsfr, clauses, bk_clauses, device):
+    CIM = build_clause_infer_module(args, clauses, bk_clauses, nsfr.atoms, nsfr.fc.lang, m=len(clauses), device=device)
     new_nsfr = NSFReasoner(perception_module=nsfr.pm, facts_converter=nsfr.fc, infer_module=nsfr.im,
                            clause_infer_module=CIM, atoms=nsfr.atoms, bk=nsfr.bk, clauses=clauses)
     new_nsfr._summary()
@@ -446,7 +426,7 @@ def get_nsfr_model_train(args, lang, clauses, atoms, bk, device, m):
     else:
         assert False, "Invalid dataset type: " + str(args.dataset_type)
     FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM, pi_valuation_module=PI_VM, device=device)
-    IM = build_infer_module(clauses, atoms, lang, m=m, infer_step=4, device=device, train=True)
+    IM = build_infer_module(args, clauses, atoms, lang, m=m, infer_step=4, device=device, train=True)
     # Neuro-Symbolic Forward Reasoner
     NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM, atoms=atoms, bk=bk, clauses=clauses)
     return NSFR
