@@ -37,10 +37,9 @@ class TensorEncoder(object):
         self.C = len(clauses)
         # call before computing S and L
         # self.head_unifier_dic = self.build_head_unifier_dic()
-        self.fact_index_dic = self.build_fact_index_dic()
+        self.fact_index_dic = dict(zip(self.facts, list(range(len(self.facts)))))
         self.S = self.get_max_subs_num(clauses)
-        self.L = max([len(clause.body)
-                      for clause in clauses] + [1])
+        self.L = max([len(clause.body) for clause in clauses] + [1])
 
     def get_max_subs_num(self, clauses):
         """Compute S (the maximum numebr of substitutions for body atoms) from clauses.
@@ -99,17 +98,8 @@ class TensorEncoder(object):
                 clause_ = subs_list(clause, theta)
 
                 I_c_b_file = str(config.buffer_path / "hide" / f"{args.dataset}" / f"I_c_b.pth.tar")
-
-                if os.path.exists(I_c_b_file) and len(clause_.body) > args.e:
-                    I_dict = torch.load(I_c_b_file)
-                    buffer = I_dict[f"I_c_b_{len(clause_.body) - 1}"]
-                else:
-                    buffer = None
                 # convert body atoms into indices
-                buffer = self.body_to_tensor_faster(clause_.body, args, buffer)
-                I_dict = {f'I_c_b_{len(clause_.body)}': buffer}
-                torch.save(I_dict, I_c_b_file)
-
+                buffer = self.body_to_tensor_faster(clause_.body, args)
                 I_c[fi] = buffer
         return I_c
 
@@ -119,9 +109,7 @@ class TensorEncoder(object):
         Returns:
             dic ({atom -> int}): A dictionary to map the atoms to indices.
         """
-        dic = {}
-        for i, fact in enumerate(self.facts):
-            dic[fact] = i
+        dic = dict(zip(self.facts, list(range(len(self.facts)))))
         return dic
 
     def build_head_unifier_dic(self):
@@ -190,7 +178,7 @@ class TensorEncoder(object):
                 I_c_b[i] = torch.zeros(self.L, dtype=torch.int16).to(self.device)
         return I_c_b
 
-    def body_to_tensor_faster(self, body, args, buffer):
+    def body_to_tensor_faster(self, body, args):
         """Convert the body atoms into a tensor.
 
         Args:
@@ -209,8 +197,7 @@ class TensorEncoder(object):
             var_list += atom.all_vars()
         var_list = list(set(var_list))
 
-        assert len(
-            var_list) <= 10, 'Too many existentially quantified variables in an atom: ' + str(atom)
+        assert len(var_list) <= 10, 'Too many existentially quantified variables in an atom: ' + str(atom)
 
         if len(var_list) == 0:
             # the case of the body atoms are already grounded
@@ -232,11 +219,7 @@ class TensorEncoder(object):
             # compute the grounded clause for each possible substitution, convert to the index tensor, and store it.
             for i, theta in enumerate(theta_list):
                 ground_body = [subs_list(bi, theta) for bi in body]
-                if buffer is None:
-                    I_c_b[i] = self.pad_by_true(self.facts_to_index(ground_body))
-                else:
-                    I_c_b[i, 0] = self.pad_by_true(self.facts_to_index([ground_body[0]]))[0]
-                    I_c_b[i, 1:] = buffer[i, :]
+                I_c_b[i] = self.pad_by_true(self.facts_to_index(ground_body))
             # if the number of substitutions is less than the maximum number of substitions (S),
             # the rest of the tensor is filled 0, which is the index of FALSE
             for i in range(n_substs, self.S):
@@ -319,7 +302,19 @@ class TensorEncoder(object):
     def facts_to_index(self, atoms):
         """Convert given ground atoms into the indices.
         """
-        return torch.tensor([self.get_fact_index(nf) for nf in atoms], dtype=torch.int16).to(self.device)
+
+        ind = [self.get_fact_index(nf) for nf in atoms]
+        # ind = self.get_fact_index_v(atoms)
+        return torch.tensor(ind, dtype=torch.int16).to(self.device)
+
+    def get_fact_index_v(self, facts):
+        """Convert a fact to the index in the ordered set of all facts.
+        """
+        try:
+            index = self.fact_index_dic[facts]
+        except KeyError:
+            index = 0
+        return index
 
     def get_fact_index(self, fact):
         """Convert a fact to the index in the ordered set of all facts.
