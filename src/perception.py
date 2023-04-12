@@ -1,5 +1,10 @@
 # Created by shaji on 21-Mar-23
+import cv2 as cv
+import numpy as np
+
 import config, percept, data_hide, log_utils
+from src import config, percept
+from src.data_hide import vertex_normalization
 
 
 def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_loader, train_neg_loader,
@@ -17,12 +22,12 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
                                                            test_neg_loader)
 
     elif args.dataset_type == "hide":
-        train_pos_pred, train_neg_pred = data_hide.get_pred_res(args, "train")
-        test_pos_pred, test_neg_pred = data_hide.get_pred_res(args, "test")
+        train_pos_pred, train_neg_pred = get_pred_res(args, "train")
+        test_pos_pred, test_neg_pred = get_pred_res(args, "test")
         if args.small_data:
-            val_pos_pred, val_neg_pred = data_hide.get_pred_res(args, "val_s")
+            val_pos_pred, val_neg_pred = get_pred_res(args, "val_s")
         else:
-            val_pos_pred, val_neg_pred = data_hide.get_pred_res(args, "val")
+            val_pos_pred, val_neg_pred = get_pred_res(args, "val")
 
     else:
         raise ValueError
@@ -39,3 +44,55 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader, train_pos_l
     }
 
     return pm_prediction_dict
+
+
+def get_poly_area(points):
+    # https://stackoverflow.com/a/30408825/8179152
+    x = points[:, 0]
+    y = points[:, 2]
+    area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+    return area
+
+
+def hough_transform(x, origin=None):
+    # https://stats.stackexchange.com/questions/375787/how-to-cluster-parts-of-broken-line-made-of-points
+    if origin is None:
+        origin = [0, 0]
+
+    x = np.transpose(x - origin)
+    dx = np.vstack((np.apply_along_axis(np.diff, 0, x), [0.0, 0.0]))
+    v = np.vstack((-dx[:, 1], dx[:, 0])).T
+    n = np.sqrt(v[:, 0] ** 2 + v[:, 1] ** 2).reshape(-1, 1)
+    res = np.column_stack((np.sum(x * (v / (n+1e-20)), axis=1), np.arctan2(v[:, 1], v[:, 0]))).T
+    return res
+
+
+def extract_patterns(args, pm_prediction_dict):
+    positions = pm_prediction_dict[:, :, :3]
+    # Hough Transform
+    pos = positions[0, :, [0, 2]]
+    line_preds = hough_transform(pos.numpy())
+
+    return line_preds
+
+
+def get_pred_res(args, data_type):
+    od_res = config.buffer_path / "hide" / f"{args.dataset}_pm_res_{data_type}.pth.tar"
+    pred_pos, pred_neg = percept.convert_data_to_tensor(args, od_res)
+
+    # normalize the position
+    pred_pos_norm = vertex_normalization(pred_pos)
+    pred_neg_norm = vertex_normalization(pred_neg)
+    # value_max = max(pred_pos_norm[:, :, :3].max(), pred_neg[:, :, :3].max())
+    # value_min = min(pred_pos_norm[:, :, :3].min(), pred_neg[:, :, :3].min())
+    # pred_pos[:, :, :3] = percept.normalization(pred_pos[:, :, :3], value_max, value_min)
+    # pred_neg[:, :, :3] = percept.normalization(pred_neg[:, :, :3], value_max, value_min)
+
+    if args.top_data < len(pred_pos_norm):
+        pred_pos_norm = pred_pos_norm[:args.top_data]
+        pred_neg_norm = pred_neg_norm[:args.top_data]
+
+    patterns_positive = extract_patterns(args, pred_pos_norm)
+    patterns_negative = extract_patterns(args, pred_neg_norm)
+
+    return pred_pos_norm, pred_neg_norm

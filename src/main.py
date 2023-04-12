@@ -15,10 +15,8 @@ from nsfr_utils import get_data_pos_loader
 import log_utils
 import file_utils
 import pi
-from perception import get_perception_predictions
+from perception import get_perception_predictions, extract_patterns
 from pi import final_evaluation
-import symbol_coder
-import logic_utils
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -153,11 +151,7 @@ def init_args(args, pm_prediction_dict):
     args.p_inv_counter = 0
 
 
-def init_coder(args):
-    lang, vars, init_c, atoms = logic_utils.get_lang(args)
-    consts = lang.get_by_dtype("object")
-    symbol_codes = symbol_coder.get_code_mat(args, consts, atoms, vars)
-    pass
+
 
 
 def main(n):
@@ -211,7 +205,7 @@ def main(n):
     train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(args)
     train_neg_loader, val_neg_loader, test_neg_loader = nsfr_utils.get_data_neg_loader(args)
 
-    pm_prediction_dict = get_perception_predictions(args, val_pos_loader, val_neg_loader,
+    pm_prediction_dict, pattern_dict = get_perception_predictions(args, val_pos_loader, val_neg_loader,
                                                     train_pos_loader, train_neg_loader,
                                                     test_pos_loader, test_neg_loader)
     #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
