@@ -10,7 +10,6 @@ import glob
 
 import config
 import log_utils
-import eval_utils
 import eval_clause_infer
 
 p_ = Predicate('.', 1, [DataType('spec')])
@@ -30,7 +29,8 @@ def get_lang(args):
     lang = du.load_language(args)
     init_clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang, args)
     atoms = generate_atoms(lang)
-    return lang, init_clauses, atoms
+    vars = [Var(f"O{i + 1}") for i in range(args.e)]
+    return lang, vars, init_clauses, atoms
 
 
 def get_atoms(lang):
@@ -40,12 +40,12 @@ def get_atoms(lang):
 
 def build_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False, gamma=None):
     te = TensorEncoder(lang, atoms, clauses, device=device)
-    I = te.encode(args)
+    I = te.encode()
     te_bk = None
     I_bk = None
     if len(pi_clauses) > 0:
         te_pi = TensorEncoder(lang, atoms, pi_clauses, device=device)
-        I_pi = te_pi.encode(args)
+        I_pi = te_pi.encode()
     else:
         te_pi = None
         I_pi = None
@@ -57,7 +57,7 @@ def build_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infe
 def build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=5, train=False,
                               gamma=None):
     te = TensorEncoder(lang, atoms, clauses, device=device)
-    I = te.encode(args)
+    I = te.encode()
     te_bk = None
     I_bk = None
 
@@ -65,7 +65,7 @@ def build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=
     I_pi = None
     if len(pi_clauses) > 0:
         te_pi = TensorEncoder(lang, atoms, pi_clauses, device=device)
-        I_pi = te_pi.encode(args)
+        I_pi = te_pi.encode()
 
     im = ClauseInferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk, I_pi=I_pi, gamma=gamma)
     return im
@@ -73,7 +73,7 @@ def build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=
 
 def build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
     te = TensorEncoder(lang, atoms, clauses, device=device)
-    I = te.encode(args)
+    I = te.encode()
 
     te_bk = None
     I_bk = None

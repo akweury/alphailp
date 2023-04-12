@@ -293,9 +293,6 @@ class DataUtils(object):
         tree = self.lp_clause.parse(clause_str)
         return ExpTree(lang).transform(tree)
 
-    def get_clauses(self, lang):
-        return self.load_clauses(str(self.base_path / 'clauses.txt'), lang)
-
     def get_bk(self, lang):
         return self.load_atoms(str(self.base_path / 'bk.txt'), lang)
 

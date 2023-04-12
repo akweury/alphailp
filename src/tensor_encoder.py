@@ -3,7 +3,7 @@ import torch
 from fol.logic_ops import unify, subs_list
 import config
 import os
-
+from fol import logic
 
 class TensorEncoder(object):
     """The tensor encoder for differentiable inference.
@@ -64,21 +64,20 @@ class TensorEncoder(object):
                     S_list.append(len(theta_list))
         return max(S_list)
 
-    def encode(self, args):
+    def encode(self):
         """Compute the index tensor for the differentiable inference.
 
         Returns
         I (tensor): The index tensor (G, C, S, L).
         """
-        I = torch.zeros((self.C, self.G, self.S, self.L),
-                        dtype=torch.int16).to(self.device)
+        I = torch.zeros((self.C, self.G, self.S, self.L), dtype=torch.int16).to(self.device)
         for ci, clause in enumerate(self.clauses):
             # print("CLAUSE: ", clause)
-            I_c = self.build_I_c(clause, args)
+            I_c = self.build_I_c(clause)
             I[ci, :, :, :] = I_c
         return I
 
-    def build_I_c(self, clause, args):
+    def build_I_c(self, clause):
         """Build index tensor for a given clause.
 
         Args:
@@ -97,9 +96,9 @@ class TensorEncoder(object):
                 # theta = self.head_unifier_dic[(clause.head, fact)]
                 clause_ = subs_list(clause, theta)
 
-                I_c_b_file = str(config.buffer_path / "hide" / f"{args.dataset}" / f"I_c_b.pth.tar")
+                # I_c_b_file = str(config.buffer_path / "hide" / f"{args.dataset}" / f"I_c_b.pth.tar")
                 # convert body atoms into indices
-                buffer = self.body_to_tensor_faster(clause_.body, args)
+                buffer = self.body_to_tensor(clause_.body)
                 I_c[fi] = buffer
         return I_c
 
@@ -129,7 +128,7 @@ class TensorEncoder(object):
 
     # taking constant modes to reduce the number of substituions
 
-    def body_to_tensor(self, body, args):
+    def body_to_tensor(self, body):
         """Convert the body atoms into a tensor.
 
         Args:
@@ -193,11 +192,11 @@ class TensorEncoder(object):
 
         # extract all vars in the body atoms
         var_list = []
-        for atom in body:
-            var_list += atom.all_vars()
-        var_list = list(set(var_list))
 
-        assert len(var_list) <= 10, 'Too many existentially quantified variables in an atom: ' + str(atom)
+        for atom in body:
+            for t in atom.terms:
+                if isinstance(t, logic.Var) and t not in var_list:
+                    var_list.append(t)
 
         if len(var_list) == 0:
             # the case of the body atoms are already grounded

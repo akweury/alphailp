@@ -14,6 +14,7 @@ import facts_converter
 from percept import YOLOPerceptionModule, FCNNPerceptionModule
 from valuation import YOLOValuationModule, PIValuationModule, FCNNValuationModule
 import log_utils, file_utils
+import symbol_coder
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -225,7 +226,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
     for neural_pred_i in range(len(args.neural_preds)):
         clauses = []
         # load language module
-        lang, full_init_clauses, atoms = get_lang(args)
+        lang,vars, full_init_clauses, atoms = get_lang(args)
         init_clauses = update_initial_clauses(full_init_clauses, args.n_obj)
         # update language with neural predicate: shape/color/dir/dist
         p_inv_with_scores = []

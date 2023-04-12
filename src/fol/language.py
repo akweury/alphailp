@@ -27,6 +27,7 @@ class Language(object):
         self.bk_inv_preds = bk_inv_preds
         self.invented_preds = []
         self.invented_preds_number = args.p_inv_counter
+        self.var_num = args.e
 
     def __str__(self):
         s = "===Predicates===\n"
