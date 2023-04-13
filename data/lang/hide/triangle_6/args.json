@@ -1,6 +1,6 @@
 {
   "n_obj": 6,
-  "batch_size_train": 4,
+  "batch_size_train": 2,
   "e": 6,
   "dataset": "triangle_6",
   "dataset-type": "hide",
