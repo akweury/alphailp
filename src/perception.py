@@ -4,8 +4,8 @@ import numpy as np
 import torch
 import math
 import config, percept, data_hide, log_utils
-from src import config, percept
-from src.data_hide import vertex_normalization
+import config, percept
+from data_hide import vertex_normalization
 import itertools
 
 
