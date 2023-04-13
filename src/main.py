@@ -151,9 +151,6 @@ def init_args(args, pm_prediction_dict):
     args.p_inv_counter = 0
 
 
-
-
-
 def main(n):
     args = get_args()
     if args.dataset_type == 'kandinsky':
@@ -206,8 +203,8 @@ def main(n):
     train_neg_loader, val_neg_loader, test_neg_loader = nsfr_utils.get_data_neg_loader(args)
 
     pm_prediction_dict, pattern_dict = get_perception_predictions(args, val_pos_loader, val_neg_loader,
-                                                    train_pos_loader, train_neg_loader,
-                                                    test_pos_loader, test_neg_loader)
+                                                                  train_pos_loader, train_neg_loader,
+                                                                  test_pos_loader, test_neg_loader)
     #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
 
     # load logical representations
