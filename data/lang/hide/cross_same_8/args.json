@@ -1,6 +1,6 @@
 {
   "n_obj": 8,
-  "batch_size_train": 8,
+  "batch_size_train": 2,
   "e": 8,
   "dataset": "cross_same_8",
   "dataset-type": "hide",
