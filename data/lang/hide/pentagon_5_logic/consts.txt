@@ -1,0 +1,4 @@
+object:num_obj_5
+image:img
+color:pink,green,blue
+shape:sphere,cube
