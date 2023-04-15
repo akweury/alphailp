@@ -8,11 +8,25 @@ score_type_index = {"ness": 0, "suff": 1, "sn": 2}
 score_example_index = {"neg": 0, "pos": 1}
 root = Path(__file__).parents[1]
 
-trivial_preds_dict = [
-    ["at_area_0", "at_area_1", "at_area_2", "at_area_3", "at_area_4", "at_area_5", "at_area_6", "at_area_7"],
-    ["diff_shape_pair", "same_shape_pair"],
-    ["diff_color_pair", "same_color_pair"]
-]
+indices_position = [0, 1, 2]
+indices_color = [3, 4, 5]
+indices_shape = [6, 7]
+
+indices_x = [0]
+indices_y = [1]
+indices_z = [2]
+indices_red = [3]
+indices_green = [4]
+indices_blue = [5]
+indices_sphere = [6]
+indices_cube = [7]
+indices_prob = [8]
+
+group_index = {
+    "color": 0,
+    "shape": 1,
+    "position": 2
+}
 
 buffer_path = root / ".." / "buffer"
 data_path = root / "data"

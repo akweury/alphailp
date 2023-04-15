@@ -1,12 +1,12 @@
 # Created by shaji on 21-Mar-23
-import cv2 as cv
 import numpy as np
 import torch
 import math
-import config, percept, data_hide, log_utils
-import config, percept
+import log_utils
+import percept
 from data_hide import vertex_normalization
 import itertools
+import config
 
 
 def get_perception_predictions(args, val_pos_loader, val_neg_loader,
@@ -89,7 +89,7 @@ def extract_patterns(args, pm_prediction):
     sub_patterns = torch.zeros(size=(sub_pattern_numbers, positions.shape[0], positions.shape[1], positions.shape[2]))
     for i in range(3, args.e + 1):
         for ss_i, subset in enumerate(itertools.combinations(list(range(positions.shape[1])), i)):
-            sub_patterns[ss_i,:,:len(subset),:] = positions[:, subset, :]
+            sub_patterns[ss_i, :, :len(subset), :] = positions[:, subset, :]
 
     return sub_patterns
 
@@ -112,3 +112,5 @@ def get_pred_res(args, data_type):
     patterns_negative = extract_patterns(args, pred_neg_norm)
 
     return pred_pos_norm, pred_neg_norm, patterns_positive, patterns_negative
+
+

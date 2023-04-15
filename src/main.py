@@ -11,12 +11,14 @@ import datetime
 
 import config
 import nsfr_utils
+import src.eval_utils
 from nsfr_utils import get_data_pos_loader
 import log_utils
 import file_utils
 import pi
 from perception import get_perception_predictions, extract_patterns
 from pi import final_evaluation
+import perception
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -214,6 +216,7 @@ def main(n):
     args.lang_base_path = lang_base_path
 
     init_args(args, pm_prediction_dict)
+    src.eval_utils.cluster_objects(pm_prediction_dict)
     # init_coder(args)
     # main program
     start = time.time()
