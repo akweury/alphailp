@@ -5,20 +5,19 @@ import time
 import torch
 import argparse
 from pathlib import Path
-# from torch.utils.tensorboard import SummaryWriter
+
 from rtpt import RTPT
 import datetime
 
 import config
 import nsfr_utils
-import src.eval_utils
+import eval_utils
 from nsfr_utils import get_data_pos_loader
 import log_utils
 import file_utils
 import pi
-from perception import get_perception_predictions, extract_patterns
+from perception import get_perception_predictions
 from pi import final_evaluation
-import perception
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -216,18 +215,22 @@ def main(n):
     args.lang_base_path = lang_base_path
 
     init_args(args, pm_prediction_dict)
-    src.eval_utils.cluster_objects(pm_prediction_dict)
-    # init_coder(args)
-    # main program
-    start = time.time()
-    NSFR = pi.train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path)
-    end = time.time()
+    clu_result = eval_utils.cluster_objects(pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"])
+    is_done = eval_utils.check_clu_result(clu_result)
+    if is_done:
+        clu_result_test = eval_utils.eval_test_dataset(pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"], clu_result)
 
-    log_utils.add_lines(f"=============================", args.log_file)
-    log_utils.add_lines(f"Experiment time: {((end - start) / 60):.2f} minute(s)", args.log_file)
-    log_utils.add_lines(f"=============================", args.log_file)
+    else:
+        # main program
+        start = time.time()
+        NSFR = pi.train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path)
+        end = time.time()
 
-    final_evaluation(NSFR, pm_prediction_dict, args)
+        log_utils.add_lines(f"=============================", args.log_file)
+        log_utils.add_lines(f"Experiment time: {((end - start) / 60):.2f} minute(s)", args.log_file)
+        log_utils.add_lines(f"=============================", args.log_file)
+
+        final_evaluation(NSFR, pm_prediction_dict, args)
 
 
 if __name__ == "__main__":

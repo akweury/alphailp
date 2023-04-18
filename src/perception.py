@@ -58,12 +58,7 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader,
     return pm_prediction_dict, pattern_dict
 
 
-def get_poly_area(points):
-    # https://stackoverflow.com/a/30408825/8179152
-    x = points[:, 0]
-    y = points[:, 2]
-    area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
-    return area
+
 
 
 def hough_transform(x, origin=None):
@@ -108,8 +103,8 @@ def get_pred_res(args, data_type):
 
     patterns_positive, patterns_negative = None, None
 
-    patterns_positive = extract_patterns(args, pred_pos_norm)
-    patterns_negative = extract_patterns(args, pred_neg_norm)
+    # patterns_positive = extract_patterns(args, pred_pos_norm)
+    # patterns_negative = extract_patterns(args, pred_neg_norm)
 
     return pred_pos_norm, pred_neg_norm, patterns_positive, patterns_negative
 

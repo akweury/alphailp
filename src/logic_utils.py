@@ -858,13 +858,13 @@ def is_trivial_preds(preds_terms):
             return False
     preds = [pt[0] for pt in preds_terms]
 
-    for trivial_set in config.trivial_preds_dict:
-        is_trivial = True
-        for pred in trivial_set:
-            if pred not in preds:
-                is_trivial = False
-        if is_trivial:
-            return True
+    # for trivial_set in config.trivial_preds_dict:
+    #     is_trivial = True
+    #     for pred in trivial_set:
+    #         if pred not in preds:
+    #             is_trivial = False
+    #     if is_trivial:
+    #         return True
 
     return False
 
