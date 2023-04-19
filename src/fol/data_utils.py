@@ -1,11 +1,11 @@
 import os.path
 import glob
 
-import lark.exceptions
 from lark import Lark
 from .exp_parser import ExpTree
 from .language import Language, DataType
 from .logic import Predicate, NeuralPredicate, InventedPredicate, FuncSymbol, Const
+from .bk import target_predicate, consts, neural_predicate
 
 
 class DataUtils(object):
@@ -28,24 +28,18 @@ class DataUtils(object):
         with open(lark_path, encoding="utf-8") as grammar:
             self.lp_clause = Lark(grammar.read(), start="clause")
 
-    def load_clauses(self, path, lang, args):
+    def load_clauses(self, lang, args):
         """Read lines and parse to Atom objects.
         """
         clauses = []
-        if os.path.isfile(path):
-            with open(path) as f:
-                for line in f:
-                    if line[-1] == '\n':
-                        line = line[:-1]
-                    if line == 'Oi,X':
-                        line = "kp(X):-"
-                        for i in range(args.e):
-                            line += f"in(O{i + 1},X),"
-                        line = line[:-1]
-                        line += "."
-                    tree = self.lp_clause.parse(line)
-                    clause = ExpTree(lang).transform(tree)
-                    clauses.append(clause)
+        init_clause = "kp(X):-"
+        for i in range(args.e):
+            init_clause += f"in(O{i + 1},X),"
+        init_clause = init_clause[:-1]
+        init_clause += "."
+        tree = self.lp_clause.parse(init_clause)
+        clause = ExpTree(lang).transform(tree)
+        clauses.append(clause)
         return clauses
 
     def load_pi_clauses(self, bk_prefix, path, lang):
@@ -144,16 +138,12 @@ class DataUtils(object):
                     atoms.append(atom)
         return atoms
 
-    def load_preds(self, path):
-        f = open(path)
-        lines = f.readlines()
-        preds = [self.parse_pred(line) for line in lines]
+    def load_target_predicate(self):
+        preds = [self.parse_pred(line) for line in target_predicate]
         return preds
 
-    def load_neural_preds(self, path):
-        f = open(path)
-        lines = f.readlines()
-        preds = [self.parse_neural_pred(line) for line in lines]
+    def load_neural_preds(self):
+        preds = [self.parse_neural_pred(line) for line in neural_predicate]
         return preds
 
     def load_invented_preds(self, bk_prefix, path):
@@ -189,13 +179,11 @@ class DataUtils(object):
                     preds["5-ary"] = new_pred
         return preds
 
-    def load_consts(self, path):
-        f = open(path)
-        lines = f.readlines()
-        consts = []
-        for line in lines:
-            consts.extend(self.parse_const(line))
-        return consts
+    def load_consts(self):
+        consts_str = []
+        for line in consts:
+            consts_str.extend(self.parse_const(line))
+        return consts_str
 
     def parse_pred(self, line):
         """Parse string to predicates.
@@ -299,15 +287,16 @@ class DataUtils(object):
     def load_language(self, args):
         """Load language, background knowledge, and clauses from files.
         """
-        preds = self.load_preds(str(self.base_path / 'preds.txt'))
-        preds += self.load_neural_preds(str(self.base_path / 'neural_preds.txt'))[0:1]
-        pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
-        consts = self.load_consts(str(self.base_path / 'consts.txt'))
+        preds = self.load_target_predicate()
+        preds += self.load_neural_preds()
+        consts = self.load_consts()
+        # pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
+
         bk_inv_preds = []
         if args.with_bk:
             bk_pred_files = glob.glob(str(self.base_path / ".." / "bg_predicates" / "*.txt"))
             for bk_i, bk_file in enumerate(bk_pred_files):
                 bk_inv_preds += self.load_invented_preds(bk_i, bk_file)
 
-        lang = Language(args, preds, [], consts, bk_inv_preds, pi_templates)
+        lang = Language(args, preds, [], consts, bk_inv_preds)
         return lang

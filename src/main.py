@@ -218,8 +218,6 @@ def main(n):
     pm_prediction_dict, pattern_dict = get_perception_predictions(args, val_pos_loader, val_neg_loader,
                                                                   train_pos_loader, train_neg_loader,
                                                                   test_pos_loader, test_neg_loader)
-    #####train_pos_loader, val_pos_loader, test_pos_loader = get_data_loader(args)
-
     # load logical representations
     lark_path = str(config.root / 'src' / 'lark' / 'exp.lark')
     args.lark_path = lark_path
@@ -230,14 +228,15 @@ def main(n):
     obj_groups = mechanics.detect_obj_groups(args, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"])
     eval_res_val = mechanics.eval_groups(pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"], obj_groups)
     is_done = mechanics.check_group_result(args, eval_res_val)
-    if is_done:
+    if False and is_done:
         eval_result_test = mechanics.eval_groups(pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"],
                                                  obj_groups)
-        is_done = mechanics.check_group_result(args, eval_res_val)
+        is_done = mechanics.check_group_result(args, eval_result_test)
+        log_utils.print_dataset_simple(args, is_done, eval_result_test)
     else:
         # main program
         start = time.time()
-        NSFR = pi.train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path)
+        NSFR = pi.train_and_eval(args, pm_prediction_dict, rtpt, exp_output_path)
         end = time.time()
 
         log_utils.add_lines(f"=============================", args.log_file)

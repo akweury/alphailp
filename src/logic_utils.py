@@ -24,10 +24,10 @@ def get_lang(args):
     Atoms are generated from the language.
     """
 
-    du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path,
-                   dataset_type=args.dataset_type, dataset=args.dataset)
+    du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
+                   dataset=args.dataset)
     lang = du.load_language(args)
-    init_clauses = du.load_clauses(str(du.base_path / 'clauses.txt'), lang, args)
+    init_clauses = du.load_clauses(lang, args)
     atoms = generate_atoms(lang)
     vars = [Var(f"O{i + 1}") for i in range(args.e)]
     return lang, vars, init_clauses, atoms
@@ -95,32 +95,14 @@ def generate_atoms(lang):
         dtypes = pred.dtypes
         consts_list = [lang.get_by_dtype(dtype) for dtype in dtypes]
         args_list = list(set(itertools.product(*consts_list)))
-        # args_list = lang.get_args_by_pred(pred)
-        args_str_list = []
-        # args_mem = []
         for args in args_list:
-
-            # check if args and pred correspond are in the same area
-            if pred.dtypes[0].name == 'area':
-                if pred.name[0] + pred.name[5:] != args[0].name:
-                    continue
-
             if len(args) == 1 or len(set(args)) == len(args):
-                # if len(args) == 1 or (args[0] != args[1] and args[0].mode == args[1].mode):
-                # if len(set(args)) == len(args):
-                # if not (str(sorted([str(arg) for arg in args])) in args_str_list):
                 atoms.append(Atom(pred, args))
-                # args_str_list.append(
-                #    str(sorted([str(arg) for arg in args])))
-                # print('add atom: ', Atom(pred, args))
     pi_atoms = []
     for pred in lang.invented_preds:
         dtypes = pred.dtypes
         consts_list = [lang.get_by_dtype(dtype) for dtype in dtypes]
         args_list = list(set(itertools.product(*consts_list)))
-
-        args_str_list = []
-
         for args in args_list:
             if len(args) == 1 or len(set(args)) == len(args):
                 pi_atoms.append(Atom(pred, args))

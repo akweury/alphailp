@@ -52,7 +52,6 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader,
         "train_neg": train_p_neg,
         "test_pos": test_p_pos,
         "test_neg": test_p_neg,
-
     }
 
     return pm_prediction_dict, pattern_dict

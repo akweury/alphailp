@@ -87,10 +87,17 @@ def extend_groups(point_groups, extend_points):
 
 
 def eval_single_group(data_pos, data_neg):
-    group_pos_res, score_lines_1, score_lines_2 = eval_data(data_pos)
+    group_pos_res, score_1, score_2 = eval_data(data_pos)
     group_neg_res, _, _ = eval_data(data_neg)
     res = eval_score(group_pos_res, group_neg_res)
-    return res
+
+    res_dict = {
+        "result": res,
+        "score_1": score_1,
+        "score_2": score_2
+    }
+
+    return res_dict
 
 
 def eval_data(data):

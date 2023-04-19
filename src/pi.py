@@ -134,8 +134,7 @@ def train_nsfr(args, NSFR, pm_prediction_dict, rtpt, exp_output_path):
     return loss
 
 
-def get_models(args, lang, val_pos_loader, val_neg_loader,
-               clauses, pi_clauses, atoms, obj_n):
+def get_models(args, lang, clauses, pi_clauses, atoms, obj_n):
     if args.dataset_type == "kandinsky":
         PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
         VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
@@ -152,11 +151,10 @@ def get_models(args, lang, val_pos_loader, val_neg_loader,
     PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
 
     mode_declarations = get_mode_declarations(args, lang, obj_n)
-    clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
-                                       mode_declarations, no_xil=args.no_xil)  # torch.device('cpu'))
+    clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
+                                       no_xil=args.no_xil)  # torch.device('cpu'))
 
-    pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, val_pos_loader, val_neg_loader,
-                                            mode_declarations, no_xil=args.no_xil)  # torch.device('cpu'))
+    pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, no_xil=args.no_xil)  # torch.device('cpu'))
 
     return clause_generator, pi_clause_generator, FC
 
@@ -217,7 +215,7 @@ def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, new
     return clauses, new_c, new_p, args, atoms, lang, p_new_with_score
 
 
-def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtpt, exp_output_path):
+def train_and_eval(args, pm_prediction_dict, rtpt, exp_output_path):
     FC = None
     invented_preds = []
     all_pi_clauses = []
@@ -226,7 +224,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
     for neural_pred_i in range(len(args.neural_preds)):
         clauses = []
         # load language module
-        lang,vars, full_init_clauses, atoms = get_lang(args)
+        lang, vars, full_init_clauses, atoms = get_lang(args)
         init_clauses = update_initial_clauses(full_init_clauses, args.n_obj)
         # update language with neural predicate: shape/color/dir/dist
         p_inv_with_scores = []
@@ -251,8 +249,7 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
         max_clause = [0.0, None]
         args.no_new_preds = False
         args.last_refs = init_clauses
-        clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                               init_clauses, pi_clauses, atoms, args.n_obj)
+        clause_generator, pi_clause_generator, FC = get_models(args, lang, init_clauses, pi_clauses, atoms, args.n_obj)
 
         while args.iteration < args.max_step and not args.is_done:
             bs_clauses, clauses, args = extend_clauses(args, clause_generator,
@@ -264,8 +261,8 @@ def train_and_eval(args, pm_prediction_dict, val_pos_loader, val_neg_loader, rtp
                                                                                                neural_pred_i])
             p_inv_with_scores += p_new_scores
             atoms = logic_utils.get_atoms(lang)
-            clause_generator, pi_clause_generator, FC = get_models(args, lang, val_pos_loader, val_neg_loader,
-                                                                   init_clauses, pi_clauses, atoms, args.n_obj)
+            clause_generator, pi_clause_generator, FC = get_models(args, lang, init_clauses, pi_clauses, atoms,
+                                                                   args.n_obj)
             args.iteration += 1
 
         p_inv_best = sorted(p_inv_with_scores, key=lambda x: x[1][2], reverse=True)

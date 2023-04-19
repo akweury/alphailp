@@ -28,8 +28,7 @@ class ClauseGenerator(object):
         max number of atoms in body of clauses
     """
 
-    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations,
-                 no_xil=False):
+    def __init__(self, args, NSFR, PI, lang, mode_declarations, no_xil=False):
         self.args = args
         self.NSFR = NSFR
         self.PI = PI
@@ -39,8 +38,6 @@ class ClauseGenerator(object):
         self.device = args.device
         self.no_xil = no_xil
         self.rgen = RefinementGenerator(lang=lang, mode_declarations=mode_declarations)
-        self.pos_loader = pos_data_loader
-        self.neg_loader = neg_data_loader
         self.bce_loss = torch.nn.BCELoss()
 
         # self.labels = torch.cat([
@@ -167,55 +164,6 @@ class ClauseGenerator(object):
         args.is_done = is_done
         args.last_refs = refs
         return clause_with_scores, max_clause, step, args
-
-    def eval_images(self, save_path):
-
-        prop_dim = 11
-        # perception model
-        pm = YOLOPerceptionModule(e=self.args.e, d=prop_dim, device=self.device)
-
-        # positive image evaluation
-        N_data = 0
-        pos_eval_res = torch.zeros((self.pos_loader.dataset.__len__(), self.args.e, prop_dim)).to(self.device)
-        for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
-            imgs, target_set = map(lambda x: x.to(self.device), sample)
-            # print(NSFR.clauses)
-            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-            img_array_int8 = np.uint8(img_array * 255)
-            img_pil = Image.fromarray(img_array_int8)
-            # img_pil.show()
-            N_data += imgs.size(0)
-            B = imgs.size(0)
-            # C * B * G
-            # when evaluate a clause which its body contains invented predicates,
-            # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
-            res = pm(imgs)
-            pos_eval_res[i, :] = res
-
-            # negative image evaluation
-        N_data = 0
-        neg_eval_res = torch.zeros((self.neg_loader.dataset.__len__(), self.args.e, prop_dim)).to(self.device)
-        for i, sample in tqdm(enumerate(self.pos_loader, start=0)):
-            imgs, target_set = map(lambda x: x.to(self.device), sample)
-            # print(NSFR.clauses)
-            img_array = imgs.squeeze(0).permute(1, 2, 0).to("cpu").numpy()
-            img_array_int8 = np.uint8(img_array * 255)
-            img_pil = Image.fromarray(img_array_int8)
-            # img_pil.show()
-            N_data += imgs.size(0)
-            B = imgs.size(0)
-            # C * B * G
-            # when evaluate a clause which its body contains invented predicates,
-            # the invented predicates shall be evaluated with all the clauses which head contains the predicate.
-            res = pm(imgs)
-            neg_eval_res[i, :] = res
-
-        # save tensors
-        pm_res = {'pos_res': pos_eval_res.detach(),
-                  'neg_res': neg_eval_res.detach()}
-        torch.save(pm_res, str(save_path))
-
-        return pos_eval_res, neg_eval_res
 
     def is_in_beam(self, B, clause):
         """If score is the same, same predicates => duplication
@@ -524,16 +472,13 @@ class PIClauseGenerator(object):
         max number of atoms in body of clauses
     """
 
-    def __init__(self, args, NSFR, PI, lang, pos_data_loader, neg_data_loader, mode_declarations,
-                 no_xil=False):
+    def __init__(self, args, NSFR, PI, lang, no_xil=False):
         self.args = args
         self.lang = lang
         self.NSFR = NSFR
         self.PI = PI
         self.bk_clauses = None
         self.device = args.device
-        self.pos_loader = pos_data_loader
-        self.neg_loader = neg_data_loader
 
     def invent_predicate(self, beam_search_clauses, pi_clauses, args, neural_pred, invented_p):
 
@@ -569,103 +514,103 @@ class PIClauseGenerator(object):
 
         return new_c, new_p, new_predicates, is_done
 
-    def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
+    # def eval_multi_clauses(self, clauses, pos_pred, neg_pred, args):
+    #
+    #     C = len(clauses)
+    #     log_utils.add_lines(f"Eval clauses: {len(clauses)}", args.log_file)
+    #     # update infer module with new clauses
+    #     # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
+    #     pi_clauses = []
+    #     NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses, pi_clauses,
+    #                           self.NSFR.fc, self.device)
+    #
+    #     batch_size = self.args.batch_size_bs
+    #     pos_img_num = self.pos_loader.dataset.__len__()
+    #     neg_img_num = self.neg_loader.dataset.__len__()
+    #     score_positive = torch.zeros((pos_img_num, C)).to(self.device)
+    #     score_negative = torch.zeros((neg_img_num, C)).to(self.device)
+    #     N_data = 0
+    #     # List(C * B * G)
+    #
+    #     # positive image loop
+    #     for image_index in range(self.pos_loader.dataset.__len__()):
+    #         V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
+    #         C_score = torch.zeros((C, batch_size)).to(self.device)
+    #
+    #         # clause loop
+    #         for clause_index, V_T in enumerate(V_T_list):
+    #             # TODO: eval inv pred
+    #             predicted = NSFR.ilp_predict(v=V_T, predname='kp').detach()
+    #             C_score[clause_index] = predicted
+    #         # sum over positive prob
+    #         score_positive[image_index, :] = C_score.squeeze(1)
+    #
+    #     # negative image loop
+    #     for image_index in range(self.neg_loader.dataset.__len__()):
+    #         V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
+    #         C_score = torch.zeros((C, batch_size)).to(self.device)
+    #         for clause_index, V_T in enumerate(V_T_list):
+    #             predicted = NSFR.ilp_predict(v=V_T, predname='kp').detach()
+    #             C_score[clause_index] = predicted
+    #             # C
+    #             # C_score = PI.clause_eval(C_score)
+    #             # sum over positive prob
+    #         score_negative[image_index, :] = C_score.squeeze(1)
+    #
+    #     # all_clauses_scores = []
+    #     # for c_index in range(score_positive.shape[1]):
+    #     #     clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
+    #     #     clause_sign, clause_score, clause_score_full = self.eval_clause_sign(clause_scores)
+    #     #     all_clauses_scores.append(clause_score)
+    #     all_clause_scores = []
+    #     for c_index in range(score_positive.shape[1]):
+    #         clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
+    #         all_clause_scores.append(clause_scores)
+    #
+    #     return all_clause_scores
 
-        C = len(clauses)
-        log_utils.add_lines(f"Eval clauses: {len(clauses)}", args.log_file)
-        # update infer module with new clauses
-        # NSFR = update_nsfr_clauses(self.NSFR, clauses, self.bk_clauses, self.device)
-        pi_clauses = []
-        NSFR = get_nsfr_model(self.args, self.lang, clauses, self.NSFR.atoms, self.NSFR.bk, self.bk_clauses, pi_clauses,
-                              self.NSFR.fc, self.device)
-
-        batch_size = self.args.batch_size_bs
-        pos_img_num = self.pos_loader.dataset.__len__()
-        neg_img_num = self.neg_loader.dataset.__len__()
-        score_positive = torch.zeros((pos_img_num, C)).to(self.device)
-        score_negative = torch.zeros((neg_img_num, C)).to(self.device)
-        N_data = 0
-        # List(C * B * G)
-
-        # positive image loop
-        for image_index in range(self.pos_loader.dataset.__len__()):
-            V_T_list = NSFR.clause_eval_quick(pos_pred[image_index].unsqueeze(0)).detach()
-            C_score = torch.zeros((C, batch_size)).to(self.device)
-
-            # clause loop
-            for clause_index, V_T in enumerate(V_T_list):
-                # TODO: eval inv pred
-                predicted = NSFR.ilp_predict(v=V_T, predname='kp').detach()
-                C_score[clause_index] = predicted
-            # sum over positive prob
-            score_positive[image_index, :] = C_score.squeeze(1)
-
-        # negative image loop
-        for image_index in range(self.neg_loader.dataset.__len__()):
-            V_T_list = NSFR.clause_eval_quick(neg_pred[image_index].unsqueeze(0)).detach()
-            C_score = torch.zeros((C, batch_size)).to(self.device)
-            for clause_index, V_T in enumerate(V_T_list):
-                predicted = NSFR.ilp_predict(v=V_T, predname='kp').detach()
-                C_score[clause_index] = predicted
-                # C
-                # C_score = PI.clause_eval(C_score)
-                # sum over positive prob
-            score_negative[image_index, :] = C_score.squeeze(1)
-
-        # all_clauses_scores = []
-        # for c_index in range(score_positive.shape[1]):
-        #     clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
-        #     clause_sign, clause_score, clause_score_full = self.eval_clause_sign(clause_scores)
-        #     all_clauses_scores.append(clause_score)
-        all_clause_scores = []
-        for c_index in range(score_positive.shape[1]):
-            clause_scores = [score_negative[:, c_index], score_positive[:, c_index]]
-            all_clause_scores.append(clause_scores)
-
-        return all_clause_scores
-
-    def eval_clause_sign(self, clause_image_scores):
-        # resolution = 2
-        # data_map = np.zeros(shape=[resolution, resolution])
-        # for index in range(len(clause_scores[0])):
-        #     x_index = int(clause_scores[0][index] * resolution)
-        #     y_index = int(clause_scores[1][index] * resolution)
-        #     data_map[x_index, y_index] += 1
-        #
-        # if np.max(data_map) == data_map[0, 1]:
-        #     return True
-        #
-        # return False
-        resolution = 2
-
-        clause_sign_list = []
-        clause_score_list = []
-        clause_score_full_list = []
-        for clause_image_score in clause_image_scores:
-            data_map = np.zeros(shape=[resolution, resolution])
-            for index in range(len(clause_image_score[0])):
-                x_index = int(clause_image_score[0][index] * resolution)
-                y_index = int(clause_image_score[1][index] * resolution)
-                data_map[x_index, y_index] += 1
-
-            pos_low_neg_low_area = data_map[0, 0]
-            pos_high_neg_low_area = data_map[0, 1]
-            pos_low_neg_high_area = data_map[1, 0]
-            pos_high_neg_high_area = data_map[1, 1]
-
-            # TODO: find a better score evaluation function
-            clause_score = pos_high_neg_low_area - pos_high_neg_high_area
-            clause_score_list.append(clause_score)
-            clause_score_full_list.append(
-                [pos_low_neg_low_area, pos_high_neg_low_area, pos_low_neg_high_area, pos_high_neg_high_area])
-
-            data_map[0, 0] = 0
-            if np.max(data_map) == data_map[0, 1] and data_map[0, 1] > data_map[1, 1]:
-                clause_sign_list.append(True)
-            else:
-                clause_sign_list.append(False)
-
-        return clause_sign_list, clause_score_list, clause_score_full_list
+    # def eval_clause_sign(self, clause_image_scores):
+    #     # resolution = 2
+    #     # data_map = np.zeros(shape=[resolution, resolution])
+    #     # for index in range(len(clause_scores[0])):
+    #     #     x_index = int(clause_scores[0][index] * resolution)
+    #     #     y_index = int(clause_scores[1][index] * resolution)
+    #     #     data_map[x_index, y_index] += 1
+    #     #
+    #     # if np.max(data_map) == data_map[0, 1]:
+    #     #     return True
+    #     #
+    #     # return False
+    #     resolution = 2
+    #
+    #     clause_sign_list = []
+    #     clause_score_list = []
+    #     clause_score_full_list = []
+    #     for clause_image_score in clause_image_scores:
+    #         data_map = np.zeros(shape=[resolution, resolution])
+    #         for index in range(len(clause_image_score[0])):
+    #             x_index = int(clause_image_score[0][index] * resolution)
+    #             y_index = int(clause_image_score[1][index] * resolution)
+    #             data_map[x_index, y_index] += 1
+    #
+    #         pos_low_neg_low_area = data_map[0, 0]
+    #         pos_high_neg_low_area = data_map[0, 1]
+    #         pos_low_neg_high_area = data_map[1, 0]
+    #         pos_high_neg_high_area = data_map[1, 1]
+    #
+    #         # TODO: find a better score evaluation function
+    #         clause_score = pos_high_neg_low_area - pos_high_neg_high_area
+    #         clause_score_list.append(clause_score)
+    #         clause_score_full_list.append(
+    #             [pos_low_neg_low_area, pos_high_neg_low_area, pos_low_neg_high_area, pos_high_neg_high_area])
+    #
+    #         data_map[0, 0] = 0
+    #         if np.max(data_map) == data_map[0, 1] and data_map[0, 1] > data_map[1, 1]:
+    #             clause_sign_list.append(True)
+    #         else:
+    #             clause_sign_list.append(False)
+    #
+    #     return clause_sign_list, clause_score_list, clause_score_full_list
 
     def generate_new_predicate(self, args, clause_clusters, clause_type=None):
         new_predicate = None

@@ -36,20 +36,23 @@ group_index = {
 # 6 is_circle
 # 7 probability
 group_tensor_index = {
-    "position": [0, 1],
-    "x": 0,
-    "z": 1,
-    "slope": 2,
-    "x_length": 3,
-    "z_length": 4,
-    "is_line": 5,
-    "is_circle": 6,
-    "probability": 7
+    'x': 0,
+    'z': 1,
+    'slope': 2,
+    'x_length': 3,
+    'z_length': 4,
+    'is_line': 5,
+    'is_circle': 6,
+    'probability': 7
 }
+
+group_tenor_positions = [0, 1]
+group_tensor_shapes = [5, 6]
 
 buffer_path = root / ".." / "buffer"
 data_path = root / "data"
 if not os.path.exists(buffer_path):
     os.mkdir(buffer_path)
+
 if __name__ == "__main__":
     print("root path: " + str(root))

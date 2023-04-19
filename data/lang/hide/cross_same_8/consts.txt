@@ -1,5 +1,0 @@
-object:num_obj_8
-image:img
-color:pink,green,blue
-shape:sphere,cube
-phi:num_phi_8

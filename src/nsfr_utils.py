@@ -316,37 +316,37 @@ def get_clevr_pos_loader(args):
     return train_loader, val_loader, test_loader
 
 
-def get_hide_loader(args, shuffle=False):
-    dataset_train = data_kandinsky.KANDINSKY(
-        args.dataset, 'train', small_data=args.small_data
-    )
-    dataset_val = data_kandinsky.KANDINSKY(
-        args.dataset, 'val', small_data=args.small_data
-    )
-    dataset_test = data_kandinsky.KANDINSKY(
-        args.dataset, 'test'
-    )
-
-    train_loader = torch.utils.data.DataLoader(
-        dataset_train,
-        shuffle=True,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-    )
-    val_loader = torch.utils.data.DataLoader(
-        dataset_val,
-        shuffle=False,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-    )
-    test_loader = torch.utils.data.DataLoader(
-        dataset_test,
-        shuffle=False,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-    )
-
-    return train_loader, val_loader, test_loader
+# def get_hide_loader(args, shuffle=False):
+#     dataset_train = data_kandinsky.KANDINSKY(
+#         args.dataset, 'train', small_data=args.small_data
+#     )
+#     dataset_val = data_kandinsky.KANDINSKY(
+#         args.dataset, 'val', small_data=args.small_data
+#     )
+#     dataset_test = data_kandinsky.KANDINSKY(
+#         args.dataset, 'test'
+#     )
+#
+#     train_loader = torch.utils.data.DataLoader(
+#         dataset_train,
+#         shuffle=True,
+#         batch_size=args.batch_size,
+#         num_workers=args.num_workers,
+#     )
+#     val_loader = torch.utils.data.DataLoader(
+#         dataset_val,
+#         shuffle=False,
+#         batch_size=args.batch_size,
+#         num_workers=args.num_workers,
+#     )
+#     test_loader = torch.utils.data.DataLoader(
+#         dataset_test,
+#         shuffle=False,
+#         batch_size=args.batch_size,
+#         num_workers=args.num_workers,
+#     )
+#
+#     return train_loader, val_loader, test_loader
 
 
 def get_prob(v_T, NSFR, args):
@@ -365,17 +365,17 @@ def get_prob(v_T, NSFR, args):
     # return predicted
 
 
-def get_prob_by_prednames(v_T, NSFR, prednames):
-    if args.dataset_type == 'kandinsky':
-        predicted = NSFR.ilp_predict(v=v_T, predname='kp')
-    elif args.dataset_type == 'clevr':
-        if args.dataset == 'clevr-hans3':
-            predicted = NSFR.predict_multi(
-                v=v_T, prednames=['kp1', 'kp2', 'kp3'])
-        if args.dataset == 'clevr-hans7':
-            predicted = NSFR.predict_multi(
-                v=v_T, prednames=['kp1', 'kp2', 'kp3', 'kp4', 'kp5', 'kp6', 'kp7'])
-    return predicted
+# def get_prob_by_prednames(v_T, NSFR, prednames):
+#     if args.dataset_type == 'kandinsky':
+#         predicted = NSFR.ilp_predict(v=v_T, predname='kp')
+#     elif args.dataset_type == 'clevr':
+#         if args.dataset == 'clevr-hans3':
+#             predicted = NSFR.predict_multi(
+#                 v=v_T, prednames=['kp1', 'kp2', 'kp3'])
+#         if args.dataset == 'clevr-hans7':
+#             predicted = NSFR.predict_multi(
+#                 v=v_T, prednames=['kp1', 'kp2', 'kp3', 'kp4', 'kp5', 'kp6', 'kp7'])
+#     return predicted
 
 
 def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
@@ -403,54 +403,54 @@ def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
     return NSFR
 
 
-def update_nsfr_clauses(args, nsfr, clauses, bk_clauses, device):
-    CIM = build_clause_infer_module(args, clauses, bk_clauses, nsfr.atoms, nsfr.fc.lang, m=len(clauses), device=device)
-    new_nsfr = NSFReasoner(perception_module=nsfr.pm, facts_converter=nsfr.fc, infer_module=nsfr.im,
-                           clause_infer_module=CIM, atoms=nsfr.atoms, bk=nsfr.bk, clauses=clauses)
-    new_nsfr._summary()
-    del nsfr
-    return new_nsfr
+# def update_nsfr_clauses(args, nsfr, clauses, bk_clauses, device):
+#     CIM = build_clause_infer_module(args, clauses, bk_clauses, nsfr.atoms, nsfr.fc.lang, m=len(clauses), device=device)
+#     new_nsfr = NSFReasoner(perception_module=nsfr.pm, facts_converter=nsfr.fc, infer_module=nsfr.im,
+#                            clause_infer_module=CIM, atoms=nsfr.atoms, bk=nsfr.bk, clauses=clauses)
+#     new_nsfr._summary()
+#     del nsfr
+#     return new_nsfr
 
 
-def get_nsfr_model_train(args, lang, clauses, atoms, bk, device, m):
-    if args.dataset_type == 'kandinsky':
-        PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-        VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
-        PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
+# def get_nsfr_model_train(args, lang, clauses, atoms, bk, device, m):
+#     if args.dataset_type == 'kandinsky':
+#         PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
+#         VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
+#         PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
+#
+#     elif args.dataset_type == 'clevr':
+#         PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
+#         VM = SlotAttentionValuationModule(lang=lang, device=device)
+#         PI_VM = SlotAttentionValuationModule(lang=lang, device=device)
+#
+#     else:
+#         assert False, "Invalid dataset type: " + str(args.dataset_type)
+#     FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM, pi_valuation_module=PI_VM, device=device)
+#     IM = build_infer_module(args, clauses, atoms, lang, m=m, infer_step=4, device=device, train=True)
+#     # Neuro-Symbolic Forward Reasoner
+#     NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM, atoms=atoms, bk=bk, clauses=clauses)
+#     return NSFR
 
-    elif args.dataset_type == 'clevr':
-        PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
-        VM = SlotAttentionValuationModule(lang=lang, device=device)
-        PI_VM = SlotAttentionValuationModule(lang=lang, device=device)
 
-    else:
-        assert False, "Invalid dataset type: " + str(args.dataset_type)
-    FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM, pi_valuation_module=PI_VM, device=device)
-    IM = build_infer_module(args, clauses, atoms, lang, m=m, infer_step=4, device=device, train=True)
-    # Neuro-Symbolic Forward Reasoner
-    NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM, atoms=atoms, bk=bk, clauses=clauses)
-    return NSFR
-
-
-def __valuation_to_text(v, atoms, e, th=0.5):
-    st = ''
-    for i in range(e):
-        st_i = 'object ' + str(i) + ': '
-        # list of indices of the atoms about obj_i
-        atom_indices = []
-        atoms = []
-        for j, atom in enumerate(atoms):
-            terms = atom.terms
-            if 'obj' + str(j) in [str(term) for term in terms] and atom.pred.name != 'in':
-                if v[j] > th:
-                    if len(atom.terms) == 2:
-                        st_i += str(atom.terms[1]) + ' '
-                    if len(atom.terms) == 1:
-                        st_i += str(atom.terms[0])
-                indices.append(j)
-                atoms.append(atom)
-        for j in atom_indices:
-            if v[j] > th:
-                st_i += ''
-        st += st_i + '\n'
-    return st[:-2]
+# def __valuation_to_text(v, atoms, e, th=0.5):
+#     st = ''
+#     for i in range(e):
+#         st_i = 'object ' + str(i) + ': '
+#         # list of indices of the atoms about obj_i
+#         atom_indices = []
+#         atoms = []
+#         for j, atom in enumerate(atoms):
+#             terms = atom.terms
+#             if 'obj' + str(j) in [str(term) for term in terms] and atom.pred.name != 'in':
+#                 if v[j] > th:
+#                     if len(atom.terms) == 2:
+#                         st_i += str(atom.terms[1]) + ' '
+#                     if len(atom.terms) == 1:
+#                         st_i += str(atom.terms[0])
+#                 indices.append(j)
+#                 atoms.append(atom)
+#         for j in atom_indices:
+#             if v[j] > th:
+#                 st_i += ''
+#         st += st_i + '\n'
+#     return st[:-2]

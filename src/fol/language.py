@@ -19,11 +19,11 @@ class Language(object):
         consts (List[Const]): A set of constants.
     """
 
-    def __init__(self, args, preds, funcs, consts, bk_inv_preds, pi_templates):
+    def __init__(self, args, preds, funcs, consts, bk_inv_preds):
         self.preds = preds
         self.funcs = funcs
         self.consts = consts
-        self.pi_templates = pi_templates
+        # self.pi_templates = pi_templates
         self.bk_inv_preds = bk_inv_preds
         self.invented_preds = []
         self.invented_preds_number = args.p_inv_counter

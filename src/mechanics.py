@@ -18,31 +18,27 @@ def detect_obj_groups(args, pattern_pos, pattern_neg):
 def eval_groups(pattern_pos, pattern_neg, clu_result):
     pattern_lines_pos, pattern_lines_neg, pattern_cir_pos, pattern_cir_neg = clu_result
 
-    line_res = eval_single_group(pattern_lines_pos[:, :, config.group_tensor_index['position']],
-                                 pattern_lines_neg[:, :, config.group_tensor_index['position']])
-    cir_res = eval_single_group(pattern_cir_pos[:, :, config.group_tensor_index['position']],
-                                pattern_cir_neg[:, :, config.group_tensor_index['position']])
-    color_res = eval_single_group(pattern_pos[:, :, config.indices_color],
-                                  pattern_neg[:, :, config.indices_color])
-    shape_res = eval_single_group(pattern_pos[:, :, config.indices_shape],
-                                  pattern_neg[:, :, config.indices_shape])
+    shape_group_res = eval_single_group(pattern_lines_pos[:, :, config.group_tensor_shapes],
+                                        pattern_lines_neg[:, :, config.group_tensor_shapes])
+    color_res = eval_single_group(pattern_pos[:, :, config.indices_color], pattern_neg[:, :, config.indices_color])
+    shape_res = eval_single_group(pattern_pos[:, :, config.indices_shape], pattern_neg[:, :, config.indices_shape])
 
     result = {
-        'line': line_res,
-        'circle': cir_res,
+        'shape_group': shape_group_res,
         'color': color_res,
         'shape': shape_res
     }
 
     return result
 
-def check_group_result(args, eval_res_val):
-    line_done = eval_res_val['line'] > args.group_conf_th
-    cir_done = eval_res_val['circle'] > args.group_conf_th
-    color_done = eval_res_val['color'] > args.group_conf_th
-    shape_done = eval_res_val['shape'] > args.group_conf_th
 
-    is_done = line_done.sum() + cir_done.sum() + color_done.sum() + shape_done.sum() > 0
+def check_group_result(args, eval_res_val):
+    shape_group_done = eval_res_val['shape_group']["result"] > args.group_conf_th
+    color_done = eval_res_val['color']["result"] > args.group_conf_th
+    shape_done = eval_res_val['shape']["result"] > args.group_conf_th
+
+    is_done = shape_group_done.sum() + color_done.sum() + shape_done.sum() > 0
+
     return is_done
 
 
@@ -56,6 +52,3 @@ def test_groups(test_positive, test_negative, groups):
     accuracy = accuracy / (test_positive.shape[0] + test_negative.shape[0])
     print(f"test acc: {accuracy}")
     return accuracy
-
-
-

@@ -1,4 +1,5 @@
 import datetime
+import config
 
 
 def create_file(exp_output_path, file_name):
@@ -68,5 +69,29 @@ def print_time(args, iteration, step, max_step):
     date_now = datetime.datetime.today().date()
     time_now = datetime.datetime.now().strftime("%H_%M_%S")
     add_lines(f"\n({date_now} {time_now}) Iteration: {iteration} Step {step}/{iteration}",
-                        args.log_file)
-    return None
+              args.log_file)
+
+
+def print_dataset_simple(args, is_done, eval_res):
+    if is_done:
+        add_lines(f"Dataset is too simple!", args.log_file)
+        add_lines(f"shape group score 1: {eval_res['shape_group']['score_1']}", args.log_file)
+        add_lines(f"shape group score 2: {eval_res['shape_group']['score_2']}", args.log_file)
+        if eval_res["shape_group"]["result"][0] > args.group_conf_th:
+            add_lines(f"Distinguishable by group types and its numbers.", args.log_file)
+        if eval_res["shape_group"]["result"][1] > args.group_conf_th:
+            add_lines(f"Distinguishable by group types.", args.log_file)
+
+        add_lines(f"color score 1: {eval_res['color']['score_1']}", args.log_file)
+        add_lines(f"color score 2: {eval_res['color']['score_2']}", args.log_file)
+        if eval_res["color"]["result"][0] > args.group_conf_th:
+            add_lines(f"Distinguishable by color types and its numbers.", args.log_file)
+        if eval_res["color"]["result"][1] > args.group_conf_th:
+            add_lines(f"Distinguishable by color types.", args.log_file)
+
+        add_lines(f"shape score 1: {eval_res['shape']['score_1']}", args.log_file)
+        add_lines(f"shape score 2: {eval_res['shape']['score_2']}", args.log_file)
+        if eval_res["shape"]["result"][0] > args.group_conf_th:
+            add_lines(f"Distinguishable by shape types and its numbers.", args.log_file)
+        if eval_res["shape"]["result"][1] > args.group_conf_th:
+            add_lines(f"Distinguishable by shape types.", args.log_file)
