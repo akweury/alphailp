@@ -12,6 +12,8 @@ import datetime
 import config
 import nsfr_utils
 import eval_utils
+import mechanics
+import src.mechanics
 from nsfr_utils import get_data_pos_loader
 import log_utils
 import file_utils
@@ -31,7 +33,9 @@ def get_args():
                         default=1, help="Batch size in beam search")
     parser.add_argument("--batch-size-train", type=int,
                         default=20, help="Batch size in nsfr train")
-    parser.add_argument("--e", type=int, default=6,
+    parser.add_argument("--group_e", type=int, default=4,
+                        help="The maximum number of object groups in one image")
+    parser.add_argument("--e", type=int, default=5,
                         help="The maximum number of objects in one image")
     parser.add_argument("--dataset", default="red-triangle", help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
@@ -128,6 +132,14 @@ def get_args():
                         help="The maximum number of training data.")
     parser.add_argument("--with_bk", action="store_true",
                         help="Using background knowledge by PI.")
+    parser.add_argument("--error_th", type=float, default=0.01,
+                        help="The threshold for MAE of obj group fitting.")
+    parser.add_argument("--line_group_min_sz", type=int, default=3,
+                        help="The minimum objects allowed to form a line.")
+    parser.add_argument("--cir_group_min_sz", type=int, default=4,
+                        help="The minimum objects allowed to form a circle.")
+    parser.add_argument("--group_conf_th", type=float, default=0.98,
+                        help="The threshold of group confidence.")
     args = parser.parse_args()
 
     args_file = config.data_path / "lang" / args.dataset_type / args.dataset / "args.json"
@@ -215,11 +227,13 @@ def main(n):
     args.lang_base_path = lang_base_path
 
     init_args(args, pm_prediction_dict)
-    clu_result = eval_utils.cluster_objects(pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"])
-    is_done = eval_utils.check_clu_result(clu_result)
+    obj_groups = mechanics.detect_obj_groups(args, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"])
+    eval_res_val = mechanics.eval_groups(pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"], obj_groups)
+    is_done = mechanics.check_group_result(args, eval_res_val)
     if is_done:
-        clu_result_test = eval_utils.eval_test_dataset(pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"], clu_result)
-
+        eval_result_test = mechanics.eval_groups(pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"],
+                                                 obj_groups)
+        is_done = mechanics.check_group_result(args, eval_res_val)
     else:
         # main program
         start = time.time()

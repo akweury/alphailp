@@ -28,6 +28,25 @@ group_index = {
     "position": 2
 }
 
+# 0:2 center_x, center_z
+# 2 slope
+# 3 x_length
+# 4 z_length
+# 5 is_line
+# 6 is_circle
+# 7 probability
+group_tensor_index = {
+    "position": [0, 1],
+    "x": 0,
+    "z": 1,
+    "slope": 2,
+    "x_length": 3,
+    "z_length": 4,
+    "is_line": 5,
+    "is_circle": 6,
+    "probability": 7
+}
+
 buffer_path = root / ".." / "buffer"
 data_path = root / "data"
 if not os.path.exists(buffer_path):
