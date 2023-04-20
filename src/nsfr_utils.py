@@ -5,11 +5,9 @@ import torch
 
 import data_clevr
 import data_kandinsky
-from facts_converter import FactsConverter
 from nsfr import NSFReasoner
 from logic_utils import build_infer_module, build_clause_infer_module
 from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
-from valuation import SlotAttentionValuationModule, YOLOValuationModule, PIValuationModule
 
 attrs = ['color', 'shape', 'material', 'size']
 
@@ -401,7 +399,6 @@ def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
     NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM,
                        clause_infer_module=CIM, atoms=atoms, clauses=clauses)
     return NSFR
-
 
 # def update_nsfr_clauses(args, nsfr, clauses, bk_clauses, device):
 #     CIM = build_clause_infer_module(args, clauses, bk_clauses, nsfr.atoms, nsfr.fc.lang, m=len(clauses), device=device)

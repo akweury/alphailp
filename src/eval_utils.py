@@ -2,7 +2,6 @@ import torch
 
 import config
 
-
 ness_index = config.score_type_index["ness"]
 suff_index = config.score_type_index["suff"]
 sn_index = config.score_type_index["sn"]
@@ -63,11 +62,34 @@ def get_circle_error(c, r, points):
     return torch.abs(dists - r)
 
 
+def get_group_distribution(points, center):
+    def cart2pol(x, y):
+        rho = torch.sqrt(x ** 2 + y ** 2)
+        phi = torch.atan2(y, x)
+        phi = torch.rad2deg(phi)
+        return (rho, phi)
+
+    round_divide = points.shape[1]
+    points_2d = points[:, :, [0, 2]]
+    area_angle = int(360 / round_divide)
+    dir_vec = points_2d - center.unsqueeze(0).unsqueeze(0)
+    dir_vec[:, :, 1] = -dir_vec[:, :, 1]
+    rho, phi = cart2pol(dir_vec[:, :, 0], dir_vec[:, :, 1])
+    zone_id = (phi) // area_angle % round_divide
+
+    is_even_distribution = []
+    for g in zone_id:
+        if len(torch.unique(g))>round_divide-1:
+            is_even_distribution.append(True)
+        else:
+            is_even_distribution.append(False)
+
+    return torch.tensor(is_even_distribution)
+
+
 def eval_score(positive_score, negative_score):
     res_score = positive_score.pow(50) * (1 - negative_score.pow(50))
     return res_score
-
-
 
 
 def eval_group_diff(data, dim):
@@ -141,10 +163,9 @@ def predict_lines(point_groups, collinear_th):
     complex_points = torch.complex(complex_point_real, complex_point_imag)
 
     a, b, c = complex_points[:, 0], complex_points[:, 1], complex_points[:, 2]
-    if torch.abs(a - b).sum() < collinear_th or torch.abs(b - c).sum() < collinear_th or torch.abs(
-            a - c).sum() < collinear_th:
-        # print("two points overlap with each other.")
-        return None
+    is_collinear = a == b
+    if (a == b).sum() > 0:
+        print('break')
 
     def f(z):
         return (z - a) / (b - a)
@@ -152,5 +173,8 @@ def predict_lines(point_groups, collinear_th):
     w3 = f(c)
     # print("collinear point groups")
     collinearities = torch.abs(w3.imag)
+    collinearities = torch.nan_to_num(collinearities)
     is_collinear = collinearities < collinear_th
+    if is_collinear.sum() == 1:
+        print(f'break')
     return is_collinear

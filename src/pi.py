@@ -72,7 +72,7 @@ def ilp_predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def train_nsfr(args, NSFR, pm_prediction_dict, rtpt, exp_output_path):
+def train_nsfr(args, NSFR, pm_prediction_dict, rtpt):
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
@@ -215,7 +215,7 @@ def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, new
     return clauses, new_c, new_p, args, atoms, lang, p_new_with_score
 
 
-def train_and_eval(args, pm_prediction_dict, rtpt, exp_output_path):
+def train_and_eval(args, pm_prediction_dict, obj_groups, rtpt):
     FC = None
     invented_preds = []
     all_pi_clauses = []
@@ -283,7 +283,7 @@ def train_and_eval(args, pm_prediction_dict, rtpt, exp_output_path):
         for c in clauses:
             log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
     NSFR = get_nsfr_model(args, lang, clauses, atoms, all_pi_clauses, FC, train=True)
-    train_nsfr(args, NSFR, pm_prediction_dict, rtpt, exp_output_path)
+    train_nsfr(args, NSFR, pm_prediction_dict, rtpt)
     return NSFR
 
 

@@ -7,11 +7,12 @@ import percept
 from data_hide import vertex_normalization
 import itertools
 import config
+from nsfr_utils import get_data_pos_loader, get_data_neg_loader
 
 
-def get_perception_predictions(args, val_pos_loader, val_neg_loader,
-                               train_pos_loader, train_neg_loader,
-                               test_pos_loader, test_neg_loader):
+def get_perception_predictions(args):
+    train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(args)
+    train_neg_loader, val_neg_loader, test_neg_loader = get_data_neg_loader(args)
     if args.dataset_type == "kandinsky":
         pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
         pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
@@ -25,12 +26,12 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader,
                                                            test_neg_loader)
 
     elif args.dataset_type == "hide":
-        train_pos_pred, train_neg_pred, train_p_pos, train_p_neg = get_pred_res(args, "train")
-        test_pos_pred, test_neg_pred, test_p_pos, test_p_neg = get_pred_res(args, "test")
+        train_pos_pred, train_neg_pred = get_pred_res(args, "train")
+        test_pos_pred, test_neg_pred = get_pred_res(args, "test")
         if args.small_data:
-            val_pos_pred, val_neg_pred, val_p_pos, val_p_neg = get_pred_res(args, "val_s")
+            val_pos_pred, val_neg_pred = get_pred_res(args, "val_s")
         else:
-            val_pos_pred, val_neg_pred, val_p_pos, val_p_neg = get_pred_res(args, "val")
+            val_pos_pred, val_neg_pred = get_pred_res(args, "val")
 
     else:
         raise ValueError
@@ -45,16 +46,9 @@ def get_perception_predictions(args, val_pos_loader, val_neg_loader,
         'test_pos': test_pos_pred,
         'test_neg': test_neg_pred
     }
-    pattern_dict = {
-        "val_pos": val_p_pos,
-        "val_neg": val_p_neg,
-        "train_pos": train_p_pos,
-        "train_neg": train_p_neg,
-        "test_pos": test_p_pos,
-        "test_neg": test_p_neg,
-    }
 
-    return pm_prediction_dict, pattern_dict
+
+    return pm_prediction_dict
 
 
 
@@ -100,11 +94,8 @@ def get_pred_res(args, data_type):
         pred_pos_norm = pred_pos_norm[:args.top_data]
         pred_neg_norm = pred_neg_norm[:args.top_data]
 
-    patterns_positive, patterns_negative = None, None
 
-    # patterns_positive = extract_patterns(args, pred_pos_norm)
-    # patterns_negative = extract_patterns(args, pred_neg_norm)
 
-    return pred_pos_norm, pred_neg_norm, patterns_positive, patterns_negative
+    return pred_pos_norm, pred_neg_norm
 
 
