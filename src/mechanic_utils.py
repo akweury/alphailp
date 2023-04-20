@@ -7,7 +7,7 @@ from data_utils import to_line_tensor, get_comb, to_circle_tensor
 from eval_utils import eval_group_diff, eval_count_diff, count_func, group_func, get_circle_error, eval_score
 from eval_utils import predict_circles, predict_lines, get_group_distribution
 from src import config, file_utils
-
+from fol import bk
 
 def detect_line_groups(args, data):
     line_tensors = torch.zeros(data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
@@ -27,7 +27,7 @@ def detect_line_groups(args, data):
                     tensor_counter += 1
                     print(f'line group: {point_indices}')
         print(f'\n')
-        _, prob_indices = line_tensor_candidates[:, config.group_tensor_index["probability"]].sort(descending=True)
+        _, prob_indices = line_tensor_candidates[:, config.group_tensor_index["line"]].sort(descending=True)
         prob_indices = prob_indices[:args.group_e]
         line_tensors[data_i] = line_tensor_candidates[prob_indices]
     return line_tensors
@@ -51,7 +51,7 @@ def detect_circle_groups(args, data):
                     tensor_counter += 1
                     print(f'circle group: {p_indices}')
         print(f'\n')
-        _, prob_indices = circle_tensor_candidates[:, config.group_tensor_index["probability"]].sort(descending=True)
+        _, prob_indices = circle_tensor_candidates[:, config.group_tensor_index["circle"]].sort(descending=True)
         prob_indices = prob_indices[:args.group_e]
         circle_tensors[data_i] = circle_tensor_candidates[prob_indices]
     return circle_tensors
@@ -129,16 +129,17 @@ def test_groups_on_one_image(data, val_result):
     return test_score
 
 
-def merge_groups(line_groups, cir_groups, top_group):
+def merge_groups(line_groups, cir_groups):
     object_groups = torch.cat((line_groups, cir_groups), dim=1)
     _, group_ranking = object_groups[:, :, -1].sort(dim=-1, descending=True)
 
     for i in range(object_groups.shape[0]):
         object_groups[i] = object_groups[i, group_ranking[i]]
 
-    object_groups_top = object_groups[:, :top_group, :]
+    # group and groups suppose have to overlap with each other?
 
-    return object_groups_top
+
+    return object_groups
 
 
 def get_args():
@@ -278,7 +279,7 @@ def update_args(args, pm_prediction_dict, obj_groups):
 
     # clause generation and predicate invention
     lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
-    neural_preds = file_utils.load_neural_preds(str(lang_data_path / 'neural_preds.txt'))[1:]
+    neural_preds = file_utils.load_neural_preds(bk.neural_predicate_3)
     args.neural_preds = [[neural_pred] for neural_pred in neural_preds]
     args.neural_preds.append(neural_preds)
     args.p_inv_counter = 0

@@ -1,7 +1,7 @@
 {
-  "n_obj": 8,
+  "n_obj": 5,
   "batch_size_train": 32,
-  "e": 8,
+  "e": 5,
   "dataset": "cross_same_8",
   "dataset-type": "hide",
   "score_unique": true,

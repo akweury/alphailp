@@ -1,10 +1,8 @@
-from tqdm import tqdm
 import torch
-import numpy as np
-from PIL import Image
 
+
+import nsfr_utils
 from refinement import RefinementGenerator
-from percept import YOLOPerceptionModule
 from nsfr_utils import get_nsfr_model
 import logic_utils
 from fol.language import DataType
@@ -119,9 +117,7 @@ class ClauseGenerator(object):
         eval_pred = ['kp']
         clause_with_scores = []
         # extend clauses
-        step = 0
         is_done = False
-        refs = init_clauses
         # if args.no_new_preds:
         step = args.iteration
         refs = args.last_refs
@@ -140,8 +136,7 @@ class ClauseGenerator(object):
             # update NSFR
             self.NSFR = get_nsfr_model(args, self.lang, refs_extended, self.NSFR.atoms, pi_clauses, self.NSFR.fc)
             # evaluate new clauses
-            score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred, args.val_pos,
-                                                                args.val_neg)
+            score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred)
             scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args, step)
             # classify clauses
             clause_with_scores = eval_clause_infer.prune_low_score_clauses(refs_extended, score_all, scores, args)
@@ -493,7 +488,7 @@ class PIClauseGenerator(object):
         # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
         du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
                        dataset=args.dataset)
-        lang, vars, init_clauses, atoms = logic_utils.get_lang(args)
+        lang, vars, init_clauses, atoms = nsfr_utils.get_lang(args)
         if neural_pred is not None:
             lang.preds += neural_pred
         lang.invented_preds = invented_p

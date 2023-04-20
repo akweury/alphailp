@@ -37,13 +37,18 @@ group_index = {
 # 7 probability
 group_tensor_index = {
     'x': 0,
-    'z': 1,
-    'slope': 2,
-    'x_length': 3,
-    'z_length': 4,
-    'is_line': 5,
-    'is_circle': 6,
-    'probability': 7
+    'y': 1,
+    'z': 2,
+    'red': 3,
+    'green': 4,
+    'blue': 5,
+    'sphere': 6,
+    'cube': 7,
+    'line': 8,
+    'circle': 9,
+    'x_length': 10,
+    'y_length': 11,
+    'z_length': 12
 }
 
 group_tenor_positions = [0, 1]

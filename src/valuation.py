@@ -255,9 +255,10 @@ class FCNNValuationModule(nn.Module):
                 The tensor representation of the input term.
         """
         term_index = self.lang.term_index(term)
-        if term.dtype.name == 'object':
+        if term.dtype.name == 'group':
             return zs[:, term_index].to(self.device)
-        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi":
+        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi"\
+                or term.dtype.name == 'group_shape':
             return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1).to(self.device)
         elif term.dtype.name == 'image':
             return None

@@ -74,35 +74,16 @@ class RefinementGenerator(object):
             return []
         # unused_args = logic_utils.get_clause_unused_args(clause)
         terms_list = self.generate_term_combinations(clause, modeb)
-        non_redundant_term_list = []
         C_refined = []
         for terms in terms_list:
             if len(terms) == len(list(set(terms))):
-                # terms: (O0, X)
                 if not modeb.ordered:
                     terms = sorted(terms)
-                # non_redundant_term = []
-                # placeholder_counter = 0
-                # for term in terms:
-                #     if term in unused_args and "O" in term.name:
-                #         non_redundant_term.append(f"placeholder{placeholder_counter}")
-                #         placeholder_counter += 1
-                #     else:
-                #         non_redundant_term.append(term)
-                # if non_redundant_term not in non_redundant_term_list:
-                #     non_redundant_term_list.append(non_redundant_term)
-
-                # for terms in non_redundant_term_list:
-                #     for t_i, term in enumerate(terms):
-                #         if "placeholder" in str(term):
-                #             a_index = int(term.split("placeholder")[1])
-                #             terms[t_i] = unused_args[a_index]
                 new_atom = Atom(modeb.pred, terms)
                 if not new_atom in clause.body:
                     body = sorted(clause.body) + sorted([new_atom])
                     new_clause = Clause(clause.head, body)
                     C_refined.append(new_clause)
-        # self._increment_recall(modeb)
         return list(set(C_refined))
 
     def generate_term_combinations(self, clause, modeb):
@@ -117,7 +98,7 @@ class RefinementGenerator(object):
         assignments_list = []
         term_num = 0
         for mt in modeb.mode_terms:
-            if mt.dtype.name == "object":
+            if mt.dtype.name == "group":
                 term_num += 1
         for mt in modeb.mode_terms:
             assignments = []
@@ -170,7 +151,7 @@ class RefinementGenerator(object):
                             arg_lists.append([a_1, a_2, a_3])
             elif len(assignments_list) == 2:
                 for i_1, a_1 in enumerate(assignments_list[0]):
-                    for a_2 in assignments_list[1][i_1 + 1:]:
+                    for a_2 in assignments_list[1]:
                         arg_lists.append([a_1, a_2])
             elif len(assignments_list) == 1:
                 for a in assignments_list[0]:

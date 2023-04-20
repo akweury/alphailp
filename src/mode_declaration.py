@@ -57,6 +57,8 @@ class ModeDeclaration(object):
 
     def __str__(self):
         s = 'mode_' + self.mode_type + '('
+        if self.mode_terms is None:
+            raise ValueError
         for mt in self.mode_terms:
             s += str(mt)
             s += ','
@@ -120,7 +122,8 @@ def get_pi_mode_declarations(lang, obj_num):
     for pi_index, pi in enumerate(lang.invented_preds):
         pi_str = pi.name
         objects = [p_object] * pi.arity
-        mode_declarations = ModeDeclaration('body', obj_num, lang.get_invented_pred_by_name(pi_str), objects, ordered=False)
+        mode_declarations = ModeDeclaration('body', obj_num, lang.get_invented_pred_by_name(pi_str), objects,
+                                            ordered=False)
         pi_mode_declarations.append(mode_declarations)
     for pi_index, pi in enumerate(lang.bk_inv_preds):
         pi_str = pi.name
@@ -136,34 +139,34 @@ def get_mode_declarations_kandinsky(lang, obj_num):
     m_object = ModeTerm('-', DataType('object'))
     p_object = ModeTerm('+', DataType('object'))
 
-    m_area = ModeTerm('-', DataType('area'))
-    p_area = ModeTerm('+', DataType('area'))
+    m_group = ModeTerm('-', DataType('group'))
+    p_group = ModeTerm('+', DataType('group'))
 
     s_color = ModeTerm('#', DataType('color'))
     s_shape = ModeTerm('#', DataType('shape'))
-    s_area = ModeTerm('#', DataType('area'))
+
     s_rho = ModeTerm('#', DataType('rho'))
     s_phi = ModeTerm('#', DataType('phi'))
     s_group_shape = ModeTerm('#', DataType('group_shape'))
 
-    # modeh_1 = ModeDeclaration('head', 'kp', p_image)
     modeb_list = []
     considered_pred_names = [p.name for p in lang.preds]
     if "in" in considered_pred_names:
-        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_object, p_image]))
+        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('in'), [m_group, p_image]))
     if "color" in considered_pred_names:
-        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_object, s_color]))
+        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('color'), [p_group, s_color]))
     if "shape" in considered_pred_names:
-        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_object, s_shape]))
+        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape'), [p_group, s_shape]))
     if "rho" in considered_pred_names:
         modeb_list.append(
-            ModeDeclaration('body', obj_num, lang.get_pred_by_name('rho'), [p_object, p_object, s_rho], ordered=False))
+            ModeDeclaration('body', obj_num, lang.get_pred_by_name('rho'), [p_group, p_group, s_rho], ordered=False))
     if "phi" in considered_pred_names:
         modeb_list.append(
-            ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_object, p_object, s_phi], ordered=False))
+            ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_group, p_group, s_phi], ordered=False))
     if "group_shape" in considered_pred_names:
-        modeb_list.append(ModeDeclaration('body', obj_num, lang.get_pred_by_name('group_shape'),
-                                          [p_object, p_object, p_object, s_group_shape], ordered=False))
+        modeb_list.append(
+            ModeDeclaration('body', obj_num, lang.get_pred_by_name('group_shape'), [p_group, s_group_shape],
+                            ordered=False))
 
     return modeb_list
 

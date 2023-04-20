@@ -18,10 +18,9 @@ def load_args_from_file(args_file_path, given_args):
     return None
 
 
-def load_neural_preds(path):
-    f = open(path)
-    lines = f.readlines()
-    preds = [parse_neural_pred(line) for line in lines]
+def load_neural_preds(neural_predicates):
+
+    preds = [parse_neural_pred(line) for line in neural_predicates]
     return preds
 
 

@@ -13,16 +13,16 @@ from perception import get_perception_predictions
 import config
 
 
-def detect_obj_groups(args, pattern_pos, pattern_neg):
+def detect_obj_groups_with_bk(args, pattern_pos, pattern_neg):
     pattern_lines_pos = detect_line_groups(args, pattern_pos[:, :, config.indices_position])
     pattern_cir_pos = detect_circle_groups(args, pattern_pos[:, :, config.indices_position])
-    obj_groups_pos = merge_groups(pattern_lines_pos, pattern_cir_pos, top_group=args.maximum_obj_num)
+    group_tenors_pos = merge_groups(pattern_lines_pos, pattern_cir_pos)
 
     pattern_lines_neg = detect_line_groups(args, pattern_neg[:, :, config.indices_position])
     pattern_cir_neg = detect_circle_groups(args, pattern_neg[:, :, config.indices_position])
-    obj_groups_neg = merge_groups(pattern_lines_neg, pattern_cir_neg, top_group=args.maximum_obj_num)
+    group_tensors_neg = merge_groups(pattern_lines_neg, pattern_cir_neg)
 
-    return obj_groups_pos, obj_groups_neg
+    return group_tenors_pos, group_tensors_neg
 
 
 def eval_groups(pattern_pos, pattern_neg, clu_result):
@@ -109,3 +109,19 @@ def init():
     args.lang_base_path = config.root / 'data' / 'lang'
 
     return args, rtpt, pm_prediction_dict
+
+
+def get_group_tree(args, obj_groups, group_by):
+    """ root node corresponds the scene """
+    """ Used for very complex scene """
+    pos_groups, neg_groups = obj_groups[0], obj_groups[1]
+
+    # cluster by color
+
+    # cluster by shape
+
+    # cluster by line and circle
+    if args.neural_preds[group_by][0].name == 'group_shape':
+        pos_groups = None
+
+    return None

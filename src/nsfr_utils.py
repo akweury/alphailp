@@ -6,8 +6,10 @@ import torch
 import data_clevr
 import data_kandinsky
 from nsfr import NSFReasoner
-from logic_utils import build_infer_module, build_clause_infer_module
+from logic_utils import build_infer_module, build_clause_infer_module, generate_atoms
 from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
+from fol.data_utils import DataUtils
+from fol.logic import Var
 
 attrs = ['color', 'shape', 'material', 'size']
 
@@ -400,6 +402,7 @@ def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
                        clause_infer_module=CIM, atoms=atoms, clauses=clauses)
     return NSFR
 
+
 # def update_nsfr_clauses(args, nsfr, clauses, bk_clauses, device):
 #     CIM = build_clause_infer_module(args, clauses, bk_clauses, nsfr.atoms, nsfr.fc.lang, m=len(clauses), device=device)
 #     new_nsfr = NSFReasoner(perception_module=nsfr.pm, facts_converter=nsfr.fc, infer_module=nsfr.im,
@@ -451,3 +454,19 @@ def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
 #                 st_i += ''
 #         st += st_i + '\n'
 #     return st[:-2]
+def get_lang(args):
+    """Load the language of first-order logic from files.
+
+    Read the language, clauses, background knowledge from files.
+    Atoms are generated from the language.
+    """
+
+    du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
+                   dataset=args.dataset)
+    lang = du.load_language(args)
+    init_clauses = du.load_clauses(lang, args)
+
+    atoms = generate_atoms(lang)
+    vars = [Var(f"O{i + 1}") for i in range(args.e)]
+
+    return lang, vars, init_clauses, atoms

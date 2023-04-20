@@ -98,7 +98,13 @@ def eval_clauses(score_pos, score_neg, args, c_length):
     return scores
 
 
-def eval_clause_on_scenes(NSFR, args, pred_names, pos_pred, neg_pred):
+def eval_clause_on_scenes(NSFR, args, pred_names):
+    pos_pred = args.val_pos
+    neg_pred = args.val_neg
+
+    pos_group_pred = args.group_pos
+    neg_group_pred = args.group_neg
+
     train_size = pos_pred.shape[0]
     bz = args.batch_size_train
     V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms)).to(args.device)

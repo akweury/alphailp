@@ -5,16 +5,18 @@ from tqdm import tqdm
 import datetime
 
 import pi_utils
-from nsfr_utils import get_prob, get_nsfr_model, update_initial_clauses
+from nsfr_utils import get_prob, get_nsfr_model
 import logic_utils
-from logic_utils import get_lang
+from logic_utils import update_system
+from src.nsfr_utils import get_lang
 from mode_declaration import get_mode_declarations
 from clause_generator import ClauseGenerator, PIClauseGenerator
 import facts_converter
 from percept import YOLOPerceptionModule, FCNNPerceptionModule
 from valuation import YOLOValuationModule, PIValuationModule, FCNNValuationModule
-import log_utils, file_utils
-import symbol_coder
+import log_utils
+import mechanics
+from mechanic_utils import update_args
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -134,7 +136,8 @@ def train_nsfr(args, NSFR, pm_prediction_dict, rtpt):
     return loss
 
 
-def get_models(args, lang, clauses, pi_clauses, atoms, obj_n):
+def get_models(args, lang, clauses, pi_clauses, atoms):
+    obj_n = args.e
     if args.dataset_type == "kandinsky":
         PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
         VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
@@ -162,8 +165,7 @@ def get_models(args, lang, clauses, pi_clauses, atoms, obj_n):
 def extend_clauses(args, clause_generator, init_clauses, pi_c, max_c, clauses):
     log_utils.add_lines(f"\n=== beam search iteration {args.iteration}/{args.max_step} ===", args.log_file)
     # generate clauses # time-consuming code
-    bs_clauses, max_clause, current_step, args = clause_generator.clause_extension(init_clauses, pi_c, args,
-                                                                                   max_c)
+    bs_clauses, max_clause, current_step, args = clause_generator.clause_extension(init_clauses, pi_c, args, max_c)
     if len(bs_clauses) == 0:
         args.is_done = True
     elif len(bs_clauses) > 0 and bs_clauses[0][1][2] == 1.0:
@@ -215,7 +217,7 @@ def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, new
     return clauses, new_c, new_p, args, atoms, lang, p_new_with_score
 
 
-def train_and_eval(args, pm_prediction_dict, obj_groups, rtpt):
+def train_and_eval(args, percept_dict, obj_groups, rtpt):
     FC = None
     invented_preds = []
     all_pi_clauses = []
@@ -223,37 +225,30 @@ def train_and_eval(args, pm_prediction_dict, obj_groups, rtpt):
 
     for neural_pred_i in range(len(args.neural_preds)):
         clauses = []
-        # load language module
-        lang, vars, full_init_clauses, atoms = get_lang(args)
-        init_clauses = update_initial_clauses(full_init_clauses, args.n_obj)
-        # update language with neural predicate: shape/color/dir/dist
         p_inv_with_scores = []
+        # load language module
+        lang, vars, init_clauses, atoms = get_lang(args)
+        # update language with neural predicate: shape/color/dir/dist
+        atoms, pi_clauses, pi_p = update_system(args, neural_pred_i, lang, invented_preds, all_pi_clauses, init_clauses)
+        clause_generator, pi_clause_generator, FC = get_models(args, lang, init_clauses, pi_clauses, atoms)
 
-        if (neural_pred_i < len(args.neural_preds) - 1):
-            lang.preds = lang.preds[:2]
-            lang.invented_preds = []
-            lang.preds.append(args.neural_preds[neural_pred_i][0])
-            pi_clauses = []
-            pi_p = []
-        else:
-            print('last round')
-            lang.preds = lang.preds[:2] + args.neural_preds[-1]
-            lang.invented_preds = invented_preds
-            pi_clauses = all_pi_clauses
-            pi_p = invented_preds
+        # group objects
+        group_matrix_tree = mechanics.get_group_tree(args, obj_groups, neural_pred_i)
+        eval_res_val = mechanics.eval_groups(percept_dict["val_pos"], percept_dict["val_neg"], obj_groups)
+        is_done = mechanics.check_group_result(args, eval_res_val)
 
-        atoms = logic_utils.get_atoms(lang)
+        # The pattern is too simple. Print the reason.
+        if False and is_done:
+            # Dataset is too simple. Finish the program.
+            eval_result_test = mechanics.eval_groups(percept_dict["test_pos"], percept_dict["test_neg"], obj_groups)
+            is_done = mechanics.check_group_result(args, eval_result_test)
+            log_utils.print_dataset_simple(args, is_done, eval_result_test)
 
-        args.is_done = False
-        args.iteration = 0
-        max_clause = [0.0, None]
-        args.no_new_preds = False
-        args.last_refs = init_clauses
-        clause_generator, pi_clause_generator, FC = get_models(args, lang, init_clauses, pi_clauses, atoms, args.n_obj)
-
+        # searching for a proper clause to describe the pattern.
         while args.iteration < args.max_step and not args.is_done:
-            bs_clauses, clauses, args = extend_clauses(args, clause_generator,
-                                                       init_clauses, pi_clauses, max_clause, clauses)
+            bs_clauses, clauses, args = extend_clauses(args, clause_generator, init_clauses, pi_clauses,
+                                                       args.max_clause,
+                                                       clauses)
             clauses, pi_clauses, pi_p, args, atoms, lang, p_new_scores = invent_predicates(args, clauses, bs_clauses,
                                                                                            pi_clause_generator,
                                                                                            pi_clauses, pi_p,
@@ -261,8 +256,7 @@ def train_and_eval(args, pm_prediction_dict, obj_groups, rtpt):
                                                                                                neural_pred_i])
             p_inv_with_scores += p_new_scores
             atoms = logic_utils.get_atoms(lang)
-            clause_generator, pi_clause_generator, FC = get_models(args, lang, init_clauses, pi_clauses, atoms,
-                                                                   args.n_obj)
+            clause_generator, pi_clause_generator, FC = get_models(args, lang, init_clauses, pi_clauses, atoms)
             args.iteration += 1
 
         p_inv_best = sorted(p_inv_with_scores, key=lambda x: x[1][2], reverse=True)
@@ -283,7 +277,7 @@ def train_and_eval(args, pm_prediction_dict, obj_groups, rtpt):
         for c in clauses:
             log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
     NSFR = get_nsfr_model(args, lang, clauses, atoms, all_pi_clauses, FC, train=True)
-    train_nsfr(args, NSFR, pm_prediction_dict, rtpt)
+    train_nsfr(args, NSFR, percept_dict, rtpt)
     return NSFR
 
 

@@ -1,36 +1,19 @@
 import numpy as np
 import torch
-from infer import InferModule, ClauseInferModule
-from eval_clause_infer import eval_clause_sign
-from tensor_encoder import TensorEncoder
-from fol.logic import *
-from fol.data_utils import DataUtils
-from fol.language import DataType
-import glob
 
 import config
 import log_utils
 import eval_clause_infer
+from fol.logic import *
+from fol.data_utils import DataUtils
+from fol.language import DataType
+from infer import InferModule, ClauseInferModule
+from eval_clause_infer import eval_clause_sign
+from tensor_encoder import TensorEncoder
 
 p_ = Predicate('.', 1, [DataType('spec')])
 false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
 true = Atom(p_, [Const('__T__', dtype=DataType('spec'))])
-
-
-def get_lang(args):
-    """Load the language of first-order logic from files.
-
-    Read the language, clauses, background knowledge from files.
-    Atoms are generated from the language.
-    """
-
-    du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
-                   dataset=args.dataset)
-    lang = du.load_language(args)
-    init_clauses = du.load_clauses(lang, args)
-    atoms = generate_atoms(lang)
-    vars = [Var(f"O{i + 1}") for i in range(args.e)]
-    return lang, vars, init_clauses, atoms
 
 
 def get_atoms(lang):
@@ -1016,3 +999,28 @@ def get_semantic_from_c(clause):
     semantic = []
     semantic += get_pred_names_from_clauses(clause)
     return semantic
+
+
+def update_system(args, neural_pred_i, lang, invented_preds, all_pi_clauses, init_clauses):
+    if (neural_pred_i < len(args.neural_preds) - 1):
+        lang.preds = lang.preds[:2]
+        lang.invented_preds = []
+        lang.preds.append(args.neural_preds[neural_pred_i][0])
+        pi_clauses = []
+        pi_p = []
+    else:
+        print('last round')
+        lang.preds = lang.preds[:2] + args.neural_preds[-1]
+        lang.invented_preds = invented_preds
+        pi_clauses = all_pi_clauses
+        pi_p = invented_preds
+
+    atoms = get_atoms(lang)
+
+    args.is_done = False
+    args.iteration = 0
+    args.max_clause = [0.0, None]
+    args.no_new_preds = False
+    args.last_refs = init_clauses
+
+    return atoms, pi_clauses, pi_p

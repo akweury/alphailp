@@ -5,7 +5,7 @@ from lark import Lark
 from .exp_parser import ExpTree
 from .language import Language, DataType
 from .logic import Predicate, NeuralPredicate, InventedPredicate, FuncSymbol, Const
-from .bk import target_predicate, consts, neural_predicate
+from .bk import target_predicate, consts, neural_predicate, color, shape, group_shape
 
 
 class DataUtils(object):
@@ -40,6 +40,12 @@ class DataUtils(object):
         tree = self.lp_clause.parse(init_clause)
         clause = ExpTree(lang).transform(tree)
         clauses.append(clause)
+
+        assert len(clauses) == 1, "Too many initial clauses."
+        clause = clauses[0]
+        clause.body = clause.body[:args.e]
+        print("Initial clauses: ", clause)
+
         return clauses
 
     def load_pi_clauses(self, bk_prefix, path, lang):
@@ -179,10 +185,10 @@ class DataUtils(object):
                     preds["5-ary"] = new_pred
         return preds
 
-    def load_consts(self):
+    def load_consts(self, args):
         consts_str = []
-        for line in consts:
-            consts_str.extend(self.parse_const(line))
+        for const_name, const_type in consts.items():
+            consts_str.extend(self.parse_const(args, const_name, const_type))
         return consts_str
 
     def parse_pred(self, line):
@@ -261,21 +267,32 @@ class DataUtils(object):
             funcs.append(FuncSymbol(func, int(arity)))
         return funcs
 
-    def parse_const(self, line):
+    def parse_const(self, args, const, const_type):
         """Parse string to function symbols.
         """
-        line = line.replace('\n', '')
-        dtype_name, const_names_str = line.split(':')
-        dtype = DataType(dtype_name)
-        if "num_" in const_names_str:
-            _, prefix, num = const_names_str.split("_")
+        const_data_type = DataType(const)
+        if "amount_" in const_type:
+            _, num = const_type.split('_')
+            if num == 'e':
+                num = args.e
             const_names = []
             for i in range(int(num)):
-                const_names.append(prefix + str(i))
+                const_names.append(str(const) + str(i))
+        elif "enum" in const_type:
+            if const == 'color':
+                const_names = color
+            elif const == 'shape':
+                const_names = shape
+            elif const == 'group_shape':
+                const_names = group_shape
+            else:
+                raise ValueError
+        elif 'target' in const_type:
+            const_names = ['image']
         else:
-            const_names = const_names_str.split(',')
+            raise ValueError
 
-        return [Const(const_name, dtype) for const_name in const_names]
+        return [Const(const_name, const_data_type) for const_name in const_names]
 
     def parse_clause(self, clause_str, lang):
         tree = self.lp_clause.parse(clause_str)
@@ -289,7 +306,7 @@ class DataUtils(object):
         """
         preds = self.load_target_predicate()
         preds += self.load_neural_preds()
-        consts = self.load_consts()
+        consts = self.load_consts(args)
         # pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
 
         bk_inv_preds = []
