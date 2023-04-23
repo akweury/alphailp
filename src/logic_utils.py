@@ -6,14 +6,11 @@ import log_utils
 import eval_clause_infer
 from fol.logic import *
 from fol.data_utils import DataUtils
-from fol.language import DataType
 from infer import InferModule, ClauseInferModule
 from eval_clause_infer import eval_clause_sign
 from tensor_encoder import TensorEncoder
 
-p_ = Predicate('.', 1, [DataType('spec')])
-false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
-true = Atom(p_, [Const('__T__', dtype=DataType('spec'))])
+
 
 
 def get_atoms(lang):
@@ -168,61 +165,7 @@ def change_pi_body_names(pi_clauses):
     return pi_clauses
 
 
-def remove_conflict_clauses(clauses, pi_clauses, args):
-    # print("\nCheck for conflict clauses...")
-    clause_ordered = []
-    non_conflict_clauses = []
-    for clause in clauses:
-        is_conflict = False
-        with_pi = False
-        if len(pi_clauses) > 0:
-            for cb in clause.body:
-                if "inv_pred" in cb.pred.name:
-                    with_pi = True
-            if not with_pi:
-                is_conflict = False
-        if with_pi or len(pi_clauses) == 0:
-            for i in range(len(clause.body)):
-                if is_conflict:
-                    break
-                for j in range(len(clause.body)):
-                    if i == j:
-                        continue
-                    if "at_area" in clause.body[i].pred.name and "at_area" in clause.body[j].pred.name:
-                        if clause.body[i].terms == clause.body[j].terms:
-                            is_conflict = True
-                            break
-                            # print(f'conflict clause: {clause}')
 
-                        elif conflict_pred(clause.body[i].pred.name,
-                                           clause.body[j].pred.name,
-                                           list(clause.body[i].terms),
-                                           list(clause.body[j].terms)):
-                            is_conflict = True
-                            break
-                            # print(f'conflict clause: {clause}')
-
-                    if "inv_pred" in clause.body[j].pred.name and not is_conflict:
-                        pi_name = clause.body[j].pred.name
-                        pi_bodies = get_pi_bodies_by_name(pi_clauses, pi_name)
-                        is_conflict = is_conflict_bodies(pi_bodies, clause.body)
-                        if is_conflict:
-                            break
-                    if "inv_pred" in clause.body[i].pred.name and not is_conflict:
-                        pi_name = clause.body[i].pred.name
-                        pi_bodies = get_pi_bodies_by_name(pi_clauses, pi_name)
-                        is_conflict = is_conflict_bodies(pi_bodies, clause.body)
-                        if is_conflict:
-                            break
-                    # if "at_are_6" in clause.body[i].pred.name or "at_are_6" in clause.body[j].pred.name:
-                    #     print("conflict")
-
-        if not is_conflict:
-            non_conflict_clauses.append(clause)
-        # else:
-        #     log_utils.add_lines(f"(conflict clause) {clause}", args.log_file)
-
-    return non_conflict_clauses
 
 
 def conflict_pred(p1, p2, t1, t2):
@@ -322,13 +265,6 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     # trivial: contain multiple semantic identity bodies
     patterns = check_trivial_clusters(patterns)
 
-    # necessary_clusters = []
-    # sufficient_clusters = []
-    # sn_clusters = []
-    # sn_th_clusters = []
-    # nc_th_clusters = []
-    # sc_th_clusters = []
-    # other_clusters = []
     # TODO: parallel programming
     index_neg = config.score_example_index["neg"]
     index_pos = config.score_example_index["pos"]
@@ -711,26 +647,6 @@ def get_best_clauses(clauses, clause_scores, step, args, max_clause):
             log_utils.add_lines(f"(BS Step {step}) (local) max clause accuracy: {sn_scores.max()}", args.log_file)
             for c_i in c_indices:
                 log_utils.add_lines(f"{clauses[c_i]}, {clause_scores[:, c_i]}", args.log_file)
-
-    # clause_dict["nc"] = sorted_clauses(clause_dict["nc"], "nc", args, args.nc_top)
-    # clause_dict["sc"] = sorted_clauses(clause_dict["sc"], "sc", args, args.sc_top)
-    # clause_dict["nc_good"] = sorted_clauses(clause_dict["nc_good"], "nc_good", args, args.nc_good_top)
-    # clause_dict["sc_good"] = sorted_clauses(clause_dict["sc_good"], "sc_good", args, args.sc_good_top)
-    # clause_dict["uc"] = sorted_clauses(clause_dict["uc"], "uc", args, args.uc_top)
-    # clause_dict["uc_good"] = sorted_clauses(clause_dict["uc_good"], "uc_good", args, args.uc_good_top)
-
-    # log_utils.add_lines(
-    #     f"(BS Step {step}) "
-    #     f"sn_c: {len(clause_dict['sn'])}, "
-    #     f"sn_c_good: {len(clause_dict['sn_good'])}, "
-    #     f"n_c: {len(clause_dict['nc'])}, "
-    #     f"s_c: {len(clause_dict['sc'])}, "
-    #     f"n_c_good: {len(clause_dict['nc_good'])}, "
-    #     f"s_c_good: {len(clause_dict['sc_good'])}, "
-    #     f"u_c_good: {len(clause_dict['uc_good'])}, "
-    #     f"u_c: {len(clause_dict['uc'])}, "
-    #     f"conflict: {len(clause_dict['conflict'])}.", args.log_file)
-
     return max_clause, higher
 
 
@@ -789,16 +705,7 @@ def select_top_x_clauses(clause_candidates, c_type, args, threshold=None):
     return top_clauses_with_scores
 
 
-def remove_trivial_clauses(refs_non_conflict, args):
-    non_trivial_clauses = []
-    for ref in refs_non_conflict:
-        preds = get_pred_names_from_clauses(ref)
 
-        if not is_trivial_preds(preds):
-            non_trivial_clauses.append(ref)
-        # else:
-        #     log_utils.add_lines(f"(trivial clause) {ref}", args.log_file)
-    return non_trivial_clauses
 
 
 def get_pred_names_from_clauses(clause, exclude_objects=False):
@@ -886,35 +793,35 @@ def get_clause_unused_args(clause):
     return unused_args
 
 
-def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
-    non_duplicate_c = []
-    for clause in refs_i:
-        is_duplicate = False
-        for body in clause.body:
-            if "in" != body.pred.name:
-                if len(body.terms) == 2 and "O" not in body.terms[1].name:
-                    # predicate with 1 object arg
-                    if len(unused_args) > 0:
-                        if not (body.terms[0] == unused_args[0] or body.terms[0] in used_args):
-                            is_duplicate = True
-                            break
-                    # predicate with 2 object args
-                elif len(body.terms) == 2 and body.terms[0] in unused_args and body.terms[1] in unused_args:
-                    if body.terms[0] not in unused_args[:2] and body.terms[1] not in unused_args:
-                        is_duplicate = True
-                        break
-                elif len(body.terms) == 1 and body.terms[0] in unused_args:
-                    if body.terms[0] not in unused_args[:1]:
-                        is_duplicate = True
-                        break
-
-        if not is_duplicate:
-            non_duplicate_c.append(clause)
-            # log_utils.add_lines(f'(non duplicate clause) {clause}', args.log_file)
-        # else:
-        # log_utils.add_lines(f'(duplicate clause) {clause}', args.log_file)
-    return non_duplicate_c
-
+# def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
+#     non_duplicate_c = []
+#     for clause in refs_i:
+#         is_duplicate = False
+#         for body in clause.body:
+#             if "in" != body.pred.name:
+#                 if len(body.terms) == 2 and "O" not in body.terms[1].name:
+#                     # predicate with 1 object arg
+#                     if len(unused_args) > 0:
+#                         if not (body.terms[0] == unused_args[0] or body.terms[0] in used_args):
+#                             is_duplicate = True
+#                             break
+#                     # predicate with 2 object args
+#                 elif len(body.terms) == 2 and body.terms[0] in unused_args and body.terms[1] in unused_args:
+#                     if body.terms[0] not in unused_args[:2] and body.terms[1] not in unused_args:
+#                         is_duplicate = True
+#                         break
+#                 elif len(body.terms) == 1 and body.terms[0] in unused_args:
+#                     if body.terms[0] not in unused_args[:1]:
+#                         is_duplicate = True
+#                         break
+#
+#         if not is_duplicate:
+#             non_duplicate_c.append(clause)
+#             # log_utils.add_lines(f'(non duplicate clause) {clause}', args.log_file)
+#         # else:
+#         # log_utils.add_lines(f'(duplicate clause) {clause}', args.log_file)
+#     return non_duplicate_c
+#
 
 def replace_inv_to_equiv_preds(inv_pred):
     equiv_preds = []
@@ -946,45 +853,6 @@ def get_equivalent_clauses(c):
     return equivalent_clauses
 
 
-def semantic_same_pred_lists(added_pred_list, new_pred_list):
-    is_same = True
-    for new_pred in new_pred_list:
-        for added_pred in added_pred_list:
-            if not new_pred == added_pred:
-                is_same = False
-                break
-    if is_same:
-        print("break")
-    return is_same
-
-
-def remove_same_semantic_clauses(clauses):
-    semantic_diff_clauses = []
-    for c in clauses:
-        c_equiv_cs = get_equivalent_clauses(c)
-        c.equiv_c_preds = []
-        for c_equiv in c_equiv_cs:
-            c_equiv_cs_preds = get_pred_names_from_clauses(c_equiv, exclude_objects=True)
-            if c_equiv_cs_preds not in c.equiv_c_preds:
-                c.equiv_c_preds.append(c_equiv_cs_preds)
-
-    for c in clauses:
-        is_same = False
-        for added_c in semantic_diff_clauses:
-            c_preds = get_pred_names_from_clauses(c)
-            added_c_preds = get_pred_names_from_clauses(added_c)
-            if c_preds == added_c_preds:
-                is_same = True
-                break
-            elif semantic_same_pred_lists(added_c.equiv_c_preds, c.equiv_c_preds):
-                is_same = True
-                break
-        if not is_same:
-            semantic_diff_clauses.append(c)
-
-    return semantic_diff_clauses
-
-
 def top_select(bs_clauses, args):
     # all_c = bs_clauses['sn'] + bs_clauses['nc'] + bs_clauses['sc'] + bs_clauses['nc_good'] + bs_clauses['sc_good'] + \
     #         bs_clauses['uc'] + bs_clauses['uc_good']
@@ -1001,26 +869,17 @@ def get_semantic_from_c(clause):
     return semantic
 
 
-def update_system(args, neural_pred_i, lang, invented_preds, all_pi_clauses, init_clauses):
-    if (neural_pred_i < len(args.neural_preds) - 1):
-        lang.preds = lang.preds[:2]
-        lang.invented_preds = []
-        lang.preds.append(args.neural_preds[neural_pred_i][0])
-        pi_clauses = []
-        pi_p = []
-    else:
-        print('last round')
-        lang.preds = lang.preds[:2] + args.neural_preds[-1]
-        lang.invented_preds = invented_preds
-        pi_clauses = all_pi_clauses
-        pi_p = invented_preds
 
-    atoms = get_atoms(lang)
+def count_arity_from_clause_cluster(clause_cluster):
+    arity_list = []
+    for [c_i, clause, c_score] in clause_cluster:
+        for b in clause.body:
+            if "in" == b.pred.name:
+                continue
+            for t in b.terms:
+                if t.name not in arity_list and "O" in t.name:
+                    arity_list.append(t.name)
+    arity_list.sort()
+    return arity_list
 
-    args.is_done = False
-    args.iteration = 0
-    args.max_clause = [0.0, None]
-    args.no_new_preds = False
-    args.last_refs = init_clauses
 
-    return atoms, pi_clauses, pi_p

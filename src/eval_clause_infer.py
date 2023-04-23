@@ -2,9 +2,6 @@ import datetime
 import torch
 
 import config
-import log_utils
-import eval_utils
-from torch_utils import softor, softand
 
 
 def prune_low_score_clauses(clauses, scores_all, scores, args):
@@ -99,23 +96,23 @@ def eval_clauses(score_pos, score_neg, args, c_length):
 
 
 def eval_clause_on_scenes(NSFR, args, pred_names):
-    pos_pred = args.val_pos
-    neg_pred = args.val_neg
+    # pos_pred = args.val_pos
+    # neg_pred = args.val_neg
 
     pos_group_pred = args.group_pos
     neg_group_pred = args.group_neg
 
-    train_size = pos_pred.shape[0]
+    train_size = args.top_data
     bz = args.batch_size_train
-    V_T_pos = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms)).to(args.device)
-    V_T_neg = torch.zeros(len(NSFR.clauses), pos_pred.shape[0], len(NSFR.atoms)).to(args.device)
+    V_T_pos = torch.zeros(len(NSFR.clauses), train_size, len(NSFR.atoms)).to(args.device)
+    V_T_neg = torch.zeros(len(NSFR.clauses), train_size, len(NSFR.atoms)).to(args.device)
     score_all = torch.zeros(size=(V_T_pos.shape[0], V_T_pos.shape[1], 2)).to(args.device)
     for i in range(int(train_size / args.batch_size_train)):
         date_now = datetime.datetime.today().date()
         time_now = datetime.datetime.now().strftime("%H_%M_%S")
         print(f"({date_now} {time_now}) eval batch {i + 1}/{int(train_size / args.batch_size_train)}")
-        V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_pred[i * bz:(i + 1) * bz])
-        V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_pred[i * bz:(i + 1) * bz])
+        V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_group_pred[i * bz:(i + 1) * bz])
+        V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_group_pred[i * bz:(i + 1) * bz])
 
     score_positive = NSFR.get_target_prediciton(V_T_pos, pred_names, args.device)
     score_negative = NSFR.get_target_prediciton(V_T_neg, pred_names, args.device)

@@ -2,17 +2,11 @@
 # Create Date: 31.01.2023
 
 
-import os
-import data_kandinsky
-from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule, FCNNPerceptionModule
-from facts_converter import FactsConverter
-from logic_utils import build_infer_module, build_clause_infer_module, build_pi_clause_infer_module
+from percept import YOLOPerceptionModule, FCNNPerceptionModule
+
 from valuation import PIValuationModule
-from fol.logic import InventedPredicate
-import numpy as np
 import torch.nn as nn
-import torch
-from logic_utils import get_index_by_predname
+from logic_utils import *
 
 
 class PIReasoner(nn.Module):
@@ -166,7 +160,7 @@ def get_pi_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
     IM = build_infer_module(args, clauses, pi_clauses, atoms, lang,
                             m=args.m, infer_step=2, device=device, train=train)
     CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang,
-                                    m=len(clauses), infer_step=2, device=device)
+                                    m=len(clauses), infer_step=8, device=device)
 
     PICIM = build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=2,
                                          device=device)

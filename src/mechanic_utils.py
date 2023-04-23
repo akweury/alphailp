@@ -6,8 +6,12 @@ import config
 from data_utils import to_line_tensor, get_comb, to_circle_tensor
 from eval_utils import eval_group_diff, eval_count_diff, count_func, group_func, get_circle_error, eval_score
 from eval_utils import predict_circles, predict_lines, get_group_distribution
-from src import config, file_utils
-from fol import bk
+from src import file_utils
+from nsfr_utils import get_nsfr_model, get_lang
+import logic_utils
+import log_utils
+from fol.language import Language
+
 
 def detect_line_groups(args, data):
     line_tensors = torch.zeros(data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
@@ -138,7 +142,6 @@ def merge_groups(line_groups, cir_groups):
 
     # group and groups suppose have to overlap with each other?
 
-
     return object_groups
 
 
@@ -267,19 +270,250 @@ def get_args():
     return args
 
 
-def update_args(args, pm_prediction_dict, obj_groups):
-    args.val_pos = pm_prediction_dict["val_pos"].to(args.device)
-    args.val_neg = pm_prediction_dict["val_neg"].to(args.device)
-    args.group_pos = obj_groups[0]
-    args.group_neg = obj_groups[1]
-    args.data_size = args.val_pos.shape[0]
-    args.invented_pred_num = 0
-    args.last_refs = []
-    args.found_ns = False
+# def clause_extension(pi_clauses, args, max_clause, lang, mode_declarations):
+#     log_utils.add_lines(f"\n=== beam search iteration {args.iteration}/{args.max_step} ===", args.log_file)
+#     index_pos = config.score_example_index["pos"]
+#     index_neg = config.score_example_index["neg"]
+#     eval_pred = ['kp']
+#     clause_with_scores = []
+#     # extend clauses
+#     is_done = False
+#     # if args.no_new_preds:
+#     step = args.iteration
+#     refs = args.last_refs
+#     if args.pi_top == 0:
+#         step = args.iteration
+#         if len(args.last_refs) > 0:
+#             refs = args.last_refs
+#     while step <= args.iteration:
+#         # log
+#         log_utils.print_time(args, args.iteration, step, args.iteration)
+#         # clause extension
+#         refs_extended, is_done = extend_clauses(args, lang, mode_declarations, refs, pi_clauses)
+#         if is_done:
+#             break
+#
+#         self.NSFR = get_nsfr_model(args, self.lang, refs_extended, self.NSFR.atoms, pi_clauses, self.NSFR.fc)
+#         # evaluate new clauses
+#         score_all = eval_clause_infer.eval_clause_on_scenes(self.NSFR, args, eval_pred)
+#         scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args, step)
+#         # classify clauses
+#         clause_with_scores = eval_clause_infer.prune_low_score_clauses(refs_extended, score_all, scores, args)
+#         # print best clauses that have been found...
+#         clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args)
+#
+#         new_max, higher = logic_utils.get_best_clauses(refs_extended, scores, step, args, max_clause)
+#         max_clause, found_sn = check_result(args, clause_with_scores, higher, max_clause, new_max)
+#
+#         if args.pi_top > 0:
+#             refs, clause_with_scores, is_done = prune_clauses(clause_with_scores, args)
+#         else:
+#             refs = logic_utils.top_select(clause_with_scores, args)
+#         step += 1
+#
+#         if found_sn or len(refs) == 0:
+#             is_done = True
+#             break
+#
+#     args.is_done = is_done
+#     args.last_refs = refs
+#     return clause_with_scores, max_clause, step, args
 
-    # clause generation and predicate invention
-    lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
-    neural_preds = file_utils.load_neural_preds(bk.neural_predicate_3)
-    args.neural_preds = [[neural_pred] for neural_pred in neural_preds]
-    args.neural_preds.append(neural_preds)
-    args.p_inv_counter = 0
+
+
+
+
+def remove_conflict_clauses(refs, pi_clauses, args):
+    # remove conflict clauses
+    refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses, args)
+    refs_non_trivial = logic_utils.remove_trivial_clauses(refs_non_conflict, args)
+
+    log_utils.add_lines(f"after removing conflict clauses: {len(refs_non_trivial)} clauses left", args.log_file)
+    return refs_non_trivial
+
+
+def update_refs(clause_with_scores, args):
+    refs = []
+    nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_with_scores, "clause", args)
+    refs += nc_clauses
+
+    return refs
+
+
+def check_result(args, clause_with_scores, higher, max_clause, new_max_clause):
+    if higher:
+        best_clause = new_max_clause
+    else:
+        best_clause = max_clause
+
+    if len(clause_with_scores) == 0:
+        return best_clause, False
+    elif clause_with_scores[0][1][2] == 1.0:
+        return best_clause, True
+    elif clause_with_scores[0][1][2] > args.sn_th:
+        return best_clause, True
+    return best_clause, False
+
+
+def eval_groups(args, percept_dict, clu_result):
+    val_pattern_pos = percept_dict["val_pos"]
+    val_pattern_neg = percept_dict["val_neg"]
+    test_pattern_pos = percept_dict["test_pos"]
+    test_pattern_neg = percept_dict["test_neg"]
+    group_pos, group_neg = clu_result
+
+    shape_group_res = eval_single_group(group_pos[:, :, config.group_tensor_shapes],
+                                        group_neg[:, :, config.group_tensor_shapes])
+    color_res = eval_single_group(val_pattern_pos[:, :, config.indices_color],
+                                  val_pattern_neg[:, :, config.indices_color])
+    shape_res = eval_single_group(val_pattern_pos[:, :, config.indices_shape],
+                                  val_pattern_neg[:, :, config.indices_shape])
+
+    result = {
+        'shape_group': shape_group_res,
+        'color': color_res,
+        'shape': shape_res
+    }
+    is_done = check_group_result(args, result)
+    # The pattern is too simple. Print the reason.
+    if False and is_done:
+        # Dataset is too simple. Finish the program.
+        eval_result_test = eval_groups(test_pattern_pos, test_pattern_neg, clu_result)
+        is_done = check_group_result(args, eval_result_test)
+        log_utils.print_dataset_simple(args, is_done, eval_result_test)
+
+    return result
+
+
+def check_group_result(args, eval_res_val):
+    shape_group_done = eval_res_val['shape_group']["result"] > args.group_conf_th
+    color_done = eval_res_val['color']["result"] > args.group_conf_th
+    shape_done = eval_res_val['shape']["result"] > args.group_conf_th
+
+    is_done = shape_group_done.sum() + color_done.sum() + shape_done.sum() > 0
+
+    return is_done
+
+
+def test_groups(test_positive, test_negative, groups):
+    accuracy = 0
+    for i in range(test_positive.shape[0]):
+        accuracy += test_groups_on_one_image(test_positive[i:i + 1], groups)
+    for i in range(test_negative.shape[0]):
+        neg_score = test_groups_on_one_image(test_negative[i:i + 1], groups)
+        accuracy += 1 - neg_score
+    accuracy = accuracy / (test_positive.shape[0] + test_negative.shape[0])
+    print(f"test acc: {accuracy}")
+    return accuracy
+
+
+def detect_obj_groups_with_bk(args, pattern_pos, pattern_neg):
+    pattern_lines_pos = detect_line_groups(args, pattern_pos[:, :, config.indices_position])
+    pattern_cir_pos = detect_circle_groups(args, pattern_pos[:, :, config.indices_position])
+    group_tenors_pos = merge_groups(pattern_lines_pos, pattern_cir_pos)
+
+    pattern_lines_neg = detect_line_groups(args, pattern_neg[:, :, config.indices_position])
+    pattern_cir_neg = detect_circle_groups(args, pattern_neg[:, :, config.indices_position])
+    group_tensors_neg = merge_groups(pattern_lines_neg, pattern_cir_neg)
+
+    return group_tenors_pos, group_tensors_neg
+
+
+def get_group_tree(args, obj_groups, group_by):
+    """ root node corresponds the scene """
+    """ Used for very complex scene """
+    pos_groups, neg_groups = obj_groups[0], obj_groups[1]
+
+    # cluster by color
+
+    # cluster by shape
+
+    # cluster by line and circle
+    if args.neural_preds[group_by][0].name == 'group_shape':
+        pos_groups = None
+
+    return None
+
+
+# def get_lang_model(args, percept_dict, obj_groups):
+#     clauses = []
+#     # load language module
+#     lang = Language(args, [])
+    # update language with neural predicate: shape/color/dir/dist
+
+
+
+    # PM = get_perception_module(args)
+    # VM = get_valuation_module(args, lang)
+    # PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
+    # FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
+    #                                     pi_valuation_module=PI_VM, device=args.device)
+    # # Neuro-Symbolic Forward Reasoner for clause generation
+    # NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC)
+    # PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
+    #
+    # mode_declarations = get_mode_declarations(args, lang)
+    # clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
+    #                                    no_xil=args.no_xil)  # torch.device('cpu'))
+    #
+    # # pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang,
+    # #                                         no_xil=args.no_xil)  # torch.device('cpu'))
+
+
+def reset_args(args, lang):
+
+    args.is_done = False
+    args.iteration = 0
+    args.max_clause = [0.0, None]
+    args.no_new_preds = False
+    args.last_refs = lang.load_init_clauses()
+
+
+    return args
+
+def update_system(args, category, ):
+    # update arguments
+    clauses = []
+    p_inv_with_scores = []
+    # load language module
+    lang, vars, init_clauses, atoms = get_lang(args)
+    # update language with neural predicate: shape/color/dir/dist
+
+    if (category < len(args.neural_preds) - 1):
+        lang.preds = lang.preds[:2]
+        lang.invented_preds = []
+        lang.preds.append(args.neural_preds[category][0])
+        pi_clauses = []
+        pi_p = []
+    else:
+        print('last round')
+        lang.preds = lang.preds[:2] + args.neural_preds[-1]
+        lang.invented_preds = invented_preds
+        pi_clauses = all_pi_clauses
+        pi_p = invented_preds
+
+    atoms = logic_utils.get_atoms(lang)
+
+    args.is_done = False
+    args.iteration = 0
+    args.max_clause = [0.0, None]
+    args.no_new_preds = False
+    args.last_refs = init_clauses
+
+    PM = get_perception_module(args)
+    VM = get_valuation_module(args, lang)
+    PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
+    FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
+                                        pi_valuation_module=PI_VM, device=args.device)
+    # Neuro-Symbolic Forward Reasoner for clause generation
+    NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC)
+    PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
+
+    mode_declarations = get_mode_declarations(args, lang)
+    clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
+                                       no_xil=args.no_xil)  # torch.device('cpu'))
+
+    # pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang,
+    #                                         no_xil=args.no_xil)  # torch.device('cpu'))
+
+    return atoms, pi_clauses, pi_p

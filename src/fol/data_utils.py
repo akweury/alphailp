@@ -3,9 +3,9 @@ import glob
 
 from lark import Lark
 from .exp_parser import ExpTree
-from .language import Language, DataType
+from .language import DataType
 from .logic import Predicate, NeuralPredicate, InventedPredicate, FuncSymbol, Const
-from .bk import target_predicate, consts, neural_predicate, color, shape, group_shape
+from .bk import target_predicate, const_dict, neural_predicate, color, shape
 
 
 class DataUtils(object):
@@ -28,25 +28,19 @@ class DataUtils(object):
         with open(lark_path, encoding="utf-8") as grammar:
             self.lp_clause = Lark(grammar.read(), start="clause")
 
-    def load_clauses(self, lang, args):
-        """Read lines and parse to Atom objects.
-        """
-        clauses = []
-        init_clause = "kp(X):-"
-        for i in range(args.e):
-            init_clause += f"in(O{i + 1},X),"
-        init_clause = init_clause[:-1]
-        init_clause += "."
-        tree = self.lp_clause.parse(init_clause)
-        clause = ExpTree(lang).transform(tree)
-        clauses.append(clause)
-
-        assert len(clauses) == 1, "Too many initial clauses."
-        clause = clauses[0]
-        clause.body = clause.body[:args.e]
-        print("Initial clauses: ", clause)
-
-        return clauses
+    # def load_clauses(self, lang, args):
+    #     """Read lines and parse to Atom objects.
+    #     """
+    #     clauses = []
+    #     init_clause = "kp(X):-."
+    #     tree = self.lp_clause.parse(init_clause)
+    #     clause = ExpTree(lang).transform(tree)
+    #     clauses.append(clause)
+    #     clause = clauses[0]
+    #     clause.body = clause.body[:args.e]
+    #     print("Initial clauses: ", clause)
+    #
+    #     return clauses
 
     def load_pi_clauses(self, bk_prefix, path, lang):
         """Read lines and parse to Atom objects.
@@ -144,13 +138,13 @@ class DataUtils(object):
                     atoms.append(atom)
         return atoms
 
-    def load_target_predicate(self):
-        preds = [self.parse_pred(line) for line in target_predicate]
-        return preds
+    # def load_target_predicate(self):
+    #     preds = [self.parse_pred(line) for line in target_predicate]
+    #     return preds
 
-    def load_neural_preds(self):
-        preds = [self.parse_neural_pred(line) for line in neural_predicate]
-        return preds
+    # def load_neural_preds(self):
+    #     preds = [self.parse_neural_pred(line) for line in neural_predicate]
+    #     return preds
 
     def load_invented_preds(self, bk_prefix, path):
         f = open(path)
@@ -185,11 +179,11 @@ class DataUtils(object):
                     preds["5-ary"] = new_pred
         return preds
 
-    def load_consts(self, args):
-        consts_str = []
-        for const_name, const_type in consts.items():
-            consts_str.extend(self.parse_const(args, const_name, const_type))
-        return consts_str
+    # def load_consts(self, args):
+    #     consts_str = []
+    #     for const_name, const_type in consts.items():
+    #         consts_str.extend(self.parse_const(args, const_name, const_type))
+    #     return consts_str
 
     def parse_pred(self, line):
         """Parse string to predicates.
@@ -198,8 +192,7 @@ class DataUtils(object):
         pred, arity, dtype_names_str = line.split(':')
         dtype_names = dtype_names_str.split(',')
         dtypes = [DataType(dt) for dt in dtype_names]
-        assert int(arity) == len(
-            dtypes), 'Invalid arity and dtypes in ' + pred + '.'
+
         return Predicate(pred, int(arity), dtypes)
 
     def parse_neural_pred(self, line):
@@ -267,32 +260,32 @@ class DataUtils(object):
             funcs.append(FuncSymbol(func, int(arity)))
         return funcs
 
-    def parse_const(self, args, const, const_type):
-        """Parse string to function symbols.
-        """
-        const_data_type = DataType(const)
-        if "amount_" in const_type:
-            _, num = const_type.split('_')
-            if num == 'e':
-                num = args.e
-            const_names = []
-            for i in range(int(num)):
-                const_names.append(str(const) + str(i))
-        elif "enum" in const_type:
-            if const == 'color':
-                const_names = color
-            elif const == 'shape':
-                const_names = shape
-            elif const == 'group_shape':
-                const_names = group_shape
-            else:
-                raise ValueError
-        elif 'target' in const_type:
-            const_names = ['image']
-        else:
-            raise ValueError
-
-        return [Const(const_name, const_data_type) for const_name in const_names]
+    # def parse_const(self, args, const, const_type):
+    #     """Parse string to function symbols.
+    #     """
+    #     const_data_type = DataType(const)
+    #     if "amount_" in const_type:
+    #         _, num = const_type.split('_')
+    #         if num == 'e':
+    #             num = args.e
+    #         const_names = []
+    #         for i in range(int(num)):
+    #             const_names.append(str(const) + str(i))
+    #     elif "enum" in const_type:
+    #         if const == 'color':
+    #             const_names = color
+    #         elif const == 'shape':
+    #             const_names = shape
+    #         # elif const == 'group_shape':
+    #         #     const_names = group_shape
+    #         else:
+    #             raise ValueError
+    #     elif 'target' in const_type:
+    #         const_names = ['image']
+    #     else:
+    #         raise ValueError
+    #
+    #     return [Const(const_name, const_data_type) for const_name in const_names]
 
     def parse_clause(self, clause_str, lang):
         tree = self.lp_clause.parse(clause_str)
@@ -301,19 +294,19 @@ class DataUtils(object):
     def get_bk(self, lang):
         return self.load_atoms(str(self.base_path / 'bk.txt'), lang)
 
-    def load_language(self, args):
-        """Load language, background knowledge, and clauses from files.
-        """
-        preds = self.load_target_predicate()
-        preds += self.load_neural_preds()
-        consts = self.load_consts(args)
-        # pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
-
-        bk_inv_preds = []
-        if args.with_bk:
-            bk_pred_files = glob.glob(str(self.base_path / ".." / "bg_predicates" / "*.txt"))
-            for bk_i, bk_file in enumerate(bk_pred_files):
-                bk_inv_preds += self.load_invented_preds(bk_i, bk_file)
-
-        lang = Language(args, preds, [], consts, bk_inv_preds)
-        return lang
+    # def load_language(self, args):
+    #     """Load language, background knowledge, and clauses from files.
+    #     """
+    #     # preds = self.load_target_predicate()
+    #     # preds += self.load_neural_preds()
+    #     # consts = self.load_consts(args)
+    #     # pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
+    #
+    #     bk_inv_preds = []
+    #     if args.with_bk:
+    #         bk_pred_files = glob.glob(str(self.base_path / ".." / "bg_predicates" / "*.txt"))
+    #         for bk_i, bk_file in enumerate(bk_pred_files):
+    #             bk_inv_preds += self.load_invented_preds(bk_i, bk_file)
+    #
+    #
+    #     return lang

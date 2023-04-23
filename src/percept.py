@@ -314,6 +314,16 @@ class FCNNPreprocess(nn.Module):
         return torch.stack(object_list, dim=1).to(self.device)
 
 
+def get_perception_module(args):
+    if args.dataset_type == "kandinsky":
+        PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
+    elif args.dataset_type == "hide":
+        PM = FCNNPerceptionModule(e=args.e, d=13, device=args.device)
+    else:
+        raise ValueError
+    return PM
+
+
 def eval_images(args, model_file, device, pos_loader, neg_loader):
     if os.path.exists(model_file):
         pm_res = torch.load(model_file)

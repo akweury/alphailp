@@ -17,10 +17,10 @@ class NSFReasoner(nn.Module):
         atoms (list(atom)): The set of ground atoms (facts).
     """
 
-    def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, atoms, clauses,
+    def __init__(self, facts_converter, infer_module, clause_infer_module, atoms, clauses,
                  train=False):
         super().__init__()
-        self.pm = perception_module
+        # self.pm = perception_module
         self.fc = facts_converter
         self.im = infer_module
         self.cim = clause_infer_module
@@ -67,14 +67,14 @@ class NSFReasoner(nn.Module):
         # b = V_T.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
         return V_T
 
-    def clause_eval(self, x):
-        # obtain the object-centric representation
-        zs = self.pm(x)
-        # convert to the valuation tensor
-        V_0 = self.fc(zs, self.atoms, self.bk)
-        # perform T-step forward-chaining reasoning
-        V_T = self.cim(V_0)
-        return V_T
+    # def clause_eval(self, x):
+    #     # obtain the object-centric representation
+    #     zs = self.pm(x)
+    #     # convert to the valuation tensor
+    #     V_0 = self.fc(zs, self.atoms, self.bk)
+    #     # perform T-step forward-chaining reasoning
+    #     V_T = self.cim(V_0)
+    #     return V_T
 
     def clause_eval_quick(self, x):
         # convert to the valuation tensor
@@ -87,11 +87,11 @@ class NSFReasoner(nn.Module):
         V_0 = self.fc(x, self.atoms, self.bk)
         return V_0
 
-    def img_eval(self, x):
-        # obtain the object-centric representation
-        zs = self.pm(x)
-
-        return zs
+    # def img_eval(self, x):
+    #     # obtain the object-centric representation
+    #     zs = self.pm(x)
+    #
+    #     return zs
 
     def get_target_prediciton(self, v, prednames, device):
         """Extracting a value from the valuation tensor using a given predicate.

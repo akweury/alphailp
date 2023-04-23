@@ -65,7 +65,7 @@ def predict(NSFR, loader, args, device, writer, split='train'):
         if args.plot:
             imgs = to_plot_images_clevr(imgs)
             captions = generate_captions(
-                V_T, NSFR.atoms, NSFR.pm.e, th=0.33)
+                V_T, NSFR.atoms, args.e, th=0.33)
             save_images_with_captions(
                 imgs, captions, folder='result/clevr/' + args.dataset + '/' + split + '/', img_id_start=count, dataset=args.dataset)
         count += V_T.size(0)  # batch size

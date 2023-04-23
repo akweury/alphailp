@@ -9,14 +9,14 @@ class FactsConverter(nn.Module):
     FactsConverter converts the output from the perception module to the valuation vector.
     """
 
-    def __init__(self, lang, perception_module, valuation_module, pi_valuation_module, device=None):
+    def __init__(self,args, lang, valuation_module):
         super(FactsConverter, self).__init__()
-        self.e = perception_module.e
-        self.d = perception_module.d
+        self.e = args.e
+        self.d = args.d
         self.lang = lang
         self.vm = valuation_module  # valuation functions
-        self.pi_vm = pi_valuation_module
-        self.device = device
+
+        self.device = args.device
 
     def __str__(self):
         return "FactsConverter(entities={}, dimension={})".format(self.e, self.d)

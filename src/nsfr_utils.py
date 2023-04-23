@@ -10,6 +10,7 @@ from logic_utils import build_infer_module, build_clause_infer_module, generate_
 from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
 from fol.data_utils import DataUtils
 from fol.logic import Var
+from fol.language import Language
 
 attrs = ['color', 'shape', 'material', 'size']
 
@@ -378,28 +379,19 @@ def get_prob(v_T, NSFR, args):
 #     return predicted
 
 
-def get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
+def get_nsfr_model(args, lang, FC, train=False):
     device = args.device
-    if args.dataset_type == 'kandinsky':
-        PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-        # VM = YOLOValuationModule(lang=lang, device=device, dataset=args.dataset)
-        # PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
-    elif args.dataset_type == 'clevr':
-        PM = SlotAttentionPerceptionModule(e=10, d=19, device=device)
-        # VM = SlotAttentionValuationModule(lang=lang, device=device)
-        # PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset)
-    elif args.dataset_type == "hide":
-        PM = None
-    else:
-        assert False, "Invalid dataset type: " + str(args.dataset_type)
+    clauses = lang.clauses
+    atoms = lang.atoms
+    pi_clauses = lang.pi_clauses
+
     IM = build_infer_module(args, clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,
                             train=train, gamma=args.gamma)
     CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
                                     device=device, gamma=args.gamma)
 
     # Neuro-Symbolic Forward Reasoner
-    NSFR = NSFReasoner(perception_module=PM, facts_converter=FC, infer_module=IM,
-                       clause_infer_module=CIM, atoms=atoms, clauses=clauses)
+    NSFR = NSFReasoner(facts_converter=FC, infer_module=IM, clause_infer_module=CIM, atoms=atoms, clauses=clauses)
     return NSFR
 
 
@@ -460,13 +452,14 @@ def get_lang(args):
     Read the language, clauses, background knowledge from files.
     Atoms are generated from the language.
     """
+    #
+    # du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
+    #                dataset=args.dataset)
 
-    du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
-                   dataset=args.dataset)
-    lang = du.load_language(args)
-    init_clauses = du.load_clauses(lang, args)
+    lang = Language(args, [])
 
-    atoms = generate_atoms(lang)
-    vars = [Var(f"O{i + 1}") for i in range(args.e)]
+    # init_clauses = du.load_clauses(lang, args)
 
-    return lang, vars, init_clauses, atoms
+    # atoms = generate_atoms(lang)
+
+    return lang

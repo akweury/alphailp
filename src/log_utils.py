@@ -1,5 +1,4 @@
 import datetime
-import config
 
 
 def create_file(exp_output_path, file_name):
@@ -95,3 +94,13 @@ def print_dataset_simple(args, is_done, eval_res):
             add_lines(f"Distinguishable by shape types and its numbers.", args.log_file)
         if eval_res["shape"]["result"][1] > args.group_conf_th:
             add_lines(f"Distinguishable by shape types.", args.log_file)
+
+
+def print_final_clauses(args, clauses):
+    if len(clauses) > 0:
+        for c in clauses:
+            add_lines(f"(final NSFR clause) {c}", args.log_file)
+
+
+def print_result(args, lang):
+    return None

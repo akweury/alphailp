@@ -98,7 +98,7 @@ class YOLOValuationModule(nn.Module):
             Returns:
                 attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
         """
-        attr_names = ['color', 'shape', 'rho', 'phi','group_shape']
+        attr_names = ['color', 'shape', 'rho', 'phi', 'group_shape']
         attrs = {}
         for dtype_name in attr_names:
             for term in self.lang.get_by_dtype_name(dtype_name):
@@ -141,7 +141,7 @@ class YOLOValuationModule(nn.Module):
         term_index = self.lang.term_index(term)
         if term.dtype.name == 'object':
             return zs[:, term_index].to(self.device)
-        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi" or term.dtype.name=="group_shape":
+        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi" or term.dtype.name == "group_shape":
             return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1).to(self.device)
         elif term.dtype.name == 'image':
             return None
@@ -257,7 +257,7 @@ class FCNNValuationModule(nn.Module):
         term_index = self.lang.term_index(term)
         if term.dtype.name == 'group':
             return zs[:, term_index].to(self.device)
-        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi"\
+        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi" \
                 or term.dtype.name == 'group_shape':
             return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1).to(self.device)
         elif term.dtype.name == 'image':
@@ -300,13 +300,6 @@ class PIValuationModule(nn.Module):
         layers = []
         vfs = {}  # a dictionary: pred_name -> valuation function
 
-        # v_area = valuation_func.YOLOAreaValuationFunction(device)
-        # # if dataset in ['closeby', 'red-triangle']:
-        # vfs['area'] = v_area
-        # # vfs['area'].load_state_dict(torch.load(
-        # #     str(config.root) + '/src/weights/neural_predicates/area_pretrain.pt', map_location=device))
-        # # vfs['area'].eval()
-        # layers.append(v_area)
         if dataset_type == "kandinsky":
             v_phi = valuation_func.YOLOPhiValuationFunction(device)
             vfs['phi'] = v_phi
@@ -551,3 +544,14 @@ class SlotAttentionValuationModule(nn.Module):
         onehot = torch.zeros(batch_size, length, ).to(self.device)
         onehot[:, i] = 1.0
         return onehot
+
+
+def get_valuation_module(args, lang):
+    if args.dataset_type == "kandinsky":
+        VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+    elif args.dataset_type == "hide":
+        VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset,
+                                 dataset_type=args.dataset_type)
+    else:
+        raise ValueError
+    return VM

@@ -1,22 +1,10 @@
-import torch
-import numpy as np
 from sklearn.metrics import accuracy_score, recall_score, roc_curve
 from tqdm import tqdm
 import datetime
 
-import pi_utils
 from nsfr_utils import get_prob, get_nsfr_model
-import logic_utils
-from logic_utils import update_system
-from src.nsfr_utils import get_lang
-from mode_declaration import get_mode_declarations
-from clause_generator import ClauseGenerator, PIClauseGenerator
-import facts_converter
-from percept import YOLOPerceptionModule, FCNNPerceptionModule
-from valuation import YOLOValuationModule, PIValuationModule, FCNNValuationModule
-import log_utils
-import mechanics
-from mechanic_utils import update_args
+
+from pi_utils import *
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -74,7 +62,8 @@ def ilp_predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def train_nsfr(args, NSFR, pm_prediction_dict, rtpt):
+def train_nsfr(args, pm_prediction_dict, rtpt):
+    NSFR = get_nsfr_model(args, lang, clauses, atoms, all_pi_clauses, FC, train=True)
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
@@ -136,165 +125,32 @@ def train_nsfr(args, NSFR, pm_prediction_dict, rtpt):
     return loss
 
 
-def get_models(args, lang, clauses, pi_clauses, atoms):
-    obj_n = args.e
-    if args.dataset_type == "kandinsky":
-        PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
-        VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
-    elif args.dataset_type == "hide":
-        PM = FCNNPerceptionModule(e=args.e, d=8, device=args.device)
-        VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
-    else:
-        raise ValueError
-    PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
-    FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
-                                        pi_valuation_module=PI_VM, device=args.device)
-    # Neuro-Symbolic Forward Reasoner for clause generation
-    NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC)
-    PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
-
-    mode_declarations = get_mode_declarations(args, lang, obj_n)
-    clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
-                                       no_xil=args.no_xil)  # torch.device('cpu'))
-
-    pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, no_xil=args.no_xil)  # torch.device('cpu'))
-
-    return clause_generator, pi_clause_generator, FC
-
-
-def extend_clauses(args, clause_generator, init_clauses, pi_c, max_c, clauses):
-    log_utils.add_lines(f"\n=== beam search iteration {args.iteration}/{args.max_step} ===", args.log_file)
-    # generate clauses # time-consuming code
-    bs_clauses, max_clause, current_step, args = clause_generator.clause_extension(init_clauses, pi_c, args, max_c)
-    if len(bs_clauses) == 0:
-        args.is_done = True
-    elif len(bs_clauses) > 0 and bs_clauses[0][1][2] == 1.0:
-        log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
-        clauses = logic_utils.extract_clauses_from_bs_clauses([bs_clauses[0]], "sn", args)
-        args.is_done = True
-        # break
-    elif len(bs_clauses) > 0 and bs_clauses[0][1][2] > args.sn_th:
-        log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
-        for c in bs_clauses:
-            if c[1][2] > args.sn_th:
-                clauses += logic_utils.extract_clauses_from_bs_clauses([c], "sn_good", args)
-        args.is_done = True
-        # break
-    else:
-        if args.pi_top == 0:
-            clauses += logic_utils.top_select(bs_clauses, args)
-        elif args.iteration == args.max_step:
-            clauses += logic_utils.extract_clauses_from_max_clause(bs_clauses, args)
-        elif max_clause[1] is not None:
-            clauses += logic_utils.extract_clauses_from_max_clause(max_clause[1], args)
-        else:
-            raise ValueError
-
-    return bs_clauses, clauses, args
+# def get_models(args, lang, clauses, pi_clauses, atoms):
+#     obj_n = args.e
+#     if args.dataset_type == "kandinsky":
+#         PM = YOLOPerceptionModule(e=args.e, d=11, device=args.device)
+#         VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+#     elif args.dataset_type == "hide":
+#         PM = FCNNPerceptionModule(e=args.e, d=8, device=args.device)
+#         VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
+#     else:
+#         raise ValueError
+#     PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
+#     FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
+#                                         pi_valuation_module=PI_VM, device=args.device)
+#     # Neuro-Symbolic Forward Reasoner for clause generation
+#     NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC)
+#     PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
+#
+#     mode_declarations = get_mode_declarations(args, lang)
+#     clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
+#                                        no_xil=args.no_xil)  # torch.device('cpu'))
+#
+#     pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, no_xil=args.no_xil)  # torch.device('cpu'))
+#
+#     return clause_generator, pi_clause_generator, FC
 
 
-def invent_predicates(args, clauses, bs_clauses, pi_clause_generator, new_c, new_p, neural_preds):
-    args.no_new_preds = True
-    p_new_with_score = []
-    lang = pi_clause_generator.lang
-    atoms = logic_utils.get_atoms(lang)
-    if args.no_pi:
-        clauses += logic_utils.extract_clauses_from_bs_clauses(bs_clauses, "clause", args)
-    elif args.pi_top > 0:
-        # invent new predicate and generate pi clauses
-        new_c, new_p, p_new_with_score, is_done = pi_clause_generator.invent_predicate(bs_clauses, new_c, args,
-                                                                                       neural_preds, new_p)
-        new_pred_num = len(pi_clause_generator.lang.invented_preds) - args.invented_pred_num
-        args.invented_pred_num = len(pi_clause_generator.lang.invented_preds)
-        if new_pred_num > 0:
-            # add new predicates
-            args.no_new_preds = False
-            lang = pi_clause_generator.lang
-            atoms = logic_utils.get_atoms(lang)
-            for c in new_c:
-                if c not in clauses:
-                    clauses.append(c)
-    return clauses, new_c, new_p, args, atoms, lang, p_new_with_score
 
 
-def train_and_eval(args, percept_dict, obj_groups, rtpt):
-    FC = None
-    invented_preds = []
-    all_pi_clauses = []
-    clauses = []
 
-    for neural_pred_i in range(len(args.neural_preds)):
-        clauses = []
-        p_inv_with_scores = []
-        # load language module
-        lang, vars, init_clauses, atoms = get_lang(args)
-        # update language with neural predicate: shape/color/dir/dist
-        atoms, pi_clauses, pi_p = update_system(args, neural_pred_i, lang, invented_preds, all_pi_clauses, init_clauses)
-        clause_generator, pi_clause_generator, FC = get_models(args, lang, init_clauses, pi_clauses, atoms)
-
-        # group objects
-        group_matrix_tree = mechanics.get_group_tree(args, obj_groups, neural_pred_i)
-        eval_res_val = mechanics.eval_groups(percept_dict["val_pos"], percept_dict["val_neg"], obj_groups)
-        is_done = mechanics.check_group_result(args, eval_res_val)
-
-        # The pattern is too simple. Print the reason.
-        if False and is_done:
-            # Dataset is too simple. Finish the program.
-            eval_result_test = mechanics.eval_groups(percept_dict["test_pos"], percept_dict["test_neg"], obj_groups)
-            is_done = mechanics.check_group_result(args, eval_result_test)
-            log_utils.print_dataset_simple(args, is_done, eval_result_test)
-
-        # searching for a proper clause to describe the pattern.
-        while args.iteration < args.max_step and not args.is_done:
-            bs_clauses, clauses, args = extend_clauses(args, clause_generator, init_clauses, pi_clauses,
-                                                       args.max_clause,
-                                                       clauses)
-            clauses, pi_clauses, pi_p, args, atoms, lang, p_new_scores = invent_predicates(args, clauses, bs_clauses,
-                                                                                           pi_clause_generator,
-                                                                                           pi_clauses, pi_p,
-                                                                                           args.neural_preds[
-                                                                                               neural_pred_i])
-            p_inv_with_scores += p_new_scores
-            atoms = logic_utils.get_atoms(lang)
-            clause_generator, pi_clause_generator, FC = get_models(args, lang, init_clauses, pi_clauses, atoms)
-            args.iteration += 1
-
-        p_inv_best = sorted(p_inv_with_scores, key=lambda x: x[1][2], reverse=True)
-        p_inv_best = p_inv_best[:args.pi_top]
-        p_inv_best = logic_utils.extract_clauses_from_bs_clauses(p_inv_best, "best inv clause", args)
-
-        for new_p in p_inv_best:
-            if new_p not in invented_preds:
-                invented_preds.append(new_p)
-        for new_c in pi_clauses:
-            if new_c not in all_pi_clauses and new_c.head.pred in p_inv_best:
-                all_pi_clauses.append(new_c)
-
-        if args.found_ns:
-            break
-
-    if len(clauses) > 0:
-        for c in clauses:
-            log_utils.add_lines(f"(final NSFR clause) {c}", args.log_file)
-    NSFR = get_nsfr_model(args, lang, clauses, atoms, all_pi_clauses, FC, train=True)
-    train_nsfr(args, NSFR, percept_dict, rtpt)
-    return NSFR
-
-
-def final_evaluation(NSFR, pm_prediction_dict, args):
-    # validation split
-    log_utils.add_lines(f"Predicting on validation data set...", args.log_file)
-    acc_val, rec_val, th_val = ilp_predict(NSFR, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
-                                           args, th=0.33, split='val')
-    # training split
-    log_utils.add_lines(f"Predicting on training data set...", args.log_file)
-    acc, rec, th = ilp_predict(NSFR, pm_prediction_dict["train_pos"], pm_prediction_dict["train_neg"],
-                               args, th=th_val, split='train')
-    # test split
-    log_utils.add_lines(f"Predicting on test data set...", args.log_file)
-    acc_test, rec_test, th_test = ilp_predict(NSFR, pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"],
-                                              args, th=th_val, split='test')
-
-    log_utils.add_lines(f"training acc: {acc}, threshold: {th}, recall: {rec}", args.log_file)
-    log_utils.add_lines(f"val acc: {acc_val}, threshold: {th_val}, recall: {rec_val}", args.log_file)
-    log_utils.add_lines(f"test acc: {acc_test}, threshold: {th_test}, recall: {rec_test}", args.log_file)

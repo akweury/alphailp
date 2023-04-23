@@ -102,7 +102,7 @@ class FCNNShapeValuationFunction(nn.Module):
         Returns:
             A batch of probabilities.
         """
-        z_shape = z[:, 6:8]
+        z_shape = z[:, 6:10]
         # a_batch = a.repeat((z.size(0), 1))  # one-hot encoding for batch
         return (a * z_shape).sum(dim=1)
 
@@ -146,7 +146,8 @@ class FCNNInValuationFunction(nn.Module):
         Returns:
             A batch of probabilities.
         """
-        return z[:, -1]
+        prob,_ = z[:,6:10].max(dim=-1)
+        return prob
 
 
 class YOLOClosebyValuationFunction(nn.Module):
