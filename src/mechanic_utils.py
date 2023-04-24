@@ -12,19 +12,25 @@ import logic_utils
 import log_utils
 
 
-def detect_line_groups(args, data):
-    line_tensors = torch.zeros(data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
-    for data_i in range(data.shape[0]):
+def detect_line_groups(args, percept_dict, data_type):
+    point_data = percept_dict[data_type][:, :, config.indices_position]
+    color_data = percept_dict[data_type][:, :, config.indices_color]
+    shape_data = percept_dict[data_type][:, :, config.indices_shape]
+
+    line_tensors = torch.zeros(args.top_data, args.group_e, len(config.group_tensor_index.keys()))
+    for data_i in range(point_data.shape[0]):
         exist_combs = []
-        group_indices = get_comb(torch.tensor(range(data[data_i].shape[0])), 2).tolist()
+        group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 2).tolist()
         tensor_counter = 0
         line_tensor_candidates = torch.zeros(args.group_e, len(config.group_tensor_index.keys()))
         for g_i, group_index in enumerate(group_indices):
             # check duplicate
             if group_index not in exist_combs:
-                point_groups, point_indices = extend_line_group(group_index, data[data_i], args.error_th)
+                point_groups, point_indices = extend_line_group(group_index, point_data[data_i], args.error_th)
                 if point_groups is not None and point_groups.shape[0] >= args.line_group_min_sz:
-                    line_tensor = to_line_tensor(point_groups).reshape(1, -1)
+                    colors = color_data[data_i][point_indices]
+                    shapes = shape_data[data_i][point_indices]
+                    line_tensor = to_line_tensor(point_groups, colors, shapes).reshape(1, -1)
                     line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
                     exist_combs += get_comb(point_indices, 2).tolist()
                     tensor_counter += 1
@@ -36,19 +42,25 @@ def detect_line_groups(args, data):
     return line_tensors
 
 
-def detect_circle_groups(args, data):
-    circle_tensors = torch.zeros(data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
-    for data_i in range(data.shape[0]):
+def detect_circle_groups(args, percept_dict, data_type):
+    point_data = percept_dict[data_type][:, :, config.indices_position]
+    color_data = percept_dict[data_type][:, :, config.indices_color]
+    shape_data = percept_dict[data_type][:, :, config.indices_shape]
+
+    circle_tensors = torch.zeros(point_data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
+    for data_i in range(point_data.shape[0]):
         exist_combs = []
         tensor_counter = 0
-        group_indices = get_comb(torch.tensor(range(data[data_i].shape[0])), 3).tolist()
+        group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 3).tolist()
         circle_tensor_candidates = torch.zeros(args.group_e, len(config.group_tensor_index.keys()))
         for g_i, group_index in enumerate(group_indices):
             # check duplicate
             if group_index not in exist_combs:
-                p_groups, p_indices, center, r = extend_circle_group(group_index, data[data_i], args)
+                p_groups, p_indices, center, r = extend_circle_group(group_index, point_data[data_i], args)
                 if p_groups is not None and p_groups.shape[0] >= args.cir_group_min_sz:
-                    circle_tensor = to_circle_tensor(p_groups, center=center, r=r).reshape(1, -1)
+                    colors = color_data[data_i][p_indices]
+                    shapes = shape_data[data_i][p_indices]
+                    circle_tensor = to_circle_tensor(p_groups, colors, shapes, center=center, r=r).reshape(1, -1)
                     circle_tensor_candidates = torch.cat([circle_tensor_candidates, circle_tensor], dim=0)
                     exist_combs += get_comb(p_indices, 3).tolist()
                     tensor_counter += 1
@@ -365,16 +377,33 @@ def test_groups(test_positive, test_negative, groups):
     return accuracy
 
 
-def detect_obj_groups_with_bk(args, pattern_pos, pattern_neg):
-    pattern_lines_pos = detect_line_groups(args, pattern_pos[:, :, config.indices_position])
-    pattern_cir_pos = detect_circle_groups(args, pattern_pos[:, :, config.indices_position])
-    group_tenors_pos = merge_groups(pattern_lines_pos, pattern_cir_pos)
+def detect_obj_groups_with_bk(args, percept_dict):
+    pattern_lines_pos = detect_line_groups(args, percept_dict, "val_pos")
+    pattern_cir_pos = detect_circle_groups(args, percept_dict, "val_pos")
+    group_tenors_val_pos = merge_groups(pattern_lines_pos, pattern_cir_pos)
 
-    pattern_lines_neg = detect_line_groups(args, pattern_neg[:, :, config.indices_position])
-    pattern_cir_neg = detect_circle_groups(args, pattern_neg[:, :, config.indices_position])
-    group_tensors_neg = merge_groups(pattern_lines_neg, pattern_cir_neg)
+    pattern_lines_train_pos = detect_line_groups(args, percept_dict, "train_pos")
+    pattern_cir_train_pos = detect_circle_groups(args, percept_dict, "train_neg")
+    group_tenors_train_pos = merge_groups(pattern_lines_train_pos, pattern_cir_train_pos)
 
-    return group_tenors_pos, group_tensors_neg
+    pattern_lines_test_pos = detect_line_groups(args, percept_dict, "test_pos")
+    pattern_cir_test_pos = detect_circle_groups(args, percept_dict, "test_neg")
+    group_tenors_test_pos = merge_groups(pattern_lines_test_pos, pattern_cir_test_pos)
+
+    pattern_lines_neg = detect_line_groups(args, percept_dict, "val_neg")
+    pattern_cir_neg = detect_circle_groups(args, percept_dict, "val_neg")
+    group_tensors_val_neg = merge_groups(pattern_lines_neg, pattern_cir_neg)
+
+    pattern_lines_train_neg = detect_line_groups(args, percept_dict, "train_neg")
+    pattern_cir_train_neg = detect_circle_groups(args, percept_dict, "train_neg")
+    group_tensors_train_neg = merge_groups(pattern_lines_train_neg, pattern_cir_train_neg)
+
+    pattern_lines_test_neg = detect_line_groups(args, percept_dict, "test_neg")
+    pattern_cir_test_neg = detect_circle_groups(args, percept_dict, "test_neg")
+    group_tensors_test_neg = merge_groups(pattern_lines_test_neg, pattern_cir_test_neg)
+
+    return group_tenors_val_pos, group_tensors_val_neg, group_tenors_train_pos, \
+           group_tensors_train_neg, group_tenors_test_pos, group_tensors_test_neg
 
 
 def get_group_tree(args, obj_groups, group_by):

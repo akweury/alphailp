@@ -73,9 +73,15 @@ def train_nsfr(args, rtpt, lang):
     stopping_threshold = 1e-6
     test_acc_list = np.zeros(shape=(1, args.epochs))
     # prepare perception result
-    train_pred = torch.cat((args.train_pos, args.train_neg), dim=0)
+    train_pos = args.train_group_pos
+    train_neg = args.train_group_neg
+    test_pos = args.test_group_pos
+    test_neg = args.test_group_neg
+    val_pos = args.val_group_pos
+    val_neg = args.val_group_neg
+    train_pred = torch.cat((train_pos, train_neg), dim=0)
     train_label = torch.zeros(len(train_pred)).to(args.device)
-    train_label[:len(args.train_pos)] = 1.0
+    train_label[:len(train_pos)] = 1.0
 
     for epoch in range(args.epochs):
 
@@ -108,21 +114,21 @@ def train_nsfr(args, rtpt, lang):
             NSFR.print_program()
             log_utils.add_lines("Predicting on validation data set...", args.log_file)
 
-            acc_val, rec_val, th_val = ilp_predict(NSFR, args.val_pos, args.val_neg, args, th=0.33, split='val')
+            acc_val, rec_val, th_val = ilp_predict(NSFR, val_pos, val_neg, args, th=0.33, split='val')
             # writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
             log_utils.add_lines(f"acc_val:{acc_val} ", args.log_file)
             log_utils.add_lines("Predi$\alpha$ILPcting on training data set...", args.log_file)
 
-            acc, rec, th = ilp_predict(NSFR, args.train_pos, args.train_neg, args, th=th_val, split='train')
+            acc, rec, th = ilp_predict(NSFR, train_pos, train_neg, args, th=th_val, split='train')
             # writer.add_scalar("metric/train_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_train: {acc}", args.log_file)
             log_utils.add_lines(f"Predicting on test data set...", args.log_file)
 
-            acc, rec, th = ilp_predict(NSFR, args.test_pos, args.test_neg, args, th=th_val, split='train')
+            acc, rec, th = ilp_predict(NSFR, test_pos, test_neg, args, th=th_val, split='train')
             # writer.add_scalar("metric/test_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_test: {acc}", args.log_file)
 
-    return loss
+
 
 # def get_models(args, lang, clauses, pi_clauses, atoms):
 #     obj_n = args.e

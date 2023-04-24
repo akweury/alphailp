@@ -17,8 +17,8 @@ def keep_best_preds(args, lang):
     p_inv_best = logic_utils.extract_clauses_from_bs_clauses(p_inv_best, "best inv clause", args)
 
     for new_p in p_inv_best:
-        if new_p not in lang.invented_preds:
-            lang.invented_preds.append(new_p)
+        if new_p not in lang.all_invented_preds:
+            lang.all_invented_preds.append(new_p)
     for new_c in lang.pi_clauses:
         if new_c not in lang.all_pi_clauses and new_c.head.pred in p_inv_best:
             lang.all_pi_clauses.append(new_c)
@@ -245,7 +245,7 @@ def generate_new_predicate(args, lang, clause_clusters, clause_type=None):
     # cluster predicates
     for pi_index, [clause_cluster, cluster_score] in enumerate(clause_clusters):
         p_args = logic_utils.count_arity_from_clause_cluster(clause_cluster)
-        dtypes = [DataType("object")] * len(p_args)
+        dtypes = [DataType("group")] * len(p_args)
         new_predicate = lang.get_new_invented_predicate(args, arity=len(p_args), pi_dtypes=dtypes,
                                                         p_args=p_args, pi_types=clause_type)
         new_predicate.body = []
@@ -273,10 +273,15 @@ def cluster_invention(args, lang):
     found_ns = False
 
     clu_lists = logic_utils.search_independent_clauses_parallel(args, lang)
-    new_predicates = generate_new_predicate(args, lang, clu_lists)
-    new_predicates = new_predicates[:args.pi_top]
-    lang.invented_preds_with_scores = new_predicates
-    return new_predicates, found_ns
+    new_preds_with_scores = generate_new_predicate(args, lang, clu_lists)
+    new_preds_with_scores = new_preds_with_scores[:args.pi_top]
+    lang.invented_preds_with_scores += new_preds_with_scores
+
+    log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
+    for new_c, new_c_score in new_preds_with_scores:
+        log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
+
+    return new_preds_with_scores, found_ns
 
 
 def generate_new_clauses_str_list(new_predicates):
@@ -349,8 +354,10 @@ def reset_args(args, lang):
     args.max_clause = [0.0, None]
     args.no_new_preds = False
     args.last_refs = lang.load_init_clauses(args)
+    args.no_new_preds = True
 
-    return args
+    lang.invented_preds_with_scores = []
+
 
 
 def update_refs(clause_with_scores, args):
@@ -366,7 +373,7 @@ def eval_groups(args):
     val_pattern_neg = args.val_neg
     test_pattern_pos = args.test_pos
     test_pattern_neg = args.test_neg
-    group_pos, group_neg = args.group_pos, args.group_neg
+    group_pos, group_neg = args.val_group_pos, args.val_group_neg
 
     shape_group_res = eval_single_group(group_pos[:, :, config.group_tensor_shapes],
                                         group_neg[:, :, config.group_tensor_shapes])

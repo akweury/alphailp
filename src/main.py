@@ -18,7 +18,7 @@ def main():
     # ILP and PI system
     start = time.time()
     # grouping objects to reduce the problem complexity
-    obj_groups = detect_obj_groups_with_bk(args, percept_dict["val_pos"], percept_dict["val_neg"])
+    obj_groups = detect_obj_groups_with_bk(args, percept_dict)
     # update arguments
     update_args(args, percept_dict, obj_groups)
     # describe the scenes with clauses, invent new predicates if necessary

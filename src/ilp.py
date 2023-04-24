@@ -60,59 +60,37 @@ def describe_scenes(args, lang, VM, FC):
     return refs
 
 
-def invent_predicates(args, lang, clauses):
-    args.no_new_preds = True
-    lang.invented_preds_with_scores = []
-
-    # invent new predicate and generate pi clauses
-    new_c, new_p, is_done = ilp_pi(args, lang)
-    new_pred_num = len(lang.invented_preds) - args.invented_pred_num
-    args.invented_pred_num = len(lang.invented_preds)
-    if new_pred_num > 0:
-        # add new predicates
-        args.no_new_preds = False
-        lang.generate_atoms()
-
-        for c in new_c:
-            if c not in clauses:
-                clauses.append(c)
-    return clauses, new_c, new_p
-
-
 def ilp_main(args, lang, with_pi=True):
-
     for neural_pred in args.neural_preds:
-        args = reset_args(args, lang)
+        reset_args(args, lang)
         # grouping objects with new categories
-        group_eval_res = eval_groups(args)
-
+        eval_groups(args)
+        lang.update_bk(neural_pred, full_bk=False)
+        lang.update_mode_declarations(args)
         # run ilp with pi module
         # searching for a proper clause to describe the pattern.
         while args.iteration < args.max_step and not args.is_done:
             # update system
-            lang.update_bk(neural_pred, full_bk=False)
-            lang.update_mode_declarations(args)
+
             VM = aitk.get_vm(args, lang)
             FC = aitk.get_fc(args, lang, VM)
 
-            clauses = describe_scenes(args, lang, VM, FC)
+            describe_scenes(args, lang, VM, FC)
             if with_pi:
-                invent_predicates(args, lang, clauses)
+                ilp_pi(args, lang)
+
             args.iteration += 1
 
+        # save the promising predicates
         keep_best_preds(args, lang)
         if args.found_ns:
             break
 
 
 def ilp_pi(args, lang):
-    new_predicates, is_done = cluster_invention(args, lang)
-    log_utils.add_lines(f"new PI: {len(new_predicates)}", args.log_file)
-    for new_c, new_c_score in new_predicates:
-        log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
-
+    new_pred_with_scores, is_done = cluster_invention(args, lang)
     # convert to strings
-    new_clauses_str_list, kp_str_list = generate_new_clauses_str_list(new_predicates)
+    new_clauses_str_list, kp_str_list = generate_new_clauses_str_list(new_pred_with_scores)
     # convert clauses from strings to objects
     # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
     # du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
@@ -121,22 +99,23 @@ def ilp_pi(args, lang):
     # if lang.neural_pred is not None:
     #     lang.preds += lang.neural_pred
     # lang.invented_preds = lang.invented_p
-    all_pi_clauses, all_pi_kp_clauses = gen_pi_clauses(args, lang, new_predicates, new_clauses_str_list, kp_str_list)
+    pi_clauses, pi_kp_clauses = gen_pi_clauses(args, lang, new_pred_with_scores, new_clauses_str_list, kp_str_list)
 
-    all_pi_clauses = extract_pi(lang, all_pi_clauses, args) + lang.pi_clauses
-    all_pi_kp_clauses = extract_kp_pi(lang, all_pi_kp_clauses, args)
+    lang.pi_clauses += extract_pi(lang, pi_clauses, args)
+    lang.pi_kp_clauses = extract_kp_pi(lang, pi_kp_clauses, args)
 
-    new_p = lang.invented_preds
-    new_c = all_pi_clauses
+    if len(lang.invented_preds) > 0:
+        # add new predicates
+        args.no_new_preds = False
+        lang.generate_atoms()
 
-    log_utils.add_lines(f"======  Total PI Number: {len(new_p)}  ======", args.log_file)
-    for p in new_p:
+    log_utils.add_lines(f"======  Total PI Number: {len(lang.invented_preds)}  ======", args.log_file)
+    for p in lang.invented_preds:
         log_utils.add_lines(f"{p}", args.log_file)
-    log_utils.add_lines(f"========== Total {len(new_c)} PI Clauses ============= ", args.log_file)
-    for c in new_c:
-        log_utils.add_lines(f"{c}", args.log_file)
 
-    return new_c, new_p, is_done
+    log_utils.add_lines(f"========== Total {len(lang.pi_clauses)} PI Clauses ============= ", args.log_file)
+    for c in lang.pi_clauses:
+        log_utils.add_lines(f"{c}", args.log_file)
 
 
 def ilp_prog():
@@ -144,7 +123,7 @@ def ilp_prog():
 
 
 def ilp_test(args, lang):
-    args = reset_args(args, lang)
+    reset_args(args, lang)
     lang.update_bk(full_bk=True, neural_pred=args.neural_preds)
     lang.update_mode_declarations(args)
     VM = aitk.get_vm(args, lang)
@@ -153,7 +132,7 @@ def ilp_test(args, lang):
     # ILP
     # searching for a proper clause to describe the pattern.
     for i in range(args.max_step):
-        clauses = describe_scenes(args, lang, VM, FC)
+        describe_scenes(args, lang, VM, FC)
         if args.is_done:
             break
 

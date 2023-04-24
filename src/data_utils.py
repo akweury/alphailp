@@ -23,7 +23,10 @@ def get_comb(data, comb_size):
     return indices
 
 
-def to_line_tensor(point_groups):
+def to_line_tensor(point_groups, colors, shapes):
+    colors_normalized = colors.sum(dim=0) / colors.shape[0]
+    shapes_normalized = shapes.sum(dim=0) / shapes.shape[0]
+
     # 0:2 center_x, center_z
     # 2 slope
     # 3 x_length
@@ -36,11 +39,11 @@ def to_line_tensor(point_groups):
     line_tensor[tensor_index["x"]] = point_groups[:, 0].mean()
     line_tensor[tensor_index["y"]] = point_groups[:, 1].mean()
     line_tensor[tensor_index["z"]] = point_groups[:, 2].mean()
-    line_tensor[tensor_index['red']] = 0
-    line_tensor[tensor_index['green']] = 0
-    line_tensor[tensor_index['blue']] = 0
-    line_tensor[tensor_index['sphere']] = 0
-    line_tensor[tensor_index['cube']] = 0
+    line_tensor[tensor_index['red']] = colors_normalized[0]
+    line_tensor[tensor_index['green']] = colors_normalized[1]
+    line_tensor[tensor_index['blue']] = colors_normalized[2]
+    line_tensor[tensor_index['sphere']] = shapes_normalized[0]
+    line_tensor[tensor_index['cube']] = shapes_normalized[1]
 
     line_model = LinearRegression().fit(point_groups[:, 0:1], point_groups[:, 2:])
     line_tensor[tensor_index["line"]] = 1 - torch.abs(
@@ -54,7 +57,7 @@ def to_line_tensor(point_groups):
     return line_tensor
 
 
-def to_circle_tensor(point_groups, center, r):
+def to_circle_tensor(point_groups, colors, shapes, center, r):
     tensor_index = config.group_tensor_index
     circle_tensor = torch.zeros(len(tensor_index.keys()))
     circle_tensor[tensor_index["x"]] = center[0]
@@ -73,7 +76,5 @@ def to_circle_tensor(point_groups, center, r):
     circle_tensor[tensor_index["x_length"]] = point_groups[:, 0].max() - point_groups[:, 0].min()
     circle_tensor[tensor_index["y_length"]] = point_groups[:, 1].max() - point_groups[:, 1].min()
     circle_tensor[tensor_index["z_length"]] = point_groups[:, 2].max() - point_groups[:, 2].min()
-
-
 
     return circle_tensor

@@ -99,8 +99,8 @@ def eval_clause_on_scenes(NSFR, args, pred_names):
     # pos_pred = args.val_pos
     # neg_pred = args.val_neg
 
-    pos_group_pred = args.group_pos
-    neg_group_pred = args.group_neg
+    pos_group_pred = args.val_group_pos
+    neg_group_pred = args.val_group_neg
 
     train_size = args.top_data
     bz = args.batch_size_train

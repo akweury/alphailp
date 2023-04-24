@@ -107,8 +107,13 @@ def update_args(args, pm_prediction_dict, obj_groups):
     args.train_pos = pm_prediction_dict["train_pos"].to(args.device)
     args.train_neg = pm_prediction_dict["train_neg"].to(args.device)
 
-    args.group_pos = obj_groups[0]
-    args.group_neg = obj_groups[1]
+    args.val_group_pos = obj_groups[0]
+    args.val_group_neg = obj_groups[1]
+    args.train_group_pos = obj_groups[2]
+    args.train_group_neg = obj_groups[3]
+    args.test_group_pos = obj_groups[4]
+    args.test_group_neg = obj_groups[5]
+
     args.data_size = args.val_pos.shape[0]
     args.invented_pred_num = 0
     args.last_refs = []
@@ -118,6 +123,6 @@ def update_args(args, pm_prediction_dict, obj_groups):
     # clause generation and predicate invention
     lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
     neural_preds = file_utils.load_neural_preds(bk.neural_predicate_2)
-    args.neural_preds = [[neural_pred] for neural_pred in neural_preds]
-    args.neural_preds.append(neural_preds)
+    args.neural_preds = [neural_pred for neural_pred in neural_preds]
+    # args.neural_preds.append(neural_preds)
     args.p_inv_counter = 0

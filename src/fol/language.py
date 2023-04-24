@@ -5,6 +5,7 @@ from .exp_parser import ExpTree
 from .logic import *
 from fol import bk
 
+
 # from fol import mode_declaration
 
 class Language(object):
@@ -346,15 +347,17 @@ class Language(object):
         # put everything into the bk
         if full_bk:
             if neural_pred is not None:
-                self.preds = self.preds[:2] + neural_pred[-1]
-            self.invented_preds += self.all_invented_preds
-            self.pi_clauses += self.all_pi_clauses
+                self.preds = self.preds[:2] + neural_pred
+            self.invented_preds = self.all_invented_preds
+            self.pi_clauses = self.all_pi_clauses
         else:
             # only consider one category by the given nerual pred
-            self.preds = self.preds[:2] + neural_pred
+            self.preds = self.preds[:2]
+            self.preds.append(neural_pred)
             self.invented_preds = []
             self.pi_clauses = []
         self.generate_atoms()
+
         # self.mode_declaration = mode_declaration.get_mode_declarations(args, self)
 
         # PM = get_perception_module(args)
