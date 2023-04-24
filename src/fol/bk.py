@@ -1,5 +1,6 @@
 target_predicate = [
-    'kp:1:image'
+    'kp:1:image',
+    'in:2:group,image'
 ]
 
 neural_predicate = [
@@ -7,11 +8,10 @@ neural_predicate = [
 ]
 
 neural_predicate_2 = [
-    'in:2:group,image',
     'color:2:group,color',
     'shape:2:group,shape',
-    'phi:2:group,phi',
-    'rho:2:group,rho',
+    'phi:3:group,group,phi',
+    'rho:3:group,group,rho',
 
 ]
 

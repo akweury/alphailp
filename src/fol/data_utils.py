@@ -4,8 +4,7 @@ import glob
 from lark import Lark
 from .exp_parser import ExpTree
 from .language import DataType
-from .logic import Predicate, NeuralPredicate, InventedPredicate, FuncSymbol, Const
-from .bk import target_predicate, const_dict, neural_predicate, color, shape
+from .logic import Predicate, NeuralPredicate, InventedPredicate, FuncSymbol
 
 
 class DataUtils(object):

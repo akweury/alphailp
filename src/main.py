@@ -22,7 +22,7 @@ def main():
     # update arguments
     update_args(args, percept_dict, obj_groups)
     # describe the scenes with clauses, invent new predicates if necessary
-    NSFR = train_and_eval(args, percept_dict, obj_groups, rtpt)
+    NSFR = train_and_eval(args, rtpt)
     end = time.time()
 
     log_utils.add_lines(f"=============================", args.log_file)

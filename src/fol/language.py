@@ -4,6 +4,8 @@ from lark import Lark
 from .exp_parser import ExpTree
 from .logic import *
 from fol import bk
+
+
 # from fol import mode_declaration
 
 class Language(object):
@@ -28,6 +30,7 @@ class Language(object):
         self.atoms = []
         self.preds = []
         self.invented_preds = []
+        self.invented_preds_with_scores = []
         self.funcs = funcs
         self.consts = []
         self.clauses = []
@@ -47,8 +50,7 @@ class Language(object):
             self.lp_atom = Lark(grammar.read(), start="atom")
 
         self.load_lang(args)
-        self.load_init_clauses()
-
+        self.load_init_clauses(args)
 
     def __str__(self):
         s = "===Predicates===\n"
@@ -106,10 +108,15 @@ class Language(object):
 
     def update_mode_declarations(self, args):
         self.mode_declarations = get_mode_declarations(args, self)
-    def load_init_clauses(self):
+
+    def load_init_clauses(self, args):
         """Read lines and parse to Atom objects.
         """
-        init_clause = "kp(X):-."
+        init_clause = "kp(X):-"
+        for i in range(args.e):
+            init_clause += f"in(O{i + 1},X),"
+        init_clause = init_clause[:-1]
+        init_clause += "."
         tree = self.lp_clause.parse(init_clause)
         self.clauses = ExpTree(self).transform(tree)
         print("Initial clauses: ", self.clauses)
@@ -348,7 +355,7 @@ class Language(object):
             self.preds = self.preds[:2] + neural_pred
             self.invented_preds = []
             self.pi_clauses = []
-
+        self.generate_atoms()
         # self.mode_declaration = mode_declaration.get_mode_declarations(args, self)
 
         # PM = get_perception_module(args)

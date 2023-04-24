@@ -3,8 +3,8 @@ from tqdm import tqdm
 import datetime
 
 from nsfr_utils import get_prob, get_nsfr_model
-
 from pi_utils import *
+import aitk
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -62,17 +62,20 @@ def ilp_predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def train_nsfr(args, pm_prediction_dict, rtpt):
-    NSFR = get_nsfr_model(args, lang, clauses, atoms, all_pi_clauses, FC, train=True)
+def train_nsfr(args, rtpt, lang):
+    VM = aitk.get_vm(args, lang)
+    FC = aitk.get_fc(args, lang, VM)
+    NSFR = get_nsfr_model(args, lang, FC, train=True)
+
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
     stopping_threshold = 1e-6
     test_acc_list = np.zeros(shape=(1, args.epochs))
     # prepare perception result
-    train_pred = torch.cat((pm_prediction_dict['train_pos'], pm_prediction_dict['train_neg']), dim=0)
+    train_pred = torch.cat((args.train_pos, args.train_neg), dim=0)
     train_label = torch.zeros(len(train_pred)).to(args.device)
-    train_label[:len(pm_prediction_dict['train_pos'])] = 1.0
+    train_label[:len(args.train_pos)] = 1.0
 
     for epoch in range(args.epochs):
 
@@ -105,25 +108,21 @@ def train_nsfr(args, pm_prediction_dict, rtpt):
             NSFR.print_program()
             log_utils.add_lines("Predicting on validation data set...", args.log_file)
 
-            acc_val, rec_val, th_val = ilp_predict(NSFR, pm_prediction_dict['val_pos'],
-                                                   pm_prediction_dict['val_neg'], args, th=0.33, split='val')
+            acc_val, rec_val, th_val = ilp_predict(NSFR, args.val_pos, args.val_neg, args, th=0.33, split='val')
             # writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
             log_utils.add_lines(f"acc_val:{acc_val} ", args.log_file)
             log_utils.add_lines("Predi$\alpha$ILPcting on training data set...", args.log_file)
 
-            acc, rec, th = ilp_predict(NSFR, pm_prediction_dict['train_pos'],
-                                       pm_prediction_dict['train_neg'], args, th=th_val, split='train')
+            acc, rec, th = ilp_predict(NSFR, args.train_pos, args.train_neg, args, th=th_val, split='train')
             # writer.add_scalar("metric/train_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_train: {acc}", args.log_file)
             log_utils.add_lines(f"Predicting on test data set...", args.log_file)
 
-            acc, rec, th = ilp_predict(NSFR, pm_prediction_dict['test_pos'],
-                                       pm_prediction_dict['test_neg'], args, th=th_val, split='train')
+            acc, rec, th = ilp_predict(NSFR, args.test_pos, args.test_neg, args, th=th_val, split='train')
             # writer.add_scalar("metric/test_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_test: {acc}", args.log_file)
 
     return loss
-
 
 # def get_models(args, lang, clauses, pi_clauses, atoms):
 #     obj_n = args.e
@@ -149,8 +148,3 @@ def train_nsfr(args, pm_prediction_dict, rtpt):
 #     pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang, no_xil=args.no_xil)  # torch.device('cpu'))
 #
 #     return clause_generator, pi_clause_generator, FC
-
-
-
-
-

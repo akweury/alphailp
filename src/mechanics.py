@@ -9,9 +9,8 @@ import config
 import log_utils, file_utils
 from fol import bk
 from pi import ilp_predict, train_nsfr
-
 import ilp
-import aitk
+from fol.language import Language
 
 
 def init():
@@ -80,30 +79,22 @@ def final_evaluation(NSFR, pm_prediction_dict, args):
     log_utils.add_lines(f"test acc: {acc_test}, threshold: {th_test}, recall: {rec_test}", args.log_file)
 
 
-def train_and_eval(args, percept_dict, obj_groups, rtpt):
+def train_and_eval(args, rtpt):
     # init system
     lang = Language(args, [])
     # lang = get_lang_model(args, percept_dict, obj_groups)
-    args = reset_args(args, lang)
+
     # run ilp
     ilp.ilp_test(args, lang)
 
     # invent predicates
-    for neural_pred in args.neural_preds:
-        # grouping objects with new categories
-        group_eval_res = eval_groups(args, percept_dict, obj_groups)
-
-        # run ilp with pi module
-        ilp.ilp_main(args, lang,neural_pred, with_pi=True)
-
-        if args.found_ns:
-            break
+    ilp.ilp_main(args, lang, with_pi=True)
 
     # run ilp again
     ilp.ilp_test(args, lang)
 
     # train nsfr
-    NSFR = train_nsfr(args, percept_dict, rtpt)
+    NSFR = train_nsfr(args, rtpt, lang)
 
     return NSFR
 
@@ -111,6 +102,11 @@ def train_and_eval(args, percept_dict, obj_groups, rtpt):
 def update_args(args, pm_prediction_dict, obj_groups):
     args.val_pos = pm_prediction_dict["val_pos"].to(args.device)
     args.val_neg = pm_prediction_dict["val_neg"].to(args.device)
+    args.test_pos = pm_prediction_dict["test_pos"].to(args.device)
+    args.test_neg = pm_prediction_dict["test_neg"].to(args.device)
+    args.train_pos = pm_prediction_dict["train_pos"].to(args.device)
+    args.train_neg = pm_prediction_dict["train_neg"].to(args.device)
+
     args.group_pos = obj_groups[0]
     args.group_neg = obj_groups[1]
     args.data_size = args.val_pos.shape[0]

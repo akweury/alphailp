@@ -10,7 +10,6 @@ from src import file_utils
 from nsfr_utils import get_nsfr_model, get_lang
 import logic_utils
 import log_utils
-from fol.language import Language
 
 
 def detect_line_groups(args, data):
@@ -53,8 +52,8 @@ def detect_circle_groups(args, data):
                     circle_tensor_candidates = torch.cat([circle_tensor_candidates, circle_tensor], dim=0)
                     exist_combs += get_comb(p_indices, 3).tolist()
                     tensor_counter += 1
-                    print(f'circle group: {p_indices}')
-        print(f'\n')
+                    # print(f'circle group: {p_indices}')
+        # print(f'\n')
         _, prob_indices = circle_tensor_candidates[:, config.group_tensor_index["circle"]].sort(descending=True)
         prob_indices = prob_indices[:args.group_e]
         circle_tensors[data_i] = circle_tensor_candidates[prob_indices]
@@ -320,9 +319,6 @@ def get_args():
 #     return clause_with_scores, max_clause, step, args
 
 
-
-
-
 def remove_conflict_clauses(refs, pi_clauses, args):
     # remove conflict clauses
     refs_non_conflict = logic_utils.remove_conflict_clauses(refs, pi_clauses, args)
@@ -330,14 +326,6 @@ def remove_conflict_clauses(refs, pi_clauses, args):
 
     log_utils.add_lines(f"after removing conflict clauses: {len(refs_non_trivial)} clauses left", args.log_file)
     return refs_non_trivial
-
-
-def update_refs(clause_with_scores, args):
-    refs = []
-    nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_with_scores, "clause", args)
-    refs += nc_clauses
-
-    return refs
 
 
 def check_result(args, clause_with_scores, higher, max_clause, new_max_clause):
@@ -353,36 +341,6 @@ def check_result(args, clause_with_scores, higher, max_clause, new_max_clause):
     elif clause_with_scores[0][1][2] > args.sn_th:
         return best_clause, True
     return best_clause, False
-
-
-def eval_groups(args, percept_dict, clu_result):
-    val_pattern_pos = percept_dict["val_pos"]
-    val_pattern_neg = percept_dict["val_neg"]
-    test_pattern_pos = percept_dict["test_pos"]
-    test_pattern_neg = percept_dict["test_neg"]
-    group_pos, group_neg = clu_result
-
-    shape_group_res = eval_single_group(group_pos[:, :, config.group_tensor_shapes],
-                                        group_neg[:, :, config.group_tensor_shapes])
-    color_res = eval_single_group(val_pattern_pos[:, :, config.indices_color],
-                                  val_pattern_neg[:, :, config.indices_color])
-    shape_res = eval_single_group(val_pattern_pos[:, :, config.indices_shape],
-                                  val_pattern_neg[:, :, config.indices_shape])
-
-    result = {
-        'shape_group': shape_group_res,
-        'color': color_res,
-        'shape': shape_res
-    }
-    is_done = check_group_result(args, result)
-    # The pattern is too simple. Print the reason.
-    if False and is_done:
-        # Dataset is too simple. Finish the program.
-        eval_result_test = eval_groups(test_pattern_pos, test_pattern_neg, clu_result)
-        is_done = check_group_result(args, eval_result_test)
-        log_utils.print_dataset_simple(args, is_done, eval_result_test)
-
-    return result
 
 
 def check_group_result(args, eval_res_val):
@@ -439,37 +397,25 @@ def get_group_tree(args, obj_groups, group_by):
 #     clauses = []
 #     # load language module
 #     lang = Language(args, [])
-    # update language with neural predicate: shape/color/dir/dist
+# update language with neural predicate: shape/color/dir/dist
 
 
+# PM = get_perception_module(args)
+# VM = get_valuation_module(args, lang)
+# PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
+# FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
+#                                     pi_valuation_module=PI_VM, device=args.device)
+# # Neuro-Symbolic Forward Reasoner for clause generation
+# NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC)
+# PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
+#
+# mode_declarations = get_mode_declarations(args, lang)
+# clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
+#                                    no_xil=args.no_xil)  # torch.device('cpu'))
+#
+# # pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang,
+# #                                         no_xil=args.no_xil)  # torch.device('cpu'))
 
-    # PM = get_perception_module(args)
-    # VM = get_valuation_module(args, lang)
-    # PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
-    # FC = FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
-    #                                     pi_valuation_module=PI_VM, device=args.device)
-    # # Neuro-Symbolic Forward Reasoner for clause generation
-    # NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC)
-    # PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
-    #
-    # mode_declarations = get_mode_declarations(args, lang)
-    # clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
-    #                                    no_xil=args.no_xil)  # torch.device('cpu'))
-    #
-    # # pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang,
-    # #                                         no_xil=args.no_xil)  # torch.device('cpu'))
-
-
-def reset_args(args, lang):
-
-    args.is_done = False
-    args.iteration = 0
-    args.max_clause = [0.0, None]
-    args.no_new_preds = False
-    args.last_refs = lang.load_init_clauses()
-
-
-    return args
 
 def update_system(args, category, ):
     # update arguments
@@ -506,7 +452,7 @@ def update_system(args, category, ):
     FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
                                         pi_valuation_module=PI_VM, device=args.device)
     # Neuro-Symbolic Forward Reasoner for clause generation
-    NSFR_cgen = get_nsfr_model(args, lang, clauses, atoms, pi_clauses, FC)
+    NSFR_cgen = get_nsfr_model(args, lang, FC)
     PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
 
     mode_declarations = get_mode_declarations(args, lang)

@@ -11,11 +11,8 @@ from eval_clause_infer import eval_clause_sign
 from tensor_encoder import TensorEncoder
 
 
-
-
-def get_atoms(lang):
-    atoms = generate_atoms(lang)
-    return atoms
+# def get_atoms(lang):
+#     lang.generate_atoms(lang)
 
 
 def build_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False, gamma=None):
@@ -165,9 +162,6 @@ def change_pi_body_names(pi_clauses):
     return pi_clauses
 
 
-
-
-
 def conflict_pred(p1, p2, t1, t2):
     non_confliect_dict = {
         "at_area_0": ["at_area_2"],
@@ -248,8 +242,9 @@ def check_trivial_clusters(clause_clusters):
     return clause_clusters_untrivial
 
 
-def get_independent_clusters(clauses, args):
-    print(f"\nsearching for independent clauses from {len(clauses)} clauses...")
+def get_independent_clusters(args, lang):
+    clauses = lang.clause_with_scores
+    print(f"\nsearching for independent clauses from {len(lang.clauses)} clauses...")
 
     clauses_with_score = []
     for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
@@ -260,8 +255,8 @@ def get_independent_clusters(clauses, args):
     return clause_clusters
 
 
-def search_independent_clauses_parallel(clauses, total_score, args):
-    patterns = get_independent_clusters(clauses, args)
+def search_independent_clauses_parallel(args, lang):
+    patterns = get_independent_clusters(args, lang)
     # trivial: contain multiple semantic identity bodies
     patterns = check_trivial_clusters(patterns)
 
@@ -272,8 +267,8 @@ def search_independent_clauses_parallel(clauses, total_score, args):
     # evaluate each new pattern
     clu_all = []
     for cc_i, pattern in enumerate(patterns):
-        score_neg = torch.zeros((1, total_score, len(pattern))).to(args.device)
-        score_pos = torch.zeros((1, total_score, len(pattern))).to(args.device)
+        score_neg = torch.zeros((1, args.top_data, len(pattern))).to(args.device)
+        score_pos = torch.zeros((1, args.top_data, len(pattern))).to(args.device)
         # score_max = torch.zeros(size=(score_neg.shape[0], score_neg.shape[1], 2)).to(args.device)
 
         for f_i, [c_i, c, c_score] in enumerate(pattern):
@@ -705,9 +700,6 @@ def select_top_x_clauses(clause_candidates, c_type, args, threshold=None):
     return top_clauses_with_scores
 
 
-
-
-
 def get_pred_names_from_clauses(clause, exclude_objects=False):
     preds = []
     for atom in clause.body:
@@ -869,7 +861,6 @@ def get_semantic_from_c(clause):
     return semantic
 
 
-
 def count_arity_from_clause_cluster(clause_cluster):
     arity_list = []
     for [c_i, clause, c_score] in clause_cluster:
@@ -881,5 +872,3 @@ def count_arity_from_clause_cluster(clause_cluster):
                     arity_list.append(t.name)
     arity_list.sort()
     return arity_list
-
-
