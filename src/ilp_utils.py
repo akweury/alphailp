@@ -11,6 +11,19 @@ from logic_utils import get_equivalent_clauses, get_pred_names_from_clauses
 from fol.exp_parser import ExpTree
 
 
+def keep_best_preds(args, lang):
+    p_inv_best = sorted(lang.invented_preds_with_scores, key=lambda x: x[1][2], reverse=True)
+    p_inv_best = p_inv_best[:args.pi_top]
+    p_inv_best = logic_utils.extract_clauses_from_bs_clauses(p_inv_best, "best inv clause", args)
+
+    for new_p in p_inv_best:
+        if new_p not in lang.invented_preds:
+            lang.invented_preds.append(new_p)
+    for new_c in lang.pi_clauses:
+        if new_c not in lang.all_pi_clauses and new_c.head.pred in p_inv_best:
+            lang.all_pi_clauses.append(new_c)
+
+
 def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
     non_duplicate_c = []
     for clause in refs_i:

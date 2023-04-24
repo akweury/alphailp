@@ -85,7 +85,7 @@ def train_and_eval(args, rtpt):
     # lang = get_lang_model(args, percept_dict, obj_groups)
 
     # run ilp
-    ilp.ilp_test(args, lang)
+    # ilp.ilp_test(args, lang)
 
     # invent predicates
     ilp.ilp_main(args, lang, with_pi=True)

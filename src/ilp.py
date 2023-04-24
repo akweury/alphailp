@@ -29,8 +29,7 @@ def describe_scenes(args, lang, VM, FC):
         log_utils.print_time(args, args.iteration, step, args.iteration)
         # clause extension
         refs_extended = extend_clauses(args, lang)
-
-        if is_done:
+        if args.is_done:
             break
 
         # clause evaluation
@@ -81,8 +80,9 @@ def invent_predicates(args, lang, clauses):
 
 
 def ilp_main(args, lang, with_pi=True):
-    args = reset_args(args, lang)
+
     for neural_pred in args.neural_preds:
+        args = reset_args(args, lang)
         # grouping objects with new categories
         group_eval_res = eval_groups(args)
 
@@ -100,17 +100,7 @@ def ilp_main(args, lang, with_pi=True):
                 invent_predicates(args, lang, clauses)
             args.iteration += 1
 
-        p_inv_best = sorted(lang.invented_preds_with_scores, key=lambda x: x[1][2], reverse=True)
-        p_inv_best = p_inv_best[:args.pi_top]
-        p_inv_best = logic_utils.extract_clauses_from_bs_clauses(p_inv_best, "best inv clause", args)
-
-        for new_p in p_inv_best:
-            if new_p not in lang.invented_preds:
-                lang.invented_preds.append(new_p)
-        for new_c in lang.pi_clauses:
-            if new_c not in lang.all_pi_clauses and new_c.head.pred in p_inv_best:
-                lang.all_pi_clauses.append(new_c)
-
+        keep_best_preds(args, lang)
         if args.found_ns:
             break
 

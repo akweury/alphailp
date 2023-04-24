@@ -5,7 +5,6 @@ from .exp_parser import ExpTree
 from .logic import *
 from fol import bk
 
-
 # from fol import mode_declaration
 
 class Language(object):
@@ -130,7 +129,7 @@ class Language(object):
         dtype_names = dtype_names_str.split(',')
         dtypes = [DataType(dt) for dt in dtype_names]
 
-        return Predicate(pred, int(arity), dtypes)
+        return NeuralPredicate(pred, int(arity), dtypes)
 
     def parse_const(self, args, const, const_type):
         """Parse string to function symbols.

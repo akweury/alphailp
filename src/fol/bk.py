@@ -8,8 +8,8 @@ neural_predicate = [
 ]
 
 neural_predicate_2 = [
-    'color:2:group,color',
     'shape:2:group,shape',
+    'color:2:group,color',
     'phi:3:group,group,phi',
     'rho:3:group,group,rho',
 

@@ -30,6 +30,8 @@ class ExpTree(Transformer):
             return InventedClause(head, body)
         elif type(head.pred) == Predicate:
             return Clause(head, body)
+        elif type(head.pred) == NeuralPredicate:
+            return Clause(head, body)
 
     def body(self, trees):
         if len(trees) == 0:

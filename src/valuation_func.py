@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from neural_utils import MLP, LogisticRegression, AreaNet
-
+import config
 
 ################################
 # Valuation functions for YOLO #
