@@ -52,27 +52,28 @@ def init():
     torch.set_printoptions(precision=4)
 
     pm_prediction_dict = get_perception_predictions(args)
+    # grouping objects to reduce the problem complexity
+    obj_groups = detect_obj_groups_with_bk(args, pm_prediction_dict)
 
     # load logical representations
     args.lark_path = str(config.root / 'src' / 'lark' / 'exp.lark')
     args.lang_base_path = config.root / 'data' / 'lang'
 
-    return args, rtpt, pm_prediction_dict
+    return args, rtpt, pm_prediction_dict, obj_groups
 
 
-def final_evaluation(NSFR, pm_prediction_dict, args):
+def final_evaluation(NSFR, args):
     # validation split
     log_utils.add_lines(f"Predicting on validation data set...", args.log_file)
-    acc_val, rec_val, th_val = ilp_predict(NSFR, pm_prediction_dict["val_pos"], pm_prediction_dict["val_neg"],
+    acc_val, rec_val, th_val = ilp_predict(NSFR, args.val_group_pos, args.val_group_neg,
                                            args, th=0.33, split='val')
     # training split
     log_utils.add_lines(f"Predicting on training data set...", args.log_file)
-    acc, rec, th = ilp_predict(NSFR, pm_prediction_dict["train_pos"], pm_prediction_dict["train_neg"],
-                               args, th=th_val, split='train')
+    acc, rec, th = ilp_predict(NSFR, args.train_group_pos, args.train_group_neg, args, th=th_val, split='train')
     # test split
     log_utils.add_lines(f"Predicting on test data set...", args.log_file)
-    acc_test, rec_test, th_test = ilp_predict(NSFR, pm_prediction_dict["test_pos"], pm_prediction_dict["test_neg"],
-                                              args, th=th_val, split='test')
+    acc_test, rec_test, th_test = ilp_predict(NSFR, args.test_group_pos, args.test_group_neg, args, th=th_val,
+                                              split='test')
 
     log_utils.add_lines(f"training acc: {acc}, threshold: {th}, recall: {rec}", args.log_file)
     log_utils.add_lines(f"val acc: {acc_val}, threshold: {th_val}, recall: {rec_val}", args.log_file)

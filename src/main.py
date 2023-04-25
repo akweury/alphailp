@@ -13,12 +13,10 @@ time_now = datetime.datetime.now().strftime("%H_%M_%S")
 
 def main():
     # set up the environment, load the dataset and results from perception models
-    args, rtpt, percept_dict = init()
+    args, rtpt, percept_dict, obj_groups = init()
 
     # ILP and PI system
     start = time.time()
-    # grouping objects to reduce the problem complexity
-    obj_groups = detect_obj_groups_with_bk(args, percept_dict)
     # update arguments
     update_args(args, percept_dict, obj_groups)
     # describe the scenes with clauses, invent new predicates if necessary
@@ -29,7 +27,7 @@ def main():
     log_utils.add_lines(f"Experiment time: {((end - start) / 60):.2f} minute(s)", args.log_file)
     log_utils.add_lines(f"=============================", args.log_file)
 
-    final_evaluation(NSFR, percept_dict, args)
+    final_evaluation(NSFR, args)
 
 
 if __name__ == "__main__":

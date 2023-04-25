@@ -103,4 +103,16 @@ def print_final_clauses(args, clauses):
 
 
 def print_result(args, lang):
-    return None
+    add_lines(f"=========== all invented predicates ==================", args.log_file)
+    for inv_pred in lang.all_invented_preds:
+        add_lines(f"{inv_pred}", args.log_file)
+
+    add_lines(f"=========== all clauses explaining invented predicates ==================", args.log_file)
+    for pi_c in lang.all_pi_clauses:
+        add_lines(f"{pi_c}", args.log_file)
+
+
+def print_test_result(args, lang):
+    add_lines(f"=========== all clauses ==================", args.log_file)
+    for c in args.last_refs:
+        add_lines(f"{c}", args.log_file)

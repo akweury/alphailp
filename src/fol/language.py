@@ -349,6 +349,7 @@ class Language(object):
             if neural_pred is not None:
                 self.preds = self.preds[:2] + neural_pred
             self.invented_preds = self.all_invented_preds
+            self.preds += self.invented_preds
             self.pi_clauses = self.all_pi_clauses
         else:
             # only consider one category by the given nerual pred
@@ -548,7 +549,7 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
 
 def get_pi_mode_declarations(lang, obj_num):
-    p_object = ModeTerm('+', DataType('object'))
+    p_object = ModeTerm('+', DataType('group'))
 
     pi_mode_declarations = []
     for pi_index, pi in enumerate(lang.invented_preds):

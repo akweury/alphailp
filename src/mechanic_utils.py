@@ -1,5 +1,5 @@
 import argparse
-
+import os
 import torch
 
 import config
@@ -12,10 +12,10 @@ import logic_utils
 import log_utils
 
 
-def detect_line_groups(args, percept_dict, data_type):
-    point_data = percept_dict[data_type][:, :, config.indices_position]
-    color_data = percept_dict[data_type][:, :, config.indices_color]
-    shape_data = percept_dict[data_type][:, :, config.indices_shape]
+def detect_line_groups(args, percept_dict):
+    point_data = percept_dict[:, :, config.indices_position]
+    color_data = percept_dict[:, :, config.indices_color]
+    shape_data = percept_dict[:, :, config.indices_shape]
 
     line_tensors = torch.zeros(args.top_data, args.group_e, len(config.group_tensor_index.keys()))
     for data_i in range(point_data.shape[0]):
@@ -42,10 +42,10 @@ def detect_line_groups(args, percept_dict, data_type):
     return line_tensors
 
 
-def detect_circle_groups(args, percept_dict, data_type):
-    point_data = percept_dict[data_type][:, :, config.indices_position]
-    color_data = percept_dict[data_type][:, :, config.indices_color]
-    shape_data = percept_dict[data_type][:, :, config.indices_shape]
+def detect_circle_groups(args, percept_dict):
+    point_data = percept_dict[:, :, config.indices_position]
+    color_data = percept_dict[:, :, config.indices_color]
+    shape_data = percept_dict[:, :, config.indices_shape]
 
     circle_tensors = torch.zeros(point_data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
     for data_i in range(point_data.shape[0]):
@@ -377,33 +377,32 @@ def test_groups(test_positive, test_negative, groups):
     return accuracy
 
 
+def detect_obj_groups_single(args, percept_dict_single, data_type):
+    group_res_file = config.buffer_path / "hide" / f"{args.dataset}_group_res_{data_type}.pth.tar"
+    if os.path.exists(group_res_file):
+        group_res = torch.load(group_res_file)
+        group_tensors = group_res["tensors"]
+    else:
+        pattern_line = detect_line_groups(args, percept_dict_single)
+        pattern_cir = detect_circle_groups(args, percept_dict_single)
+        group_tensors = merge_groups(pattern_line, pattern_cir)
+        group_res = {
+            "tensors": group_tensors
+        }
+        torch.save(group_res, group_res_file)
+
+    return group_tensors
+
+
 def detect_obj_groups_with_bk(args, percept_dict):
-    pattern_lines_pos = detect_line_groups(args, percept_dict, "val_pos")
-    pattern_cir_pos = detect_circle_groups(args, percept_dict, "val_pos")
-    group_tenors_val_pos = merge_groups(pattern_lines_pos, pattern_cir_pos)
+    group_val_pos = detect_obj_groups_single(args, percept_dict["val_pos"], "val_pos")
+    group_val_neg = detect_obj_groups_single(args, percept_dict["val_neg"], "val_neg")
+    group_train_pos = detect_obj_groups_single(args, percept_dict["train_pos"], "train_pos")
+    group_train_neg = detect_obj_groups_single(args, percept_dict["train_neg"], "train_neg")
+    group_test_pos = detect_obj_groups_single(args, percept_dict["test_pos"], "test_pos")
+    group_test_neg = detect_obj_groups_single(args, percept_dict["test_neg"], "test_neg")
 
-    pattern_lines_train_pos = detect_line_groups(args, percept_dict, "train_pos")
-    pattern_cir_train_pos = detect_circle_groups(args, percept_dict, "train_neg")
-    group_tenors_train_pos = merge_groups(pattern_lines_train_pos, pattern_cir_train_pos)
-
-    pattern_lines_test_pos = detect_line_groups(args, percept_dict, "test_pos")
-    pattern_cir_test_pos = detect_circle_groups(args, percept_dict, "test_neg")
-    group_tenors_test_pos = merge_groups(pattern_lines_test_pos, pattern_cir_test_pos)
-
-    pattern_lines_neg = detect_line_groups(args, percept_dict, "val_neg")
-    pattern_cir_neg = detect_circle_groups(args, percept_dict, "val_neg")
-    group_tensors_val_neg = merge_groups(pattern_lines_neg, pattern_cir_neg)
-
-    pattern_lines_train_neg = detect_line_groups(args, percept_dict, "train_neg")
-    pattern_cir_train_neg = detect_circle_groups(args, percept_dict, "train_neg")
-    group_tensors_train_neg = merge_groups(pattern_lines_train_neg, pattern_cir_train_neg)
-
-    pattern_lines_test_neg = detect_line_groups(args, percept_dict, "test_neg")
-    pattern_cir_test_neg = detect_circle_groups(args, percept_dict, "test_neg")
-    group_tensors_test_neg = merge_groups(pattern_lines_test_neg, pattern_cir_test_neg)
-
-    return group_tenors_val_pos, group_tensors_val_neg, group_tenors_train_pos, \
-           group_tensors_train_neg, group_tenors_test_pos, group_tensors_test_neg
+    return group_val_pos, group_val_neg, group_train_pos, group_train_neg, group_test_pos, group_test_neg
 
 
 def get_group_tree(args, obj_groups, group_by):

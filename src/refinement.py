@@ -27,7 +27,7 @@ class RefinementGenerator(object):
         # return self.recall_counter_dic[str(mode_declaration)] < mode_declaration.recall
 
     def get_max_obj_id(self, clause):
-        object_vars = clause.all_vars_by_dtype('object')
+        object_vars = clause.all_vars_by_dtype('group')
         object_ids = [int(x.name.split('O')[-1]) for x in object_vars]
         if len(object_ids) == 0:
             return 0

@@ -128,7 +128,7 @@ def train_nsfr(args, rtpt, lang):
             # writer.add_scalar("metric/test_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_test: {acc}", args.log_file)
 
-
+    return NSFR
 
 # def get_models(args, lang, clauses, pi_clauses, atoms):
 #     obj_n = args.e

@@ -11,27 +11,24 @@ from nsfr_utils import get_data_pos_loader, get_data_neg_loader
 
 
 def get_perception_predictions(args):
-    train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(args)
-    train_neg_loader, val_neg_loader, test_neg_loader = get_data_neg_loader(args)
-    if args.dataset_type == "kandinsky":
-        pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
-        pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
-        pm_test_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_test.pth.tar")
+    # train_pos_loader, val_pos_loader, test_pos_loader = get_data_pos_loader(args)
+    # train_neg_loader, val_neg_loader, test_neg_loader = get_data_neg_loader(args)
+    # if args.dataset_type == "kandinsky":
+    #     pm_val_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_val.pth.tar")
+    #     pm_train_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_train.pth.tar")
+    #     pm_test_res_file = str(config.buffer_path / f"{args.dataset}_pm_res_test.pth.tar")
+    #
+    #     val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, args.device, val_pos_loader,
+    #                                                      val_neg_loader)
+    #     train_pos_pred, train_neg_pred = percept.eval_images(args, pm_train_res_file, args.device, train_pos_loader,
+    #                                                          train_neg_loader)
+    #     test_pos_pred, test_neg_pred = percept.eval_images(args, pm_test_res_file, args.device, test_pos_loader,
+    #                                                        test_neg_loader)
 
-        val_pos_pred, val_neg_pred = percept.eval_images(args, pm_val_res_file, args.device, val_pos_loader,
-                                                         val_neg_loader)
-        train_pos_pred, train_neg_pred = percept.eval_images(args, pm_train_res_file, args.device, train_pos_loader,
-                                                             train_neg_loader)
-        test_pos_pred, test_neg_pred = percept.eval_images(args, pm_test_res_file, args.device, test_pos_loader,
-                                                           test_neg_loader)
-
-    elif args.dataset_type == "hide":
+    if args.dataset_type == "hide":
         train_pos_pred, train_neg_pred = get_pred_res(args, "train")
         test_pos_pred, test_neg_pred = get_pred_res(args, "test")
-        if args.small_data:
-            val_pos_pred, val_neg_pred = get_pred_res(args, "val_s")
-        else:
-            val_pos_pred, val_neg_pred = get_pred_res(args, "val")
+        val_pos_pred, val_neg_pred = get_pred_res(args, "val")
 
     else:
         raise ValueError

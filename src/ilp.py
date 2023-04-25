@@ -54,6 +54,7 @@ def describe_scenes(args, lang, VM, FC):
     lang.clause_with_scores = clause_with_scores
     args.is_done = is_done
     args.last_refs = refs
+    lang.clauses = refs
 
     check_result(args, clause_with_scores)
 
@@ -85,6 +86,9 @@ def ilp_main(args, lang, with_pi=True):
         keep_best_preds(args, lang)
         if args.found_ns:
             break
+
+    # print all the invented predicates
+    log_utils.print_result(args, lang)
 
 
 def ilp_pi(args, lang):
@@ -136,4 +140,4 @@ def ilp_test(args, lang):
         if args.is_done:
             break
 
-    log_utils.print_result(args, lang)
+    log_utils.print_test_result(args, lang)
