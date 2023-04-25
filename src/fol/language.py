@@ -91,7 +91,9 @@ class Language(object):
             args_list = list(set(itertools.product(*consts_list)))
             for args in args_list:
                 if len(args) == 1 or len(set(args)) == len(args):
-                    pi_atoms.append(Atom(pred, args))
+                    new_atom = Atom(pred, args)
+                    if new_atom not in atoms:
+                        pi_atoms.append(new_atom)
         bk_pi_atoms = []
         for pred in self.bk_inv_preds:
             dtypes = pred.dtypes
@@ -104,7 +106,7 @@ class Language(object):
                         continue
                 if len(args) == 1 or len(set(args)) == len(args):
                     pi_atoms.append(Atom(pred, args))
-        self.atoms = spec_atoms + sorted(atoms) + sorted(pi_atoms) + sorted(bk_pi_atoms)
+        self.atoms = spec_atoms + sorted(atoms) + sorted(bk_pi_atoms) + sorted(pi_atoms)
 
     def update_mode_declarations(self, args):
         self.mode_declarations = get_mode_declarations(args, self)

@@ -10,8 +10,8 @@ neural_predicate = [
 neural_predicate_2 = [
     'shape:2:group,shape',
     'color:2:group,color',
-    # 'phi:3:group,group,phi',
-    # 'rho:3:group,group,rho',
+    'phi:3:group,group,phi',
+    'rho:3:group,group,rho',
 
 ]
 
@@ -24,8 +24,8 @@ const_dict = {
     'color': 'enum',
     'shape': 'enum',
     'group': 'amount_e',
-    'phi': 'amount_4',
-    'rho': 'amount_4',
+    'phi': 'amount_8',
+    'rho': 'amount_8',
 }
 
 color = ['pink', 'green', 'blue']
