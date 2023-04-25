@@ -1,6 +1,7 @@
 import argparse
 import os
 import torch
+import copy
 
 import config
 from data_utils import to_line_tensor, get_comb, to_circle_tensor
@@ -26,7 +27,7 @@ def detect_line_groups(args, percept_dict):
         for g_i, group_index in enumerate(group_indices):
             # check duplicate
             if group_index not in exist_combs:
-                point_groups, point_indices = extend_line_group(group_index, point_data[data_i], args.error_th)
+                point_groups, point_indices = extend_line_group(args, group_index, point_data[data_i], args.error_th)
                 if point_groups is not None and point_groups.shape[0] >= args.line_group_min_sz:
                     colors = color_data[data_i][point_indices]
                     shapes = shape_data[data_i][point_indices]
@@ -72,7 +73,24 @@ def detect_circle_groups(args, percept_dict):
     return circle_tensors
 
 
-def extend_line_group(group_index, points, error_th):
+def is_even_distributed_points(args, points_, shape):
+    points = copy.deepcopy(points_)
+
+    if shape == "line":
+        points_sorted = points[points[:, 0].sort()[1]]
+        delta = torch.abs((points_sorted.roll(-1, 0) - points_sorted)[:-1, :])
+        distribute_error = (torch.abs(delta - delta.mean(dim=0)).sum(dim=0) / (points.shape[0] - 1)).sum()
+        if distribute_error < args.distribute_error_th:
+            return True
+        else:
+            return False
+    elif shape == "circle":
+        raise NotImplementedError
+    else:
+        raise ValueError
+
+
+def extend_line_group(args, group_index, points, error_th):
     point_groups = points[group_index]
     extra_index = torch.tensor(sorted(set(list(range(points.shape[0]))) - set(group_index)))
     extra_points = points[extra_index]
@@ -83,10 +101,14 @@ def extend_line_group(group_index, points, error_th):
     passed_indices = extra_index[is_line]
     point_groups_new = torch.cat([point_groups, passed_points], dim=0)
     point_groups_indices_new = torch.cat([torch.tensor(group_index), passed_indices])
+
+    # check for evenly distribution
+    if not is_even_distributed_points(args, point_groups_new, shape="line"):
+        return None, None
     return point_groups_new, point_groups_indices_new
 
 
-def extend_circle_group(group_index, points, args, ):
+def extend_circle_group(group_index, points, args):
     point_groups = points[group_index]
     c, r = predict_circles(point_groups, args.error_th)
     if c is None or r is None:
@@ -104,6 +126,8 @@ def extend_circle_group(group_index, points, args, ):
     passed_points = extra_points[passed_indices]
     point_groups_new = torch.cat([point_groups, passed_points], dim=0)
     point_groups_indices_new = torch.cat([torch.tensor(group_index), passed_indices])
+    # if not is_even_distributed_points(args, point_groups_new, shape="circle"):
+    #     return None, None, None, None
     return point_groups_new, point_groups_indices_new, c, r
 
 
@@ -273,6 +297,8 @@ def get_args():
                         help="The threshold of group confidence.")
     parser.add_argument("--maximum_obj_num", type=int, default=5,
                         help="The maximum number of objects/groups to deal with in a single image.")
+    parser.add_argument("--distribute_error_th", type=float, default=0.2,
+                        help="The threshold for group points forming a shape that evenly distributed on the whole shape.")
     args = parser.parse_args()
 
     args_file = config.data_path / "lang" / args.dataset_type / args.dataset / "args.json"
@@ -420,7 +446,6 @@ def get_group_tree(args, obj_groups, group_by):
 
     return None
 
-
 # def get_lang_model(args, percept_dict, obj_groups):
 #     clauses = []
 #     # load language module
@@ -445,49 +470,49 @@ def get_group_tree(args, obj_groups, group_by):
 # #                                         no_xil=args.no_xil)  # torch.device('cpu'))
 
 
-def update_system(args, category, ):
-    # update arguments
-    clauses = []
-    p_inv_with_scores = []
-    # load language module
-    lang, vars, init_clauses, atoms = get_lang(args)
-    # update language with neural predicate: shape/color/dir/dist
-
-    if (category < len(args.neural_preds) - 1):
-        lang.preds = lang.preds[:2]
-        lang.invented_preds = []
-        lang.preds.append(args.neural_preds[category][0])
-        pi_clauses = []
-        pi_p = []
-    else:
-        print('last round')
-        lang.preds = lang.preds[:2] + args.neural_preds[-1]
-        lang.invented_preds = invented_preds
-        pi_clauses = all_pi_clauses
-        pi_p = invented_preds
-
-    atoms = logic_utils.get_atoms(lang)
-
-    args.is_done = False
-    args.iteration = 0
-    args.max_clause = [0.0, None]
-    args.no_new_preds = False
-    args.last_refs = init_clauses
-
-    PM = get_perception_module(args)
-    VM = get_valuation_module(args, lang)
-    PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
-    FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
-                                        pi_valuation_module=PI_VM, device=args.device)
-    # Neuro-Symbolic Forward Reasoner for clause generation
-    NSFR_cgen = get_nsfr_model(args, lang, FC)
-    PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
-
-    mode_declarations = get_mode_declarations(args, lang)
-    clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
-                                       no_xil=args.no_xil)  # torch.device('cpu'))
-
-    # pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang,
-    #                                         no_xil=args.no_xil)  # torch.device('cpu'))
-
-    return atoms, pi_clauses, pi_p
+# def update_system(args, category, ):
+#     # update arguments
+#     clauses = []
+#     p_inv_with_scores = []
+#     # load language module
+#     lang, vars, init_clauses, atoms = get_lang(args)
+#     # update language with neural predicate: shape/color/dir/dist
+#
+#     if (category < len(args.neural_preds) - 1):
+#         lang.preds = lang.preds[:2]
+#         lang.invented_preds = []
+#         lang.preds.append(args.neural_preds[category][0])
+#         pi_clauses = []
+#         pi_p = []
+#     else:
+#         print('last round')
+#         lang.preds = lang.preds[:2] + args.neural_preds[-1]
+#         lang.invented_preds = invented_preds
+#         pi_clauses = all_pi_clauses
+#         pi_p = invented_preds
+#
+#     atoms = logic_utils.get_atoms(lang)
+#
+#     args.is_done = False
+#     args.iteration = 0
+#     args.max_clause = [0.0, None]
+#     args.no_new_preds = False
+#     args.last_refs = init_clauses
+#
+#     PM = get_perception_module(args)
+#     VM = get_valuation_module(args, lang)
+#     PI_VM = PIValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
+#     FC = facts_converter.FactsConverter(lang=lang, perception_module=PM, valuation_module=VM,
+#                                         pi_valuation_module=PI_VM, device=args.device)
+#     # Neuro-Symbolic Forward Reasoner for clause generation
+#     NSFR_cgen = get_nsfr_model(args, lang, FC)
+#     PI_cgen = pi_utils.get_pi_model(args, lang, clauses, atoms, pi_clauses, FC)
+#
+#     mode_declarations = get_mode_declarations(args, lang)
+#     clause_generator = ClauseGenerator(args, NSFR_cgen, PI_cgen, lang, mode_declarations,
+#                                        no_xil=args.no_xil)  # torch.device('cpu'))
+#
+#     # pi_clause_generator = PIClauseGenerator(args, NSFR_cgen, PI_cgen, lang,
+#     #                                         no_xil=args.no_xil)  # torch.device('cpu'))
+#
+#     return atoms, pi_clauses, pi_p
