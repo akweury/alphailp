@@ -95,19 +95,22 @@ def eval_clauses(score_pos, score_neg, args, c_length):
     return scores
 
 
-def eval_clause_on_scenes(NSFR, args, pred_names):
+def eval_clause_on_scenes(NSFR, args, pred_names, pos_group_pred=None, neg_group_pred=None, batch_size=None):
     # pos_pred = args.val_pos
     # neg_pred = args.val_neg
+    if pos_group_pred is None:
+        pos_group_pred = args.val_group_pos
+    if neg_group_pred is None:
+        neg_group_pred = args.val_group_neg
+    if batch_size is None:
+        batch_size = args.batch_size_train
 
-    pos_group_pred = args.val_group_pos
-    neg_group_pred = args.val_group_neg
-
-    train_size = args.top_data
+    train_size = len(pos_group_pred)
     bz = args.batch_size_train
     V_T_pos = torch.zeros(len(NSFR.clauses), train_size, len(NSFR.atoms)).to(args.device)
     V_T_neg = torch.zeros(len(NSFR.clauses), train_size, len(NSFR.atoms)).to(args.device)
     score_all = torch.zeros(size=(V_T_pos.shape[0], V_T_pos.shape[1], 2)).to(args.device)
-    for i in range(int(train_size / args.batch_size_train)):
+    for i in range(int(train_size / batch_size)):
         date_now = datetime.datetime.today().date()
         time_now = datetime.datetime.now().strftime("%H_%M_%S")
         print(f"({date_now} {time_now}) eval batch {i + 1}/{int(train_size / args.batch_size_train)}")
@@ -132,6 +135,16 @@ def eval_clause_on_scenes(NSFR, args, pred_names):
     score_all[:, :, index_neg] = score_negative[:, :, 0]
 
     return score_all
+
+
+def eval_clause_on_test_scenes(NSFR, args, clause, group_pred, ):
+    V_T = NSFR.clause_eval_quick(group_pred)[0, 0]
+    preds = [clause.head.pred.name]
+
+    score = NSFR.get_test_target_prediciton(V_T, preds, args.device)
+    score[score == 1] = 0.99
+
+    return score
 
 
 def eval_score_similarity(score, appeared_scores, threshold):

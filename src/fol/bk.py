@@ -12,7 +12,7 @@ neural_predicate_2 = [
     'color:2:group,color',
     'phi:3:group,group,phi',
     'rho:3:group,group,rho',
-
+    'slope:2:group,slope',
 ]
 
 neural_predicate_3 = [
@@ -26,7 +26,10 @@ const_dict = {
     'group': 'amount_e',
     'phi': 'amount_8',
     'rho': 'amount_8',
+    'slope': 'amount_8',
 }
+
+attr_names = ['color', 'shape', 'rho', 'phi', 'group_shape', "slope"]
 
 color = ['pink', 'green', 'blue']
 shape = ['sphere', 'cube', 'line', 'circle']

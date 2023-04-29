@@ -355,7 +355,7 @@ def reset_args(args, lang):
     args.no_new_preds = False
     args.last_refs = lang.load_init_clauses(args)
     args.no_new_preds = True
-
+    lang.all_clauses = []
     lang.invented_preds_with_scores = []
 
 
@@ -389,11 +389,11 @@ def eval_groups(args):
     }
     is_done = check_group_result(args, result)
     # The pattern is too simple. Print the reason.
-    if False and is_done:
+    # if False and is_done:
         # Dataset is too simple. Finish the program.
-        eval_result_test = eval_groups(test_pattern_pos, test_pattern_neg, clu_result)
-        is_done = check_group_result(args, eval_result_test)
-        log_utils.print_dataset_simple(args, is_done, eval_result_test)
+        # eval_result_test = eval_groups(test_pattern_pos, test_pattern_neg, clu_result)
+        # is_done = check_group_result(args, eval_result_test)
+        # log_utils.print_dataset_simple(args, is_done, eval_result_test)
 
     return result
 

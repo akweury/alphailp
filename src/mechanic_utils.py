@@ -17,6 +17,7 @@ def detect_line_groups(args, percept_dict):
     point_data = percept_dict[:, :, config.indices_position]
     color_data = percept_dict[:, :, config.indices_color]
     shape_data = percept_dict[:, :, config.indices_shape]
+    point_screen_data = percept_dict[:, :, config.indices_screen_position]
 
     line_tensors = torch.zeros(args.top_data, args.group_e, len(config.group_tensor_index.keys()))
     for data_i in range(point_data.shape[0]):
@@ -31,7 +32,8 @@ def detect_line_groups(args, percept_dict):
                 if point_groups is not None and point_groups.shape[0] >= args.line_group_min_sz:
                     colors = color_data[data_i][point_indices]
                     shapes = shape_data[data_i][point_indices]
-                    line_tensor = to_line_tensor(point_groups, colors, shapes).reshape(1, -1)
+                    point_groups_screen = point_screen_data[data_i][point_indices]
+                    line_tensor = to_line_tensor(point_groups, point_groups_screen, colors, shapes).reshape(1, -1)
                     line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
                     exist_combs += get_comb(point_indices, 2).tolist()
                     tensor_counter += 1
@@ -47,7 +49,7 @@ def detect_circle_groups(args, percept_dict):
     point_data = percept_dict[:, :, config.indices_position]
     color_data = percept_dict[:, :, config.indices_color]
     shape_data = percept_dict[:, :, config.indices_shape]
-
+    point_screen_data = percept_dict[:, :, config.indices_screen_position]
     circle_tensors = torch.zeros(point_data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
     for data_i in range(point_data.shape[0]):
         exist_combs = []
@@ -61,7 +63,9 @@ def detect_circle_groups(args, percept_dict):
                 if p_groups is not None and p_groups.shape[0] >= args.cir_group_min_sz:
                     colors = color_data[data_i][p_indices]
                     shapes = shape_data[data_i][p_indices]
-                    circle_tensor = to_circle_tensor(p_groups, colors, shapes, center=center, r=r).reshape(1, -1)
+                    p_groups_screen = point_screen_data[data_i][p_indices]
+                    circle_tensor = to_circle_tensor(p_groups, p_groups_screen, colors, shapes, center=center,
+                                                     r=r).reshape(1, -1)
                     circle_tensor_candidates = torch.cat([circle_tensor_candidates, circle_tensor], dim=0)
                     exist_combs += get_comb(p_indices, 3).tolist()
                     tensor_counter += 1
@@ -297,7 +301,7 @@ def get_args():
                         help="The threshold of group confidence.")
     parser.add_argument("--maximum_obj_num", type=int, default=5,
                         help="The maximum number of objects/groups to deal with in a single image.")
-    parser.add_argument("--distribute_error_th", type=float, default=0.2,
+    parser.add_argument("--distribute_error_th", type=float, default=0.3,
                         help="The threshold for group points forming a shape that evenly distributed on the whole shape.")
     args = parser.parse_args()
 
@@ -404,7 +408,7 @@ def test_groups(test_positive, test_negative, groups):
 
 
 def detect_obj_groups_single(args, percept_dict_single, data_type):
-    group_res_file = config.buffer_path / "hide" / f"{args.dataset}_group_res_{data_type}.pth.tar"
+    group_res_file = config.buffer_path / "hide" / args.dataset / f"{args.dataset}_group_res_{data_type}.pth.tar"
     if os.path.exists(group_res_file):
         group_res = torch.load(group_res_file)
         group_tensors = group_res["tensors"]

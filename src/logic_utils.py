@@ -121,7 +121,6 @@ def get_index_by_predname(pred_str, atoms):
         indices.append(p_indices)
     return indices
 
-
 def parse_clauses(lang, clause_strs):
     du = DataUtils(lang)
     return [du.parse_clause(c) for c in clause_strs]

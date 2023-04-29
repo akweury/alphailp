@@ -121,7 +121,8 @@ class Language(object):
         init_clause += "."
         tree = self.lp_clause.parse(init_clause)
         self.clauses = ExpTree(self).transform(tree)
-        print("Initial clauses: ", self.clauses)
+        print(f"================= Initial clauses ==================="
+              f"{self.clauses}")
         self.clauses = [self.clauses]
         return self.clauses
 
@@ -526,6 +527,7 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
     s_rho = ModeTerm('#', DataType('rho'))
     s_phi = ModeTerm('#', DataType('phi'))
+    s_slope = ModeTerm('#', DataType('slope'))
     s_group_shape = ModeTerm('#', DataType('group_shape'))
 
     modeb_list = []
@@ -542,6 +544,9 @@ def get_mode_declarations_kandinsky(lang, obj_num):
     if "phi" in considered_pred_names:
         modeb_list.append(
             ModeDeclaration('body', obj_num, lang.get_pred_by_name('phi'), [p_group, p_group, s_phi], ordered=False))
+    if "slope" in considered_pred_names:
+        modeb_list.append(
+            ModeDeclaration('body', obj_num, lang.get_pred_by_name('slope'), [p_group, s_slope], ordered=False))
     if "group_shape" in considered_pred_names:
         modeb_list.append(
             ModeDeclaration('body', obj_num, lang.get_pred_by_name('group_shape'), [p_group, s_group_shape],

@@ -4,6 +4,8 @@
 from ilp_utils import *
 import nsfr_utils
 import aitk
+import visual_utils
+import copy
 
 
 def describe_scenes(args, lang, VM, FC):
@@ -18,6 +20,7 @@ def describe_scenes(args, lang, VM, FC):
     step = args.iteration
     refs = args.last_refs
     clause_with_scores = []
+
     if args.pi_top == 0:
         step = args.iteration
         if len(args.last_refs) > 0:
@@ -51,10 +54,13 @@ def describe_scenes(args, lang, VM, FC):
         else:
             refs = logic_utils.top_select(clause_with_scores, args)
         step += 1
-    lang.clause_with_scores = clause_with_scores
-    args.is_done = is_done
-    args.last_refs = refs
-    lang.clauses = refs
+        lang.all_clauses += clause_with_scores
+    if len(refs) > 0:
+        lang.clause_with_scores = clause_with_scores
+        args.is_done = is_done
+        args.last_refs = refs
+
+    lang.clauses = args.last_refs
 
     check_result(args, clause_with_scores)
 
@@ -62,10 +68,11 @@ def describe_scenes(args, lang, VM, FC):
 
 
 def ilp_main(args, lang, with_pi=True):
+    result = eval_groups(args)
     for neural_pred in args.neural_preds:
         reset_args(args, lang)
         # grouping objects with new categories
-        eval_groups(args)
+        # eval_groups(args)
         lang.update_bk(neural_pred, full_bk=False)
         lang.update_mode_declarations(args)
         # run ilp with pi module
@@ -137,7 +144,84 @@ def ilp_test(args, lang):
     # searching for a proper clause to describe the pattern.
     for i in range(args.max_step):
         describe_scenes(args, lang, VM, FC)
+
         if args.is_done:
             break
+    sorted_clauses_with_scores = sorted(lang.all_clauses, key=lambda x: x[1][2], reverse=True)[:args.c_top]
+    lang.clauses = [c[0] for c in sorted_clauses_with_scores]
 
-    log_utils.print_test_result(args, lang)
+    log_utils.print_test_result(args, sorted_clauses_with_scores)
+
+
+def visualization(args, lang, colors=None, thickness=None, radius=None):
+    if colors is None:
+        # Blue color in BGR
+        colors = [
+            (255, 0, 0),
+            (255, 255, 0),
+            (0, 255, 0),
+            (0, 0, 255),
+            (0, 255, 255),
+        ]
+    if thickness is None:
+        # Line thickness of 2 px
+        thickness = 2
+    if radius is None:
+        radius = 10
+
+
+    for data_type in ["true", "false"]:
+        for i in range(len(args.test_group_pos)):
+            data_name = args.image_name_dict['test'][data_type][i]
+            if data_type == "true":
+                data = args.test_group_pos[i]
+            else:
+                data = args.test_group_neg[i]
+
+            # calculate scores
+            VM = aitk.get_vm(args, lang)
+            FC = aitk.get_fc(args, lang, VM)
+            NSFR = nsfr_utils.get_nsfr_model(args, lang, FC)
+
+            # evaluate new clauses
+            scores = eval_clause_infer.eval_clause_on_test_scenes(NSFR, args, lang.clauses[0], data.unsqueeze(0))
+
+
+            visual_images = []
+            # input image
+            file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
+            image_file = file_prefix + ".image.png"
+            input_image = visual_utils.get_cv_image(image_file)
+
+            # group prediction
+            group_image = copy.deepcopy(input_image)
+            indice_center_on_screen_x = config.group_tensor_index["x_center_screen"]
+            indice_center_on_screen_y = config.group_tensor_index["y_center_screen"]
+            screen_points = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.e, :]
+            group_pred_image = visual_utils.draw_circles(group_image, screen_points, radius=radius, color=colors,
+                                                         thickness=thickness)
+
+            indice_left_screen_x = config.group_tensor_index["screen_left_x"]
+            indice_left_screen_y = config.group_tensor_index["screen_left_y"]
+            indice_right_screen_x = config.group_tensor_index["screen_right_x"]
+            indice_right_screen_y = config.group_tensor_index["screen_right_y"]
+
+            screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.e, :]
+            screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.e, :]
+            group_pred_image = visual_utils.draw_lines(group_pred_image, screen_left_points, screen_right_points,
+                                                       color=colors, thickness=thickness)
+
+            input_image = visual_utils.draw_text(input_image, "input")
+            visual_images.append(input_image)
+
+            group_pred_image = visual_utils.draw_text(group_pred_image, f"group:{round(scores[0].tolist(), 4)}")
+            group_pred_image = visual_utils.draw_text(group_pred_image, f"{lang.clauses[0]}",
+                                                      position="lower_left", font_size=0.4)
+            visual_images.append(group_pred_image)
+
+            # final processing
+            final_image = visual_utils.hconcat_resize(visual_images)
+            final_image_filename = str(
+                args.image_output_path / f"{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
+            # visual_utils.show_images(final_image, "Visualization")
+            visual_utils.save_image(final_image, final_image_filename)

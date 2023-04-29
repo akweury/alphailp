@@ -23,10 +23,11 @@ def get_comb(data, comb_size):
     return indices
 
 
-def to_line_tensor(point_groups, colors, shapes):
+def to_line_tensor(point_groups, point_groups_screen, colors, shapes):
     colors_normalized = colors.sum(dim=0) / colors.shape[0]
+    colors_normalized[colors_normalized < 0.99] = 0
     shapes_normalized = shapes.sum(dim=0) / shapes.shape[0]
-
+    shapes_normalized[shapes_normalized < 0.99] = 0
     # 0:2 center_x, center_z
     # 2 slope
     # 3 x_length
@@ -54,10 +55,19 @@ def to_line_tensor(point_groups, colors, shapes):
     line_tensor[tensor_index["y_length"]] = point_groups[:, 1].max() - point_groups[:, 1].min()
     line_tensor[tensor_index["z_length"]] = point_groups[:, 2].max() - point_groups[:, 2].min()
 
+    line_tensor[tensor_index["x_center_screen"]] = point_groups_screen[:, 0].mean()
+    line_tensor[tensor_index["y_center_screen"]] = point_groups_screen[:, 1].mean()
+    sorted_x, sorted_x_indices = point_groups_screen[:, 0].sort(dim=0)
+    line_tensor[tensor_index["screen_left_x"]] = sorted_x[0]
+    line_tensor[tensor_index["screen_left_y"]] = point_groups_screen[:, 1][sorted_x_indices[0]]
+
+    line_tensor[tensor_index["screen_right_x"]] = sorted_x[-1]
+    line_tensor[tensor_index["screen_right_y"]] = point_groups_screen[:, 1][sorted_x_indices[-1]]
+
     return line_tensor
 
 
-def to_circle_tensor(point_groups, colors, shapes, center, r):
+def to_circle_tensor(point_groups, point_groups_screen, colors, shapes, center, r):
     tensor_index = config.group_tensor_index
     circle_tensor = torch.zeros(len(tensor_index.keys()))
     circle_tensor[tensor_index["x"]] = center[0]
@@ -76,5 +86,10 @@ def to_circle_tensor(point_groups, colors, shapes, center, r):
     circle_tensor[tensor_index["x_length"]] = point_groups[:, 0].max() - point_groups[:, 0].min()
     circle_tensor[tensor_index["y_length"]] = point_groups[:, 1].max() - point_groups[:, 1].min()
     circle_tensor[tensor_index["z_length"]] = point_groups[:, 2].max() - point_groups[:, 2].min()
+    circle_tensor[tensor_index["x_center_screen"]] = point_groups_screen[:, 0].mean()
+    circle_tensor[tensor_index["y_center_screen"]] = point_groups_screen[:, 1].mean()
+
+    circle_tensor[tensor_index["x_length_screen"]] = point_groups_screen[:, 0].max() - point_groups_screen[:, 0].min()
+    circle_tensor[tensor_index["y_length_screen"]] = point_groups_screen[:, 1].max() - point_groups_screen[:, 1].min()
 
     return circle_tensor

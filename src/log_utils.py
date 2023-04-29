@@ -112,7 +112,7 @@ def print_result(args, lang):
         add_lines(f"{pi_c}", args.log_file)
 
 
-def print_test_result(args, lang):
+def print_test_result(args, c_with_scores):
     add_lines(f"=========== all clauses ==================", args.log_file)
-    for c in args.last_refs:
-        add_lines(f"{c}", args.log_file)
+    for c in c_with_scores:
+        add_lines(f"{c[0]} {c[1]}", args.log_file)

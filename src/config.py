@@ -11,6 +11,7 @@ root = Path(__file__).parents[1]
 indices_position = [0, 1, 2]
 indices_color = [3, 4, 5]
 indices_shape = [6, 7]
+indices_screen_position = [9, 10]
 
 indices_x = [0]
 indices_y = [1]
@@ -48,13 +49,19 @@ group_tensor_index = {
     'circle': 9,
     'x_length': 10,
     'y_length': 11,
-    'z_length': 12
+    'z_length': 12,
+    "x_center_screen": 13,
+    "y_center_screen": 14,
+    "screen_left_x": 15,
+    "screen_left_y": 16,
+    "screen_right_x": 17,
+    "screen_right_y": 18
 }
 
 group_tenor_positions = [0, 1]
 group_tensor_shapes = [5, 6]
 
-buffer_path = root / ".." / "buffer"
+buffer_path = root / ".." / "storage"
 data_path = root / "data"
 if not os.path.exists(buffer_path):
     os.mkdir(buffer_path)

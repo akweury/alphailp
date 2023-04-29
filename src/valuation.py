@@ -5,6 +5,7 @@ import valuation_func
 import config
 import valuation_func_yolo
 from fol.logic import Atom
+from fol import bk
 
 
 class YOLOValuationModule(nn.Module):
@@ -99,7 +100,7 @@ class YOLOValuationModule(nn.Module):
             Returns:
                 attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
         """
-        attr_names = ['color', 'shape', 'rho', 'phi', 'group_shape']
+        attr_names = bk.attr_names
         attrs = {}
         for dtype_name in attr_names:
             for term in self.lang.get_by_dtype_name(dtype_name):
@@ -204,6 +205,10 @@ class FCNNValuationModule(nn.Module):
         vfs['phi'] = v_phi
         layers.append(v_phi)
 
+        v_slope = valuation_func.FCNNSlopeValuationFunction(device)
+        vfs['slope'] = v_slope
+        layers.append(v_slope)
+
         return nn.ModuleList(layers), vfs
 
     def init_attr_encodings(self, device):
@@ -215,7 +220,7 @@ class FCNNValuationModule(nn.Module):
             Returns:
                 attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
         """
-        attr_names = ['color', 'shape', 'rho', 'phi']
+        attr_names = ['color', 'shape', 'rho', 'phi', "slope"]
         attrs = {}
         for dtype_name in attr_names:
             for term in self.lang.get_by_dtype_name(dtype_name):
@@ -258,8 +263,9 @@ class FCNNValuationModule(nn.Module):
         term_index = self.lang.term_index(term)
         if term.dtype.name == 'group':
             return zs[:, term_index].to(self.device)
-        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == "phi" \
-                or term.dtype.name == 'group_shape':
+        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or \
+                term.dtype.name == 'rho' or term.dtype.name == "phi" \
+                or term.dtype.name == 'group_shape' or term.dtype.name == "slope":
             return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1).to(self.device)
         elif term.dtype.name == 'image':
             return None
@@ -334,7 +340,7 @@ class PIValuationModule(nn.Module):
             Returns:
                 attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
         """
-        attr_names = ['color', 'shape', 'rho', 'phi']
+        attr_names = bk.attr_names
         attrs = {}
         for dtype_name in attr_names:
             for term in self.lang.get_by_dtype_name(dtype_name):
@@ -408,7 +414,7 @@ class PIValuationModule(nn.Module):
         term_index = self.lang.term_index(term)
         if term.dtype.name == 'object':
             return zs[:, term_index]
-        elif term.dtype.name == 'color' or term.dtype.name == 'shape' or term.dtype.name == 'rho' or term.dtype.name == 'phi':
+        elif term.dtype.name in bk.attr_names:
             return self.attrs[term]
         elif term.dtype.name == 'image':
             return None

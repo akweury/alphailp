@@ -70,7 +70,7 @@ def train_nsfr(args, rtpt, lang):
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
     loss_list = []
-    stopping_threshold = 1e-6
+    stopping_threshold = 1e-4
     test_acc_list = np.zeros(shape=(1, args.epochs))
     # prepare perception result
     train_pos = args.train_group_pos

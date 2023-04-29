@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from neural_utils import LogisticRegression
 
+import config
+
 
 ################################
 # Valuation functions for YOLO #
@@ -81,7 +83,7 @@ class FCNNInValuationFunction(nn.Module):
         Returns:
             A batch of probabilities.
         """
-        prob,_ = z[:,6:10].max(dim=-1)
+        prob, _ = z[:, 6:10].max(dim=-1)
         return prob
 
 
@@ -191,6 +193,66 @@ class FCNNPhiValuationFunction(nn.Module):
 
     def to_center(self, z):
         return torch.stack((z[:, 0], z[:, 2]))
+
+
+class FCNNSlopeValuationFunction(nn.Module):
+    """The function v_area.
+    """
+
+    def __init__(self, device):
+        super(FCNNSlopeValuationFunction, self).__init__()
+        self.device = device
+        self.logi = LogisticRegression(input_dim=1)
+        self.logi.to(device)
+
+    def forward(self, z_1, dir):
+        """
+        Args:
+            z_1 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+            z_2 (tensor): 2-d tensor (B * D), the object-centric representation.
+                [x1, y1, x2, y2, color1, color2, color3,
+                    shape1, shape2, shape3, objectness]
+
+        Returns:
+            A batch of probabilities.
+        """
+        c_1 = self.to_left(z_1)
+        c_2 = self.to_right(z_1)
+
+        round_divide = dir.shape[1]
+        area_angle = int(180 / round_divide)
+        area_angle_half = area_angle * 0.5
+        # area_angle_half = 0
+        dir_vec = c_2 - c_1
+        dir_vec[1] = -dir_vec[1]
+        rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
+        phi_clock_shift = (90 - phi.long()) % 180
+        zone_id = (phi_clock_shift + area_angle_half) // area_angle % round_divide
+
+        # This is a threshold, but it can be decided automatically.
+        # zone_id[rho >= 0.12] = zone_id[rho >= 0.12] + round_divide
+
+        dir_pred = torch.zeros(dir.shape).to(dir.device)
+        for i in range(dir_pred.shape[0]):
+            dir_pred[i, int(zone_id[i])] = 1
+
+        return (dir * dir_pred).sum(dim=1)
+
+    def cart2pol(self, x, y):
+        rho = torch.sqrt(x ** 2 + y ** 2)
+        phi = torch.atan2(y, x)
+        phi = torch.rad2deg(phi)
+        return (rho, phi)
+
+    def to_left(self, z):
+        return torch.stack(
+            (z[:, config.group_tensor_index["screen_left_x"]], z[:, config.group_tensor_index["screen_left_y"]]))
+
+    def to_right(self, z):
+        return torch.stack(
+            (z[:, config.group_tensor_index["screen_right_x"]], z[:, config.group_tensor_index["screen_right_y"]]))
 
 
 #####################################################

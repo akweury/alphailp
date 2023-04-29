@@ -2,7 +2,7 @@ import os
 import cv2
 import torch
 import torch.utils.data
-import torchvision.transforms as transforms
+
 import numpy as np
 import random
 

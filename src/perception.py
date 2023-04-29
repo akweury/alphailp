@@ -44,11 +44,7 @@ def get_perception_predictions(args):
         'test_neg': test_neg_pred
     }
 
-
     return pm_prediction_dict
-
-
-
 
 
 def hough_transform(x, origin=None):
@@ -80,7 +76,7 @@ def extract_patterns(args, pm_prediction):
 
 
 def get_pred_res(args, data_type):
-    od_res = config.buffer_path / "hide" / f"{args.dataset}_pm_res_{data_type}.pth.tar"
+    od_res = config.buffer_path / "hide" / f"{args.dataset}" / f"{args.dataset}_pm_res_{data_type}.pth.tar"
     pred_pos, pred_neg = percept.convert_data_to_tensor(args, od_res)
 
     # normalize the position
@@ -91,8 +87,4 @@ def get_pred_res(args, data_type):
         pred_pos_norm = pred_pos_norm[:args.top_data]
         pred_neg_norm = pred_neg_norm[:args.top_data]
 
-
-
     return pred_pos_norm, pred_neg_norm
-
-

@@ -115,6 +115,23 @@ class NSFReasoner(nn.Module):
 
         return values
 
+    def get_test_target_prediciton(self, v, preds, device):
+        """Extracting a value from the valuation tensor using a given predicate.
+        """
+        # v: batch * |atoms|
+        values = torch.zeros(v.size(0), 1).to(device)
+
+        target_indices = logic_utils.get_index_by_predname(pred_str=preds, atoms=self.atoms)
+        # target_all = torch.zeros((len(target_indices), v.size(0)))
+        # target_max = torch.zeros((len(target_indices)))
+
+        # target_all[t_counter] = v[:, :, t_index]
+        # target_max[t_counter] = v[:, :, t_index]
+        # max_value = torch.max(target_max)
+        result = v[target_indices[0]].max(dim=-1, keepdim=True)[0]
+
+        return result
+
     def predict_multi(self, v, prednames):
         """Extracting values from the valuation tensor using given predicates.
 

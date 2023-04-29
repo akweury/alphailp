@@ -4,14 +4,14 @@ from rtpt import RTPT
 from pathlib import Path
 
 from mechanic_utils import *
-from perception import get_perception_predictions
+import perception
 import config
 import log_utils, file_utils
 from fol import bk
-from pi import ilp_predict, train_nsfr
+import pi
 import ilp
 from fol.language import Language
-
+import data_hide
 
 def init():
     args = get_args()
@@ -28,13 +28,22 @@ def init():
         else:
             name = str(Path('CH') / f"aILP-noXIL_{args.dataset}")
 
-    exp_output_path = config.buffer_path / args.dataset
+    # get images names
+    if args.dataset_type == "hide":
+        data_hide.get_image_names(args)
+
+    exp_output_path = config.buffer_path / args.dataset_type / args.dataset / "logs"
     if not os.path.exists(exp_output_path):
         os.mkdir(exp_output_path)
     log_file = log_utils.create_log_file(exp_output_path)
     print(f"log_file_path:{log_file}")
     args.log_file = log_file
     log_utils.add_lines(f"args: {args}", log_file)
+
+    img_output_path = config.buffer_path / args.dataset_type / args.dataset / "image_output"
+    if not os.path.exists(img_output_path):
+        os.mkdir(img_output_path)
+    args.image_output_path = img_output_path
 
     if args.no_cuda:
         args.device = torch.device('cpu')
@@ -51,7 +60,8 @@ def init():
     rtpt.start()
     torch.set_printoptions(precision=4)
 
-    pm_prediction_dict = get_perception_predictions(args)
+    pm_prediction_dict = perception.get_perception_predictions(args)
+
     # grouping objects to reduce the problem complexity
     obj_groups = detect_obj_groups_with_bk(args, pm_prediction_dict)
 
@@ -65,15 +75,15 @@ def init():
 def final_evaluation(NSFR, args):
     # validation split
     log_utils.add_lines(f"Predicting on validation data set...", args.log_file)
-    acc_val, rec_val, th_val = ilp_predict(NSFR, args.val_group_pos, args.val_group_neg,
-                                           args, th=0.33, split='val')
+    acc_val, rec_val, th_val = pi.ilp_predict(NSFR, args.val_group_pos, args.val_group_neg,
+                                              args, th=0.33, split='val')
     # training split
     log_utils.add_lines(f"Predicting on training data set...", args.log_file)
-    acc, rec, th = ilp_predict(NSFR, args.train_group_pos, args.train_group_neg, args, th=th_val, split='train')
+    acc, rec, th = pi.ilp_predict(NSFR, args.train_group_pos, args.train_group_neg, args, th=th_val, split='train')
     # test split
     log_utils.add_lines(f"Predicting on test data set...", args.log_file)
-    acc_test, rec_test, th_test = ilp_predict(NSFR, args.test_group_pos, args.test_group_neg, args, th=th_val,
-                                              split='test')
+    acc_test, rec_test, th_test = pi.ilp_predict(NSFR, args.test_group_pos, args.test_group_neg, args, th=th_val,
+                                                 split='test')
 
     log_utils.add_lines(f"training acc: {acc}, threshold: {th}, recall: {rec}", args.log_file)
     log_utils.add_lines(f"val acc: {acc_val}, threshold: {th_val}, recall: {rec_val}", args.log_file)
@@ -93,9 +103,9 @@ def train_and_eval(args, rtpt):
 
     # run ilp again
     ilp.ilp_test(args, lang)
-
+    ilp.visualization(args, lang)
     # train nsfr
-    NSFR = train_nsfr(args, rtpt, lang)
+    NSFR = pi.train_nsfr(args, rtpt, lang)
 
     return NSFR
 
