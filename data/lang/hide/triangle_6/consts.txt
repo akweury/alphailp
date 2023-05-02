@@ -1,3 +1,0 @@
-object:num_obj_6
-image:img
-phi:num_phi_8

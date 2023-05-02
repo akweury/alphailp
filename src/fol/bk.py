@@ -30,6 +30,5 @@ const_dict = {
 }
 
 attr_names = ['color', 'shape', 'rho', 'phi', 'group_shape', "slope"]
-
 color = ['pink', 'green', 'blue']
 shape = ['sphere', 'cube', 'line', 'circle']
