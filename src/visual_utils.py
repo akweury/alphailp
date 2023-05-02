@@ -1,8 +1,4 @@
-import cv2 as cv
-import numpy as np
-
 import time
-
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
@@ -811,7 +807,7 @@ def hconcat_resize(img_list, interpolation=cv.INTER_CUBIC):
 
 def draw_circles(img, data, radius, color, thickness):
     for point_i, point in enumerate(data):
-        img = cv.circle(img, point.to(torch.int16).tolist(), radius, color[point_i], thickness)
+        img = cv.circle(img, point.to(torch.int16).tolist(), radius[point_i], color[point_i], thickness)
 
     return img
 

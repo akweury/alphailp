@@ -1,11 +1,12 @@
 # Created by shaji on 21-Apr-23
-
+import torch
+import copy
 
 from ilp_utils import *
 import nsfr_utils
 import aitk
 import visual_utils
-import copy
+
 
 
 def describe_scenes(args, lang, VM, FC):
@@ -197,8 +198,10 @@ def visualization(args, lang, colors=None, thickness=None, radius=None):
             group_image = copy.deepcopy(input_image)
             indice_center_on_screen_x = config.group_tensor_index["x_center_screen"]
             indice_center_on_screen_y = config.group_tensor_index["y_center_screen"]
+            indice_radius_on_screen = config.group_tensor_index["screen_radius"]
             screen_points = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.e, :]
-            group_pred_image = visual_utils.draw_circles(group_image, screen_points, radius=radius, color=colors,
+            screen_radius = data[:, indice_radius_on_screen][:args.e].to(torch.int16).tolist()
+            group_pred_image = visual_utils.draw_circles(group_image, screen_points, radius=screen_radius, color=colors,
                                                          thickness=thickness)
 
             indice_left_screen_x = config.group_tensor_index["screen_left_x"]

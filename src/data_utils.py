@@ -58,13 +58,22 @@ def to_line_tensor(point_groups, point_groups_screen, colors, shapes):
     line_tensor[tensor_index["x_center_screen"]] = point_groups_screen[:, 0].mean()
     line_tensor[tensor_index["y_center_screen"]] = point_groups_screen[:, 1].mean()
     sorted_x, sorted_x_indices = point_groups_screen[:, 0].sort(dim=0)
+
     line_tensor[tensor_index["screen_left_x"]] = sorted_x[0]
     line_tensor[tensor_index["screen_left_y"]] = point_groups_screen[:, 1][sorted_x_indices[0]]
-
     line_tensor[tensor_index["screen_right_x"]] = sorted_x[-1]
     line_tensor[tensor_index["screen_right_y"]] = point_groups_screen[:, 1][sorted_x_indices[-1]]
 
+    line_tensor[tensor_index["radius"]] = 0
+    line_tensor[tensor_index["screen_radius"]] = 0
+
     return line_tensor
+
+
+def euclidean_distance(point_groups_screen, center):
+    squared_distance = torch.sum(torch.square(point_groups_screen - torch.tensor(center)), dim=1)
+    distance = torch.sqrt(squared_distance)
+    return distance
 
 
 def to_circle_tensor(point_groups, point_groups_screen, colors, shapes, center, r):
@@ -88,8 +97,18 @@ def to_circle_tensor(point_groups, point_groups_screen, colors, shapes, center, 
     circle_tensor[tensor_index["z_length"]] = point_groups[:, 2].max() - point_groups[:, 2].min()
     circle_tensor[tensor_index["x_center_screen"]] = point_groups_screen[:, 0].mean()
     circle_tensor[tensor_index["y_center_screen"]] = point_groups_screen[:, 1].mean()
+    circle_tensor[tensor_index["screen_left_x"]] = 0
+    circle_tensor[tensor_index["screen_left_y"]] = 0
+    circle_tensor[tensor_index["screen_right_x"]] = 0
+    circle_tensor[tensor_index["screen_right_y"]] = 0
 
-    circle_tensor[tensor_index["x_length_screen"]] = point_groups_screen[:, 0].max() - point_groups_screen[:, 0].min()
-    circle_tensor[tensor_index["y_length_screen"]] = point_groups_screen[:, 1].max() - point_groups_screen[:, 1].min()
+    circle_tensor[tensor_index["radius"]] = euclidean_distance(point_groups[:, [0, 2]], (
+        point_groups[:, 0].mean(), point_groups[:, 2].mean())).mean()
+
+    circle_tensor[tensor_index["screen_radius"]] = euclidean_distance(point_groups_screen, (
+        point_groups_screen[:, 0].mean(), point_groups_screen[:, 1].mean())).mean()
+
+    # circle_tensor[tensor_index["x_length_screen"]] = point_groups_screen[:, 0].max() - point_groups_screen[:, 0].min()
+    # circle_tensor[tensor_index["y_length_screen"]] = point_groups_screen[:, 1].max() - point_groups_screen[:, 1].min()
 
     return circle_tensor

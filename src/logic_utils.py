@@ -266,8 +266,8 @@ def search_independent_clauses_parallel(args, lang):
     # evaluate each new pattern
     clu_all = []
     for cc_i, pattern in enumerate(patterns):
-        score_neg = torch.zeros((1, args.top_data, len(pattern))).to(args.device)
-        score_pos = torch.zeros((1, args.top_data, len(pattern))).to(args.device)
+        score_neg = torch.zeros((1, pattern[0][2].shape[0], len(pattern))).to(args.device)
+        score_pos = torch.zeros((1, pattern[0][2].shape[0], len(pattern))).to(args.device)
         # score_max = torch.zeros(size=(score_neg.shape[0], score_neg.shape[1], 2)).to(args.device)
 
         for f_i, [c_i, c, c_score] in enumerate(pattern):

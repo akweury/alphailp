@@ -7,7 +7,6 @@ import percept
 from data_hide import vertex_normalization
 import itertools
 import config
-from nsfr_utils import get_data_pos_loader, get_data_neg_loader
 
 
 def get_perception_predictions(args):

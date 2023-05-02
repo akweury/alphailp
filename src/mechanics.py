@@ -1,17 +1,17 @@
 # Created by shaji on 18-Apr-23
-import os
-from rtpt import RTPT
+
 from pathlib import Path
 
-from mechanic_utils import *
-import perception
-import config
-import log_utils, file_utils
-from fol import bk
-import pi
-import ilp
-from fol.language import Language
+from rtpt import RTPT
+
 import data_hide
+import ilp
+import perception
+import pi
+from fol import bk
+from fol.language import Language
+from mechanic_utils import *
+
 
 def init():
     args = get_args()

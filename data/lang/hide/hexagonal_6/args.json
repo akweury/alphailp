@@ -1,8 +1,9 @@
 {
-  "n_obj": 2,
+  "n_obj": 1,
   "batch_size_train": 6,
-  "e":2,
-  "dataset": "cross_position_8",
+  "e": 1,
+  "group_e": 1,
+  "dataset": "hexagonal_6",
   "dataset-type": "hide",
   "score_unique": true,
   "semantic_unique": true,

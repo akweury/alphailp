@@ -5,9 +5,6 @@ from neural_utils import LogisticRegression
 import config
 
 
-################################
-# Valuation functions for YOLO #
-################################
 
 
 class FCNNColorValuationFunction(nn.Module):
@@ -228,7 +225,8 @@ class FCNNSlopeValuationFunction(nn.Module):
         dir_vec = c_2 - c_1
         dir_vec[1] = -dir_vec[1]
         rho, phi = self.cart2pol(dir_vec[0], dir_vec[1])
-        phi_clock_shift = (90 - phi.long()) % 180
+        phi[phi < 0] = 360 - torch.abs(phi[phi < 0])
+        phi_clock_shift = (90 + phi.long()) % 360
         zone_id = (phi_clock_shift + area_angle_half) // area_angle % round_divide
 
         # This is a threshold, but it can be decided automatically.

@@ -75,11 +75,12 @@ def get_group_distribution(points, center):
     dir_vec = points_2d - center.unsqueeze(0).unsqueeze(0)
     dir_vec[:, :, 1] = -dir_vec[:, :, 1]
     rho, phi = cart2pol(dir_vec[:, :, 0], dir_vec[:, :, 1])
+    phi[phi < 0] = 360 - torch.abs(phi[phi < 0])
     zone_id = (phi) // area_angle % round_divide
 
     is_even_distribution = []
     for g in zone_id:
-        if len(torch.unique(g))>round_divide-1:
+        if len(torch.unique(g)) > round_divide - 1:
             is_even_distribution.append(True)
         else:
             is_even_distribution.append(False)

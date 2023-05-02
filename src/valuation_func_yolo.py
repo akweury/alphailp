@@ -5,6 +5,10 @@ from torch import nn as nn
 from neural_utils import LogisticRegression, AreaNet
 
 
+################################
+# Valuation functions for YOLO #
+################################
+
 class YOLOClosebyValuationFunction(nn.Module):
     """The function v_closeby.
     """

@@ -7,8 +7,7 @@ import config
 from data_utils import to_line_tensor, get_comb, to_circle_tensor
 from eval_utils import eval_group_diff, eval_count_diff, count_func, group_func, get_circle_error, eval_score
 from eval_utils import predict_circles, predict_lines, get_group_distribution
-from src import file_utils
-from nsfr_utils import get_nsfr_model, get_lang
+import file_utils
 import logic_utils
 import log_utils
 
@@ -19,7 +18,7 @@ def detect_line_groups(args, percept_dict):
     shape_data = percept_dict[:, :, config.indices_shape]
     point_screen_data = percept_dict[:, :, config.indices_screen_position]
 
-    line_tensors = torch.zeros(args.top_data, args.group_e, len(config.group_tensor_index.keys()))
+    line_tensors = torch.zeros(point_data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
     for data_i in range(point_data.shape[0]):
         exist_combs = []
         group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 2).tolist()
@@ -40,7 +39,7 @@ def detect_line_groups(args, percept_dict):
                     print(f'line group: {point_indices}')
         print(f'\n')
         _, prob_indices = line_tensor_candidates[:, config.group_tensor_index["line"]].sort(descending=True)
-        prob_indices = prob_indices[:args.group_e]
+        prob_indices = prob_indices[:args.e]
         line_tensors[data_i] = line_tensor_candidates[prob_indices]
     return line_tensors
 
@@ -50,12 +49,12 @@ def detect_circle_groups(args, percept_dict):
     color_data = percept_dict[:, :, config.indices_color]
     shape_data = percept_dict[:, :, config.indices_shape]
     point_screen_data = percept_dict[:, :, config.indices_screen_position]
-    circle_tensors = torch.zeros(point_data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
+    circle_tensors = torch.zeros(point_data.shape[0], args.e, len(config.group_tensor_index.keys()))
     for data_i in range(point_data.shape[0]):
         exist_combs = []
         tensor_counter = 0
         group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 3).tolist()
-        circle_tensor_candidates = torch.zeros(args.group_e, len(config.group_tensor_index.keys()))
+        circle_tensor_candidates = torch.zeros(args.e, len(config.group_tensor_index.keys()))
         for g_i, group_index in enumerate(group_indices):
             # check duplicate
             if group_index not in exist_combs:
@@ -69,10 +68,10 @@ def detect_circle_groups(args, percept_dict):
                     circle_tensor_candidates = torch.cat([circle_tensor_candidates, circle_tensor], dim=0)
                     exist_combs += get_comb(p_indices, 3).tolist()
                     tensor_counter += 1
-                    # print(f'circle group: {p_indices}')
-        # print(f'\n')
+                    print(f'circle group: {p_indices}')
+        print(f'\n')
         _, prob_indices = circle_tensor_candidates[:, config.group_tensor_index["circle"]].sort(descending=True)
-        prob_indices = prob_indices[:args.group_e]
+        prob_indices = prob_indices[:args.e]
         circle_tensors[data_i] = circle_tensor_candidates[prob_indices]
     return circle_tensors
 
@@ -127,7 +126,7 @@ def extend_circle_group(group_index, points, args):
     point_groups_extended = extend_groups(point_groups, passed_points)
     group_distribution = get_group_distribution(point_groups_extended, c)
     passed_indices = extra_index[group_error < args.error_th][group_distribution]
-    passed_points = extra_points[passed_indices]
+    passed_points = extra_points[group_error < args.error_th][group_distribution]
     point_groups_new = torch.cat([point_groups, passed_points], dim=0)
     point_groups_indices_new = torch.cat([torch.tensor(group_index), passed_indices])
     # if not is_even_distributed_points(args, point_groups_new, shape="circle"):
@@ -192,7 +191,7 @@ def get_args():
                         default=1, help="Batch size in beam search")
     parser.add_argument("--batch-size-train", type=int,
                         default=20, help="Batch size in nsfr train")
-    parser.add_argument("--group_e", type=int, default=4,
+    parser.add_argument("--group_e", type=int, default=2,
                         help="The maximum number of object groups in one image")
     parser.add_argument("--e", type=int, default=5,
                         help="The maximum number of objects in one image")
@@ -295,7 +294,7 @@ def get_args():
                         help="The threshold for MAE of obj group fitting.")
     parser.add_argument("--line_group_min_sz", type=int, default=3,
                         help="The minimum objects allowed to form a line.")
-    parser.add_argument("--cir_group_min_sz", type=int, default=4,
+    parser.add_argument("--cir_group_min_sz", type=int, default=5,
                         help="The minimum objects allowed to form a circle.")
     parser.add_argument("--group_conf_th", type=float, default=0.98,
                         help="The threshold of group confidence.")

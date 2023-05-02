@@ -55,7 +55,9 @@ group_tensor_index = {
     "screen_left_x": 15,
     "screen_left_y": 16,
     "screen_right_x": 17,
-    "screen_right_y": 18
+    "screen_right_y": 18,
+    "radius": 19,
+    "screen_radius": 20
 }
 
 group_tenor_positions = [0, 1]
