@@ -1,12 +1,10 @@
 # Created by shaji on 21-Apr-23
-import torch
-import copy
+
 
 from ilp_utils import *
 import nsfr_utils
 import aitk
 import visual_utils
-
 
 
 def describe_scenes(args, lang, VM, FC):
@@ -170,7 +168,6 @@ def visualization(args, lang, colors=None, thickness=None, radius=None):
     if radius is None:
         radius = 10
 
-
     for data_type in ["true", "false"]:
         for i in range(len(args.test_group_pos)):
             data_name = args.image_name_dict['test'][data_type][i]
@@ -187,7 +184,6 @@ def visualization(args, lang, colors=None, thickness=None, radius=None):
             # evaluate new clauses
             scores = eval_clause_infer.eval_clause_on_test_scenes(NSFR, args, lang.clauses[0], data.unsqueeze(0))
 
-
             visual_images = []
             # input image
             file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
@@ -195,32 +191,22 @@ def visualization(args, lang, colors=None, thickness=None, radius=None):
             input_image = visual_utils.get_cv_image(image_file)
 
             # group prediction
-            group_image = copy.deepcopy(input_image)
-            indice_center_on_screen_x = config.group_tensor_index["x_center_screen"]
-            indice_center_on_screen_y = config.group_tensor_index["y_center_screen"]
-            indice_radius_on_screen = config.group_tensor_index["screen_radius"]
-            screen_points = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.e, :]
-            screen_radius = data[:, indice_radius_on_screen][:args.e].to(torch.int16).tolist()
-            group_pred_image = visual_utils.draw_circles(group_image, screen_points, radius=screen_radius, color=colors,
-                                                         thickness=thickness)
+            group_pred_image = visual_utils.visual_group_predictions(args, data, input_image, colors, thickness)
 
-            indice_left_screen_x = config.group_tensor_index["screen_left_x"]
-            indice_left_screen_y = config.group_tensor_index["screen_left_y"]
-            indice_right_screen_x = config.group_tensor_index["screen_right_x"]
-            indice_right_screen_y = config.group_tensor_index["screen_right_y"]
+            # information image
+            info_image = visual_utils.visual_info(lang, input_image.shape, font_size=0.4)
 
-            screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.e, :]
-            screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.e, :]
-            group_pred_image = visual_utils.draw_lines(group_pred_image, screen_left_points, screen_right_points,
-                                                       color=colors, thickness=thickness)
-
+            # adding header and footnotes
             input_image = visual_utils.draw_text(input_image, "input")
             visual_images.append(input_image)
 
             group_pred_image = visual_utils.draw_text(group_pred_image, f"group:{round(scores[0].tolist(), 4)}")
-            group_pred_image = visual_utils.draw_text(group_pred_image, f"{lang.clauses[0]}",
-                                                      position="lower_left", font_size=0.4)
+            group_pred_image = visual_utils.draw_text(group_pred_image, f"{lang.clauses[0]}", position="lower_left",
+                                                      font_size=0.4)
             visual_images.append(group_pred_image)
+
+            info_image = visual_utils.draw_text(info_image, f"Info:")
+            visual_images.append(info_image)
 
             # final processing
             final_image = visual_utils.hconcat_resize(visual_images)

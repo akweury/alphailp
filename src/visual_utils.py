@@ -3,6 +3,9 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import copy
+
+import config
 
 
 # --------------------------- evaluate operations ----------------------------------------------------------------------
@@ -646,6 +649,16 @@ def addText(img, text, pos='upper_left', font_size=1.6, color=(255, 255, 255), t
                thickness=thickness, lineType=cv.LINE_AA)
 
 
+def addCustomText(img, text, pos, font_size=1.6, color=(255, 255, 255), thickness=1):
+    h, w = img.shape[:2]
+    if pos[0] > h or pos[0] < 0 or pos[1] > w or pos[1] < 0:
+        raise ValueError('unsupported position to put text in the image.')
+
+    cv.putText(img, text=text, org=pos,
+               fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=font_size, color=color,
+               thickness=thickness, lineType=cv.LINE_AA)
+
+
 # https://docs.opencv.org/4.x/d1/db7/tutorial_py_histogram_begins.html
 def addHist(img):
     h, w = img.shape[:2]
@@ -831,5 +844,48 @@ def draw_text(image, text, position="upper_left", font_size=1.6):
     return image
 
 
+def draw_custom_text(image, text, position, font_size=1.6):
+    addCustomText(image, text, pos=position, font_size=font_size)
+    return image
+
+
 def save_image(final_image, image_output_path):
     cv.imwrite(image_output_path, final_image)
+
+
+def visual_group_predictions(args, data, input_image, colors, thickness):
+    group_image = copy.deepcopy(input_image)
+    indice_center_on_screen_x = config.group_tensor_index["x_center_screen"]
+    indice_center_on_screen_y = config.group_tensor_index["y_center_screen"]
+    indice_radius_on_screen = config.group_tensor_index["screen_radius"]
+    screen_points = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.e, :]
+    screen_radius = data[:, indice_radius_on_screen][:args.e].to(torch.int16).tolist()
+    group_pred_image = draw_circles(group_image, screen_points, radius=screen_radius, color=colors,
+                                    thickness=thickness)
+
+    indice_left_screen_x = config.group_tensor_index["screen_left_x"]
+    indice_left_screen_y = config.group_tensor_index["screen_left_y"]
+    indice_right_screen_x = config.group_tensor_index["screen_right_x"]
+    indice_right_screen_y = config.group_tensor_index["screen_right_y"]
+
+    screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.e, :]
+    screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.e, :]
+    group_pred_image = draw_lines(group_pred_image, screen_left_points, screen_right_points,
+                                  color=colors, thickness=thickness)
+
+    return group_pred_image
+
+
+def visual_info(lang, image_shape, font_size):
+    info_image = np.zeros(image_shape, dtype=np.uint8)
+
+    # predicates info
+    pi_c_text_position = [20, 80]
+    text_y_shift = 30
+    if len(lang.pi_clauses) == 0:
+        info_image = draw_custom_text(info_image, f"No invented predicates.", pi_c_text_position, font_size=font_size)
+        pi_c_text_position[1] += text_y_shift
+    for pi_c in lang.pi_clauses:
+        info_image = draw_custom_text(info_image, f"{pi_c}", pi_c_text_position, font_size=font_size)
+        pi_c_text_position[1] += text_y_shift
+    return info_image
