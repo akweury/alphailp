@@ -3,6 +3,10 @@
 import os
 from pathlib import Path
 
+ptypes = {'bk': 'bk_pred',
+          'clu': 'clu_pred',
+          'exp': 'exp_pred'}
+
 # dim0: ness, dim1: suff, dim2: sn
 score_type_index = {"ness": 0, "suff": 1, "sn": 2}
 score_example_index = {"neg": 0, "pos": 1}
@@ -57,7 +61,9 @@ group_tensor_index = {
     "screen_right_x": 17,
     "screen_right_y": 18,
     "radius": 19,
-    "screen_radius": 20
+    "screen_radius": 20,
+    "color_counter": 21,
+    "shape_counter": 22
 }
 
 group_tenor_positions = [0, 1]

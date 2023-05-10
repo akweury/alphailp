@@ -59,7 +59,7 @@ def init():
     # Start the RTPT tracking
     rtpt.start()
     torch.set_printoptions(precision=4)
-
+    torch.autograd.set_detect_anomaly(True)
     pm_prediction_dict = perception.get_perception_predictions(args)
 
     # grouping objects to reduce the problem complexity
@@ -73,6 +73,7 @@ def init():
 
 
 def final_evaluation(NSFR, args):
+
     # validation split
     log_utils.add_lines(f"Predicting on validation data set...", args.log_file)
     acc_val, rec_val, th_val = pi.ilp_predict(NSFR, args.val_group_pos, args.val_group_neg,
@@ -102,12 +103,15 @@ def train_and_eval(args, rtpt):
     ilp.ilp_main(args, lang, with_pi=True)
 
     # run ilp again
-    ilp.ilp_test(args, lang)
-    ilp.visualization(args, lang)
-    # train nsfr
-    NSFR = pi.train_nsfr(args, rtpt, lang)
+    success = ilp.ilp_test(args, lang)
+    if success:
+        ilp.visualization(args, lang)
+        # train nsfr
+        NSFR = pi.train_nsfr(args, rtpt, lang)
 
-    return NSFR
+        return NSFR
+    else:
+        return None
 
 
 def update_args(args, pm_prediction_dict, obj_groups):

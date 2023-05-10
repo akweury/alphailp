@@ -1,3 +1,5 @@
+import copy
+
 import torch
 
 import config
@@ -156,26 +158,44 @@ def predict_circles(point_groups, collinear_th):
     return center, r
 
 
-def predict_lines(point_groups, collinear_th):
-    # https://math.stackexchange.com/a/3503338
-    complex_point_real = point_groups[:, :, 0]
-    complex_point_imag = point_groups[:, :, 2]
+def calc_colinearity(point_groups):
+    if point_groups.shape[1] != 3:
+        raise ValueError
+    ab = point_groups[:, 1] - point_groups[:, 0]
+    bc = point_groups[:, 2] - point_groups[:, 1]
+    ac = point_groups[:, 2] - point_groups[:, 0]
 
-    complex_points = torch.complex(complex_point_real, complex_point_imag)
+    ab_dist = torch.sqrt(torch.sum(ab ** 2, dim=-1))
+    bc_dist = torch.sqrt(torch.sum(bc ** 2, dim=-1))
+    ac_dist = torch.sqrt(torch.sum(ac ** 2, dim=-1))
+    collinearities = ab_dist + bc_dist - ac_dist
 
-    a, b, c = complex_points[:, 0], complex_points[:, 1], complex_points[:, 2]
-    is_collinear = a == b
-    if (a == b).sum() > 0:
-        print('break')
+    return collinearities
 
-    def f(z):
-        return (z - a) / (b - a)
 
-    w3 = f(c)
-    # print("collinear point groups")
-    collinearities = torch.abs(w3.imag)
-    collinearities = torch.nan_to_num(collinearities)
-    is_collinear = collinearities < collinear_th
-    if is_collinear.sum() == 1:
-        print(f'break')
-    return is_collinear
+def predict_dots():
+    return None
+
+
+def is_even_distributed_points(args, points_, shape):
+    points = copy.deepcopy(points_)
+
+    if shape == "line":
+        points_sorted_x = points[points[:, 0].sort()[1]]
+        delta_x = torch.abs((points_sorted_x.roll(-1, 0) - points_sorted_x)[:-1, :])
+        distribute_error_x = (
+                torch.abs(delta_x[:, 0] - delta_x[:, 0].mean(dim=0)).sum(dim=0) / (points.shape[0] - 1)).sum()
+
+        points_sorted_y = points[points[:, 2].sort()[1]]
+        delta_y = torch.abs((points_sorted_y.roll(-1, 0) - points_sorted_y)[:-1, :])
+        distribute_error_y = (
+                torch.abs(delta_y[:, 2] - delta_y[:, 2].mean(dim=0)).sum(dim=0) / (points.shape[0] - 1)).sum()
+
+        if distribute_error_x < args.distribute_error_th and distribute_error_y < args.distribute_error_th:
+            return True
+        else:
+            return False
+    elif shape == "circle":
+        raise NotImplementedError
+    else:
+        raise ValueError

@@ -3,9 +3,11 @@
   "batch_size_train": 6,
   "e": 1,
   "group_e": 1,
-  "error_th": 0.2,
-  "dataset": "pentagon_5_logic",
+  "error_th": 0.003,
+  "collinear_th": 0.3,
+  "dataset": "letter_i_12",
   "dataset-type": "hide",
+  "distribute_error_th": 0.02,
   "score_unique": true,
   "semantic_unique": true,
   "small_data": false,
@@ -26,6 +28,5 @@
   "pi_top": 1,
   "length_weight": 0.02,
   "with_bk": false,
-  "plot_four_zone": false,
-  "distribute_error_th": 0.3
+  "plot_four_zone": false
 }

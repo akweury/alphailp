@@ -8,6 +8,8 @@ neural_predicate = [
 ]
 
 neural_predicate_2 = [
+    'shape_counter:2:group,number',
+    'color_counter:2:group,number',
     'shape:2:group,shape',
     'color:2:group,color',
     'phi:3:group,group,phi',
@@ -27,8 +29,10 @@ const_dict = {
     'phi': 'amount_8',
     'rho': 'amount_8',
     'slope': 'amount_8',
+    'number': 'amount_10',
 }
 
-attr_names = ['color', 'shape', 'rho', 'phi', 'group_shape', "slope"]
+attr_names = ['color', 'shape', 'rho', 'phi', 'group_shape', "slope", 'number']
+
 color = ['pink', 'green', 'blue']
 shape = ['sphere', 'cube', 'line', 'circle']

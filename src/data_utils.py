@@ -5,6 +5,7 @@ import itertools
 from sklearn.linear_model import LinearRegression
 
 import config
+import eval_utils
 
 
 def in_ranges(value, line_ranges):
@@ -25,9 +26,7 @@ def get_comb(data, comb_size):
 
 def to_line_tensor(point_groups, point_groups_screen, colors, shapes):
     colors_normalized = colors.sum(dim=0) / colors.shape[0]
-    colors_normalized[colors_normalized < 0.99] = 0
     shapes_normalized = shapes.sum(dim=0) / shapes.shape[0]
-    shapes_normalized[shapes_normalized < 0.99] = 0
     # 0:2 center_x, center_z
     # 2 slope
     # 3 x_length
@@ -40,9 +39,16 @@ def to_line_tensor(point_groups, point_groups_screen, colors, shapes):
     line_tensor[tensor_index["x"]] = point_groups[:, 0].mean()
     line_tensor[tensor_index["y"]] = point_groups[:, 1].mean()
     line_tensor[tensor_index["z"]] = point_groups[:, 2].mean()
+
+    line_tensor[tensor_index["color_counter"]] = eval_utils.count_func(colors.sum(dim=0).unsqueeze(0))
+    line_tensor[tensor_index["shape_counter"]] = eval_utils.count_func(shapes.sum(dim=0).unsqueeze(0))
+
+    colors_normalized[colors_normalized < 0.99] = 0
     line_tensor[tensor_index['red']] = colors_normalized[0]
     line_tensor[tensor_index['green']] = colors_normalized[1]
     line_tensor[tensor_index['blue']] = colors_normalized[2]
+
+    shapes_normalized[shapes_normalized < 0.99] = 0
     line_tensor[tensor_index['sphere']] = shapes_normalized[0]
     line_tensor[tensor_index['cube']] = shapes_normalized[1]
 
@@ -82,6 +88,10 @@ def to_circle_tensor(point_groups, point_groups_screen, colors, shapes, center, 
     circle_tensor[tensor_index["x"]] = center[0]
     circle_tensor[tensor_index["y"]] = point_groups[:, 1].mean()
     circle_tensor[tensor_index["z"]] = center[1]
+
+    circle_tensor[tensor_index["color_counter"]] = eval_utils.count_func(colors.sum(dim=0).unsqueeze(0))
+    circle_tensor[tensor_index["shape_counter"]] = eval_utils.count_func(shapes.sum(dim=0).unsqueeze(0))
+
     circle_tensor[tensor_index["red"]] = 0
     circle_tensor[tensor_index["green"]] = 0
     circle_tensor[tensor_index["blue"]] = 0

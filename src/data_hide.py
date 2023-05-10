@@ -7,13 +7,15 @@ import config
 
 
 def vertex_normalization(data):
+    return data
+
     if len(data.shape) != 3:
         raise ValueError
 
     ax = 0
-    data[:, :, :3] = (data[:, :, :3] - data[:, :, ax:ax + 1].min(axis=1, keepdims=True)[0]) / (
-            data[:, :, ax:ax + 1].max(axis=1, keepdims=True)[0] - data[:, :, ax:ax + 1].min(axis=1, keepdims=True)[
-        0] + 1e-10)
+    min_value = data[:, :, ax:ax + 1].min(axis=1, keepdims=True)[0].repeat(1,data.shape[1], 3)
+    max_value = data[:, :, ax:ax + 1].max(axis=1, keepdims=True)[0].repeat(1,data.shape[1], 3)
+    data[:, :, :3] = (data[:, :, :3] - min_value) / (max_value - min_value + 1e-10)
 
     ax = 2
     data[:, :, ax] = data[:, :, ax] - data[:, :, ax].min(axis=1, keepdims=True)[0]

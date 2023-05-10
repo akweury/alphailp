@@ -2,6 +2,8 @@ import json
 import os
 from fol.language import DataType
 from fol.logic import NeuralPredicate
+import config
+
 def load_args_from_file(args_file_path, given_args):
     if os.path.isfile(args_file_path):
         with open(args_file_path, 'r') as fp:
@@ -19,7 +21,6 @@ def load_args_from_file(args_file_path, given_args):
 
 
 def load_neural_preds(neural_predicates):
-
     preds = [parse_neural_pred(line) for line in neural_predicates]
     return preds
 
@@ -31,6 +32,6 @@ def parse_neural_pred(line):
     pred, arity, dtype_names_str = line.split(':')
     dtype_names = dtype_names_str.split(',')
     dtypes = [DataType(dt) for dt in dtype_names]
-    assert int(arity) == len(
-        dtypes), 'Invalid arity and dtypes in ' + pred + '.'
-    return NeuralPredicate(pred, int(arity), dtypes)
+    ptypes = config.ptypes['bk']
+    assert int(arity) == len(dtypes), 'Invalid arity and dtypes in ' + pred + '.'
+    return NeuralPredicate(pred, int(arity), dtypes, ptypes)

@@ -74,6 +74,17 @@ def extract_patterns(args, pm_prediction):
     return sub_patterns
 
 
+def data_ordering(data):
+    data_ordered = torch.zeros(data.shape)
+    delta = data[:, :, :3].max(dim=1, keepdims=True)[0] - data[:, :, :3].min(dim=1, keepdims=True)[0]
+    order_axis = torch.argmax(delta, dim=2)
+    for data_i in range(len(data)):
+        data_order_i = data[data_i,:,order_axis[data_i]].sort(dim=0)[1].squeeze(1)
+        data_ordered[data_i] = data[data_i,data_order_i,:]
+
+    return data_ordered
+
+
 def get_pred_res(args, data_type):
     od_res = config.buffer_path / "hide" / f"{args.dataset}" / f"{args.dataset}_pm_res_{data_type}.pth.tar"
     pred_pos, pred_neg = percept.convert_data_to_tensor(args, od_res)
@@ -82,8 +93,12 @@ def get_pred_res(args, data_type):
     pred_pos_norm = vertex_normalization(pred_pos)
     pred_neg_norm = vertex_normalization(pred_neg)
 
-    if args.top_data < len(pred_pos_norm):
-        pred_pos_norm = pred_pos_norm[:args.top_data]
-        pred_neg_norm = pred_neg_norm[:args.top_data]
+    # order the data by vertices (align the axis with higher delta)
+    pred_pos_ordered = data_ordering(pred_pos_norm)
+    pred_neg_ordered = data_ordering(pred_neg_norm)
 
-    return pred_pos_norm, pred_neg_norm
+    if args.top_data < len(pred_pos_ordered):
+        pred_pos_ordered = pred_pos_ordered[:args.top_data]
+        pred_neg_ordered = pred_neg_ordered[:args.top_data]
+
+    return pred_pos_ordered, pred_neg_ordered

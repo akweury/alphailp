@@ -3,17 +3,13 @@ import os
 import torch
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
-from sklearn.metrics import precision_score, accuracy_score
+from sklearn.metrics import accuracy_score
 from rtpt import RTPT
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from percept import YOLOPerceptionModule
-from facts_converter import FactsConverter
-from valuation_func_yolo import YOLOClosebyValuationFunction, YOLOAreaValuationFunction, YOLOOnlineValuationFunction
-from logic_utils import get_index_by_predname
-from yolov5.models.experimental import attempt_load
-from yolov5.utils.general import non_max_suppression
+
+from valuation_func_yolo import YOLOAreaValuationFunction
 import config
 
 

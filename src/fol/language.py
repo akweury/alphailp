@@ -1,6 +1,8 @@
 import glob
 from lark import Lark
 
+import config
+import log_utils
 from .exp_parser import ExpTree
 from .logic import *
 from fol import bk
@@ -35,6 +37,7 @@ class Language(object):
         self.consts = []
         self.clauses = []
         self.pi_clauses = []
+        self.clause_with_scores = []
         # self.pi_templates = pi_templates
 
         ## BK
@@ -121,7 +124,7 @@ class Language(object):
         init_clause += "."
         tree = self.lp_clause.parse(init_clause)
         self.clauses = ExpTree(self).transform(tree)
-        print(f"================= Initial clauses ==================="
+        print(f"\n================= Initial clauses ===================\n"
               f"{self.clauses}")
         self.clauses = [self.clauses]
         return self.clauses
@@ -132,8 +135,8 @@ class Language(object):
         pred, arity, dtype_names_str = line.split(':')
         dtype_names = dtype_names_str.split(',')
         dtypes = [DataType(dt) for dt in dtype_names]
-
-        return NeuralPredicate(pred, int(arity), dtypes)
+        ptypes = config.ptypes['bk']
+        return NeuralPredicate(pred, int(arity), dtypes, ptypes)
 
     def parse_const(self, args, const, const_type):
         """Parse string to function symbols.
@@ -345,7 +348,7 @@ class Language(object):
         # self.invented_preds.append(new_predicate)
         return new_predicate
 
-    def update_bk(self, neural_pred=None, full_bk=True):
+    def update_bk(self, args, neural_pred=None, full_bk=True):
 
         # put everything into the bk
         if full_bk:
@@ -355,6 +358,8 @@ class Language(object):
             self.preds += self.invented_preds
             self.pi_clauses = self.all_pi_clauses
         else:
+            log_utils.add_lines(
+                f'++++++++++ {neural_pred} +++++++++++', args.log_file)
             # only consider one category by the given nerual pred
             self.preds = self.preds[:2]
             self.preds.append(neural_pred)
@@ -524,11 +529,11 @@ def get_mode_declarations_kandinsky(lang, obj_num):
 
     s_color = ModeTerm('#', DataType('color'))
     s_shape = ModeTerm('#', DataType('shape'))
-
     s_rho = ModeTerm('#', DataType('rho'))
     s_phi = ModeTerm('#', DataType('phi'))
     s_slope = ModeTerm('#', DataType('slope'))
     s_group_shape = ModeTerm('#', DataType('group_shape'))
+    s_number = ModeTerm('#', DataType('number'))
 
     modeb_list = []
     considered_pred_names = [p.name for p in lang.preds]
@@ -551,7 +556,14 @@ def get_mode_declarations_kandinsky(lang, obj_num):
         modeb_list.append(
             ModeDeclaration('body', obj_num, lang.get_pred_by_name('group_shape'), [p_group, s_group_shape],
                             ordered=False))
-
+    if "shape_counter" in considered_pred_names:
+        modeb_list.append(
+            ModeDeclaration('body', obj_num, lang.get_pred_by_name('shape_counter'), [p_group, s_number],
+                            ordered=False))
+    if "color_counter" in considered_pred_names:
+        modeb_list.append(
+            ModeDeclaration('body', obj_num, lang.get_pred_by_name('color_counter'), [p_group, s_number],
+                            ordered=False))
     return modeb_list
 
 

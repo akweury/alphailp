@@ -281,7 +281,22 @@ def cluster_invention(args, lang):
     for new_c, new_c_score in new_preds_with_scores:
         log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
 
-    return new_preds_with_scores, found_ns
+    args.is_done = found_ns
+    return new_preds_with_scores
+
+
+def explain_invention(args, lang):
+    clu_lists = logic_utils.search_independent_clauses_parallel(args, lang)
+    new_preds_with_scores = generate_new_predicate(args, lang, clu_lists)
+    new_preds_with_scores = new_preds_with_scores[:args.pi_top]
+    lang.invented_preds_with_scores += new_preds_with_scores
+
+    log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
+    for new_c, new_c_score in new_preds_with_scores:
+        log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
+    if not args.is_done:
+        args.is_done = True
+    return new_preds_with_scores
 
 
 def generate_new_clauses_str_list(new_predicates):
@@ -359,7 +374,6 @@ def reset_args(args, lang):
     lang.invented_preds_with_scores = []
 
 
-
 def update_refs(clause_with_scores, args):
     refs = []
     nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_with_scores, "clause", args)
@@ -390,10 +404,10 @@ def eval_groups(args):
     is_done = check_group_result(args, result)
     # The pattern is too simple. Print the reason.
     # if False and is_done:
-        # Dataset is too simple. Finish the program.
-        # eval_result_test = eval_groups(test_pattern_pos, test_pattern_neg, clu_result)
-        # is_done = check_group_result(args, eval_result_test)
-        # log_utils.print_dataset_simple(args, is_done, eval_result_test)
+    # Dataset is too simple. Finish the program.
+    # eval_result_test = eval_groups(test_pattern_pos, test_pattern_neg, clu_result)
+    # is_done = check_group_result(args, eval_result_test)
+    # log_utils.print_dataset_simple(args, is_done, eval_result_test)
 
     return result
 

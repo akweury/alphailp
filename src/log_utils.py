@@ -113,6 +113,11 @@ def print_result(args, lang):
 
 
 def print_test_result(args, c_with_scores):
-    add_lines(f"=========== all clauses ==================", args.log_file)
-    for c in c_with_scores:
-        add_lines(f"{c[0]} {c[1]}", args.log_file)
+    if len(c_with_scores)>0:
+        add_lines(f"=========== all clauses ==================", args.log_file)
+        for c in c_with_scores:
+            add_lines(f"{c[0]} {c[1]}", args.log_file)
+        return True
+    else:
+        add_lines(f"Failure.", args.log_file)
+        return False

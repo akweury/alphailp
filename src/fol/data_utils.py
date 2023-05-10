@@ -194,16 +194,7 @@ class DataUtils(object):
 
         return Predicate(pred, int(arity), dtypes)
 
-    def parse_neural_pred(self, line):
-        """Parse string to predicates.
-        """
-        line = line.replace('\n', '')
-        pred, arity, dtype_names_str = line.split(':')
-        dtype_names = dtype_names_str.split(',')
-        dtypes = [DataType(dt) for dt in dtype_names]
-        assert int(arity) == len(
-            dtypes), 'Invalid arity and dtypes in ' + pred + '.'
-        return NeuralPredicate(pred, int(arity), dtypes)
+
 
     def parse_invented_pred(self, line):
         """Parse string to invented predicates.

@@ -27,7 +27,8 @@ def main():
     log_utils.add_lines(f"Experiment time: {((end - start) / 60):.2f} minute(s)", args.log_file)
     log_utils.add_lines(f"=============================", args.log_file)
 
-    final_evaluation(NSFR, args)
+    if NSFR is not None:
+        final_evaluation(NSFR, args)
 
 
 if __name__ == "__main__":

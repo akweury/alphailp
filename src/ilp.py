@@ -72,7 +72,7 @@ def ilp_main(args, lang, with_pi=True):
         reset_args(args, lang)
         # grouping objects with new categories
         # eval_groups(args)
-        lang.update_bk(neural_pred, full_bk=False)
+        lang.update_bk(args, neural_pred, full_bk=False)
         lang.update_mode_declarations(args)
         # run ilp with pi module
         # searching for a proper clause to describe the pattern.
@@ -98,21 +98,20 @@ def ilp_main(args, lang, with_pi=True):
 
 
 def ilp_pi(args, lang):
-    new_pred_with_scores, is_done = cluster_invention(args, lang)
+
+    # predicate invention by clustering
+    new_clu_pred_with_scores = cluster_invention(args, lang)
     # convert to strings
-    new_clauses_str_list, kp_str_list = generate_new_clauses_str_list(new_pred_with_scores)
-    # convert clauses from strings to objects
-    # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
-    # du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
-    #                dataset=args.dataset)
-    # lang, vars, init_clauses, atoms = nsfr_utils.get_lang(args)
-    # if lang.neural_pred is not None:
-    #     lang.preds += lang.neural_pred
-    # lang.invented_preds = lang.invented_p
-    pi_clauses, pi_kp_clauses = gen_pi_clauses(args, lang, new_pred_with_scores, new_clauses_str_list, kp_str_list)
+    new_clauses_str_list, kp_str_list = generate_new_clauses_str_list(new_clu_pred_with_scores)
+
+    pi_clauses, pi_kp_clauses = gen_pi_clauses(args, lang, new_clu_pred_with_scores, new_clauses_str_list, kp_str_list)
 
     lang.pi_clauses += extract_pi(lang, pi_clauses, args)
     lang.pi_kp_clauses = extract_kp_pi(lang, pi_kp_clauses, args)
+
+    # predicate invention by explanation
+    new_explain_pred_with_scores = explain_invention(args, lang)
+
 
     if len(lang.invented_preds) > 0:
         # add new predicates
@@ -134,7 +133,7 @@ def ilp_prog():
 
 def ilp_test(args, lang):
     reset_args(args, lang)
-    lang.update_bk(full_bk=True, neural_pred=args.neural_preds)
+    lang.update_bk(args, full_bk=True, neural_pred=args.neural_preds)
     lang.update_mode_declarations(args)
     VM = aitk.get_vm(args, lang)
     FC = aitk.get_fc(args, lang, VM)
@@ -149,7 +148,8 @@ def ilp_test(args, lang):
     sorted_clauses_with_scores = sorted(lang.all_clauses, key=lambda x: x[1][2], reverse=True)[:args.c_top]
     lang.clauses = [c[0] for c in sorted_clauses_with_scores]
 
-    log_utils.print_test_result(args, sorted_clauses_with_scores)
+    success = log_utils.print_test_result(args, sorted_clauses_with_scores)
+    return success
 
 
 def visualization(args, lang, colors=None, thickness=None, radius=None):
