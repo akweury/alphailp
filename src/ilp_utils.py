@@ -1,14 +1,13 @@
 # Created by shaji on 21-Apr-23
-from lark import Lark
 
 import config
 from mechanic_utils import eval_single_group, check_group_result
+from pi import explain_with_group_terms_preds
+from pi_utils import generate_new_predicate
 
 from refinement import RefinementGenerator
 import log_utils, eval_clause_infer, logic_utils
-from fol.language import DataType
 from logic_utils import get_equivalent_clauses, get_pred_names_from_clauses
-from fol.exp_parser import ExpTree
 
 
 def keep_best_preds(args, lang):
@@ -234,41 +233,6 @@ def prune_clauses(clause_with_scores, args):
     return refs, c_score_pruned, False
 
 
-def generate_new_predicate(args, lang, clause_clusters, clause_type=None):
-    new_predicate = None
-    # positive_clauses_exchange = [(c[1], c[0]) for c in positive_clauses]
-    # no_hn_ = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0 and c[0][3] == 0]
-    # no_hnlp = [(c[0], c[1]) for c in positive_clauses_exchange if c[0][2] == 0]
-    # score clauses properly
-
-    new_predicates = []
-    # cluster predicates
-    for pi_index, [clause_cluster, cluster_score] in enumerate(clause_clusters):
-        p_args = logic_utils.count_arity_from_clause_cluster(clause_cluster)
-        dtypes = [DataType("group")] * len(p_args)
-        new_predicate = lang.get_new_invented_predicate(args, arity=len(p_args), pi_dtypes=dtypes,
-                                                        p_args=p_args, pi_types=clause_type)
-        new_predicate.body = []
-        for [c_i, clause, c_score] in clause_cluster:
-            atoms = []
-            for atom in clause.body:
-                terms = logic_utils.get_terms_from_atom(atom)
-                terms = sorted(terms)
-                if "X" in terms:
-                    terms.remove("X")
-                obsolete_term = [t for t in terms if t not in p_args]
-                if len(obsolete_term) == 0:
-                    atoms.append(atom)
-            new_predicate.body.append(atoms)
-        if len(new_predicate.body) > 1:
-            new_predicates.append([new_predicate, cluster_score])
-        elif len(new_predicate.body) == 1:
-            body = (new_predicate.body)[0]
-            if len(body) > new_predicate.arity + 1:
-                new_predicates.append([new_predicate, cluster_score])
-    return new_predicates
-
-
 def cluster_invention(args, lang):
     found_ns = False
 
@@ -286,8 +250,17 @@ def cluster_invention(args, lang):
 
 
 def explain_invention(args, lang):
-    clu_lists = logic_utils.search_independent_clauses_parallel(args, lang)
-    new_preds_with_scores = generate_new_predicate(args, lang, clu_lists)
+    expalined_clause = []
+    for clause, scores, score_all in lang.clause_with_scores:
+
+        if scores[0] > args.sc_th:
+            for atom in clause.body:
+                if atom.pred.ptypes == config.ptypes['bk']:
+                    unclear_pred = atom.pred
+                    atom_terms = atom.terms
+                    new_atoms = explain_with_group_terms_preds(args, lang, atom_terms, unclear_pred)
+
+    new_preds_with_scores = generate_new_predicate(args, lang, expalined_clause)
     new_preds_with_scores = new_preds_with_scores[:args.pi_top]
     lang.invented_preds_with_scores += new_preds_with_scores
 
@@ -410,33 +383,3 @@ def eval_groups(args):
     # log_utils.print_dataset_simple(args, is_done, eval_result_test)
 
     return result
-
-
-def gen_pi_clauses(args, lang, new_predicates, clause_str_list_with_score, kp_str_list):
-    """Read lines and parse to Atom objects.
-    """
-
-    with open(args.lark_path, encoding="utf-8") as grammar:
-        lp_clause = Lark(grammar.read(), start="clause")
-
-    for n_p in new_predicates:
-        lang.invented_preds.append(n_p[0])
-    clause_str_list = []
-    for c_str, c_score in clause_str_list_with_score:
-        clause_str_list += c_str
-
-    clauses = []
-    for clause_str in clause_str_list:
-        tree = lp_clause.parse(clause_str)
-        clause = ExpTree(lang).transform(tree)
-        clauses.append(clause)
-
-    for str in kp_str_list:
-        print(str)
-    kp_clause = []
-    for clause_str in kp_str_list:
-        tree = lp_clause.parse(clause_str)
-        clause = ExpTree(lang).transform(tree)
-        kp_clause.append(clause)
-
-    return clauses, kp_clause

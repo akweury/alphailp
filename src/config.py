@@ -66,6 +66,25 @@ group_tensor_index = {
     "shape_counter": 22
 }
 
+
+
+
+
+
+obj_tensor_index = {
+    'x': 0,
+    'y': 1,
+    'z': 2,
+    'red': 3,
+    'green': 4,
+    'blue': 5,
+    'sphere': 6,
+    'cube': 7,
+    'prob': 8,
+    'screen_x': 9,
+    'screen_y': 10
+}
+
 group_tenor_positions = [0, 1]
 group_tensor_shapes = [5, 6]
 

@@ -1,176 +1,84 @@
 # Created by J.Sha
 # Create Date: 31.01.2023
+from fol.exp_parser import ExpTree
+from lark import Lark
+
+import logic_utils
+from fol.language import DataType
 
 
-from percept import YOLOPerceptionModule, FCNNPerceptionModule
+def generate_new_predicate(args, lang, clause_clusters, clause_type=None):
+    new_predicates = []
+    # cluster predicates
+    for pi_index, [clause_cluster, cluster_score] in enumerate(clause_clusters):
+        p_args = logic_utils.count_arity_from_clause_cluster(clause_cluster)
+        dtypes = [DataType("group")] * len(p_args)
+        new_predicate = lang.inv_pred(args, arity=len(p_args), pi_dtypes=dtypes,
+                                      p_args=p_args, pi_types=clause_type)
+        new_predicate.body = []
+        for [c_i, clause, c_score] in clause_cluster:
+            atoms = []
+            for atom in clause.body:
+                terms = logic_utils.get_terms_from_atom(atom)
+                terms = sorted(terms)
+                if "X" in terms:
+                    terms.remove("X")
+                obsolete_term = [t for t in terms if t not in p_args]
+                if len(obsolete_term) == 0:
+                    atoms.append(atom)
+            new_predicate.body.append(atoms)
+        if len(new_predicate.body) > 1:
+            new_predicates.append([new_predicate, cluster_score])
+        elif len(new_predicate.body) == 1:
+            body = (new_predicate.body)[0]
+            if len(body) > new_predicate.arity + 1:
+                new_predicates.append([new_predicate, cluster_score])
+    return new_predicates
 
-from valuation import PIValuationModule
-import torch.nn as nn
-from logic_utils import *
+
+def generate_new_explain_predicate(args, lang, head_terms, min_value_set, obj_indices):
+    # shape_counter(G, number1), shape_counter_explain_1(G, number1),
+    # shape_counter_explain_1(G, number1) :- cube_percentage(G, 1.0), sphere_percentage(G, 0.0) ||
+    # cube_percentage(G, 0.0), sphere_percentage(G, 1.0).
+
+    # cluster predicates
+    p_args = head_terms
+    # new predicate
+    new_predicate = lang.inv_pred(args, arity=len(p_args), pi_dtypes=None, p_args=p_args, pi_types='explain')
+
+    # define atoms
+    # extend the clause with new atoms
+    new_predicate.obj_indices = obj_indices
+    new_predicate.value_set = min_value_set
+
+    return new_predicate
 
 
-class PIReasoner(nn.Module):
-    """The Neuro-Symbolic Forward Reasoner.
-
-    Args:
-        perception_model (nn.Module): The perception model.
-        facts_converter (nn.Module): The facts converter module.
-        infer_module (nn.Module): The differentiable forward-chaining inference module.
-        atoms (list(atom)): The set of ground atoms (facts).
+def gen_pi_clauses(args, lang, new_predicates, clause_str_list_with_score, kp_str_list):
+    """Read lines and parse to Atom objects.
     """
 
-    def __init__(self, perception_module, facts_converter, infer_module, clause_infer_module, pi_clause_infer_module,
-                 atoms, clauses,
-                 pi_valuation_module, train=False):
-        super().__init__()
-        self.pm = perception_module
-        self.fc = facts_converter
-        self.im = infer_module
-        self.cim = clause_infer_module
-        self.pi_cim = pi_clause_infer_module
-        self.atoms = atoms
-        self.pi_vm = pi_valuation_module
-        self.bk = None
-        self.clauses = clauses
-        self._train = train
+    with open(args.lark_path, encoding="utf-8") as grammar:
+        lp_clause = Lark(grammar.read(), start="clause")
 
-    def get_clauses(self):
-        clause_ids = [np.argmax(w.detach().cpu().numpy()) for w in self.im.W]
-        return [self.clauses[ci] for ci in clause_ids]
+    for n_p in new_predicates:
+        lang.invented_preds.append(n_p[0])
+    clause_str_list = []
+    for c_str, c_score in clause_str_list_with_score:
+        clause_str_list += c_str
 
-    def _summary(self):
-        print("facts: ", len(self.atoms))
-        print("I: ", self.im.I.shape)
+    clauses = []
+    for clause_str in clause_str_list:
+        tree = lp_clause.parse(clause_str)
+        clause = ExpTree(lang).transform(tree)
+        clauses.append(clause)
 
-    def get_params(self):
-        return self.im.get_params()  # + self.fc.get_params()
+    for str in kp_str_list:
+        print(str)
+    kp_clause = []
+    for clause_str in kp_str_list:
+        tree = lp_clause.parse(clause_str)
+        clause = ExpTree(lang).transform(tree)
+        kp_clause.append(clause)
 
-    def forward(self, x):
-        # obtain the object-centric representation
-        zs = self.pm(x)
-        # convert to the valuation tensor
-        V_0 = self.fc(zs, self.atoms, self.bk)
-        # perform T-step forward-chaining reasoning
-        V_T = self.im(V_0)
-        return V_T
-
-    def clause_eval(self, scores):
-        # obtain the object-centric representation
-        # determine useful clauses for invented predicates
-        for i, atom in enumerate(self.atoms):
-            if type(atom.pred) == InventedPredicate:
-                child_atoms = atom.pred.child_predicates
-                new_score = self.pi_vm(child_atoms, self.clauses, scores)
-                for i, clause in enumerate(self.clauses):
-                    for body_atom in clause.body:
-                        if body_atom.pred.name == atom.pred.name:
-                            scores[i] = new_score
-
-        # update scores
-        # new_scores = self.update_scores(self.atoms, self.bk, scores)
-
-        return scores
-
-    def predict(self, v, predname):
-        """Extracting a value from the valuation tensor using a given predicate.
-        """
-        # v: batch * |atoms|
-        target_index = get_index_by_predname(
-            pred_str=predname, atoms=self.atoms)
-        return v[:, target_index]
-
-    def predict_multi(self, v, prednames):
-        """Extracting values from the valuation tensor using given predicates.
-
-        prednames = ['kp1', 'kp2', 'kp3']
-        """
-        # v: batch * |atoms|
-        target_indices = []
-        for predname in prednames:
-            target_index = get_index_by_predname(
-                pred_str=predname, atoms=self.atoms)
-            target_indices.append(target_index)
-        prob = torch.cat([v[:, i].unsqueeze(-1)
-                          for i in target_indices], dim=1)
-        B = v.size(0)
-        N = len(prednames)
-        assert prob.size(0) == B and prob.size(
-            1) == N, 'Invalid shape in the prediction.'
-        return prob
-
-    def print_program(self):
-        """Print asummary of logic programs using continuous weights.
-        """
-        print('====== LEARNED PROGRAM ======')
-        C = self.clauses
-        Ws_softmaxed = torch.softmax(self.im.W, 1)
-
-        print("Ws_softmaxed: ", np.round(
-            Ws_softmaxed.detach().cpu().numpy(), 2))
-
-        for i, W_ in enumerate(Ws_softmaxed):
-            max_i = np.argmax(W_.detach().cpu().numpy())
-            print('C_' + str(i) + ': ',
-                  C[max_i], np.round(np.array(W_[max_i].detach().cpu().item()), 2))
-
-    def print_valuation_batch(self, valuation, n=40):
-        # self.print_program()
-        for b in range(valuation.size(0)):
-            print('===== BATCH: ', b, '=====')
-            v = valuation[b].detach().cpu().numpy()
-            idxs = np.argsort(-v)
-            for i in idxs:
-                if v[i] > 0.1:
-                    print(i, self.atoms[i], ': ', round(v[i], 3))
-
-    def get_valuation_text(self, valuation):
-        text_batch = ''  # texts for each batch
-        for b in range(valuation.size(0)):
-            top_atoms = self.get_top_atoms(valuation[b].detach().cpu().numpy())
-            text = '----BATCH ' + str(b) + '----\n'
-            text += self.atoms_to_text(top_atoms)
-            text += '\n'
-            # texts.append(text)
-            text_batch += text
-        return text_batch
-
-    def get_top_atoms(self, v):
-        top_atoms = []
-        for i, atom in enumerate(self.atoms):
-            if v[i] > 0.7:
-                top_atoms.append(atom)
-        return top_atoms
-
-    def atoms_to_text(self, atoms):
-        text = ''
-        for atom in atoms:
-            text += str(atom) + ', '
-        return text
-
-
-def get_pi_model(args, lang, clauses, atoms, pi_clauses, FC, train=False):
-    device = args.device
-    if args.dataset_type == "kandinsky":
-        PM = YOLOPerceptionModule(e=args.e, d=11, device=device)
-    elif args.dataset_type == "hide":
-        PM = FCNNPerceptionModule(e=args.e, d=11, device=device)
-    else:
-        raise ValueError
-    PI_VM = PIValuationModule(lang=lang, device=device, dataset=args.dataset, dataset_type=args.dataset_type)
-    IM = build_infer_module(args, clauses, pi_clauses, atoms, lang,
-                            m=args.m, infer_step=2, device=device, train=train)
-    CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang,
-                                    m=len(clauses), infer_step=8, device=device)
-
-    PICIM = build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=2,
-                                         device=device)
-
-    PI = PIReasoner(perception_module=PM, facts_converter=FC,
-                    infer_module=IM, clause_infer_module=CIM,
-                    pi_clause_infer_module=PICIM,
-                    atoms=atoms, clauses=clauses,
-                    pi_valuation_module=PI_VM)
-    # Neuro-Symbolic Forward Reasoner
-    return PI
-
-
+    return clauses, kp_clause

@@ -13,12 +13,12 @@ time_now = datetime.datetime.now().strftime("%H_%M_%S")
 
 def main():
     # set up the environment, load the dataset and results from perception models
-    args, rtpt, percept_dict, obj_groups = init()
+    args, rtpt, percept_dict, obj_groups, obj_avail = init()
 
     # ILP and PI system
     start = time.time()
     # update arguments
-    update_args(args, percept_dict, obj_groups)
+    update_args(args, percept_dict, obj_groups, obj_avail)
     # describe the scenes with clauses, invent new predicates if necessary
     NSFR = train_and_eval(args, rtpt)
     end = time.time()

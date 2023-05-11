@@ -17,7 +17,8 @@ def detect_line_groups(args, percept_dict):
     color_data = percept_dict[:, :, config.indices_color]
     shape_data = percept_dict[:, :, config.indices_shape]
     point_screen_data = percept_dict[:, :, config.indices_screen_position]
-    obj_availabilities = torch.zeros(point_data.shape[0], point_data.shape[1], dtype=torch.bool)
+
+    used_objs = torch.zeros(point_data.shape[0], args.group_e, point_data.shape[1], dtype=torch.bool)
     line_tensors = torch.zeros(point_data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
 
     for data_i in range(point_data.shape[0]):
@@ -25,6 +26,7 @@ def detect_line_groups(args, percept_dict):
         group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 2).tolist()
         tensor_counter = 0
         line_tensor_candidates = torch.zeros(args.group_e, len(config.group_tensor_index.keys()))
+        groups_used_objs = torch.zeros(args.group_e, point_data.shape[1], dtype=torch.bool)
         for g_i, group_index in enumerate(group_indices):
             # check duplicate
             if group_index not in exist_combs:
@@ -36,16 +38,21 @@ def detect_line_groups(args, percept_dict):
                     point_groups_screen = point_screen_data[data_i][point_indices]
                     line_tensor = to_line_tensor(point_groups, point_groups_screen, colors, shapes).reshape(1, -1)
                     line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
+
+                    # update point abilities
+                    line_used_objs = torch.zeros(1, point_data.shape[1], dtype=torch.bool)
+                    line_used_objs[0, point_indices] = True
+                    groups_used_objs = torch.cat([groups_used_objs, line_used_objs], dim=0)
+
                     exist_combs += get_comb(point_indices, 2).tolist()
                     tensor_counter += 1
-                    # update point abilities
-                    obj_availabilities[data_i][point_indices] = True
                     print(f'line group: {point_indices}, collinearities: {collinearities}')
         print(f'\n')
         _, prob_indices = line_tensor_candidates[:, config.group_tensor_index["line"]].sort(descending=True)
         prob_indices = prob_indices[:args.e]
         line_tensors[data_i] = line_tensor_candidates[prob_indices]
-    return line_tensors, obj_availabilities
+        used_objs[data_i] = groups_used_objs[prob_indices]
+    return line_tensors, used_objs
 
 
 def detect_circle_groups(args, percept_dict):
@@ -53,12 +60,16 @@ def detect_circle_groups(args, percept_dict):
     color_data = percept_dict[:, :, config.indices_color]
     shape_data = percept_dict[:, :, config.indices_shape]
     point_screen_data = percept_dict[:, :, config.indices_screen_position]
+
+    used_objs = torch.zeros(point_data.shape[0], args.group_e, point_data.shape[1], dtype=torch.bool)
     circle_tensors = torch.zeros(point_data.shape[0], args.e, len(config.group_tensor_index.keys()))
     for data_i in range(point_data.shape[0]):
         exist_combs = []
         tensor_counter = 0
         group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 3).tolist()
         circle_tensor_candidates = torch.zeros(args.e, len(config.group_tensor_index.keys()))
+        groups_used_objs = torch.zeros(args.group_e, point_data.shape[1], dtype=torch.bool)
+
         for g_i, group_index in enumerate(group_indices):
             # check duplicate
             if group_index not in exist_combs:
@@ -70,6 +81,11 @@ def detect_circle_groups(args, percept_dict):
                     circle_tensor = to_circle_tensor(p_groups, p_groups_screen, colors, shapes, center=center,
                                                      r=r).reshape(1, -1)
                     circle_tensor_candidates = torch.cat([circle_tensor_candidates, circle_tensor], dim=0)
+
+                    cir_used_objs = torch.zeros(1, point_data.shape[1], dtype=torch.bool)
+                    cir_used_objs[0, p_indices] = True
+                    groups_used_objs = torch.cat([groups_used_objs, cir_used_objs], dim=0)
+
                     exist_combs += get_comb(p_indices, 3).tolist()
                     tensor_counter += 1
                     # print(f'circle group: {p_indices}')
@@ -77,7 +93,8 @@ def detect_circle_groups(args, percept_dict):
         _, prob_indices = circle_tensor_candidates[:, config.group_tensor_index["circle"]].sort(descending=True)
         prob_indices = prob_indices[:args.e]
         circle_tensors[data_i] = circle_tensor_candidates[prob_indices]
-    return circle_tensors
+        used_objs[data_i] = groups_used_objs[prob_indices]
+    return circle_tensors, used_objs
 
 
 def extend_line_group(args, group_index, points, error_th):
@@ -161,16 +178,13 @@ def test_groups_on_one_image(data, val_result):
     return test_score
 
 
-def merge_groups(line_groups, cir_groups):
+def merge_groups(args, line_groups, cir_groups, line_used_objs, cir_used_objs):
     object_groups = torch.cat((line_groups, cir_groups), dim=1)
-    _, group_ranking = object_groups[:, :, -1].sort(dim=-1, descending=True)
+    used_objs = torch.cat((line_used_objs, cir_used_objs), dim=1)
 
-    for i in range(object_groups.shape[0]):
-        object_groups[i] = object_groups[i, group_ranking[i]]
-
-    # group and groups suppose have to overlap with each other?
-
-    return object_groups
+    object_groups = object_groups[:, :args.group_e]
+    used_objs = used_objs[:, :args.group_e]
+    return object_groups, used_objs
 
 
 def get_args():
@@ -437,28 +451,48 @@ def detect_obj_groups_single(args, percept_dict_single, data_type):
     if os.path.exists(group_file):
         group_res = torch.load(group_file)
         group_tensors = group_res["tensors"]
+        group_obj_index_tensors = group_res['used_objs']
     else:
-        pattern_line, used_objs = detect_line_groups(args, percept_dict_single)
+        pattern_line, pattern_line_used_objs = detect_line_groups(args, percept_dict_single)
         # pattern_dot = detect_dot_groups(args, percept_dict_single, used_objs)
-        pattern_cir = detect_circle_groups(args, percept_dict_single)
-        group_tensors = merge_groups(pattern_line, pattern_cir)
+        pattern_cir, pattern_cir_used_objs = detect_circle_groups(args, percept_dict_single)
+        group_tensors, group_obj_index_tensors = merge_groups(args, pattern_line, pattern_cir, pattern_line_used_objs,
+                                                              pattern_cir_used_objs)
         group_res = {
-            "tensors": group_tensors
+            "tensors": group_tensors,
+            "used_objs": group_obj_index_tensors,
         }
         torch.save(group_res, group_file)
 
-    return group_tensors
+    return group_tensors, group_obj_index_tensors
 
 
 def detect_obj_groups_with_bk(args, percept_dict):
-    group_val_pos = detect_obj_groups_single(args, percept_dict["val_pos"], "val_pos")
-    group_val_neg = detect_obj_groups_single(args, percept_dict["val_neg"], "val_neg")
-    group_train_pos = detect_obj_groups_single(args, percept_dict["train_pos"], "train_pos")
-    group_train_neg = detect_obj_groups_single(args, percept_dict["train_neg"], "train_neg")
-    group_test_pos = detect_obj_groups_single(args, percept_dict["test_pos"], "test_pos")
-    group_test_neg = detect_obj_groups_single(args, percept_dict["test_neg"], "test_neg")
+    group_val_pos, obj_avail_val_pos = detect_obj_groups_single(args, percept_dict["val_pos"], "val_pos")
+    group_val_neg, obj_avail_val_neg = detect_obj_groups_single(args, percept_dict["val_neg"], "val_neg")
+    group_train_pos, obj_avail_train_pos = detect_obj_groups_single(args, percept_dict["train_pos"], "train_pos")
+    group_train_neg, obj_avail_train_neg = detect_obj_groups_single(args, percept_dict["train_neg"], "train_neg")
+    group_test_pos, obj_avail_test_pos = detect_obj_groups_single(args, percept_dict["test_pos"], "test_pos")
+    group_test_neg, obj_avail_test_neg = detect_obj_groups_single(args, percept_dict["test_neg"], "test_neg")
 
-    return group_val_pos, group_val_neg, group_train_pos, group_train_neg, group_test_pos, group_test_neg
+    detect_res = {
+        'group_val_pos': group_val_pos,
+        'group_val_neg': group_val_neg,
+        'group_train_pos': group_train_pos,
+        'group_train_neg': group_train_neg,
+        'group_test_pos': group_test_pos,
+        'group_test_neg': group_test_neg,
+    }
+
+    obj_avail_res = {
+        'obj_avail_val_pos': obj_avail_val_pos,
+        'obj_avail_val_neg': obj_avail_val_neg,
+        'obj_avail_train_pos': obj_avail_train_pos,
+        'obj_avail_train_neg': obj_avail_train_neg,
+        'obj_avail_test_pos': obj_avail_test_pos,
+        'obj_avail_test_neg': obj_avail_test_neg,
+    }
+    return detect_res, obj_avail_res
 
 
 def get_group_tree(args, obj_groups, group_by):

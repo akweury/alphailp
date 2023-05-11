@@ -329,7 +329,7 @@ class Language(object):
             raise ValueError('Too less match in ' + invented_pred_name)
         return invented_pred[0]
 
-    def get_new_invented_predicate(self, args, arity, pi_dtypes, p_args, pi_types):
+    def inv_pred(self, args, arity, pi_dtypes, p_args, pi_types):
         """Get the predicate by its id.
 
         Args:

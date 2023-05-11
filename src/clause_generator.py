@@ -283,8 +283,8 @@ class PIClauseGenerator(object):
         for pi_index, [clause_cluster, cluster_score] in enumerate(clause_clusters):
             p_args = count_arity_from_clause_cluster(clause_cluster)
             dtypes = [DataType("object")] * len(p_args)
-            new_predicate = self.lang.get_new_invented_predicate(args, arity=len(p_args), pi_dtypes=dtypes,
-                                                                 p_args=p_args, pi_types=clause_type)
+            new_predicate = self.lang.inv_pred(args, arity=len(p_args), pi_dtypes=dtypes,
+                                               p_args=p_args, pi_types=clause_type)
             new_predicate.body = []
             for [c_i, clause, c_score] in clause_cluster:
                 atoms = []

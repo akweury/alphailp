@@ -2,6 +2,7 @@ import numpy as np
 import torch
 
 import config
+import ilp
 import log_utils
 import eval_clause_infer
 from fol.logic import *
@@ -120,6 +121,7 @@ def get_index_by_predname(pred_str, atoms):
                 p_indices.append(i)
         indices.append(p_indices)
     return indices
+
 
 def parse_clauses(lang, clause_strs):
     du = DataUtils(lang)
@@ -421,7 +423,7 @@ def eval_predicates_slow(NSFR, args, pred_names, pos_pred, neg_pred):
         # clause loop
         for clause_index, V_T in enumerate(V_T_list):
             for pred_index, pred_name in enumerate(pred_names):
-                predicted = NSFR.ilp_predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
+                predicted = ilp.ilp_predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
                 C_score[:, clause_index, pred_index] = predicted
         # sum over positive prob
         score_positive[:, image_index, :] = C_score
@@ -433,7 +435,7 @@ def eval_predicates_slow(NSFR, args, pred_names, pos_pred, neg_pred):
         C_score = torch.zeros((bz, clause_num, eval_pred_num)).to(device)
         for clause_index, V_T in enumerate(V_T_list):
             for pred_index, pred_name in enumerate(pred_names):
-                predicted = NSFR.ilp_predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
+                predicted = ilp.ilp_predict(v=V_T_list[clause_index, 0:1, :], predname=pred_name).detach()
                 C_score[:, clause_index, pred_index] = predicted
             # C
             # C_score = PI.clause_eval(C_score)
@@ -784,36 +786,6 @@ def get_clause_unused_args(clause):
     return unused_args
 
 
-# def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
-#     non_duplicate_c = []
-#     for clause in refs_i:
-#         is_duplicate = False
-#         for body in clause.body:
-#             if "in" != body.pred.name:
-#                 if len(body.terms) == 2 and "O" not in body.terms[1].name:
-#                     # predicate with 1 object arg
-#                     if len(unused_args) > 0:
-#                         if not (body.terms[0] == unused_args[0] or body.terms[0] in used_args):
-#                             is_duplicate = True
-#                             break
-#                     # predicate with 2 object args
-#                 elif len(body.terms) == 2 and body.terms[0] in unused_args and body.terms[1] in unused_args:
-#                     if body.terms[0] not in unused_args[:2] and body.terms[1] not in unused_args:
-#                         is_duplicate = True
-#                         break
-#                 elif len(body.terms) == 1 and body.terms[0] in unused_args:
-#                     if body.terms[0] not in unused_args[:1]:
-#                         is_duplicate = True
-#                         break
-#
-#         if not is_duplicate:
-#             non_duplicate_c.append(clause)
-#             # log_utils.add_lines(f'(non duplicate clause) {clause}', args.log_file)
-#         # else:
-#         # log_utils.add_lines(f'(duplicate clause) {clause}', args.log_file)
-#     return non_duplicate_c
-#
-
 def replace_inv_to_equiv_preds(inv_pred):
     equiv_preds = []
     for atom_list in inv_pred.body:
@@ -871,3 +843,22 @@ def count_arity_from_clause_cluster(clause_cluster):
                     arity_list.append(t.name)
     arity_list.sort()
     return arity_list
+
+
+def has_term(pred, term_name):
+    for dtype in pred.dtypes:
+        if dtype.name == term_name:
+            return True
+    return False
+
+
+def find_minimum_common_values(focused_obj_values):
+    minimum_set = []
+    for indices in focused_obj_values:
+        indices_list = indices.reshape(-1).tolist()
+        if indices_list not in minimum_set:
+            minimum_set.append(indices_list)
+
+    return minimum_set
+
+

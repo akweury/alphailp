@@ -21,7 +21,7 @@ def load_args_from_file(args_file_path, given_args):
 
 
 def load_neural_preds(neural_predicates):
-    preds = [parse_neural_pred(line) for line in neural_predicates]
+    preds = [parse_neural_pred(value) for key, value in neural_predicates.items()]
     return preds
 
 

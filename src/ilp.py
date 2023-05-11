@@ -1,10 +1,14 @@
 # Created by shaji on 21-Apr-23
-
+import numpy as np
+from sklearn.metrics import roc_curve, accuracy_score, recall_score
+from tqdm import tqdm
+import torch
 
 from ilp_utils import *
 import nsfr_utils
 import aitk
-import visual_utils
+from nsfr_utils import get_prob
+from pi_utils import gen_pi_clauses
 
 
 def describe_scenes(args, lang, VM, FC):
@@ -98,7 +102,6 @@ def ilp_main(args, lang, with_pi=True):
 
 
 def ilp_pi(args, lang):
-
     # predicate invention by clustering
     new_clu_pred_with_scores = cluster_invention(args, lang)
     # convert to strings
@@ -111,7 +114,6 @@ def ilp_pi(args, lang):
 
     # predicate invention by explanation
     new_explain_pred_with_scores = explain_invention(args, lang)
-
 
     if len(lang.invented_preds) > 0:
         # add new predicates
@@ -152,65 +154,53 @@ def ilp_test(args, lang):
     return success
 
 
-def visualization(args, lang, colors=None, thickness=None, radius=None):
-    if colors is None:
-        # Blue color in BGR
-        colors = [
-            (255, 0, 0),
-            (255, 255, 0),
-            (0, 255, 0),
-            (0, 0, 255),
-            (0, 255, 255),
-        ]
-    if thickness is None:
-        # Line thickness of 2 px
-        thickness = 2
-    if radius is None:
-        radius = 10
+def ilp_predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
+    predicted_list = []
+    target_list = []
+    count = 0
 
-    for data_type in ["true", "false"]:
-        for i in range(len(args.test_group_pos)):
-            data_name = args.image_name_dict['test'][data_type][i]
-            if data_type == "true":
-                data = args.test_group_pos[i]
-            else:
-                data = args.test_group_neg[i]
+    pm_pred = torch.cat((pos_pred, neg_pred), dim=0)
+    train_label = torch.zeros(len(pm_pred))
+    train_label[:len(pos_pred)] = 1.0
 
-            # calculate scores
-            VM = aitk.get_vm(args, lang)
-            FC = aitk.get_fc(args, lang, VM)
-            NSFR = nsfr_utils.get_nsfr_model(args, lang, FC)
+    target_set = train_label.to(torch.int64)
 
-            # evaluate new clauses
-            scores = eval_clause_infer.eval_clause_on_test_scenes(NSFR, args, lang.clauses[0], data.unsqueeze(0))
+    for i, sample in tqdm(enumerate(pm_pred, start=0)):
+        # to cuda
+        sample = sample.unsqueeze(0)
+        # infer and predict the target probability
+        V_T = NSFR(sample).unsqueeze(0)
+        predicted = get_prob(V_T, NSFR, args).squeeze(1).squeeze(1)
+        predicted_list.append(predicted.detach())
+        target_list.append(target_set[i])
+        count += V_T.size(0)  # batch size
 
-            visual_images = []
-            # input image
-            file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
-            image_file = file_prefix + ".image.png"
-            input_image = visual_utils.get_cv_image(image_file)
+    predicted_all = torch.cat(predicted_list, dim=0).detach().cpu().numpy()
+    target_set = torch.tensor(target_list).to(torch.int64).detach().cpu().numpy()
 
-            # group prediction
-            group_pred_image = visual_utils.visual_group_predictions(args, data, input_image, colors, thickness)
+    if th == None:
+        fpr, tpr, thresholds = roc_curve(target_set, predicted_all, pos_label=1)
+        accuracy_scores = []
+        print('ths', thresholds)
+        for thresh in thresholds:
+            accuracy_scores.append(accuracy_score(
+                target_set, [m > thresh for m in predicted_all]))
 
-            # information image
-            info_image = visual_utils.visual_info(lang, input_image.shape, font_size=0.4)
+        accuracies = np.array(accuracy_scores)
+        max_accuracy = accuracies.max()
+        max_accuracy_threshold = thresholds[accuracies.argmax()]
+        rec_score = recall_score(
+            target_set, [m > thresh for m in predicted_all], average=None)
 
-            # adding header and footnotes
-            input_image = visual_utils.draw_text(input_image, "input")
-            visual_images.append(input_image)
+        print('target_set: ', target_set, target_set.shape)
+        print('predicted: ', predicted_all, predicted.shape)
+        print('accuracy: ', max_accuracy)
+        print('threshold: ', max_accuracy_threshold)
+        print('recall: ', rec_score)
 
-            group_pred_image = visual_utils.draw_text(group_pred_image, f"group:{round(scores[0].tolist(), 4)}")
-            group_pred_image = visual_utils.draw_text(group_pred_image, f"{lang.clauses[0]}", position="lower_left",
-                                                      font_size=0.4)
-            visual_images.append(group_pred_image)
-
-            info_image = visual_utils.draw_text(info_image, f"Info:")
-            visual_images.append(info_image)
-
-            # final processing
-            final_image = visual_utils.hconcat_resize(visual_images)
-            final_image_filename = str(
-                args.image_output_path / f"{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
-            # visual_utils.show_images(final_image, "Visualization")
-            visual_utils.save_image(final_image, final_image_filename)
+        return max_accuracy, rec_score, max_accuracy_threshold
+    else:
+        accuracy = accuracy_score(target_set, [m > th for m in predicted_all])
+        rec_score = recall_score(
+            target_set, [m > th for m in predicted_all], average=None)
+        return accuracy, rec_score, th
