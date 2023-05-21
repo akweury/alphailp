@@ -32,6 +32,6 @@ def parse_neural_pred(line):
     pred, arity, dtype_names_str = line.split(':')
     dtype_names = dtype_names_str.split(',')
     dtypes = [DataType(dt) for dt in dtype_names]
-    ptypes = config.ptypes['bk']
+    pi_type = config.pi_type['bk']
     assert int(arity) == len(dtypes), 'Invalid arity and dtypes in ' + pred + '.'
-    return NeuralPredicate(pred, int(arity), dtypes, ptypes)
+    return NeuralPredicate(pred, int(arity), dtypes, pi_type)

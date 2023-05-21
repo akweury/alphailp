@@ -2,13 +2,13 @@
 
 import config
 from mechanic_utils import eval_single_group, check_group_result
-from pi import explain_with_group_terms_preds
+from pi import generate_explain_pred
 from pi_utils import generate_new_predicate
 
 from refinement import RefinementGenerator
 import log_utils, eval_clause_infer, logic_utils
 from logic_utils import get_equivalent_clauses, get_pred_names_from_clauses
-
+from fol import logic
 
 def keep_best_preds(args, lang):
     p_inv_best = sorted(lang.invented_preds_with_scores, key=lambda x: x[1][2], reverse=True)
@@ -237,7 +237,7 @@ def cluster_invention(args, lang):
     found_ns = False
 
     clu_lists = logic_utils.search_independent_clauses_parallel(args, lang)
-    new_preds_with_scores = generate_new_predicate(args, lang, clu_lists)
+    new_preds_with_scores = generate_new_predicate(args, lang, clu_lists, pi_type=config.pi_type["clu"])
     new_preds_with_scores = new_preds_with_scores[:args.pi_top]
     lang.invented_preds_with_scores += new_preds_with_scores
 
@@ -250,26 +250,34 @@ def cluster_invention(args, lang):
 
 
 def explain_invention(args, lang):
-    expalined_clause = []
+    explained_clause = []
     for clause, scores, score_all in lang.clause_with_scores:
 
         if scores[0] > args.sc_th:
             for atom in clause.body:
-                if atom.pred.ptypes == config.ptypes['bk']:
+                if atom.pred.pi_type == config.pi_type['bk']:
                     unclear_pred = atom.pred
                     atom_terms = atom.terms
-                    new_atoms = explain_with_group_terms_preds(args, lang, atom_terms, unclear_pred)
+                    new_pred = generate_explain_pred(args, lang, atom_terms, unclear_pred)
 
-    new_preds_with_scores = generate_new_predicate(args, lang, expalined_clause)
-    new_preds_with_scores = new_preds_with_scores[:args.pi_top]
-    lang.invented_preds_with_scores += new_preds_with_scores
+                    if new_pred is not None:
+                        new_atom = logic.Atom(new_pred, atom_terms)
+                        clause.body.append(new_atom)
+        explained_clause.append([clause, scores])
 
-    log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
-    for new_c, new_c_score in new_preds_with_scores:
-        log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
-    if not args.is_done:
-        args.is_done = True
-    return new_preds_with_scores
+
+    return explained_clause
+
+    # new_preds_with_scores = generate_new_predicate(args, lang, explained_clause, pi_type=config.pi_type["exp"])
+    # new_preds_with_scores = new_preds_with_scores[:args.pi_top]
+    # lang.invented_preds_with_scores += new_preds_with_scores
+    #
+    # log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
+    # for new_c, new_c_score in new_preds_with_scores:
+    #     log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
+    # if not args.is_done:
+    #     args.is_done = True
+    # return new_preds_with_scores
 
 
 def generate_new_clauses_str_list(new_predicates):

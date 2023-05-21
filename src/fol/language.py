@@ -135,8 +135,8 @@ class Language(object):
         pred, arity, dtype_names_str = line.split(':')
         dtype_names = dtype_names_str.split(',')
         dtypes = [DataType(dt) for dt in dtype_names]
-        ptypes = config.ptypes['bk']
-        return NeuralPredicate(pred, int(arity), dtypes, ptypes)
+        pi_type = config.pi_type['bk']
+        return NeuralPredicate(pred, int(arity), dtypes, pi_type)
 
     def parse_const(self, args, const, const_type):
         """Parse string to function symbols.
@@ -329,7 +329,7 @@ class Language(object):
             raise ValueError('Too less match in ' + invented_pred_name)
         return invented_pred[0]
 
-    def inv_pred(self, args, arity, pi_dtypes, p_args, pi_types):
+    def inv_pred(self, args, arity, pi_dtypes, p_args, pi_type):
         """Get the predicate by its id.
 
         Args:
@@ -343,9 +343,10 @@ class Language(object):
         args.p_inv_counter += 1
         self.invented_preds_number = args.p_inv_counter
         pred_with_id = prefix + str(new_predicate_id)
-        #
-        new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, p_args, pi_types)
-        # self.invented_preds.append(new_predicate)
+
+        new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, p_args, pi_type=pi_type)
+        self.invented_preds.append(new_predicate)
+
         return new_predicate
 
     def update_bk(self, args, neural_pred=None, full_bk=True):

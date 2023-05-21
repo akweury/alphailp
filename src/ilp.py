@@ -124,7 +124,7 @@ def ilp_pi(args, lang):
     for p in lang.invented_preds:
         log_utils.add_lines(f"{p}", args.log_file)
 
-    log_utils.add_lines(f"========== Total {len(lang.pi_clauses)} PI Clauses ============= ", args.log_file)
+    log_utils.add_lines(f"========== Total {len(lang.pi_clauses)} PI Clauses ======== ", args.log_file)
     for c in lang.pi_clauses:
         log_utils.add_lines(f"{c}", args.log_file)
 

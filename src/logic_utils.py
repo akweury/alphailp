@@ -845,6 +845,18 @@ def count_arity_from_clause_cluster(clause_cluster):
     return arity_list
 
 
+def count_arity_from_clause(clause):
+    arity_list = []
+    for b in clause.body:
+        if "in" == b.pred.name:
+            continue
+        for t in b.terms:
+            if t.name not in arity_list and "O" in t.name:
+                arity_list.append(t.name)
+    arity_list.sort()
+    return arity_list
+
+
 def has_term(pred, term_name):
     for dtype in pred.dtypes:
         if dtype.name == term_name:
@@ -862,3 +874,14 @@ def find_minimum_common_values(focused_obj_values):
     return minimum_set
 
 
+def terms_to_dtypes(terms):
+    dtypes = []
+
+    for term in terms:
+        if "O" == term.name[0]:
+            dtypes.append("group")
+        elif "number" in term.name:
+            dtypes.append("number")
+        else:
+            raise ValueError
+    return dtypes

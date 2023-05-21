@@ -237,9 +237,9 @@ class PIClauseGenerator(object):
         self.bk_clauses = None
         self.device = args.device
 
-    def invent_predicate(self, beam_search_clauses, pi_clauses, args, neural_pred, invented_p):
+    def invent_predicate(self, lang, pi_clauses, args, neural_pred, invented_p):
 
-        new_predicates, is_done = self.cluster_invention(beam_search_clauses, args.val_pos.shape[0], args)
+        new_predicates, is_done = self.cluster_invention(args, lang)
         log_utils.add_lines(f"new PI: {len(new_predicates)}", args.log_file)
         for new_c, new_c_score in new_predicates:
             log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
@@ -284,7 +284,7 @@ class PIClauseGenerator(object):
             p_args = count_arity_from_clause_cluster(clause_cluster)
             dtypes = [DataType("object")] * len(p_args)
             new_predicate = self.lang.inv_pred(args, arity=len(p_args), pi_dtypes=dtypes,
-                                               p_args=p_args, pi_types=clause_type)
+                                               p_args=p_args, pi_type=clause_type)
             new_predicate.body = []
             for [c_i, clause, c_score] in clause_cluster:
                 atoms = []
@@ -366,10 +366,10 @@ class PIClauseGenerator(object):
             new_all_pi_clausese.append(pi_c)
         return new_all_pi_clausese
 
-    def cluster_invention(self, clause_candidates, total_score, args):
+    def cluster_invention(self, args, lang):
         found_ns = False
 
-        clu_lists = logic_utils.search_independent_clauses_parallel(clause_candidates, total_score, args)
+        clu_lists = logic_utils.search_independent_clauses_parallel(args, lang)
         new_predicates = self.generate_new_predicate(args, clu_lists)
         new_predicates = new_predicates[:args.pi_top]
 

@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-ptypes = {'bk': 'bk_pred',
+pi_type = {'bk': 'bk_pred',
           'clu': 'clu_pred',
           'exp': 'exp_pred'}
 
