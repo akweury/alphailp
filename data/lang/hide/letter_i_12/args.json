@@ -7,7 +7,7 @@
   "collinear_th": 0.3,
   "dataset": "letter_i_12",
   "dataset-type": "hide",
-  "distribute_error_th": 0.02,
+  "distribute_error_th": 0.0007,
   "score_unique": true,
   "semantic_unique": true,
   "small_data": false,
@@ -28,5 +28,7 @@
   "pi_top": 1,
   "length_weight": 0.02,
   "with_bk": false,
-  "plot_four_zone": false
+  "plot_four_zone": false,
+  "with_pi": true,
+  "with_explain": true
 }

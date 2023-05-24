@@ -46,6 +46,14 @@ pred_obj_mapping = {
     'slope': ['x', 'y', 'z'],
 }
 
+
+"""
+(explaination)
+line: average distance between any two objects next to each other, group size
+or 
+remember the distances as a list
+"""
+
 pred_pred_mapping = {
     'shape_counter': ['shape'],
     'color_counter': ['color'],

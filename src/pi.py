@@ -19,8 +19,6 @@ def generate_explain_pred(args, lang, atom_terms, unclear_pred):
     if not has_term(unclear_pred, 'group'):
         return None
 
-    explaining_predicates = bk.pred_pred_mapping[unclear_pred.name]
-
     val_pos_obj = args.val_pos
     val_pos_group = args.val_group_pos
     val_pos_avail = args.obj_avail_val_pos
@@ -46,7 +44,6 @@ def generate_explain_pred(args, lang, atom_terms, unclear_pred):
 
     new_predicate = lang.inv_pred(args, arity=len(atom_terms), pi_dtypes=dtypes, p_args=atom_terms,
                                   pi_type=config.pi_type["exp"])
-
 
     # define atoms
     # extend the clause with new atoms

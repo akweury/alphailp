@@ -24,7 +24,15 @@ def get_comb(data, comb_size):
     return indices
 
 
-def to_line_tensor(point_groups, point_groups_screen, colors, shapes):
+def to_line_tensor(point_groups, percept_dict, data_i, point_indices):
+    color_data = percept_dict[:, :, config.indices_color]
+    shape_data = percept_dict[:, :, config.indices_shape]
+    point_screen_data = percept_dict[:, :, config.indices_screen_position]
+
+    colors = color_data[data_i][point_indices]
+    shapes = shape_data[data_i][point_indices]
+    point_groups_screen = point_screen_data[data_i][point_indices]
+
     colors_normalized = colors.sum(dim=0) / colors.shape[0]
     shapes_normalized = shapes.sum(dim=0) / shapes.shape[0]
     # 0:2 center_x, center_z

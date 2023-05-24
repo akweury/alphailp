@@ -8,7 +8,7 @@ from ilp_utils import *
 import nsfr_utils
 import aitk
 from nsfr_utils import get_prob
-from pi_utils import gen_pi_clauses
+from pi_utils import gen_clu_pi_clauses, gen_exp_pi_clauses
 
 
 def describe_scenes(args, lang, VM, FC):
@@ -70,7 +70,14 @@ def describe_scenes(args, lang, VM, FC):
     return refs
 
 
-def ilp_main(args, lang, with_pi=True):
+def explain_scenes(args, lang):
+    """ explaination should improve the sufficient percentage """
+    new_explain_pred_with_scores = explain_invention(args, lang)
+    pi_exp_clauses = gen_exp_pi_clauses(args, lang, new_explain_pred_with_scores)
+    lang.pi_clauses += pi_exp_clauses
+
+
+def ilp_main(args, lang):
     result = eval_groups(args)
     for neural_pred in args.neural_preds:
         reset_args(args, lang)
@@ -87,7 +94,12 @@ def ilp_main(args, lang, with_pi=True):
             FC = aitk.get_fc(args, lang, VM)
 
             describe_scenes(args, lang, VM, FC)
-            if with_pi:
+
+            # predicate invention by explanation
+            if args.with_explain:
+                explain_scenes(args, lang)
+
+            if args.with_pi:
                 ilp_pi(args, lang)
 
             args.iteration += 1
@@ -106,14 +118,10 @@ def ilp_pi(args, lang):
     new_clu_pred_with_scores = cluster_invention(args, lang)
     # convert to strings
     new_clauses_str_list, kp_str_list = generate_new_clauses_str_list(new_clu_pred_with_scores)
-
-    pi_clauses, pi_kp_clauses = gen_pi_clauses(args, lang, new_clu_pred_with_scores, new_clauses_str_list, kp_str_list)
-
-    lang.pi_clauses += extract_pi(lang, pi_clauses, args)
+    pi_clu_clauses, pi_kp_clauses = gen_clu_pi_clauses(args, lang, new_clu_pred_with_scores, new_clauses_str_list,
+                                                       kp_str_list)
     lang.pi_kp_clauses = extract_kp_pi(lang, pi_kp_clauses, args)
-
-    # predicate invention by explanation
-    new_explain_pred_with_scores = explain_invention(args, lang)
+    lang.pi_clauses += pi_clu_clauses
 
     if len(lang.invented_preds) > 0:
         # add new predicates

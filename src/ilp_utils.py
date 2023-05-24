@@ -9,6 +9,8 @@ from refinement import RefinementGenerator
 import log_utils, eval_clause_infer, logic_utils
 from logic_utils import get_equivalent_clauses, get_pred_names_from_clauses
 from fol import logic
+from fol import bk
+
 
 def keep_best_preds(args, lang):
     p_inv_best = sorted(lang.invented_preds_with_scores, key=lambda x: x[1][2], reverse=True)
@@ -258,13 +260,12 @@ def explain_invention(args, lang):
                 if atom.pred.pi_type == config.pi_type['bk']:
                     unclear_pred = atom.pred
                     atom_terms = atom.terms
-                    new_pred = generate_explain_pred(args, lang, atom_terms, unclear_pred)
-
-                    if new_pred is not None:
-                        new_atom = logic.Atom(new_pred, atom_terms)
-                        clause.body.append(new_atom)
+                    if unclear_pred.name in bk.pred_pred_mapping.keys():
+                        new_pred = generate_explain_pred(args, lang, atom_terms, unclear_pred)
+                        if new_pred is not None:
+                            new_atom = logic.Atom(new_pred, atom_terms)
+                            clause.body.append(new_atom)
         explained_clause.append([clause, scores])
-
 
     return explained_clause
 

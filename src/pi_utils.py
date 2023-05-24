@@ -79,7 +79,7 @@ def generate_new_explain_predicate__(args, lang, clause_clusters, pi_type=None):
 #     return new_predicate
 
 
-def gen_pi_clauses(args, lang, new_predicates, clause_str_list_with_score, kp_str_list):
+def gen_clu_pi_clauses(args, lang, new_predicates, clause_str_list_with_score, kp_str_list):
     """Read lines and parse to Atom objects.
     """
 
@@ -107,3 +107,13 @@ def gen_pi_clauses(args, lang, new_predicates, clause_str_list_with_score, kp_st
         kp_clause.append(clause)
 
     return clauses, kp_clause
+
+
+def gen_exp_pi_clauses(args, lang, clause_str_list_with_score):
+    """ Read lines and parse to Atom objects. """
+
+    clauses = []
+    for n_p in clause_str_list_with_score:
+        clauses.append(n_p[0])
+
+    return clauses

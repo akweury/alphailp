@@ -4,20 +4,17 @@ import torch
 
 import config
 from data_utils import to_line_tensor, get_comb, to_circle_tensor
-from eval_utils import eval_group_diff, eval_count_diff, count_func, group_func, get_circle_error, eval_score, \
-    is_even_distributed_points
+from eval_utils import eval_group_diff, eval_count_diff, count_func, group_func, get_circle_error, eval_score
 from eval_utils import predict_circles, calc_colinearity, get_group_distribution
+import eval_utils
 import file_utils
 import logic_utils
 import log_utils
+import copy
 
 
 def detect_line_groups(args, percept_dict):
     point_data = percept_dict[:, :, config.indices_position]
-    color_data = percept_dict[:, :, config.indices_color]
-    shape_data = percept_dict[:, :, config.indices_shape]
-    point_screen_data = percept_dict[:, :, config.indices_screen_position]
-
     used_objs = torch.zeros(point_data.shape[0], args.group_e, point_data.shape[1], dtype=torch.bool)
     line_tensors = torch.zeros(point_data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
 
@@ -30,25 +27,21 @@ def detect_line_groups(args, percept_dict):
         for g_i, group_index in enumerate(group_indices):
             # check duplicate
             if group_index not in exist_combs:
-                point_groups, point_indices, collinearities = extend_line_group(args, group_index, point_data[data_i],
-                                                                                args.error_th)
+                point_groups, point_indices, collinearities = extend_line_group(args, group_index, point_data[data_i])
                 if point_groups is not None and point_groups.shape[0] >= args.line_group_min_sz:
-                    colors = color_data[data_i][point_indices]
-                    shapes = shape_data[data_i][point_indices]
-                    point_groups_screen = point_screen_data[data_i][point_indices]
-                    line_tensor = to_line_tensor(point_groups, point_groups_screen, colors, shapes).reshape(1, -1)
+                    line_tensor = to_line_tensor(point_groups, percept_dict, data_i, point_indices).reshape(1, -1)
                     line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
 
-                    # update point abilities
+                    # update point availabilities
                     line_used_objs = torch.zeros(1, point_data.shape[1], dtype=torch.bool)
                     line_used_objs[0, point_indices] = True
                     groups_used_objs = torch.cat([groups_used_objs, line_used_objs], dim=0)
-
                     exist_combs += get_comb(point_indices, 2).tolist()
                     tensor_counter += 1
-                    print(f'line group: {point_indices}, collinearities: {collinearities}')
+                    print(f'line group: {point_indices}')
         print(f'\n')
-        _, prob_indices = line_tensor_candidates[:, config.group_tensor_index["line"]].sort(descending=True)
+        group_scores = line_tensor_candidates[:, config.group_tensor_index["line"]]
+        _, prob_indices = group_scores.sort(descending=True)
         prob_indices = prob_indices[:args.e]
         line_tensors[data_i] = line_tensor_candidates[prob_indices]
         used_objs[data_i] = groups_used_objs[prob_indices]
@@ -97,24 +90,35 @@ def detect_circle_groups(args, percept_dict):
     return circle_tensors, used_objs
 
 
-def extend_line_group(args, group_index, points, error_th):
-    point_groups = points[group_index]
-    extra_index = torch.tensor(sorted(set(list(range(max(group_index), points.shape[0]))) - set(group_index)))
-    if len(extra_index) == 0:
-        return None, None, None
-    extra_points = points[extra_index]
-    point_groups_extended = extend_groups(point_groups, extra_points)
-    colinearities = calc_colinearity(point_groups_extended)
-    is_line = colinearities < error_th
+def extend_line_group(args, group_index, points):
+    has_new_element = True
+    point_groups_new = copy.deepcopy(points)
+    point_groups_indices_new = copy.deepcopy(group_index)
+    colinearities = None
 
-    passed_points = extra_points[is_line]
-    passed_indices = extra_index[is_line]
-    point_groups_new = torch.cat([point_groups, passed_points], dim=0)
-    point_groups_indices_new = torch.cat([torch.tensor(group_index), passed_indices])
+    while has_new_element:
+        point_groups = points[point_groups_indices_new]
+        extra_index = torch.tensor(sorted(set(list(range(points.shape[0]))) - set(point_groups_indices_new)))
+        if len(extra_index) == 0:
+            return None, None, None
+        extra_points = points[extra_index]
+        point_groups_extended = extend_groups(point_groups, extra_points)
+        colinearities = calc_colinearity(point_groups_extended)
+        avg_distances = eval_utils.calc_avg_dist(point_groups_extended)
+        is_line = colinearities < args.error_th
+        is_even_dist = avg_distances < args.distribute_error_th
+        passed_indices = is_line * is_even_dist
+        has_new_element = passed_indices.sum() > 0
+        passed_points = extra_points[passed_indices]
+        passed_indices = extra_index[passed_indices]
+        point_groups_new = torch.cat([point_groups, passed_points], dim=0)
+        point_groups_indices_new += passed_indices.tolist()
 
     # check for evenly distribution
     # if not is_even_distributed_points(args, point_groups_new, shape="line"):
     #     return None, None
+    point_groups_indices_new = torch.tensor(point_groups_indices_new)
+
     return point_groups_new, point_groups_indices_new, colinearities
 
 
@@ -206,8 +210,11 @@ def get_args():
                         help='cuda device, i.e. 0 or cpu')
     parser.add_argument("--no-cuda", action="store_true",
                         help="Run on CPU instead of GPU (not recommended)")
-    parser.add_argument("--no-pi", action="store_true",
-                        help="Generate Clause without predicate invention.")
+    parser.add_argument("--with-pi", action="store_true",
+                        help="Generate Clause with predicate invention.")
+    parser.add_argument("--with-explain", action="store_true",
+                        help="Explain Clause with predicate invention.")
+
     parser.add_argument("--small-data", action="store_true",
                         help="Use small training data.")
     parser.add_argument("--score_unique", action="store_false",
@@ -468,30 +475,7 @@ def detect_obj_groups_single(args, percept_dict_single, data_type):
 
 
 def detect_obj_groups_with_bk(args, percept_dict):
-    group_val_pos, obj_avail_val_pos = detect_obj_groups_single(args, percept_dict["val_pos"], "val_pos")
-    group_val_neg, obj_avail_val_neg = detect_obj_groups_single(args, percept_dict["val_neg"], "val_neg")
-    group_train_pos, obj_avail_train_pos = detect_obj_groups_single(args, percept_dict["train_pos"], "train_pos")
-    group_train_neg, obj_avail_train_neg = detect_obj_groups_single(args, percept_dict["train_neg"], "train_neg")
-    group_test_pos, obj_avail_test_pos = detect_obj_groups_single(args, percept_dict["test_pos"], "test_pos")
-    group_test_neg, obj_avail_test_neg = detect_obj_groups_single(args, percept_dict["test_neg"], "test_neg")
 
-    detect_res = {
-        'group_val_pos': group_val_pos,
-        'group_val_neg': group_val_neg,
-        'group_train_pos': group_train_pos,
-        'group_train_neg': group_train_neg,
-        'group_test_pos': group_test_pos,
-        'group_test_neg': group_test_neg,
-    }
-
-    obj_avail_res = {
-        'obj_avail_val_pos': obj_avail_val_pos,
-        'obj_avail_val_neg': obj_avail_val_neg,
-        'obj_avail_train_pos': obj_avail_train_pos,
-        'obj_avail_train_neg': obj_avail_train_neg,
-        'obj_avail_test_pos': obj_avail_test_pos,
-        'obj_avail_test_neg': obj_avail_test_neg,
-    }
     return detect_res, obj_avail_res
 
 

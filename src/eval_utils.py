@@ -1,7 +1,6 @@
 import copy
 
 import torch
-
 import config
 
 ness_index = config.score_type_index["ness"]
@@ -159,18 +158,39 @@ def predict_circles(point_groups, collinear_th):
 
 
 def calc_colinearity(point_groups):
-    if point_groups.shape[1] != 3:
+    if point_groups.shape[1] < 3:
         raise ValueError
-    ab = point_groups[:, 1] - point_groups[:, 0]
-    bc = point_groups[:, 2] - point_groups[:, 1]
-    ac = point_groups[:, 2] - point_groups[:, 0]
 
-    ab_dist = torch.sqrt(torch.sum(ab ** 2, dim=-1))
-    bc_dist = torch.sqrt(torch.sum(bc ** 2, dim=-1))
-    ac_dist = torch.sqrt(torch.sum(ac ** 2, dim=-1))
-    collinearities = ab_dist + bc_dist - ac_dist
+    left_points_indices = list(range(1, point_groups.shape[1]))
+    right_points_indices = list(range(point_groups.shape[1] - 1))
 
+    collinearities = 0
+    for i in range(len(left_points_indices)):
+        collinearities += torch.sqrt(
+            torch.sum((point_groups[:, left_points_indices[i]] - point_groups[:, right_points_indices[i]]) ** 2,
+                      dim=-1))
+
+    collinearities -= torch.sqrt(torch.sum((point_groups[:, 0] - point_groups[:, -1]) ** 2, dim=-1))
     return collinearities
+
+
+def calc_avg_dist(point_groups):
+    if point_groups.shape[1] < 3:
+        raise ValueError
+
+
+    left_point_indices = list(range(point_groups.shape[1] - 1, 0, -1))
+    right_point_indices = list(range(point_groups.shape[1] - 2, -1, -1))
+    distances = []
+    for i in range(len(left_point_indices)):
+        point_1 = point_groups[:, left_point_indices[i], :]
+        point_2 = point_groups[:, right_point_indices[i], :]
+        distance = torch.sqrt(torch.sum((point_1 - point_2) ** 2, dim=-1))
+        distances.append(distance.tolist())
+
+    error = torch.mean((torch.tensor(distances) - torch.mean(torch.tensor(distances), dim=0)) ** 2, dim=0)
+
+    return error
 
 
 def predict_dots():

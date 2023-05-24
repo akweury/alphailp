@@ -74,7 +74,30 @@ def init():
     pm_prediction_dict = perception.get_perception_predictions(args)
 
     # grouping objects to reduce the problem complexity
-    obj_groups, obj_avail_res = detect_obj_groups_with_bk(args, pm_prediction_dict)
+    group_val_pos, obj_avail_val_pos = detect_obj_groups_single(args, pm_prediction_dict["val_pos"], "val_pos")
+    group_val_neg, obj_avail_val_neg = detect_obj_groups_single(args, pm_prediction_dict["val_neg"], "val_neg")
+    group_train_pos, obj_avail_train_pos = detect_obj_groups_single(args, pm_prediction_dict["train_pos"], "train_pos")
+    group_train_neg, obj_avail_train_neg = detect_obj_groups_single(args, pm_prediction_dict["train_neg"], "train_neg")
+    group_test_pos, obj_avail_test_pos = detect_obj_groups_single(args, pm_prediction_dict["test_pos"], "test_pos")
+    group_test_neg, obj_avail_test_neg = detect_obj_groups_single(args, pm_prediction_dict["test_neg"], "test_neg")
+
+    obj_groups = {
+        'group_val_pos': group_val_pos,
+        'group_val_neg': group_val_neg,
+        'group_train_pos': group_train_pos,
+        'group_train_neg': group_train_neg,
+        'group_test_pos': group_test_pos,
+        'group_test_neg': group_test_neg,
+    }
+
+    obj_avail_res = {
+        'obj_avail_val_pos': obj_avail_val_pos,
+        'obj_avail_val_neg': obj_avail_val_neg,
+        'obj_avail_train_pos': obj_avail_train_pos,
+        'obj_avail_train_neg': obj_avail_train_neg,
+        'obj_avail_test_pos': obj_avail_test_pos,
+        'obj_avail_test_neg': obj_avail_test_neg,
+    }
 
     # load logical representations
     args.lark_path = str(config.root / 'src' / 'lark' / 'exp.lark')
@@ -110,7 +133,7 @@ def train_and_eval(args, rtpt):
     # ilp.ilp_test(args, lang)
 
     # invent predicates
-    ilp.ilp_main(args, lang, with_pi=True)
+    ilp.ilp_main(args, lang)
 
     # run ilp again
     success = ilp.ilp_test(args, lang)
