@@ -1,4 +1,3 @@
-import argparse
 import os
 import torch
 
@@ -7,45 +6,118 @@ from data_utils import to_line_tensor, get_comb, to_circle_tensor
 from eval_utils import eval_group_diff, eval_count_diff, count_func, group_func, get_circle_error, eval_score
 from eval_utils import predict_circles, calc_colinearity, get_group_distribution
 import eval_utils
-import file_utils
 import logic_utils
 import log_utils
 import copy
 
 
-def detect_line_groups(args, percept_dict):
-    point_data = percept_dict[:, :, config.indices_position]
-    used_objs = torch.zeros(point_data.shape[0], args.group_e, point_data.shape[1], dtype=torch.bool)
-    line_tensors = torch.zeros(point_data.shape[0], args.group_e, len(config.group_tensor_index.keys()))
+def record_line_group(args, objs, obj_indices):
+    # convert the group to a tensor
+    line_tensor = to_line_tensor(objs).reshape(1, -1)
 
-    for data_i in range(point_data.shape[0]):
+    # line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
+
+    # update point availabilities
+    line_used_objs = torch.zeros(1, args.n_obj, dtype=torch.bool)
+    line_used_objs[0, obj_indices] = True
+
+    # groups_used_objs = torch.cat([groups_used_objs, line_used_objs], dim=0)
+    print(f'line group: {obj_indices}')
+
+    return line_tensor, line_used_objs
+
+
+def detect_lines(args, obj_tensors):
+    all_line_indices = []
+    all_line_tensors = []
+
+    # detect lines image by image
+    for data_i in range(obj_tensors.shape[0]):
+        line_indices_ith = []
+        line_groups_ith = []
         exist_combs = []
-        group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 2).tolist()
-        tensor_counter = 0
-        line_tensor_candidates = torch.zeros(args.group_e, len(config.group_tensor_index.keys()))
-        groups_used_objs = torch.zeros(args.group_e, point_data.shape[1], dtype=torch.bool)
-        for g_i, group_index in enumerate(group_indices):
+        two_point_line_indices = get_comb(torch.tensor(range(obj_tensors[data_i].shape[0])), 2).tolist()
+        # detect lines by checking each possible combinations
+        for g_i, obj_indices in enumerate(two_point_line_indices):
             # check duplicate
-            if group_index not in exist_combs:
-                point_groups, point_indices, collinearities = extend_line_group(args, group_index, point_data[data_i])
-                if point_groups is not None and point_groups.shape[0] >= args.line_group_min_sz:
-                    line_tensor = to_line_tensor(point_groups, percept_dict, data_i, point_indices).reshape(1, -1)
-                    line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
+            if obj_indices in exist_combs:
+                continue
+            line_obj_tensors, line_indices = extend_line_group(args, obj_indices, obj_tensors[data_i])
 
-                    # update point availabilities
-                    line_used_objs = torch.zeros(1, point_data.shape[1], dtype=torch.bool)
-                    line_used_objs[0, point_indices] = True
-                    groups_used_objs = torch.cat([groups_used_objs, line_used_objs], dim=0)
-                    exist_combs += get_comb(point_indices, 2).tolist()
-                    tensor_counter += 1
-                    print(f'line group: {point_indices}')
-        print(f'\n')
-        group_scores = line_tensor_candidates[:, config.group_tensor_index["line"]]
-        _, prob_indices = group_scores.sort(descending=True)
-        prob_indices = prob_indices[:args.e]
-        line_tensors[data_i] = line_tensor_candidates[prob_indices]
-        used_objs[data_i] = groups_used_objs[prob_indices]
-    return line_tensors, used_objs
+            if line_obj_tensors is not None and len(line_obj_tensors) >= args.line_group_min_sz:
+                exist_combs += get_comb(line_indices, 2).tolist()
+
+                line_indices_ith.append(line_indices)
+                line_groups_ith.append(line_obj_tensors)
+
+        all_line_indices.append(line_indices_ith)
+        all_line_tensors.append(line_groups_ith)
+
+    return all_line_indices, all_line_tensors
+
+
+def encode_lines(args, percept_dict, obj_indices, obj_tensors):
+    """
+    Encode lines to tensors.
+    """
+
+    used_objs = torch.zeros(len(obj_tensors), args.group_e, args.n_obj, dtype=torch.bool)
+    all_line_tensors = torch.zeros(len(obj_tensors), args.group_e, len(config.group_tensor_index.keys()))
+
+    all_line_tensors = []
+    all_line_tensors_indices = []
+
+    for img_i in range(len(obj_tensors)):
+        img_line_tensors = []
+        img_line_tensors_indices = []
+        for obj_i, objs in enumerate(obj_tensors[img_i]):
+            line_tensor, line_used_objs = record_line_group(args, objs, obj_indices[img_i][obj_i])
+            img_line_tensors.append(line_tensor)
+            img_line_tensors_indices.append(line_used_objs)
+
+        all_line_tensors.append(img_line_tensors)
+        all_line_tensors_indices.append(img_line_tensors_indices)
+
+    return all_line_tensors, all_line_tensors_indices
+
+
+def prune_lines(args, line_tensors, line_tensors_indices):
+    pruned_tensors = []
+    pruned_tensors_indices = []
+    for img_i in range(len(line_tensors)):
+        img_scores = []
+        for line_tensor in line_tensors[img_i]:
+            line_scores = line_tensor[0, config.group_tensor_index["line"]]
+            img_scores.append(line_scores)
+
+        img_scores = torch.tensor(img_scores)
+        _, prob_indices = img_scores.sort(descending=True)
+        prob_indices = prob_indices[:args.group_e]
+
+        if len(line_tensors[img_i]) == 0:
+            pruned_tensors.append(torch.zeros(size=(args.group_e, len(config.group_tensor_index))).tolist())
+            pruned_tensors_indices.append(torch.zeros(1, args.n_obj, dtype=torch.bool).tolist())
+        else:
+            pruned_tensors.append(line_tensors[img_i][prob_indices].tolist())
+            pruned_tensors_indices.append(line_tensors_indices[img_i][prob_indices].tolist())
+    pruned_tensors_indices = torch.tensor(pruned_tensors_indices)
+    pruned_tensors = torch.tensor(pruned_tensors)
+
+    return pruned_tensors, pruned_tensors_indices
+
+
+def detect_line_groups(args, obj_tensors):
+    """
+    input: object tensors
+    output: group tensors
+    """
+
+    line_indices, line_groups = detect_lines(args, obj_tensors)
+    line_tensors, line_tensors_indices = encode_lines(args, obj_tensors, line_indices, line_groups)
+
+    # logic: prune strategy
+    pruned_tensors, pruned_tensors_indices = prune_lines(args, line_tensors, line_tensors_indices)
+    return pruned_tensors, pruned_tensors_indices
 
 
 def detect_circle_groups(args, percept_dict):
@@ -90,36 +162,36 @@ def detect_circle_groups(args, percept_dict):
     return circle_tensors, used_objs
 
 
-def extend_line_group(args, group_index, points):
+def extend_line_group(args, obj_indices, obj_tensors):
+    # points = obj_tensors[:, :, config.indices_position]
     has_new_element = True
-    point_groups_new = copy.deepcopy(points)
-    point_groups_indices_new = copy.deepcopy(group_index)
-    colinearities = None
+    line_groups = copy.deepcopy(obj_tensors)
+    line_group_indices = copy.deepcopy(obj_indices)
 
     while has_new_element:
-        point_groups = points[point_groups_indices_new]
-        extra_index = torch.tensor(sorted(set(list(range(points.shape[0]))) - set(point_groups_indices_new)))
+        line_objs = obj_tensors[line_group_indices]
+        extra_index = torch.tensor(sorted(set(list(range(obj_tensors.shape[0]))) - set(line_group_indices)))
         if len(extra_index) == 0:
             return None, None, None
-        extra_points = points[extra_index]
-        point_groups_extended = extend_groups(point_groups, extra_points)
-        colinearities = calc_colinearity(point_groups_extended)
-        avg_distances = eval_utils.calc_avg_dist(point_groups_extended)
+        extra_objs = obj_tensors[extra_index]
+        line_objs_extended = extend_groups(line_objs, extra_objs)
+        colinearities = calc_colinearity(line_objs_extended)
+        avg_distances = eval_utils.calc_avg_dist(line_objs_extended)
         is_line = colinearities < args.error_th
         is_even_dist = avg_distances < args.distribute_error_th
         passed_indices = is_line * is_even_dist
         has_new_element = passed_indices.sum() > 0
-        passed_points = extra_points[passed_indices]
+        passed_objs = extra_objs[passed_indices]
         passed_indices = extra_index[passed_indices]
-        point_groups_new = torch.cat([point_groups, passed_points], dim=0)
-        point_groups_indices_new += passed_indices.tolist()
+        line_groups = torch.cat([line_objs, passed_objs], dim=0)
+        line_group_indices += passed_indices.tolist()
 
     # check for evenly distribution
     # if not is_even_distributed_points(args, point_groups_new, shape="line"):
     #     return None, None
-    point_groups_indices_new = torch.tensor(point_groups_indices_new)
+    line_group_indices = torch.tensor(line_group_indices)
 
-    return point_groups_new, point_groups_indices_new, colinearities
+    return line_groups, line_group_indices
 
 
 def extend_circle_group(group_index, points, args):
@@ -145,9 +217,9 @@ def extend_circle_group(group_index, points, args):
     return point_groups_new, point_groups_indices_new, c, r
 
 
-def extend_groups(point_groups, extend_points):
-    group_points_duplicate_all = point_groups.unsqueeze(0).repeat(extend_points.shape[0], 1, 1)
-    group_points_candidate = torch.cat([group_points_duplicate_all, extend_points.unsqueeze(1)], dim=1)
+def extend_groups(group_objs, extend_objs):
+    group_points_duplicate_all = group_objs.unsqueeze(0).repeat(extend_objs.shape[0], 1, 1)
+    group_points_candidate = torch.cat([group_points_duplicate_all, extend_objs.unsqueeze(1)], dim=1)
     return group_points_candidate
 
 
@@ -189,136 +261,6 @@ def merge_groups(args, line_groups, cir_groups, line_used_objs, cir_used_objs):
     object_groups = object_groups[:, :args.group_e]
     used_objs = used_objs[:, :args.group_e]
     return object_groups, used_objs
-
-
-def get_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--batch-size", type=int, default=1,
-                        help="Batch size to infer with")
-    parser.add_argument("--batch-size-bs", type=int,
-                        default=1, help="Batch size in beam search")
-    parser.add_argument("--batch-size-train", type=int,
-                        default=20, help="Batch size in nsfr train")
-    parser.add_argument("--group_e", type=int, default=2,
-                        help="The maximum number of object groups in one image")
-    parser.add_argument("--e", type=int, default=5,
-                        help="The maximum number of objects in one image")
-    parser.add_argument("--dataset", default="red-triangle", help="Use kandinsky patterns dataset")
-    parser.add_argument("--dataset-type", default="kandinsky",
-                        help="kandinsky or clevr")
-    parser.add_argument('--device', default='cpu',
-                        help='cuda device, i.e. 0 or cpu')
-    parser.add_argument("--no-cuda", action="store_true",
-                        help="Run on CPU instead of GPU (not recommended)")
-    parser.add_argument("--with-pi", action="store_true",
-                        help="Generate Clause with predicate invention.")
-    parser.add_argument("--with-explain", action="store_true",
-                        help="Explain Clause with predicate invention.")
-
-    parser.add_argument("--small-data", action="store_true",
-                        help="Use small training data.")
-    parser.add_argument("--score_unique", action="store_false",
-                        help="prune same score clauses.")
-    parser.add_argument("--semantic_unique", action="store_false",
-                        help="prune same semantic clauses.")
-    parser.add_argument("--no-xil", action="store_true",
-                        help="Do not use confounding labels for clevr-hans.")
-    parser.add_argument("--small_data", action="store_false",
-                        help="Use small portion of valuation data.")
-    parser.add_argument("--num-workers", type=int, default=4,
-                        help="Number of threads for data loader")
-    parser.add_argument('--gamma', default=0.001, type=float,
-                        help='Smooth parameter in the softor function')
-    parser.add_argument("--plot", action="store_true",
-                        help="Plot images with captions.")
-    parser.add_argument("--t-beam", type=int, default=4,
-                        help="Number of rule expantion of clause generation.")
-    parser.add_argument("--min-beam", type=int, default=0,
-                        help="The size of the minimum beam.")
-    parser.add_argument("--n-beam", type=int, default=5,
-                        help="The size of the beam.")
-    parser.add_argument("--cim-step", type=int, default=5,
-                        help="The steps of clause infer module.")
-    parser.add_argument("--n-max", type=int, default=50,
-                        help="The maximum number of clauses.")
-    parser.add_argument("--m", type=int, default=1,
-                        help="The size of the logic program.")
-    parser.add_argument("--n-obj", type=int, default=5,
-                        help="The number of objects to be focused.")
-    parser.add_argument("--epochs", type=int, default=101,
-                        help="The number of epochs.")
-    parser.add_argument("--pi_epochs", type=int, default=3,
-                        help="The number of epochs for predicate invention.")
-    parser.add_argument("--nc_max_step", type=int, default=3,
-                        help="The number of max steps for nc searching.")
-    parser.add_argument("--max_step", type=int, default=5,
-                        help="The number of max steps for clause searching.")
-    parser.add_argument("--lr", type=float, default=1e-2,
-                        help="The learning rate.")
-    parser.add_argument("--suff_min", type=float, default=0.1,
-                        help="The minimum accept threshold for sufficient clauses.")
-    parser.add_argument("--sn_th", type=float, default=0.9,
-                        help="The accept threshold for sufficient and necessary clauses.")
-    parser.add_argument("--nc_th", type=float, default=0.9,
-                        help="The accept threshold for necessary clauses.")
-    parser.add_argument("--uc_th", type=float, default=0.8,
-                        help="The accept threshold for unclassified clauses.")
-    parser.add_argument("--sc_th", type=float, default=0.9,
-                        help="The accept threshold for sufficient clauses.")
-    parser.add_argument("--sn_min_th", type=float, default=0.2,
-                        help="The accept sn threshold for sufficient or necessary clauses.")
-    parser.add_argument("--similar_th", type=float, default=1e-3,
-                        help="The minimum different requirement between any two clauses.")
-    parser.add_argument("--semantic_th", type=float, default=0.75,
-                        help="The minimum semantic different requirement between any two clauses.")
-    parser.add_argument("--conflict_th", type=float, default=0.9,
-                        help="The accept threshold for conflict clauses.")
-    parser.add_argument("--length_weight", type=float, default=0.05,
-                        help="The weight of clause length for clause evaluation.")
-    parser.add_argument("--c_top", type=int, default=20,
-                        help="The accept number for clauses.")
-    parser.add_argument("--uc_good_top", type=int, default=10,
-                        help="The accept number for unclassified good clauses.")
-    parser.add_argument("--sc_good_top", type=int, default=20,
-                        help="The accept number for sufficient good clauses.")
-    parser.add_argument("--sc_top", type=int, default=20,
-                        help="The accept number for sufficient clauses.")
-    parser.add_argument("--nc_top", type=int, default=10,
-                        help="The accept number for necessary clauses.")
-    parser.add_argument("--nc_good_top", type=int, default=30,
-                        help="The accept number for necessary good clauses.")
-    parser.add_argument("--pi_top", type=int, default=20,
-                        help="The accept number for pi on each classes.")
-    parser.add_argument("--max_cluster_size", type=int, default=4,
-                        help="The max size of clause cluster.")
-    parser.add_argument("--min_cluster_size", type=int, default=2,
-                        help="The min size of clause cluster.")
-    parser.add_argument("--n-data", type=float, default=200,
-                        help="The number of data to be used.")
-    parser.add_argument("--pre-searched", action="store_true",
-                        help="Using pre searched clauses.")
-    parser.add_argument("--top_data", type=int, default=20,
-                        help="The maximum number of training data.")
-    parser.add_argument("--with_bk", action="store_true",
-                        help="Using background knowledge by PI.")
-    parser.add_argument("--error_th", type=float, default=0.1,
-                        help="The threshold for MAE of obj group fitting.")
-    parser.add_argument("--line_group_min_sz", type=int, default=3,
-                        help="The minimum objects allowed to form a line.")
-    parser.add_argument("--cir_group_min_sz", type=int, default=5,
-                        help="The minimum objects allowed to form a circle.")
-    parser.add_argument("--group_conf_th", type=float, default=0.98,
-                        help="The threshold of group confidence.")
-    parser.add_argument("--maximum_obj_num", type=int, default=5,
-                        help="The maximum number of objects/groups to deal with in a single image.")
-    parser.add_argument("--distribute_error_th", type=float, default=0.3,
-                        help="The threshold for group points forming a shape that evenly distributed on the whole shape.")
-    args = parser.parse_args()
-
-    args_file = config.data_path / "lang" / args.dataset_type / args.dataset / "args.json"
-    file_utils.load_args_from_file(str(args_file), args)
-
-    return args
 
 
 # def clause_extension(pi_clauses, args, max_clause, lang, mode_declarations):
@@ -449,34 +391,32 @@ def detect_dot_groups(args, percept_dict, valid_obj_indices):
     return dot_tensors
 
 
-def detect_obj_groups_single(args, percept_dict_single, data_type):
-    group_path = config.buffer_path / "hide" / args.dataset / "buffer_groups"
-    group_file = group_path / f"{args.dataset}_group_res_{data_type}.pth.tar"
-    if not os.path.exists(group_path):
-        os.mkdir(group_path)
+def detect_obj_groups(args, percept_dict_single, data_type):
+    save_path = config.buffer_path / "hide" / args.dataset / "buffer_groups"
+    save_file = save_path / f"{args.dataset}_group_res_{data_type}.pth.tar"
 
-    if os.path.exists(group_file):
-        group_res = torch.load(group_file)
-        group_tensors = group_res["tensors"]
-        group_obj_index_tensors = group_res['used_objs']
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+
+    if os.path.exists(save_file):
+        group_res = torch.load(save_file)
+        line_tensors = group_res["tensors"]
+        line_tensors_indices = group_res['used_objs']
     else:
-        pattern_line, pattern_line_used_objs = detect_line_groups(args, percept_dict_single)
+        # TODO: improve the generalization. Using a more general function to detect multiple group shapes by taking
+        #  specific detect functions as arguments
+        line_tensors, line_tensors_indices = detect_line_groups(args, percept_dict_single)
         # pattern_dot = detect_dot_groups(args, percept_dict_single, used_objs)
-        pattern_cir, pattern_cir_used_objs = detect_circle_groups(args, percept_dict_single)
-        group_tensors, group_obj_index_tensors = merge_groups(args, pattern_line, pattern_cir, pattern_line_used_objs,
-                                                              pattern_cir_used_objs)
+        # pattern_cir, pattern_cir_used_objs = detect_circle_groups(args, percept_dict_single)
+        # group_tensors, group_obj_index_tensors = merge_groups(args, line_tensors, pattern_cir, line_tensors_indices,
+        #                                                       pattern_cir_used_objs)
         group_res = {
-            "tensors": group_tensors,
-            "used_objs": group_obj_index_tensors,
+            "tensors": line_tensors,
+            "used_objs": line_tensors_indices,
         }
-        torch.save(group_res, group_file)
+        torch.save(group_res, save_file)
 
-    return group_tensors, group_obj_index_tensors
-
-
-def detect_obj_groups_with_bk(args, percept_dict):
-
-    return detect_res, obj_avail_res
+    return line_tensors, line_tensors_indices,
 
 
 def get_group_tree(args, obj_groups, group_by):

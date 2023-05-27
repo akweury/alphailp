@@ -3,25 +3,23 @@
 from pathlib import Path
 
 import numpy as np
-import torch
 
 from rtpt import RTPT
 
 import aitk
-import config
 import data_hide
 import eval_clause_infer
 import ilp
-import log_utils
 import nsfr_utils
 import perception
-import pi
 import visual_utils
+from args_utils import get_args
 from fol import bk
 from fol.language import Language
 from ilp import ilp_predict
 from mechanic_utils import *
 from nsfr_utils import get_nsfr_model, get_prob
+import file_utils
 
 
 def init():
@@ -74,14 +72,14 @@ def init():
     pm_prediction_dict = perception.get_perception_predictions(args)
 
     # grouping objects to reduce the problem complexity
-    group_val_pos, obj_avail_val_pos = detect_obj_groups_single(args, pm_prediction_dict["val_pos"], "val_pos")
-    group_val_neg, obj_avail_val_neg = detect_obj_groups_single(args, pm_prediction_dict["val_neg"], "val_neg")
-    group_train_pos, obj_avail_train_pos = detect_obj_groups_single(args, pm_prediction_dict["train_pos"], "train_pos")
-    group_train_neg, obj_avail_train_neg = detect_obj_groups_single(args, pm_prediction_dict["train_neg"], "train_neg")
-    group_test_pos, obj_avail_test_pos = detect_obj_groups_single(args, pm_prediction_dict["test_pos"], "test_pos")
-    group_test_neg, obj_avail_test_neg = detect_obj_groups_single(args, pm_prediction_dict["test_neg"], "test_neg")
+    group_val_pos, obj_avail_val_pos = detect_obj_groups(args, pm_prediction_dict["val_pos"], "val_pos")
+    group_val_neg, obj_avail_val_neg = detect_obj_groups(args, pm_prediction_dict["val_neg"], "val_neg")
+    group_train_pos, obj_avail_train_pos = detect_obj_groups(args, pm_prediction_dict["train_pos"], "train_pos")
+    group_train_neg, obj_avail_train_neg = detect_obj_groups(args, pm_prediction_dict["train_neg"], "train_neg")
+    group_test_pos, obj_avail_test_pos = detect_obj_groups(args, pm_prediction_dict["test_pos"], "test_pos")
+    group_test_neg, obj_avail_test_neg = detect_obj_groups(args, pm_prediction_dict["test_neg"], "test_neg")
 
-    obj_groups = {
+    group_tensors = {
         'group_val_pos': group_val_pos,
         'group_val_neg': group_val_neg,
         'group_train_pos': group_train_pos,
@@ -90,7 +88,7 @@ def init():
         'group_test_neg': group_test_neg,
     }
 
-    obj_avail_res = {
+    group_tensors_indices = {
         'obj_avail_val_pos': obj_avail_val_pos,
         'obj_avail_val_neg': obj_avail_val_neg,
         'obj_avail_train_pos': obj_avail_train_pos,
@@ -103,7 +101,7 @@ def init():
     args.lark_path = str(config.root / 'src' / 'lark' / 'exp.lark')
     args.lang_base_path = config.root / 'data' / 'lang'
 
-    return args, rtpt, pm_prediction_dict, obj_groups, obj_avail_res
+    return args, rtpt, pm_prediction_dict, group_tensors, group_tensors_indices
 
 
 def final_evaluation(NSFR, args):
@@ -127,16 +125,14 @@ def final_evaluation(NSFR, args):
 def train_and_eval(args, rtpt):
     # init system
     lang = Language(args, [])
-    # lang = get_lang_model(args, percept_dict, obj_groups)
 
-    # run ilp
-    # ilp.ilp_test(args, lang)
+    # run ilp + pi on group level
+    success = ilp.ilp_main(args, lang, level="group")
 
-    # invent predicates
-    ilp.ilp_main(args, lang)
+    # run ilp + pi on object level
+    if not success:
+        success = ilp.ilp_main(args, lang, level="object")
 
-    # run ilp again
-    success = ilp.ilp_test(args, lang)
     if success:
         visualization(args, lang)
         # train nsfr

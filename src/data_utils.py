@@ -24,14 +24,11 @@ def get_comb(data, comb_size):
     return indices
 
 
-def to_line_tensor(point_groups, percept_dict, data_i, point_indices):
-    color_data = percept_dict[:, :, config.indices_color]
-    shape_data = percept_dict[:, :, config.indices_shape]
-    point_screen_data = percept_dict[:, :, config.indices_screen_position]
+def to_line_tensor(objs):
 
-    colors = color_data[data_i][point_indices]
-    shapes = shape_data[data_i][point_indices]
-    point_groups_screen = point_screen_data[data_i][point_indices]
+    colors = objs[:, config.indices_color]
+    shapes = objs[:, config.indices_shape]
+    point_groups_screen = objs[:,config.indices_screen_position]
 
     colors_normalized = colors.sum(dim=0) / colors.shape[0]
     shapes_normalized = shapes.sum(dim=0) / shapes.shape[0]
@@ -44,9 +41,9 @@ def to_line_tensor(point_groups, percept_dict, data_i, point_indices):
     # 7 probability
     tensor_index = config.group_tensor_index
     line_tensor = torch.zeros(len(tensor_index.keys()))
-    line_tensor[tensor_index["x"]] = point_groups[:, 0].mean()
-    line_tensor[tensor_index["y"]] = point_groups[:, 1].mean()
-    line_tensor[tensor_index["z"]] = point_groups[:, 2].mean()
+    line_tensor[tensor_index["x"]] = objs[:, 0].mean()
+    line_tensor[tensor_index["y"]] = objs[:, 1].mean()
+    line_tensor[tensor_index["z"]] = objs[:, 2].mean()
 
     line_tensor[tensor_index["color_counter"]] = eval_utils.count_func(colors.sum(dim=0).unsqueeze(0))
     line_tensor[tensor_index["shape_counter"]] = eval_utils.count_func(shapes.sum(dim=0).unsqueeze(0))
@@ -60,14 +57,14 @@ def to_line_tensor(point_groups, percept_dict, data_i, point_indices):
     line_tensor[tensor_index['sphere']] = shapes_normalized[0]
     line_tensor[tensor_index['cube']] = shapes_normalized[1]
 
-    line_model = LinearRegression().fit(point_groups[:, 0:1], point_groups[:, 2:])
+    line_model = LinearRegression().fit(objs[:, 0:1], objs[:, 2:3])
     line_tensor[tensor_index["line"]] = 1 - torch.abs(
-        torch.from_numpy(line_model.predict(point_groups[:, 0:1])) - point_groups[:, 2:]).sum() / point_groups.shape[0]
+        torch.from_numpy(line_model.predict(objs[:, 0:1])) - objs[:, 2:3]).sum() / objs.shape[0]
 
     line_tensor[tensor_index['circle']] = 0
-    line_tensor[tensor_index["x_length"]] = point_groups[:, 0].max() - point_groups[:, 0].min()
-    line_tensor[tensor_index["y_length"]] = point_groups[:, 1].max() - point_groups[:, 1].min()
-    line_tensor[tensor_index["z_length"]] = point_groups[:, 2].max() - point_groups[:, 2].min()
+    line_tensor[tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
+    line_tensor[tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()
+    line_tensor[tensor_index["z_length"]] = objs[:, 2].max() - objs[:, 2].min()
 
     line_tensor[tensor_index["x_center_screen"]] = point_groups_screen[:, 0].mean()
     line_tensor[tensor_index["y_center_screen"]] = point_groups_screen[:, 1].mean()

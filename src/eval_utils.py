@@ -157,34 +157,33 @@ def predict_circles(point_groups, collinear_th):
     return center, r
 
 
-def calc_colinearity(point_groups):
-    if point_groups.shape[1] < 3:
+def calc_colinearity(obj_tensors):
+    if obj_tensors.shape[1] < 3:
         raise ValueError
 
-    left_points_indices = list(range(1, point_groups.shape[1]))
-    right_points_indices = list(range(point_groups.shape[1] - 1))
+    indices_a = list(range(1, obj_tensors.shape[1]))
+    indices_b = list(range(obj_tensors.shape[1] - 1))
+    indices_pos = config.indices_position
 
     collinearities = 0
-    for i in range(len(left_points_indices)):
-        collinearities += torch.sqrt(
-            torch.sum((point_groups[:, left_points_indices[i]] - point_groups[:, right_points_indices[i]]) ** 2,
-                      dim=-1))
-
-    collinearities -= torch.sqrt(torch.sum((point_groups[:, 0] - point_groups[:, -1]) ** 2, dim=-1))
+    for i in range(len(indices_a)):
+        diff = (obj_tensors[:, indices_a[i], indices_pos] - obj_tensors[:, indices_b[i], indices_pos])
+        collinearities += torch.sqrt(torch.sum(diff ** 2, dim=-1))
+    collinearities -= torch.sqrt(
+        torch.sum((obj_tensors[:, 0, indices_pos] - obj_tensors[:, -1, indices_pos]) ** 2, dim=-1))
     return collinearities
 
 
-def calc_avg_dist(point_groups):
-    if point_groups.shape[1] < 3:
+def calc_avg_dist(obj_tensors):
+    if obj_tensors.shape[1] < 3:
         raise ValueError
 
-
-    left_point_indices = list(range(point_groups.shape[1] - 1, 0, -1))
-    right_point_indices = list(range(point_groups.shape[1] - 2, -1, -1))
+    indices_a = list(range(obj_tensors.shape[1] - 1, 0, -1))
+    indices_b = list(range(obj_tensors.shape[1] - 2, -1, -1))
     distances = []
-    for i in range(len(left_point_indices)):
-        point_1 = point_groups[:, left_point_indices[i], :]
-        point_2 = point_groups[:, right_point_indices[i], :]
+    for i in range(len(indices_a)):
+        point_1 = obj_tensors[:, indices_a[i], config.indices_position]
+        point_2 = obj_tensors[:, indices_b[i], config.indices_position]
         distance = torch.sqrt(torch.sum((point_1 - point_2) ** 2, dim=-1))
         distances.append(distance.tolist())
 

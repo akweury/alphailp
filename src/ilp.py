@@ -77,7 +77,7 @@ def explain_scenes(args, lang):
     lang.pi_clauses += pi_exp_clauses
 
 
-def ilp_main(args, lang):
+def ilp_main(args, lang, level="group"):
     result = eval_groups(args)
     for neural_pred in args.neural_preds:
         reset_args(args, lang)
@@ -111,6 +111,10 @@ def ilp_main(args, lang):
 
     # print all the invented predicates
     log_utils.print_result(args, lang)
+
+    success = ilp_test(args, lang)
+
+    return success
 
 
 def ilp_pi(args, lang):
