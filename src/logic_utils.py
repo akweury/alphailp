@@ -8,7 +8,6 @@ import eval_clause_infer
 from fol.logic import *
 from fol.data_utils import DataUtils
 from infer import InferModule, ClauseInferModule
-from eval_clause_infer import eval_clause_sign
 from tensor_encoder import TensorEncoder
 
 
@@ -395,8 +394,8 @@ def eval_clause_clusters(clause_clusters, clause_scores_full):
     return new_pi_clauses
 
 
-def get_four_scores(predicate_scores):
-    return eval_clause_sign(predicate_scores)[0][1]
+# def get_four_scores(predicate_scores):
+#     return eval_clause_sign(predicate_scores)[0][1]
 
 
 def eval_predicates_slow(NSFR, args, pred_names, pos_pred, neg_pred):
@@ -680,25 +679,25 @@ def extract_clauses_from_max_clause(bs_clauses, args):
     return clauses
 
 
-def select_top_x_clauses(clause_candidates, c_type, args, threshold=None):
-    top_clauses_with_scores = []
-    clause_candidates_with_scores_sorted = []
-    if threshold is None:
-        top_clauses_with_scores = clause_candidates
-    else:
-        clause_candidates_with_scores = []
-        for c_i, c in enumerate(clause_candidates):
-            four_scores = get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
-            clause_candidates_with_scores.append([c, four_scores])
-        clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
-                                                      reverse=True)
-        clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:threshold]
-        for c in clause_candidates_with_scores_sorted:
-            top_clauses_with_scores.append(c[0])
-    for t_i, t in enumerate(top_clauses_with_scores):
-        log_utils.add_lines(f'TOP {(c_type)} {t[0]}, {clause_candidates_with_scores_sorted[t_i][1]}', args.log_file)
-
-    return top_clauses_with_scores
+# def select_top_x_clauses(clause_candidates, c_type, args, threshold=None):
+#     top_clauses_with_scores = []
+#     clause_candidates_with_scores_sorted = []
+#     if threshold is None:
+#         top_clauses_with_scores = clause_candidates
+#     else:
+#         clause_candidates_with_scores = []
+#         for c_i, c in enumerate(clause_candidates):
+#             four_scores = get_four_scores(clause_candidates[c_i][1].unsqueeze(0))
+#             clause_candidates_with_scores.append([c, four_scores])
+#         clause_candidates_with_scores_sorted = sorted(clause_candidates_with_scores, key=lambda x: x[1][0][1],
+#                                                       reverse=True)
+#         clause_candidates_with_scores_sorted = clause_candidates_with_scores_sorted[:threshold]
+#         for c in clause_candidates_with_scores_sorted:
+#             top_clauses_with_scores.append(c[0])
+#     for t_i, t in enumerate(top_clauses_with_scores):
+#         log_utils.add_lines(f'TOP {(c_type)} {t[0]}, {clause_candidates_with_scores_sorted[t_i][1]}', args.log_file)
+#
+#     return top_clauses_with_scores
 
 
 def get_pred_names_from_clauses(clause, exclude_objects=False):
@@ -857,31 +856,3 @@ def count_arity_from_clause(clause):
     return arity_list
 
 
-def has_term(pred, term_name):
-    for dtype in pred.dtypes:
-        if dtype.name == term_name:
-            return True
-    return False
-
-
-def find_minimum_common_values(focused_obj_values):
-    minimum_set = []
-    for indices in focused_obj_values:
-        indices_list = indices.reshape(-1).tolist()
-        if indices_list not in minimum_set:
-            minimum_set.append(indices_list)
-
-    return minimum_set
-
-
-def terms_to_dtypes(terms):
-    dtypes = []
-
-    for term in terms:
-        if "O" == term.name[0]:
-            dtypes.append("group")
-        elif "number" in term.name:
-            dtypes.append("number")
-        else:
-            raise ValueError
-    return dtypes

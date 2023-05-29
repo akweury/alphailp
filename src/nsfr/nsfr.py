@@ -1,9 +1,11 @@
+# Created by Jing at 30.05.2023
 import numpy as np
-import torch.nn as nn
 import torch
+from torch import nn as nn
 
 import logic_utils
 from logic_utils import get_index_by_predname
+
 
 
 class NSFReasoner(nn.Module):

@@ -3,9 +3,6 @@ import torch
 
 import config
 from fol import bk
-from logic_utils import has_term, find_minimum_common_values
-from fol.language import DataType
-import logic_utils
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
@@ -40,7 +37,7 @@ def generate_explain_pred(args, lang, atom_terms, unclear_pred):
     min_value_set = find_minimum_common_values(focused_obj_values)
 
     # p_args = logic_utils.count_arity_from_clause_cluster(clause_cluster)
-    dtypes = logic_utils.terms_to_dtypes(atom_terms)
+    dtypes = terms_to_dtypes(atom_terms)
 
     new_predicate = lang.inv_pred(args, arity=len(atom_terms), pi_dtypes=dtypes, p_args=atom_terms,
                                   pi_type=config.pi_type["exp"])
@@ -66,3 +63,33 @@ def generate_explain_pred(args, lang, atom_terms, unclear_pred):
     # clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args)
     #
     # # explain the unclear predicates by extending with new predicates
+
+
+def has_term(pred, term_name):
+    for dtype in pred.dtypes:
+        if dtype.name == term_name:
+            return True
+    return False
+
+
+def find_minimum_common_values(focused_obj_values):
+    minimum_set = []
+    for indices in focused_obj_values:
+        indices_list = indices.reshape(-1).tolist()
+        if indices_list not in minimum_set:
+            minimum_set.append(indices_list)
+
+    return minimum_set
+
+
+def terms_to_dtypes(terms):
+    dtypes = []
+
+    for term in terms:
+        if "O" == term.name[0]:
+            dtypes.append("group")
+        elif "number" in term.name:
+            dtypes.append("number")
+        else:
+            raise ValueError
+    return dtypes

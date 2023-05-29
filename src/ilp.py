@@ -7,11 +7,10 @@ import torch
 from ilp_utils import *
 import nsfr_utils
 import aitk
-from nsfr_utils import get_prob
 from pi_utils import gen_clu_pi_clauses, gen_exp_pi_clauses
 
 
-def describe_scenes(args, lang, VM, FC):
+def describe_scenes(args, lang, FC):
     # generate clauses # time-consuming code
     log_utils.add_lines(f"\n=== beam search iteration {args.iteration}/{args.max_step} ===", args.log_file)
     index_pos = config.score_example_index["pos"]
@@ -42,7 +41,7 @@ def describe_scenes(args, lang, VM, FC):
 
         NSFR = nsfr_utils.get_nsfr_model(args, lang, FC)
         # evaluate new clauses
-        score_all = eval_clause_infer.eval_clause_on_scenes(NSFR, args, eval_pred)
+        score_all = eval_clause_infer.get_clause_score(NSFR, args, eval_pred)
         scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args, step)
         # classify clauses
         clause_with_scores = eval_clause_infer.prune_low_score_clauses(refs_extended, score_all, scores, args)
@@ -77,41 +76,83 @@ def explain_scenes(args, lang):
     lang.pi_clauses += pi_exp_clauses
 
 
+def ilp_extend_cluster(args, lang, neural_pred, level):
+    # reset args
+    reset_args(args, lang)
+    # update predicates
+    lang.update_bk(args, neural_pred, full_bk=False)
+    # update language
+    lang.update_mode_declarations(args)
+
+    # searching for a proper clause to describe the pattern.
+    while args.iteration < args.max_step and not args.is_done:
+
+        # update system
+        VM = aitk.get_vm(args, lang)
+        FC = aitk.get_fc(args, lang, VM)
+        describe_scenes(args, lang, FC)
+        # predicate invention by explanation
+
+        if args.with_pi:
+            ilp_pi(args, lang)
+
+        args.iteration += 1
+
+    # save the promising predicates
+    keep_best_preds(args, lang)
+
+
+def ilp_clause_explain(args, lang, neural_pred):
+    log_utils.add_lines("==================== clause explanation =======================", args.log_file)
+
+    # reset args
+    reset_args(args, lang)
+    # update predicates
+    lang.update_bk(args, neural_pred, full_bk=False)
+    # update language
+    lang.update_mode_declarations(args)
+
+    # searching for a proper clause to describe the pattern.
+    while args.iteration < args.max_step and not args.is_done:
+
+        # update system
+        VM = aitk.get_vm(args, lang)
+        FC = aitk.get_fc(args, lang, VM)
+        describe_scenes(args, lang, VM, FC)
+        # predicate invention by explanation
+
+        if args.with_explain:
+            explain_scenes(args, lang)
+
+        if args.with_pi:
+            ilp_pi(args, lang)
+
+        args.iteration += 1
+
+    # save the promising predicates
+    keep_best_preds(args, lang)
+
+
 def ilp_main(args, lang, level="group"):
     result = eval_groups(args)
-    for neural_pred in args.neural_preds:
-        reset_args(args, lang)
-        # grouping objects with new categories
-        # eval_groups(args)
-        lang.update_bk(args, neural_pred, full_bk=False)
-        lang.update_mode_declarations(args)
-        # run ilp with pi module
-        # searching for a proper clause to describe the pattern.
-        while args.iteration < args.max_step and not args.is_done:
-            # update system
 
-            VM = aitk.get_vm(args, lang)
-            FC = aitk.get_fc(args, lang, VM)
+    if level == "group":
+        for neural_pred in args.neural_preds:
+            ilp_extend_cluster(args, lang, neural_pred, level=level)
+            if args.found_ns:
+                break
 
-            describe_scenes(args, lang, VM, FC)
-
-            # predicate invention by explanation
-            if args.with_explain:
-                explain_scenes(args, lang)
-
-            if args.with_pi:
-                ilp_pi(args, lang)
-
-            args.iteration += 1
-
-        # save the promising predicates
-        keep_best_preds(args, lang)
-        if args.found_ns:
-            break
+    elif level == "object":
+        # for loop: clauses
+        for neural_pred in args.neural_preds:
+            ilp_clause_explain(args, lang, neural_pred)
+            if args.found_ns:
+                break
+    else:
+        raise ValueError
 
     # print all the invented predicates
     log_utils.print_result(args, lang)
-
     success = ilp_test(args, lang)
 
     return success
@@ -146,6 +187,7 @@ def ilp_prog():
 
 
 def ilp_test(args, lang):
+    log_utils.add_lines(f"================== ILP TEST ==================", args.log_file)
     reset_args(args, lang)
     lang.update_bk(args, full_bk=True, neural_pred=args.neural_preds)
     lang.update_mode_declarations(args)
@@ -162,7 +204,7 @@ def ilp_test(args, lang):
     sorted_clauses_with_scores = sorted(lang.all_clauses, key=lambda x: x[1][2], reverse=True)[:args.c_top]
     lang.clauses = [c[0] for c in sorted_clauses_with_scores]
 
-    success = log_utils.print_test_result(args, sorted_clauses_with_scores)
+    success = log_utils.print_test_result(args, lang, sorted_clauses_with_scores)
     return success
 
 
@@ -182,7 +224,7 @@ def ilp_predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
         sample = sample.unsqueeze(0)
         # infer and predict the target probability
         V_T = NSFR(sample).unsqueeze(0)
-        predicted = get_prob(V_T, NSFR, args).squeeze(1).squeeze(1)
+        predicted = nsfr_utils.get_prob(V_T, NSFR, args).squeeze(1).squeeze(1)
         predicted_list.append(predicted.detach())
         target_list.append(target_set[i])
         count += V_T.size(0)  # batch size

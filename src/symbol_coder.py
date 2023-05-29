@@ -1,19 +1,7 @@
 # Created by shaji on 12-Apr-23
 
 import torch
-import numpy as np
-from infer import InferModule, ClauseInferModule
-from eval_clause_infer import eval_clause_sign
-from tensor_encoder import TensorEncoder
 from fol.logic import *
-from fol.data_utils import DataUtils
-from fol.language import DataType
-import glob
-
-import config
-import log_utils
-import eval_utils
-import eval_clause_infer
 
 
 class Coder():

@@ -5,11 +5,8 @@ import torch
 
 import data_clevr
 import data_kandinsky
-from nsfr import NSFReasoner
-from logic_utils import build_infer_module, build_clause_infer_module, generate_atoms
-from percept import SlotAttentionPerceptionModule, YOLOPerceptionModule
-from fol.data_utils import DataUtils
-from fol.logic import Var
+from nsfr.nsfr import NSFReasoner
+from logic_utils import build_infer_module, build_clause_infer_module
 from fol.language import Language
 
 attrs = ['color', 'shape', 'material', 'size']

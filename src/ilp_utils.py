@@ -6,10 +6,12 @@ from pi import generate_explain_pred
 from pi_utils import generate_new_predicate
 
 from refinement import RefinementGenerator
-import log_utils, eval_clause_infer, logic_utils
-from logic_utils import get_equivalent_clauses, get_pred_names_from_clauses
+import log_utils
+import eval_clause_infer
+import logic_utils
 from fol import logic
 from fol import bk
+import aitk
 
 
 def keep_best_preds(args, lang):
@@ -52,16 +54,16 @@ def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
     return non_duplicate_c
 
 
-def remove_trivial_clauses(refs_non_conflict, args):
-    non_trivial_clauses = []
-    for ref in refs_non_conflict:
-        preds = get_pred_names_from_clauses(ref)
-
-        if not logic_utils.is_trivial_preds(preds):
-            non_trivial_clauses.append(ref)
-        # else:
-        #     log_utils.add_lines(f"(trivial clause) {ref}", args.log_file)
-    return non_trivial_clauses
+# def remove_trivial_clauses(refs_non_conflict, args):
+#     non_trivial_clauses = []
+#     for ref in refs_non_conflict:
+#         preds = get_pred_names_from_clauses(ref)
+#
+#         if not logic_utils.is_trivial_preds(preds):
+#             non_trivial_clauses.append(ref)
+#         # else:
+#         #     log_utils.add_lines(f"(trivial clause) {ref}", args.log_file)
+#     return non_trivial_clauses
 
 
 def remove_conflict_clauses(clauses, pi_clauses, args):
@@ -131,31 +133,31 @@ def extend_clauses(args, lang):
     return refs_no_conflict
 
 
-def remove_same_semantic_clauses(clauses):
-    semantic_diff_clauses = []
-    for c in clauses:
-        c_equiv_cs = get_equivalent_clauses(c)
-        c.equiv_c_preds = []
-        for c_equiv in c_equiv_cs:
-            c_equiv_cs_preds = get_pred_names_from_clauses(c_equiv, exclude_objects=True)
-            if c_equiv_cs_preds not in c.equiv_c_preds:
-                c.equiv_c_preds.append(c_equiv_cs_preds)
-
-    for c in clauses:
-        is_same = False
-        for added_c in semantic_diff_clauses:
-            c_preds = get_pred_names_from_clauses(c)
-            added_c_preds = get_pred_names_from_clauses(added_c)
-            if c_preds == added_c_preds:
-                is_same = True
-                break
-            elif semantic_same_pred_lists(added_c.equiv_c_preds, c.equiv_c_preds):
-                is_same = True
-                break
-        if not is_same:
-            semantic_diff_clauses.append(c)
-
-    return semantic_diff_clauses
+# def remove_same_semantic_clauses(clauses):
+#     semantic_diff_clauses = []
+#     for c in clauses:
+#         c_equiv_cs = get_equivalent_clauses(c)
+#         c.equiv_c_preds = []
+#         for c_equiv in c_equiv_cs:
+#             c_equiv_cs_preds = get_pred_names_from_clauses(c_equiv, exclude_objects=True)
+#             if c_equiv_cs_preds not in c.equiv_c_preds:
+#                 c.equiv_c_preds.append(c_equiv_cs_preds)
+#
+#     for c in clauses:
+#         is_same = False
+#         for added_c in semantic_diff_clauses:
+#             c_preds = get_pred_names_from_clauses(c)
+#             added_c_preds = get_pred_names_from_clauses(added_c)
+#             if c_preds == added_c_preds:
+#                 is_same = True
+#                 break
+#             elif semantic_same_pred_lists(added_c.equiv_c_preds, c.equiv_c_preds):
+#                 is_same = True
+#                 break
+#         if not is_same:
+#             semantic_diff_clauses.append(c)
+#
+#     return semantic_diff_clauses
 
 
 def semantic_same_pred_lists(added_pred_list, new_pred_list):
@@ -190,7 +192,7 @@ def prune_clauses(clause_with_scores, args):
     refs = []
 
     # prune score similar clauses
-    log_utils.add_lines(f"=============== score pruning ==========", args.log_file)
+    log_utils.add_lines(f"================= score pruning ================", args.log_file)
     # for c in clause_with_scores:
     #     log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
     if args.score_unique:
@@ -208,7 +210,7 @@ def prune_clauses(clause_with_scores, args):
         c_score_pruned = clause_with_scores
 
     # prune predicate similar clauses
-    log_utils.add_lines(f"=============== semantic pruning ==========", args.log_file)
+    log_utils.add_lines(f"================== semantic pruning ================", args.log_file)
     if args.semantic_unique:
         semantic_unique_c = []
         semantic_repeat_c = []
@@ -252,9 +254,13 @@ def cluster_invention(args, lang):
 
 
 def explain_invention(args, lang):
+    log_utils.add_lines("- (explain clause) -", args.log_file)
+
+    index_pos = config.score_example_index["pos"]
+    index_neg = config.score_example_index["neg"]
     explained_clause = []
     for clause, scores, score_all in lang.clause_with_scores:
-
+        increased_score = scores - scores
         if scores[0] > args.sc_th:
             for atom in clause.body:
                 if atom.pred.pi_type == config.pi_type['bk']:
@@ -265,20 +271,16 @@ def explain_invention(args, lang):
                         if new_pred is not None:
                             new_atom = logic.Atom(new_pred, atom_terms)
                             clause.body.append(new_atom)
+            NSFR = aitk.get_nsfr(args, lang)
+            score_all_new = eval_clause_infer.get_clause_score(NSFR, args, ["kp"])
+            scores_new = eval_clause_infer.eval_clauses(score_all_new[:, :, index_pos], score_all_new[:, :, index_neg],
+                                                        args, 1)
+            increased_score = scores_new - scores
+
         explained_clause.append([clause, scores])
-
+        log_utils.add_lines(f"(clause) {clause} {scores}", args.log_file)
+        log_utils.add_lines(f"(score increasing): {increased_score}", args.log_file)
     return explained_clause
-
-    # new_preds_with_scores = generate_new_predicate(args, lang, explained_clause, pi_type=config.pi_type["exp"])
-    # new_preds_with_scores = new_preds_with_scores[:args.pi_top]
-    # lang.invented_preds_with_scores += new_preds_with_scores
-    #
-    # log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
-    # for new_c, new_c_score in new_preds_with_scores:
-    #     log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
-    # if not args.is_done:
-    #     args.is_done = True
-    # return new_preds_with_scores
 
 
 def generate_new_clauses_str_list(new_predicates):

@@ -3,7 +3,7 @@
 import percept
 import valuation
 import facts_converter
-
+import nsfr_utils
 
 def get_vm(args, lang):
     vm = valuation.get_valuation_module(args, lang)
@@ -25,6 +25,8 @@ def get_pi_vm(args, lang):
                                         dataset_type=args.dataset_type)
     return pi_vm
 
-def get_nsfr():
-
-    return
+def get_nsfr(args, lang):
+    VM = get_vm(args, lang)
+    FC = get_fc(args, lang, VM)
+    NSFR = nsfr_utils.get_nsfr_model(args, lang, FC)
+    return NSFR

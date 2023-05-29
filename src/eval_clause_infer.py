@@ -14,38 +14,38 @@ def prune_low_score_clauses(clauses, scores_all, scores, args):
     return clause_with_scores
 
 
-def eval_clause_sign(p_scores):
-    p_clauses_signs = []
-
-    # p_scores axis: batch_size, pred_names, clauses, pos_neg_labels, images
-    p_scores[p_scores == 1] = 0.98
-    resolution = 2
-    ps_discrete = (p_scores * resolution).int()
-    four_zone_scores = torch.zeros((p_scores.size(0), 4))
-    img_total = p_scores.size(1)
-
-    # low pos, low neg
-    four_zone_scores[:, 0] = img_total - ps_discrete.sum(dim=2).count_nonzero(dim=1)
-
-    # high pos, low neg
-    four_zone_scores[:, 1] = img_total - (ps_discrete[:, :, 0] - ps_discrete[:, :, 1] + 1).count_nonzero(dim=1)
-
-    # low pos, high neg
-    four_zone_scores[:, 2] = img_total - (ps_discrete[:, :, 0] - ps_discrete[:, :, 1] - 1).count_nonzero(dim=1)
-
-    # high pos, high neg
-    four_zone_scores[:, 3] = img_total - (ps_discrete.sum(dim=2) - 2).count_nonzero(dim=1)
-
-    clause_score = four_zone_scores[:, 1] + four_zone_scores[:, 3]
-
-    # four_zone_scores[:, 0] = 0
-
-    # clause_sign_list = (four_zone_scores.max(dim=-1)[1] - 1) == 0
-
-    # TODO: find a better score evaluation function
-    p_clauses_signs.append([clause_score, four_zone_scores])
-
-    return p_clauses_signs
+# def eval_clause_sign(p_scores):
+#     p_clauses_signs = []
+#
+#     # p_scores axis: batch_size, pred_names, clauses, pos_neg_labels, images
+#     p_scores[p_scores == 1] = 0.98
+#     resolution = 2
+#     ps_discrete = (p_scores * resolution).int()
+#     four_zone_scores = torch.zeros((p_scores.size(0), 4))
+#     img_total = p_scores.size(1)
+#
+#     # low pos, low neg
+#     four_zone_scores[:, 0] = img_total - ps_discrete.sum(dim=2).count_nonzero(dim=1)
+#
+#     # high pos, low neg
+#     four_zone_scores[:, 1] = img_total - (ps_discrete[:, :, 0] - ps_discrete[:, :, 1] + 1).count_nonzero(dim=1)
+#
+#     # low pos, high neg
+#     four_zone_scores[:, 2] = img_total - (ps_discrete[:, :, 0] - ps_discrete[:, :, 1] - 1).count_nonzero(dim=1)
+#
+#     # high pos, high neg
+#     four_zone_scores[:, 3] = img_total - (ps_discrete.sum(dim=2) - 2).count_nonzero(dim=1)
+#
+#     clause_score = four_zone_scores[:, 1] + four_zone_scores[:, 3]
+#
+#     # four_zone_scores[:, 0] = 0
+#
+#     # clause_sign_list = (four_zone_scores.max(dim=-1)[1] - 1) == 0
+#
+#     # TODO: find a better score evaluation function
+#     p_clauses_signs.append([clause_score, four_zone_scores])
+#
+#     return p_clauses_signs
 
 
 def eval_ness(positive_scores):
@@ -79,12 +79,10 @@ def eval_sn(positive_scores, negative_scores):
 def eval_clauses(score_pos, score_neg, args, c_length):
     scores = torch.zeros(size=(3, score_pos.shape[0])).to(args.device)
 
-    # p_clause_signs = eval_clause_sign(score_all)
-
     # negative scores are inversely proportional to sufficiency scores
     score_negative_inv = 1 - score_neg
 
-    # calculate sufficient, necessary, sufficient and nessary scores
+    # calculate sufficient, necessary, sufficient and necessary scores
     ness_index = config.score_type_index["ness"]
     suff_index = config.score_type_index["suff"]
     sn_index = config.score_type_index["sn"]
@@ -95,9 +93,9 @@ def eval_clauses(score_pos, score_neg, args, c_length):
     return scores
 
 
-def eval_clause_on_scenes(NSFR, args, pred_names, pos_group_pred=None, neg_group_pred=None, batch_size=None):
-    # pos_pred = args.val_pos
-    # neg_pred = args.val_neg
+def get_clause_score(NSFR, args, pred_names, pos_group_pred=None, neg_group_pred=None, batch_size=None):
+    """ input: clause, output: score """
+
     if pos_group_pred is None:
         pos_group_pred = args.val_group_pos
     if neg_group_pred is None:

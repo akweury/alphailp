@@ -112,12 +112,19 @@ def print_result(args, lang):
         add_lines(f"{pi_c}", args.log_file)
 
 
-def print_test_result(args, c_with_scores):
-    if len(c_with_scores)>0:
-        add_lines(f"=========== all clauses ==================", args.log_file)
+def print_test_result(args,lang, c_with_scores):
+    success = False
+    if len(c_with_scores) > 0:
+        add_lines(f"================== all inv pred ==================", args.log_file)
+        for inv_pred in lang.all_pi_clauses:
+            add_lines(f"{inv_pred}", args.log_file)
+        add_lines(f"================== all clauses ==================", args.log_file)
         for c in c_with_scores:
             add_lines(f"{c[0]} {c[1]}", args.log_file)
-        return True
+            if c[1][2] > args.sn_th:
+                success = True
+
     else:
         add_lines(f"Failure.", args.log_file)
-        return False
+
+    return success
