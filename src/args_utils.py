@@ -3,7 +3,7 @@
 import argparse
 
 import config
-import file_utils
+from aitk.utils import file_utils
 
 
 def get_args():

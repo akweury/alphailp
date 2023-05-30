@@ -1,6 +1,9 @@
-from abc import ABC, abstractmethod
 
-import itertools
+"""
+this is a top module, no project file dependency
+"""
+
+from abc import ABC, abstractmethod
 
 
 def flatten(x): return [z for y in x for z in (
@@ -762,3 +765,4 @@ class InventedClause(Clause):
 
         self.head = head
         self.body = sorted(body)
+

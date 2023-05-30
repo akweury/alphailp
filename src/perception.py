@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 import math
-import log_utils
+from aitk.utils import log_utils
 import percept
 from data_hide import vertex_normalization
 import itertools

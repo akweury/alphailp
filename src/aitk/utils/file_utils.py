@@ -1,8 +1,7 @@
 import json
 import os
-from fol.language import DataType
-from fol.logic import NeuralPredicate
-import config
+from aitk.fol.language import DataType
+from aitk.fol.logic import NeuralPredicate
 
 def load_args_from_file(args_file_path, given_args):
     if os.path.isfile(args_file_path):
@@ -20,18 +19,18 @@ def load_args_from_file(args_file_path, given_args):
     return None
 
 
-def load_neural_preds(neural_predicates):
-    preds = [parse_neural_pred(value) for key, value in neural_predicates.items()]
+def load_neural_preds(neural_predicates, pi_type):
+    preds = [parse_neural_pred(value, pi_type) for key, value in neural_predicates.items()]
     return preds
 
 
-def parse_neural_pred(line):
+def parse_neural_pred(line, pi_type):
     """Parse string to predicates.
     """
     line = line.replace('\n', '')
     pred, arity, dtype_names_str = line.split(':')
     dtype_names = dtype_names_str.split(',')
     dtypes = [DataType(dt) for dt in dtype_names]
-    pi_type = config.pi_type['bk']
+
     assert int(arity) == len(dtypes), 'Invalid arity and dtypes in ' + pred + '.'
     return NeuralPredicate(pred, int(arity), dtypes, pi_type)

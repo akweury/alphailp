@@ -4,15 +4,14 @@ import config
 from mechanic_utils import eval_single_group, check_group_result
 from pi import generate_explain_pred
 from pi_utils import generate_new_predicate
-
 from refinement import RefinementGenerator
-import log_utils
+
 import eval_clause_infer
 import logic_utils
-from fol import logic
-from fol import bk
-import aitk
 
+from aitk.fol import logic, bk
+from aitk.utils import log_utils
+from aitk import ai_interface
 
 def keep_best_preds(args, lang):
     p_inv_best = sorted(lang.invented_preds_with_scores, key=lambda x: x[1][2], reverse=True)
@@ -271,7 +270,7 @@ def explain_invention(args, lang):
                         if new_pred is not None:
                             new_atom = logic.Atom(new_pred, atom_terms)
                             clause.body.append(new_atom)
-            NSFR = aitk.get_nsfr(args, lang)
+            NSFR = ai_interface.get_nsfr(args, lang)
             score_all_new = eval_clause_infer.get_clause_score(NSFR, args, ["kp"])
             scores_new = eval_clause_infer.eval_clauses(score_all_new[:, :, index_pos], score_all_new[:, :, index_neg],
                                                         args, 1)

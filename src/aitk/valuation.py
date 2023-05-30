@@ -1,8 +1,138 @@
+# Created by jing at 30.05.23
 import torch
-import torch.nn as nn
-from neural_utils import LogisticRegression
+from torch import nn as nn
+from torch.nn import functional as F
 
 import config
+from aitk.fol import bk
+from aitk.utils.neural_utils import LogisticRegression
+
+
+class FCNNValuationModule(nn.Module):
+    """A module to call valuation functions.
+        Attrs:
+            lang (language): The language.
+            device (device): The device.
+            layers (list(nn.Module)): The list of valuation functions.
+            vfs (dic(str->nn.Module)): The dictionaty that maps a predicate name to the corresponding valuation function.
+            attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
+            dataset (str): The dataset.
+    """
+
+    def __init__(self, lang, device, dataset, dataset_type):
+        super().__init__()
+        self.lang = lang
+        self.device = device
+        self.layers, self.vfs = self.init_valuation_functions(device, dataset_type)
+        # attr_term -> vector representation dic
+        self.attrs = self.init_attr_encodings(device)
+        self.dataset = dataset
+
+    def init_valuation_functions(self, device, dataset_type=None):
+        """
+            Args:
+                device (device): The device.
+                dataset (str): The dataset.
+
+            Retunrs:
+                layers (list(nn.Module)): The list of valuation functions.
+                vfs (dic(str->nn.Module)): The dictionaty that maps a predicate name to the corresponding valuation function.
+        """
+        layers = []
+        vfs = {}  # a dictionary: pred_name -> valuation function
+
+        v_color = FCNNColorValuationFunction()
+        vfs['color'] = v_color
+        layers.append(v_color)
+
+        v_shape = FCNNShapeValuationFunction()
+        vfs['shape'] = v_shape
+        layers.append(v_shape)
+
+        v_in = FCNNInValuationFunction()
+        vfs['in'] = v_in
+        layers.append(v_in)
+
+        v_rho = FCNNRhoValuationFunction(device)
+        vfs['rho'] = v_rho
+        layers.append(v_rho)
+
+        v_phi = FCNNPhiValuationFunction(device)
+        vfs['phi'] = v_phi
+        layers.append(v_phi)
+
+        v_slope = FCNNSlopeValuationFunction(device)
+        vfs['slope'] = v_slope
+        layers.append(v_slope)
+
+        v_shape_counter = FCNNShapeCounterValuationFunction()
+        vfs['shape_counter'] = v_shape_counter
+        layers.append(v_shape_counter)
+
+        v_color_counter = FCNNColorCounterValuationFunction()
+        vfs['color_counter'] = v_color_counter
+        layers.append(v_color_counter)
+
+        return nn.ModuleList(layers), vfs
+
+    def init_attr_encodings(self, device):
+        """Encode color and shape into one-hot encoding.
+
+            Args:
+                device (device): The device.
+
+            Returns:
+                attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
+        """
+        attr_names = bk.attr_names
+        attrs = {}
+        for dtype_name in attr_names:
+            for term in self.lang.get_by_dtype_name(dtype_name):
+                term_index = self.lang.term_index(term)
+                num_classes = len(self.lang.get_by_dtype_name(dtype_name))
+                one_hot = F.one_hot(torch.tensor(
+                    term_index).to(device), num_classes=num_classes)
+                one_hot.to(device)
+                attrs[term] = one_hot
+        return attrs
+
+    def forward(self, zs, atom):
+        """Convert the object-centric representation to a valuation tensor.
+
+            Args:
+                zs (tensor): The object-centric representaion (the output of the YOLO model).
+                atom (atom): The target atom to compute its proability.
+
+            Returns:
+                A batch of the probabilities of the target atom.
+        """
+        if atom.pred.name in self.vfs:
+            args = [self.ground_to_tensor(term, zs) for term in atom.terms]
+            # call valuation function
+            return self.vfs[atom.pred.name](*args)
+        else:
+            return torch.zeros((zs.size(0),)).to(
+                torch.float32).to(self.device)
+
+    def ground_to_tensor(self, term, zs):
+        """Ground terms into tensor representations.
+
+            Args:
+                term (term): The term to be grounded.
+                zs (tensor): The object-centric representation.
+
+            Return:
+                The tensor representation of the input term.
+        """
+        term_index = self.lang.term_index(term)
+        if term.dtype.name == 'group':
+            return zs[:, term_index].to(self.device)
+        elif term.dtype.name in bk.attr_names:
+            return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1).to(self.device)
+        elif term.dtype.name == 'image':
+            return None
+        else:
+            assert 0, "Invalid datatype of the given term: " + str(term) + ':' + term.dtype.name
 
 
 class FCNNColorValuationFunction(nn.Module):
@@ -72,6 +202,7 @@ class FCNNShapeCounterValuationFunction(nn.Module):
             z_shapeCounter[i, tensor_index[i]] = 0.999
         return (a * z_shapeCounter).sum(dim=1)
 
+
 class FCNNColorCounterValuationFunction(nn.Module):
     def __init__(self):
         super(FCNNColorCounterValuationFunction, self).__init__()
@@ -83,6 +214,7 @@ class FCNNColorCounterValuationFunction(nn.Module):
         for i in range(len(tensor_index)):
             z_color_counter[i, tensor_index[i]] = 0.999
         return (a * z_color_counter).sum(dim=1)
+
 
 class FCNNInValuationFunction(nn.Module):
     """The function v_in.
@@ -275,40 +407,6 @@ class FCNNSlopeValuationFunction(nn.Module):
             (z[:, config.group_tensor_index["screen_right_x"]], z[:, config.group_tensor_index["screen_right_y"]]))
 
 
-#####################################################
-# Valuation functions for invented predicates       #
-#####################################################
-
-class Inv1ValuationFunction(nn.Module):
-    """The function v_online.
-    """
-
-    def __init__(self, device):
-        super(Inv1ValuationFunction, self).__init__()
-        self.logi = LogisticRegression(input_dim=1)
-        self.logi.to(device)
-
-    def forward(self, z_1, z_2):
-        """The function to compute the probability of the online predicate.
-
-        The closed form of the linear regression is computed.
-        The error value is fed into the 1-d logistic regression function.
-
-        Args:
-            z_i (tensor): 2-d tensor (B * D), the object-centric representation.
-                [x1, y1, x2, y2, color1, color2, color3,
-                    shape1, shape2, shape3, objectness]
-
-        Returns:
-            A batch of probabilities.
-        """
-
-        return self.logi(0).squeeze()
-
-    def to_center_x(self, z):
-        x = (z[:, 0] + z[:, 2]) / 2
-        return x
-
-    def to_center_y(self, z):
-        y = (z[:, 1] + z[:, 3]) / 2
-        return y
+def get_valuation_module(args, lang):
+    VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset, dataset_type=args.dataset_type)
+    return VM

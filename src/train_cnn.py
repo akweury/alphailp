@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from rtpt import RTPT
 #from sklearn.metrics import precision_score, accuracy_score
 from sklearn.metrics import accuracy_score, recall_score, roc_curve
@@ -9,7 +8,6 @@ from torch.utils.tensorboard import SummaryWriter
 import argparse
 from datetime import datetime
 
-import torch.multiprocessing as mp
 import torchvision.models as models
 
 from tqdm import tqdm
@@ -17,7 +15,7 @@ import matplotlib
 
 import numpy as np
 from valuation import *
-from neural_utils import LogisticRegression
+from aitk.utils.neural_utils import LogisticRegression
 
 matplotlib.use("Agg")
 

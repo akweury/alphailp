@@ -1,139 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import valuation_func
 
-import valuation_func_yolo
-from fol.logic import Atom
-from fol import bk
-from valuation_func_yolo import YOLOValuationModule
+import aitk.valuation
+import aitk.valuation_yolo
 
-
-class FCNNValuationModule(nn.Module):
-    """A module to call valuation functions.
-        Attrs:
-            lang (language): The language.
-            device (device): The device.
-            layers (list(nn.Module)): The list of valuation functions.
-            vfs (dic(str->nn.Module)): The dictionaty that maps a predicate name to the corresponding valuation function.
-            attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
-            dataset (str): The dataset.
-    """
-
-    def __init__(self, lang, device, dataset, dataset_type):
-        super().__init__()
-        self.lang = lang
-        self.device = device
-        self.layers, self.vfs = self.init_valuation_functions(device, dataset_type)
-        # attr_term -> vector representation dic
-        self.attrs = self.init_attr_encodings(device)
-        self.dataset = dataset
-
-    def init_valuation_functions(self, device, dataset_type=None):
-        """
-            Args:
-                device (device): The device.
-                dataset (str): The dataset.
-
-            Retunrs:
-                layers (list(nn.Module)): The list of valuation functions.
-                vfs (dic(str->nn.Module)): The dictionaty that maps a predicate name to the corresponding valuation function.
-        """
-        layers = []
-        vfs = {}  # a dictionary: pred_name -> valuation function
-
-        v_color = valuation_func.FCNNColorValuationFunction()
-        vfs['color'] = v_color
-        layers.append(v_color)
-
-        v_shape = valuation_func.FCNNShapeValuationFunction()
-        vfs['shape'] = v_shape
-        layers.append(v_shape)
-
-        v_in = valuation_func.FCNNInValuationFunction()
-        vfs['in'] = v_in
-        layers.append(v_in)
-
-        v_rho = valuation_func.FCNNRhoValuationFunction(device)
-        vfs['rho'] = v_rho
-        layers.append(v_rho)
-
-        v_phi = valuation_func.FCNNPhiValuationFunction(device)
-        vfs['phi'] = v_phi
-        layers.append(v_phi)
-
-        v_slope = valuation_func.FCNNSlopeValuationFunction(device)
-        vfs['slope'] = v_slope
-        layers.append(v_slope)
-
-        v_shape_counter = valuation_func.FCNNShapeCounterValuationFunction()
-        vfs['shape_counter'] = v_shape_counter
-        layers.append(v_shape_counter)
-
-        v_color_counter = valuation_func.FCNNColorCounterValuationFunction()
-        vfs['color_counter'] = v_color_counter
-        layers.append(v_color_counter)
-
-        return nn.ModuleList(layers), vfs
-
-    def init_attr_encodings(self, device):
-        """Encode color and shape into one-hot encoding.
-
-            Args:
-                device (device): The device.
-
-            Returns:
-                attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
-        """
-        attr_names = bk.attr_names
-        attrs = {}
-        for dtype_name in attr_names:
-            for term in self.lang.get_by_dtype_name(dtype_name):
-                term_index = self.lang.term_index(term)
-                num_classes = len(self.lang.get_by_dtype_name(dtype_name))
-                one_hot = F.one_hot(torch.tensor(
-                    term_index).to(device), num_classes=num_classes)
-                one_hot.to(device)
-                attrs[term] = one_hot
-        return attrs
-
-    def forward(self, zs, atom):
-        """Convert the object-centric representation to a valuation tensor.
-
-            Args:
-                zs (tensor): The object-centric representaion (the output of the YOLO model).
-                atom (atom): The target atom to compute its proability.
-
-            Returns:
-                A batch of the probabilities of the target atom.
-        """
-        if atom.pred.name in self.vfs:
-            args = [self.ground_to_tensor(term, zs) for term in atom.terms]
-            # call valuation function
-            return self.vfs[atom.pred.name](*args)
-        else:
-            return torch.zeros((zs.size(0),)).to(
-                torch.float32).to(self.device)
-
-    def ground_to_tensor(self, term, zs):
-        """Ground terms into tensor representations.
-
-            Args:
-                term (term): The term to be grounded.
-                zs (tensor): The object-centric representation.
-
-            Return:
-                The tensor representation of the input term.
-        """
-        term_index = self.lang.term_index(term)
-        if term.dtype.name == 'group':
-            return zs[:, term_index].to(self.device)
-        elif term.dtype.name in bk.attr_names:
-            return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1).to(self.device)
-        elif term.dtype.name == 'image':
-            return None
-        else:
-            assert 0, "Invalid datatype of the given term: " + str(term) + ':' + term.dtype.name
+from aitk.fol.logic import Atom
+from aitk.fol import bk
 
 
 class PIValuationModule(nn.Module):
@@ -170,24 +43,24 @@ class PIValuationModule(nn.Module):
         vfs = {}  # a dictionary: pred_name -> valuation function
 
         if dataset_type == "kandinsky":
-            v_phi = valuation_func_yolo.YOLOPhiValuationFunction(device)
+            v_phi = aitk.valuation_yolo.YOLOPhiValuationFunction(device)
             vfs['phi'] = v_phi
             layers.append(v_phi)
 
-            v_rho = valuation_func_yolo.YOLORhoValuationFunction(device)
+            v_rho = aitk.valuation_yolo.YOLORhoValuationFunction(device)
             vfs['rho'] = v_rho
             layers.append(v_rho)
 
-            v_group_shape = valuation_func_yolo.YOLOGroupShapeValuationFunction(device)
+            v_group_shape = aitk.valuation_yolo.YOLOGroupShapeValuationFunction(device)
             vfs['group_shape'] = v_group_shape
             layers.append(v_group_shape)
 
         elif dataset_type == "hide":
-            v_phi = valuation_func.FCNNPhiValuationFunction(device)
+            v_phi = aitk.valuation.FCNNPhiValuationFunction(device)
             vfs['phi'] = v_phi
             layers.append(v_phi)
 
-            v_rho = valuation_func.FCNNRhoValuationFunction(device)
+            v_rho = aitk.valuation.FCNNRhoValuationFunction(device)
             vfs['rho'] = v_rho
             layers.append(v_rho)
 
@@ -282,145 +155,3 @@ class PIValuationModule(nn.Module):
             return None
         else:
             assert 0, "Invalid datatype of the given term: " + str(term) + ':' + term.dtype.name
-
-
-class SlotAttentionValuationModule(nn.Module):
-    """A module to call valuation functions.
-        Attrs:
-            lang (language): The language.
-            device (device): The device.
-            layers (list(nn.Module)): The list of valuation functions.
-            vfs (dic(str->nn.Module)): The dictionaty that maps a predicate name to the corresponding valuation function.
-            attrs (dic(term->tensor)): The dictionary that maps an attribute term to the corresponding one-hot encoding.
-            dataset (str): The dataset.
-    """
-
-    def __init__(self, lang, device, pretrained=True):
-        super().__init__()
-        self.lang = lang
-        self.device = device
-        self.colors = ["cyan", "blue", "yellow",
-                       "purple", "red", "green", "gray", "brown"]
-        self.shapes = ["sphere", "cube", "cylinder"]
-        self.sizes = ["large", "small"]
-        self.materials = ["rubber", "metal"]
-        self.sides = ["left", "right"]
-
-        self.layers, self.vfs = self.init_valuation_functions(
-            device, pretrained)
-
-    def init_valuation_functions(self, device, pretrained):
-        """
-            Args:
-                device (device): The device.
-                pretrained (bool): The flag if the neural predicates are pretrained or not.
-
-            Retunrs:
-                layers (list(nn.Module)): The list of valuation functions.
-                vfs (dic(str->nn.Module)): The dictionaty that maps a predicate name to the corresponding valuation function.
-        """
-        layers = []
-        vfs = {}  # pred name -> valuation function
-        v_color = valuation_func.SlotAttentionColorValuationFunction(device)
-        vfs['color'] = v_color
-        v_shape = valuation_func.SlotAttentionShapeValuationFunction(device)
-        vfs['shape'] = v_shape
-        v_in = valuation_func.SlotAttentionInValuationFunction(device)
-        vfs['in'] = v_in
-        v_size = valuation_func.SlotAttentionSizeValuationFunction(device)
-        vfs['size'] = v_size
-        v_material = valuation_func.SlotAttentionMaterialValuationFunction(device)
-        vfs['material'] = v_material
-        v_rightside = valuation_func.SlotAttentionRightSideValuationFunction(device)
-        vfs['rightside'] = v_rightside
-        v_leftside = valuation_func.SlotAttentionLeftSideValuationFunction(device)
-        vfs['leftside'] = v_leftside
-        v_front = valuation_func.SlotAttentionFrontValuationFunction(device)
-        vfs['front'] = v_front
-
-        if pretrained:
-            vfs['rightside'].load_state_dict(torch.load(
-                'src/weights/neural_predicates/rightside_pretrain.pt', map_location=device))
-            vfs['rightside'].eval()
-            vfs['leftside'].load_state_dict(torch.load(
-                'src/weights/neural_predicates/leftside_pretrain.pt', map_location=device))
-            vfs['leftside'].eval()
-            vfs['front'].load_state_dict(torch.load(
-                'src/weights/neural_predicates/front_pretrain.pt', map_location=device))
-            vfs['front'].eval()
-            print('Pretrained  neural predicates have been loaded!')
-        return nn.ModuleList([v_color, v_shape, v_in, v_size, v_material, v_rightside, v_leftside, v_front]), vfs
-
-    def forward(self, zs, atom):
-        """Convert the object-centric representation to a valuation tensor.
-
-            Args:
-                zs (tensor): The object-centric representaion (the output of the YOLO model).
-                atom (atom): The target atom to compute its proability.
-
-            Returns:
-                A batch of the probabilities of the target atom.
-        """
-        # term: logical term
-        # arg: vector representation of the term
-        # zs = self.preprocess(zs)
-        args = [self.ground_to_tensor(term, zs) for term in atom.terms]
-        # call valuation function
-        return self.vfs[atom.pred.name](*args)
-
-    def ground_to_tensor(self, term, zs):
-        """Ground terms into tensor representations.
-
-            Args:
-                term (term): The term to be grounded.
-                zs (tensor): The object-centric representation.
-        """
-        term_index = self.lang.term_index(term)
-        if term.dtype.name == 'object':
-            return zs[:, term_index]
-        elif term.dtype.name == 'image':
-            return None
-        else:
-            # other attributes
-            return self.term_to_onehot(term, batch_size=zs.size(0))
-
-    def term_to_onehot(self, term, batch_size):
-        """Ground terms into tensor representations.
-
-            Args:
-                term (term): The term to be grounded.
-                zs (tensor): The object-centric representation.
-
-            Return:
-                The tensor representation of the input term.
-        """
-        if term.dtype.name == 'color':
-            return self.to_onehot_batch(self.colors.index(term.name), len(self.colors), batch_size)
-        elif term.dtype.name == 'shape':
-            return self.to_onehot_batch(self.shapes.index(term.name), len(self.shapes), batch_size)
-        elif term.dtype.name == 'material':
-            return self.to_onehot_batch(self.materials.index(term.name), len(self.materials), batch_size)
-        elif term.dtype.name == 'size':
-            return self.to_onehot_batch(self.sizes.index(term.name), len(self.sizes), batch_size)
-        elif term.dtype.name == 'side':
-            return self.to_onehot_batch(self.sides.index(term.name), len(self.sides), batch_size)
-        else:
-            assert True, 'Invalid term: ' + str(term)
-
-    def to_onehot_batch(self, i, length, batch_size):
-        """Compute the one-hot encoding that is expanded to the batch size.
-        """
-        onehot = torch.zeros(batch_size, length, ).to(self.device)
-        onehot[:, i] = 1.0
-        return onehot
-
-
-def get_valuation_module(args, lang):
-    if args.dataset_type == "kandinsky":
-        VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
-    elif args.dataset_type == "hide":
-        VM = FCNNValuationModule(lang=lang, device=args.device, dataset=args.dataset,
-                                 dataset_type=args.dataset_type)
-    else:
-        raise ValueError
-    return VM

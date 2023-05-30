@@ -1,25 +1,22 @@
 # Created by shaji on 18-Apr-23
 
 from pathlib import Path
-
 import numpy as np
-
 from rtpt import RTPT
 
-import aitk
+from aitk import ai_interface
+from aitk.fol import bk
+from aitk.fol.language import Language
+from aitk.utils.nsfr_utils import get_prob
+
 import data_hide
 import eval_clause_infer
 import ilp
-import nsfr_utils
 import perception
 import visual_utils
 from args_utils import get_args
-from fol import bk
-from fol.language import Language
-from ilp import ilp_predict
 from mechanic_utils import *
-from nsfr_utils import get_nsfr_model, get_prob
-import file_utils
+from aitk.utils import file_utils
 
 
 def init():
@@ -173,16 +170,20 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
 
     # clause generation and predicate invention
     lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
-    neural_preds = file_utils.load_neural_preds(bk.neural_predicate_2)
+
+    pi_type = config.pi_type['bk']
+    neural_preds = file_utils.load_neural_preds(bk.neural_predicate_2, pi_type)
+
     args.neural_preds = [neural_pred for neural_pred in neural_preds]
     # args.neural_preds.append(neural_preds)
     args.p_inv_counter = 0
 
 
 def train_nsfr(args, rtpt, lang):
-    VM = aitk.get_vm(args, lang)
-    FC = aitk.get_fc(args, lang, VM)
-    NSFR = get_nsfr_model(args, lang, FC, train=True)
+    VM = ai_interface.get_vm(args, lang)
+    FC = ai_interface.get_fc(args, lang, VM)
+
+    NSFR = ai_interface.get_nsfr(args, lang, FC, train=True)
 
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
@@ -231,17 +232,17 @@ def train_nsfr(args, rtpt, lang):
             NSFR.print_program()
             log_utils.add_lines("Predicting on validation data set...", args.log_file)
 
-            acc_val, rec_val, th_val = ilp_predict(NSFR, val_pos, val_neg, args, th=0.33, split='val')
+            acc_val, rec_val, th_val = ilp.ilp_predict(NSFR, val_pos, val_neg, args, th=0.33, split='val')
             # writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
             log_utils.add_lines(f"acc_val:{acc_val} ", args.log_file)
             log_utils.add_lines("Predi$\alpha$ILPcting on training data set...", args.log_file)
 
-            acc, rec, th = ilp_predict(NSFR, train_pos, train_neg, args, th=th_val, split='train')
+            acc, rec, th = ilp.ilp_predict(NSFR, train_pos, train_neg, args, th=th_val, split='train')
             # writer.add_scalar("metric/train_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_train: {acc}", args.log_file)
             log_utils.add_lines(f"Predicting on test data set...", args.log_file)
 
-            acc, rec, th = ilp_predict(NSFR, test_pos, test_neg, args, th=th_val, split='train')
+            acc, rec, th = ilp.ilp_predict(NSFR, test_pos, test_neg, args, th=th_val, split='train')
             # writer.add_scalar("metric/test_acc", acc, global_step=epoch)
             log_utils.add_lines(f"acc_test: {acc}", args.log_file)
 
@@ -273,9 +274,9 @@ def visualization(args, lang, colors=None, thickness=None, radius=None):
                 data = args.test_group_neg[i]
 
             # calculate scores
-            VM = aitk.get_vm(args, lang)
-            FC = aitk.get_fc(args, lang, VM)
-            NSFR = nsfr_utils.get_nsfr_model(args, lang, FC)
+            VM = ai_interface.get_vm(args, lang)
+            FC = ai_interface.get_fc(args, lang, VM)
+            NSFR = ai_interface.get_nsfr(args, lang, FC)
 
             # evaluate new clauses
             scores = eval_clause_infer.eval_clause_on_test_scenes(NSFR, args, lang.clauses[0], data.unsqueeze(0))

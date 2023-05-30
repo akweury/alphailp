@@ -1,7 +1,6 @@
 # Created by shaji on 12-Apr-23
 
 import torch
-from fol.logic import *
 
 
 class Coder():

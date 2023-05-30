@@ -2,11 +2,10 @@ import argparse
 
 import numpy as np
 from sklearn.metrics import accuracy_score, confusion_matrix
-import torch
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from nsfr_utils import denormalize_clevr, get_data_loader, get_prob, get_nsfr_model
+from nsfr_utils import denormalize_clevr
+from aitk.utils.nsfr_utils import get_prob
 from nsfr_utils import save_images_with_captions, to_plot_images_clevr, generate_captions
 
 

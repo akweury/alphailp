@@ -2,7 +2,7 @@ import datetime
 import torch
 
 import config
-from fol import bk
+from aitk.fol import bk
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")

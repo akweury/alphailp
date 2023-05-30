@@ -3,9 +3,9 @@ import torch
 import nsfr_utils
 from refinement import RefinementGenerator
 import logic_utils
-from fol.language import DataType
-import log_utils
-from fol.data_utils import DataUtils
+from aitk.fol.language import DataType
+from aitk.utils import log_utils
+from aitk.fol.data_utils import DataUtils
 from src.logic_utils import count_arity_from_clause_cluster
 
 

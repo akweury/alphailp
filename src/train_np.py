@@ -7,9 +7,9 @@ from sklearn.metrics import accuracy_score
 from rtpt import RTPT
 from tqdm import tqdm
 
-from percept import YOLOPerceptionModule
+from aitk.percept_yolo import YOLOPerceptionModule
 
-from valuation_func_yolo import YOLOAreaValuationFunction
+from aitk.valuation_yolo import YOLOAreaValuationFunction
 import config
 
 

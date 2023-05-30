@@ -5,19 +5,17 @@ import torch
 
 import data_clevr
 import data_kandinsky
-from nsfr.nsfr import NSFReasoner
-from logic_utils import build_infer_module, build_clause_infer_module
-from fol.language import Language
+from aitk.fol.language import Language
 
 attrs = ['color', 'shape', 'material', 'size']
 
 
-def update_initial_clauses(clauses, obj_num):
-    assert len(clauses) == 1, "Too many initial clauses."
-    clause = clauses[0]
-    clause.body = clause.body[:obj_num]
-    print("Initial clauses: ", clause)
-    return [clause]
+# def update_initial_clauses(clauses, obj_num):
+#     assert len(clauses) == 1, "Too many initial clauses."
+#     clause = clauses[0]
+#     clause.body = clause.body[:obj_num]
+#     print("Initial clauses: ", clause)
+#     return [clause]
 
 
 def valuation_to_attr_string(v, atoms, e, th=0.5):
@@ -58,15 +56,15 @@ def valuation_to_string(v, atoms, e, th=0.5):
     return valuation_to_attr_string(v, atoms, e, th) + valuation_to_rel_string(v, atoms, th)
 
 
-def valuations_to_string(V, atoms, e, th=0.5):
-    """Generate string explanation of the scenes.
-    """
-    st = ''
-    for i in range(V.size(0)):
-        st += 'image ' + str(i) + '\n'
-        # for each data in the batch
-        st += valuation_to_string(V[i], atoms, e, th)
-    return st
+# def valuations_to_string(V, atoms, e, th=0.5):
+#     """Generate string explanation of the scenes.
+#     """
+#     st = ''
+#     for i in range(V.size(0)):
+#         st += 'image ' + str(i) + '\n'
+#         # for each data in the batch
+#         st += valuation_to_string(V[i], atoms, e, th)
+#     return st
 
 
 def generate_captions(V, atoms, e, th):
@@ -347,22 +345,6 @@ def get_clevr_pos_loader(args):
 #     return train_loader, val_loader, test_loader
 
 
-def get_prob(v_T, NSFR, args):
-    """
-    if args.dataset_type == 'kandinsky':
-        predicted = NSFR.predict(v=v_T, predname='kp')
-    elif args.dataset_type == 'clevr':
-        if args.dataset == 'clevr-hans3':
-            predicted = NSFR.predict_multi(
-                v=v_T, prednames=['kp1', 'kp2', 'kp3'])
-        if args.dataset == 'clevr-hans7':
-            predicted = NSFR.predict_multi(
-                v=v_T, prednames=['kp1', 'kp2', 'kp3', 'kp4', 'kp5', 'kp6', 'kp7'])
-    """
-    return NSFR.get_target_prediciton(v=v_T, prednames=['kp'], device=args.device)
-    # return predicted
-
-
 # def get_prob_by_prednames(v_T, NSFR, prednames):
 #     if args.dataset_type == 'kandinsky':
 #         predicted = NSFR.ilp_predict(v=v_T, predname='kp')
@@ -374,22 +356,6 @@ def get_prob(v_T, NSFR, args):
 #             predicted = NSFR.predict_multi(
 #                 v=v_T, prednames=['kp1', 'kp2', 'kp3', 'kp4', 'kp5', 'kp6', 'kp7'])
 #     return predicted
-
-
-def get_nsfr_model(args, lang, FC, train=False):
-    device = args.device
-    clauses = lang.clauses
-    atoms = lang.atoms
-    pi_clauses = lang.pi_clauses
-
-    IM = build_infer_module(args, clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,
-                            train=train, gamma=args.gamma)
-    CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
-                                    device=device, gamma=args.gamma)
-
-    # Neuro-Symbolic Forward Reasoner
-    NSFR = NSFReasoner(facts_converter=FC, infer_module=IM, clause_infer_module=CIM, atoms=atoms, clauses=clauses)
-    return NSFR
 
 
 # def update_nsfr_clauses(args, nsfr, clauses, bk_clauses, device):

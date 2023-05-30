@@ -1,11 +1,11 @@
 import glob
 from lark import Lark
+import itertools
 
 import config
-import log_utils
 from .exp_parser import ExpTree
 from .logic import *
-from fol import bk
+from . import bk
 
 
 # from fol import mode_declaration
@@ -359,8 +359,7 @@ class Language(object):
             self.preds += self.invented_preds
             self.pi_clauses = self.all_pi_clauses
         else:
-            log_utils.add_lines(
-                f'++++++++++ {neural_pred} +++++++++++', args.log_file)
+
             # only consider one category by the given nerual pred
             self.preds = self.preds[:2]
             self.preds.append(neural_pred)
@@ -585,3 +584,8 @@ def get_pi_mode_declarations(lang, obj_num):
                                             ordered=False)
         pi_mode_declarations.append(mode_declarations)
     return pi_mode_declarations
+
+
+p_ = Predicate('.', 1, [DataType('spec')])
+false = Atom(p_, [Const('__F__', dtype=DataType('spec'))])
+true = Atom(p_, [Const('__T__', dtype=DataType('spec'))])

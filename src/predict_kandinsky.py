@@ -1,15 +1,5 @@
 import argparse
 
-import numpy as np
-from sklearn.metrics import accuracy_score, recall_score
-import torch
-from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
-
-from nsfr_utils import denormalize_kandinsky, get_data_loader, get_prob, get_nsfr_model
-from nsfr_utils import save_images_with_captions, to_plot_images_kandinsky, generate_captions
-
-
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -19,7 +9,8 @@ def get_args():
                         help="The maximum number of objects in one image")
     parser.add_argument("--m", type=int, default=3)
     parser.add_argument("--dataset", choices=["twopairs", "threepairs", "red-triangle", "closeby",
-                                              "online", "online-pair", "nine-circles"], help="Use kandinsky patterns dataset")
+                                              "online", "online-pair", "nine-circles"],
+                        help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
                         help="kandinsky or clevr")
     parser.add_argument("--small-data", action="store_true", help="Use small training data.")
@@ -35,7 +26,6 @@ def get_args():
                         help="Plot images with captions.")
     args = parser.parse_args()
     return args
-
 
 # def predict(NSFR, loader, args, device, writer, th=None, split='train'):
 #     predicted_list = []
@@ -91,4 +81,3 @@ def get_args():
 #             target_set,  [m > th for m in predicted], average=None)
 #         return accuracy, rec_score, th
 #
-

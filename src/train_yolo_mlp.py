@@ -5,16 +5,14 @@ from torch.utils.tensorboard import SummaryWriter
 import argparse
 from datetime import datetime
 
-import torch.multiprocessing as mp
-
 from tqdm import tqdm
 import matplotlib
 
 import numpy as np
-from percept import YOLOPerceptionModule
+from aitk.percept_yolo import YOLOPerceptionModule
 
 from valuation import *
-from neural_utils import LogisticRegression, MLP
+from aitk.utils.neural_utils import MLP
 
 matplotlib.use("Agg")
 

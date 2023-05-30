@@ -1,11 +1,11 @@
 # Created by Jing at 30.05.2023
+
 import numpy as np
 import torch
 from torch import nn as nn
 
-import logic_utils
-from logic_utils import get_index_by_predname
-
+from aitk.infer import build_infer_module, build_clause_infer_module
+import utils.logic_utils as lu
 
 
 class NSFReasoner(nn.Module):
@@ -100,7 +100,7 @@ class NSFReasoner(nn.Module):
         # v: batch * |atoms|
         values = torch.zeros(v.size(0), v.size(1), 1).to(device)
         if len(prednames) > 1:
-            target_indices = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
+            target_indices = lu.get_index_by_predname(pred_str=prednames, atoms=self.atoms)
             # target_all = torch.zeros((len(target_indices), v.size(0)))
             # target_max = torch.zeros((len(target_indices)))
 
@@ -111,7 +111,7 @@ class NSFReasoner(nn.Module):
             values[1:] = v[1:, :, target_indices[1]].max(dim=-1, keepdim=True)[0]
 
         else:
-            target_index_list = get_index_by_predname(pred_str=prednames, atoms=self.atoms)
+            target_index_list = lu.get_index_by_predname(pred_str=prednames, atoms=self.atoms)
             values = v[:, :, target_index_list[0]]
 
         return values
@@ -122,7 +122,7 @@ class NSFReasoner(nn.Module):
         # v: batch * |atoms|
         values = torch.zeros(v.size(0), 1).to(device)
 
-        target_indices = logic_utils.get_index_by_predname(pred_str=preds, atoms=self.atoms)
+        target_indices = lu.get_index_by_predname(pred_str=preds, atoms=self.atoms)
         # target_all = torch.zeros((len(target_indices), v.size(0)))
         # target_max = torch.zeros((len(target_indices)))
 
@@ -141,7 +141,7 @@ class NSFReasoner(nn.Module):
         # v: batch * |atoms|
         target_indices = []
         for predname in prednames:
-            target_index = get_index_by_predname(
+            target_index = lu.get_index_by_predname(
                 pred_str=predname, atoms=self.atoms)
             target_indices.append(target_index)
         prob = torch.cat([v[:, i].unsqueeze(-1)
@@ -200,3 +200,19 @@ class NSFReasoner(nn.Module):
         for atom in atoms:
             text += str(atom) + ', '
         return text
+
+
+def get_nsfr_model(args, lang, FC, train=False):
+    device = args.device
+    clauses = lang.clauses
+    atoms = lang.atoms
+    pi_clauses = lang.pi_clauses
+
+    IM = build_infer_module(clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,
+                            train=train, gamma=args.gamma)
+    CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
+                                    device=device, gamma=args.gamma)
+
+    # Neuro-Symbolic Forward Reasoner
+    NSFR = NSFReasoner(facts_converter=FC, infer_module=IM, clause_infer_module=CIM, atoms=atoms, clauses=clauses)
+    return NSFR

@@ -7,7 +7,7 @@ from eval_utils import eval_group_diff, eval_count_diff, count_func, group_func,
 from eval_utils import predict_circles, calc_colinearity, get_group_distribution
 import eval_utils
 import logic_utils
-import log_utils
+from aitk.utils import log_utils
 import copy
 
 

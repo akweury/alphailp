@@ -1,15 +1,11 @@
-# Created by shaji on 25-Apr-23
+# Created by jing at 30.05.23
 import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from fol import bk
-from neural_utils import LogisticRegression, AreaNet
+from aitk.fol import bk
+from aitk.utils.neural_utils import LogisticRegression, AreaNet
 
-
-################################
-# Valuation functions for YOLO #
-################################
 
 class YOLOClosebyValuationFunction(nn.Module):
     """The function v_closeby.
@@ -472,15 +468,15 @@ class YOLOValuationModule(nn.Module):
         layers = []
         vfs = {}  # a dictionary: pred_name -> valuation function
 
-        v_color = valuation_func_yolo.YOLOColorValuationFunction()
+        v_color = YOLOColorValuationFunction()
         vfs['color'] = v_color
         layers.append(v_color)
 
-        v_shape = valuation_func_yolo.YOLOShapeValuationFunction()
+        v_shape = YOLOShapeValuationFunction()
         vfs['shape'] = v_shape
         layers.append(v_shape)
 
-        v_in = valuation_func_yolo.YOLOInValuationFunction()
+        v_in = YOLOInValuationFunction()
         vfs['in'] = v_in
         layers.append(v_in)
 
@@ -491,15 +487,15 @@ class YOLOValuationModule(nn.Module):
         # #     str(config.root) + '/src/weights/neural_predicates/area_pretrain.pt', map_location=device))
         # # vfs['area'].eval()
         # layers.append(v_area)
-        v_rho = valuation_func_yolo.YOLORhoValuationFunction(device)
+        v_rho = YOLORhoValuationFunction(device)
         vfs['rho'] = v_rho
         layers.append(v_rho)
 
-        v_phi = valuation_func_yolo.YOLOPhiValuationFunction(device)
+        v_phi = YOLOPhiValuationFunction(device)
         vfs['phi'] = v_phi
         layers.append(v_phi)
 
-        v_group_shape = valuation_func_yolo.YOLOGroupShapeValuationFunction(device)
+        v_group_shape = YOLOGroupShapeValuationFunction(device)
         vfs['group_shape'] = v_group_shape
         layers.append(v_group_shape)
         # v_closeby = YOLOClosebyValuationFunction(device)
@@ -581,3 +577,8 @@ class YOLOValuationModule(nn.Module):
         else:
             assert 0, "Invalid datatype of the given term: " + \
                       str(term) + ':' + term.dtype.name
+
+
+def get_valuation_module(args, lang):
+    VM = YOLOValuationModule(lang=lang, device=args.device, dataset=args.dataset)
+    return VM

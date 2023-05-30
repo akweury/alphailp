@@ -1,5 +1,5 @@
 import itertools
-from fol.logic import Atom, Clause, Var
+from aitk.fol import Atom, Clause, Var
 
 
 # TODOL refine_from_modeb, generate_by_refinement

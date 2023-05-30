@@ -4,8 +4,7 @@ import time
 import datetime
 
 from mechanics import *
-import log_utils
-
+from aitk.utils import log_utils
 
 date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")

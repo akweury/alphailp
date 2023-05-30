@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
-from fol.logic import NeuralPredicate, InventedPredicate
 from tqdm import tqdm
+
+from aitk.fol.logic import NeuralPredicate
+
 
 
 class FactsConverter(nn.Module):
@@ -35,7 +37,7 @@ class FactsConverter(nn.Module):
         v[:, 1] = 1.0
         return v
 
-    def filter_by_datatype():
+    def filter_by_datatype(self):
         pass
 
     def to_vec(self, term, zs):

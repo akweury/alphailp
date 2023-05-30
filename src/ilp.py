@@ -4,9 +4,9 @@ from sklearn.metrics import roc_curve, accuracy_score, recall_score
 from tqdm import tqdm
 import torch
 
+from aitk.utils import nsfr_utils
+
 from ilp_utils import *
-import nsfr_utils
-import aitk
 from pi_utils import gen_clu_pi_clauses, gen_exp_pi_clauses
 
 
@@ -39,7 +39,7 @@ def describe_scenes(args, lang, FC):
 
         # clause evaluation
 
-        NSFR = nsfr_utils.get_nsfr_model(args, lang, FC)
+        NSFR = ai_interface.get_nsfr(args, lang, FC)
         # evaluate new clauses
         score_all = eval_clause_infer.get_clause_score(NSFR, args, eval_pred)
         scores = eval_clause_infer.eval_clauses(score_all[:, :, index_pos], score_all[:, :, index_neg], args, step)
@@ -88,8 +88,9 @@ def ilp_extend_cluster(args, lang, neural_pred, level):
     while args.iteration < args.max_step and not args.is_done:
 
         # update system
-        VM = aitk.get_vm(args, lang)
-        FC = aitk.get_fc(args, lang, VM)
+        VM = ai_interface.get_vm(args, lang)
+        FC = ai_interface.get_fc(args, lang, VM)
+
         describe_scenes(args, lang, FC)
         # predicate invention by explanation
 
@@ -116,8 +117,8 @@ def ilp_clause_explain(args, lang, neural_pred):
     while args.iteration < args.max_step and not args.is_done:
 
         # update system
-        VM = aitk.get_vm(args, lang)
-        FC = aitk.get_fc(args, lang, VM)
+        VM = ai_interface.get_vm(args, lang)
+        FC = ai_interface.get_fc(args, lang, VM)
         describe_scenes(args, lang, VM, FC)
         # predicate invention by explanation
 
@@ -191,8 +192,8 @@ def ilp_test(args, lang):
     reset_args(args, lang)
     lang.update_bk(args, full_bk=True, neural_pred=args.neural_preds)
     lang.update_mode_declarations(args)
-    VM = aitk.get_vm(args, lang)
-    FC = aitk.get_fc(args, lang, VM)
+    VM = ai_interface.get_vm(args, lang)
+    FC = ai_interface.get_fc(args, lang, VM)
 
     # ILP
     # searching for a proper clause to describe the pattern.

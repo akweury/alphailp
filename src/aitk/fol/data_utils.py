@@ -4,7 +4,7 @@ import glob
 from lark import Lark
 from .exp_parser import ExpTree
 from .language import DataType
-from .logic import Predicate, NeuralPredicate, InventedPredicate, FuncSymbol
+from .logic import Predicate, InventedPredicate, FuncSymbol
 
 
 class DataUtils(object):
@@ -193,8 +193,6 @@ class DataUtils(object):
         dtypes = [DataType(dt) for dt in dtype_names]
 
         return Predicate(pred, int(arity), dtypes)
-
-
 
     def parse_invented_pred(self, line):
         """Parse string to invented predicates.

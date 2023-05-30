@@ -1,51 +1,19 @@
 import numpy as np
 import torch
+import itertools
 
+import aitk.fol.language
 import config
 import ilp
-import log_utils
 import eval_clause_infer
-from fol.logic import *
-from fol.data_utils import DataUtils
-from infer import InferModule, ClauseInferModule
-from tensor_encoder import TensorEncoder
+
+from aitk.utils import log_utils
+from aitk.fol.data_utils import DataUtils
+from aitk.infer import ClauseInferModule
+from aitk.tensor_encoder import TensorEncoder
+from aitk.fol import logic
 
 
-# def get_atoms(lang):
-#     lang.generate_atoms(lang)
-
-
-def build_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False, gamma=None):
-    te = TensorEncoder(lang, atoms, clauses, device=device)
-    I = te.encode()
-    te_bk = None
-    I_bk = None
-    if len(pi_clauses) > 0:
-        te_pi = TensorEncoder(lang, atoms, pi_clauses, device=device)
-        I_pi = te_pi.encode()
-    else:
-        te_pi = None
-        I_pi = None
-    ##I_bk = None
-    im = InferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk, I_pi=I_pi, gamma=gamma)
-    return im
-
-
-def build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=5, train=False,
-                              gamma=None):
-    te = TensorEncoder(lang, atoms, clauses, device=device)
-    I = te.encode()
-    te_bk = None
-    I_bk = None
-
-    te_pi = None
-    I_pi = None
-    if len(pi_clauses) > 0:
-        te_pi = TensorEncoder(lang, atoms, pi_clauses, device=device)
-        I_pi = te_pi.encode()
-
-    im = ClauseInferModule(I, m=m, infer_step=infer_step, device=device, train=train, I_bk=I_bk, I_pi=I_pi, gamma=gamma)
-    return im
 
 
 def build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
@@ -66,7 +34,7 @@ def build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device,
 
 
 def generate_atoms(lang):
-    spec_atoms = [false, true]
+    spec_atoms = [aitk.fol.language.false, aitk.fol.language.true]
     atoms = []
     for pred in lang.preds:
         dtypes = pred.dtypes
@@ -74,7 +42,7 @@ def generate_atoms(lang):
         args_list = list(set(itertools.product(*consts_list)))
         for args in args_list:
             if len(args) == 1 or len(set(args)) == len(args):
-                atoms.append(Atom(pred, args))
+                atoms.append(logic.Atom(pred, args))
     pi_atoms = []
     for pred in lang.invented_preds:
         dtypes = pred.dtypes
@@ -82,7 +50,7 @@ def generate_atoms(lang):
         args_list = list(set(itertools.product(*consts_list)))
         for args in args_list:
             if len(args) == 1 or len(set(args)) == len(args):
-                pi_atoms.append(Atom(pred, args))
+                pi_atoms.append(logic.Atom(pred, args))
     bk_pi_atoms = []
     for pred in lang.bk_inv_preds:
         dtypes = pred.dtypes
@@ -94,7 +62,7 @@ def generate_atoms(lang):
                 if pred.name[0] + pred.name[5:] != args[0].name:
                     continue
             if len(args) == 1 or len(set(args)) == len(args):
-                pi_atoms.append(Atom(pred, args))
+                pi_atoms.append(logic.Atom(pred, args))
     return spec_atoms + sorted(atoms) + sorted(pi_atoms) + sorted(bk_pi_atoms)
 
 
@@ -107,19 +75,8 @@ def generate_bk(lang):
             args_list = itertools.product(*consts_list)
             for args in args_list:
                 if len(args) == 1 or (args[0] != args[1] and args[0].mode == args[1].mode):
-                    atoms.append(Atom(pred, args))
+                    atoms.append(logic.Atom(pred, args))
     return atoms
-
-
-def get_index_by_predname(pred_str, atoms):
-    indices = []
-    for p_i, p_str in enumerate(pred_str):
-        p_indices = []
-        for i, atom in enumerate(atoms):
-            if atom.pred.name == p_str:
-                p_indices.append(i)
-        indices.append(p_indices)
-    return indices
 
 
 def parse_clauses(lang, clause_strs):
@@ -809,7 +766,7 @@ def get_equivalent_clauses(c):
             inv_pred_equiv_bodies = replace_inv_to_equiv_preds(inv_atom.pred)
             for equiv_inv_body in inv_pred_equiv_bodies:
                 equiv_body = sorted(list(set(equiv_inv_body + usual_preds)))
-                equiv_c = Clause(head=c.head, body=equiv_body)
+                equiv_c = logic.Clause(head=c.head, body=equiv_body)
                 equivalent_clauses.append(equiv_c)
 
     return equivalent_clauses
