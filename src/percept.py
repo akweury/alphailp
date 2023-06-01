@@ -210,38 +210,6 @@ def eval_images(args, model_file, device, pos_loader, neg_loader):
     return pos_pred, neg_pred
 
 
-def convert_data_to_tensor(args, od_res):
-    if os.path.exists(od_res):
-        pm_res = torch.load(od_res)
-        pos_pred = pm_res['pos_res']
-        neg_pred = pm_res['neg_res']
-    else:
-        raise ValueError
-    # data_files = glob.glob(str(pos_dataset_folder / '*.json'))
-    # data_tensors = torch.zeros((len(data_files), args.e, 9))
-    # for d_i, data_file in enumerate(data_files):
-    #     with open(data_file) as f:
-    #         data = json.load(f)
-    #     data_tensor = torch.zeros(1, args.e, 9)
-    #     for o_i, obj in enumerate(data["objects"]):
-    #
-    #         data_tensor[0, o_i, 0:3] = torch.tensor(obj["position"])
-    #         if "blue" in obj["material"]:
-    #             data_tensor[0, o_i, 3:6] = torch.tensor([0, 0, 1])
-    #         elif "green" in obj["material"]:
-    #             data_tensor[0, o_i, 3:6] = torch.tensor([0, 1, 0])
-    #         else:
-    #             data_tensor[0, o_i, 3:6] = torch.tensor([1, 0, 0])
-    #         if "sphere" in obj["material"]:
-    #             data_tensor[0, o_i, 6] = 0.99
-    #         if "cube" in obj["material"]:
-    #             data_tensor[0, o_i, 7] = 0.99
-    #         data_tensor[0, o_i, 8] = 0.99
-    #     data_tensors[d_i] = data_tensor[0]
-
-    return pos_pred, neg_pred
-
-
 def normalization(pred_res, max_value, min_vlaue):
     pred_res_norm = torch.zeros(size=pred_res.shape)
     pred_res_norm[:, :, 0] = (pred_res[:, :, 0] - min_vlaue) / (max_value - min_vlaue)

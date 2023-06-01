@@ -1,5 +1,5 @@
 {
-  "n_obj": 3,
+  "n_obj": 6,
   "batch_size_train": 8,
   "e": 3,
   "group_e": 3,

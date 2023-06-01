@@ -6,6 +6,8 @@ import torch
 import copy
 
 import config
+from aitk import ai_interface
+from aitk.utils import eval_utils
 
 
 # --------------------------- evaluate operations ----------------------------------------------------------------------
@@ -218,67 +220,6 @@ def get_valid_pixels(img):
 
 def get_valid_pixels_idx(img):
     return np.sum(img, axis=2) != 0
-
-
-# --------------------------- filter operations -----------------------------------------------------------------------
-
-# https: // github.com / bnsreenu / python_for_image_processing_APEER / blob / master / tutorial41_image_filters_using_fourier_transform_DFT.py
-def fft_filter(input_array):
-    if input_array.shape != (512, 512):
-        raise ValueError
-
-    # file_io.save_16bitImage(input_array, str(Path(config.ws_path) / f"depth.png"))
-
-    rows, cols = input_array.shape
-    crow, ccol = int(rows / 2), int(cols / 2)
-    mask = np.ones((rows, cols, 2), np.uint8)
-    r = 50
-    center = [crow, ccol]
-    x, y = np.ogrid[:rows, :cols]
-    mask_area = (x - center[0]) ** 2 + (y - center[1]) ** 2 <= r * r
-    mask[mask_area] = 0
-
-    input_array = np.float32(input_array)
-    dft = cv.dft(input_array, flags=cv.DFT_COMPLEX_OUTPUT)
-    dft_shift = np.fft.fftshift(dft)
-    magnitude_spectrum = 20 * np.log(cv.magnitude(dft_shift[:, :, 0], dft_shift[:, :, 1]))
-
-    fshift = dft_shift * mask
-    fshift_mask_mag = 20 * np.log(cv.magnitude(fshift[:, :, 0], fshift[:, :, 1]))
-    f_ishift = np.fft.ifftshift(fshift)
-    img_back = cv.idft(f_ishift)
-    img_back = cv.magnitude(img_back[:, :, 0], img_back[:, :, 1])
-
-    fig = plt.figure(figsize=(12, 12))
-    ax1 = fig.add_subplot(2, 2, 1)
-    ax1.imshow(input_array, cmap='gray')
-    ax1.title.set_text('Input Image')
-    ax2 = fig.add_subplot(2, 2, 2)
-    ax2.imshow(magnitude_spectrum, cmap='gray')
-    ax2.title.set_text('FFT of image')
-    ax3 = fig.add_subplot(2, 2, 3)
-    ax3.imshow(fshift_mask_mag, cmap='gray')
-    ax3.title.set_text('FFT + Mask')
-    ax4 = fig.add_subplot(2, 2, 4)
-    ax4.imshow(img_back, cmap='gray')
-    ax4.title.set_text('After inverse FFT')
-
-    mask_valid_area = input_array != 0
-    img_back[~mask_valid_area] = 0
-
-    # noramlize hpf image to 16 bit
-    img_back = normalise216bitImage(img_back)
-
-    # get the mask of detail pixels
-    threshold = 0
-    mask_hp = img_back > threshold
-    input_array[~mask_hp] = 0
-
-    # save filtered img
-    # file_io.save_16bitImage(img_back, str(Path(config.ws_path) / f"fft.png"))
-    # plt.savefig(str(Path(config.ws_path) / f"fft_info.png"), dpi=1000)
-
-    # check if save and load function has loss
 
 
 def canny_edge_filter(img_path):
@@ -853,20 +794,20 @@ def save_image(final_image, image_output_path):
     cv.imwrite(image_output_path, final_image)
 
 
-def visual_group_predictions(args, data, input_image, colors, thickness):
+def visual_group_predictions(args, data, input_image, colors, thickness, group_tensor_index):
     group_image = copy.deepcopy(input_image)
-    indice_center_on_screen_x = config.group_tensor_index["x_center_screen"]
-    indice_center_on_screen_y = config.group_tensor_index["y_center_screen"]
-    indice_radius_on_screen = config.group_tensor_index["screen_radius"]
+    indice_center_on_screen_x = group_tensor_index["x_center_screen"]
+    indice_center_on_screen_y = group_tensor_index["y_center_screen"]
+    indice_radius_on_screen = group_tensor_index["screen_radius"]
     screen_points = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.e, :]
     screen_radius = data[:, indice_radius_on_screen][:args.e].to(torch.int16).tolist()
     group_pred_image = draw_circles(group_image, screen_points, radius=screen_radius, color=colors,
                                     thickness=thickness)
 
-    indice_left_screen_x = config.group_tensor_index["screen_left_x"]
-    indice_left_screen_y = config.group_tensor_index["screen_left_y"]
-    indice_right_screen_x = config.group_tensor_index["screen_right_x"]
-    indice_right_screen_y = config.group_tensor_index["screen_right_y"]
+    indice_left_screen_x = group_tensor_index["screen_left_x"]
+    indice_left_screen_y = group_tensor_index["screen_left_y"]
+    indice_right_screen_x = group_tensor_index["screen_right_x"]
+    indice_right_screen_y = group_tensor_index["screen_right_y"]
 
     screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.e, :]
     screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.e, :]
@@ -889,3 +830,68 @@ def visual_info(lang, image_shape, font_size):
         info_image = draw_custom_text(info_image, f"{pi_c}", pi_c_text_position, font_size=font_size)
         pi_c_text_position[1] += text_y_shift
     return info_image
+
+
+def visualization(args, lang, scores, colors=None, thickness=None, radius=None):
+    if colors is None:
+        # Blue color in BGR
+        colors = [
+            (255, 0, 0),
+            (255, 255, 0),
+            (0, 255, 0),
+            (0, 0, 255),
+            (0, 255, 255),
+        ]
+    if thickness is None:
+        # Line thickness of 2 px
+        thickness = 2
+    if radius is None:
+        radius = 10
+
+    for data_type in ["true", "false"]:
+        for i in range(len(args.test_group_pos)):
+            data_name = args.image_name_dict['test'][data_type][i]
+            if data_type == "true":
+                data = args.test_group_pos[i]
+            else:
+                data = args.test_group_neg[i]
+
+            # calculate scores
+            # VM = ai_interface.get_vm(args, lang)
+            # FC = ai_interface.get_fc(args, lang, VM)
+            # NSFR = ai_interface.get_nsfr(args, lang, FC)
+
+            # evaluate new clauses
+            # scores = eval_utils.eval_clause_on_test_scenes(NSFR, args, lang.clauses[0], data.unsqueeze(0))
+
+            visual_images = []
+            # input image
+            file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
+            image_file = file_prefix + ".image.png"
+            input_image = get_cv_image(image_file)
+
+            # group prediction
+            group_pred_image = visual_group_predictions(args, data, input_image, colors, thickness,
+                                                                     config.group_tensor_index)
+
+            # information image
+            info_image = visual_info(lang, input_image.shape, font_size=0.4)
+
+            # adding header and footnotes
+            input_image = draw_text(input_image, "input")
+            visual_images.append(input_image)
+
+            group_pred_image = draw_text(group_pred_image, f"group:{round(scores[0].tolist(), 4)}")
+            group_pred_image = draw_text(group_pred_image, f"{lang.clauses[0]}", position="lower_left",
+                                                      font_size=0.4)
+            visual_images.append(group_pred_image)
+
+            info_image = draw_text(info_image, f"Info:")
+            visual_images.append(info_image)
+
+            # final processing
+            final_image = hconcat_resize(visual_images)
+            final_image_filename = str(
+                args.image_output_path / f"{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
+
+            save_image(final_image, final_image_filename)

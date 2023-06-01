@@ -1,11 +1,11 @@
 import torch
 
 import nsfr_utils
-from refinement import RefinementGenerator
+from aitk.utils.fol.refinement import RefinementGenerator
 import logic_utils
-from aitk.fol.language import DataType
+from aitk.utils.fol import DataType
 from aitk.utils import log_utils
-from aitk.fol.data_utils import DataUtils
+from aitk.utils.fol import DataUtils
 from src.logic_utils import count_arity_from_clause_cluster
 
 
@@ -250,6 +250,8 @@ class PIClauseGenerator(object):
         # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
         du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
                        dataset=args.dataset)
+
+
         lang, vars, init_clauses, atoms = nsfr_utils.get_lang(args)
         if neural_pred is not None:
             lang.preds += neural_pred

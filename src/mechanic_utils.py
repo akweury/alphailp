@@ -1,19 +1,22 @@
 import os
 import torch
-
-import config
-from data_utils import to_line_tensor, get_comb, to_circle_tensor
-from eval_utils import eval_group_diff, eval_count_diff, count_func, group_func, get_circle_error, eval_score
-from eval_utils import predict_circles, calc_colinearity, get_group_distribution
-import eval_utils
-import logic_utils
-from aitk.utils import log_utils
 import copy
 
+from aitk.utils.eval_utils import predict_circles, calc_colinearity, get_group_distribution, get_circle_error
+from aitk.utils import log_utils
+from aitk.utils import eval_utils
+
+import config
+import logic_utils
+from data_utils import get_comb, to_circle_tensor
+
+from ilp_utils import eval_data
+
+import semantic as se
 
 def record_line_group(args, objs, obj_indices):
+    line_tensor = se.data2tensor_lines(objs)
     # convert the group to a tensor
-    line_tensor = to_line_tensor(objs).reshape(1, -1)
 
     # line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
 
@@ -32,24 +35,23 @@ def detect_lines(args, obj_tensors):
     all_line_tensors = []
 
     # detect lines image by image
-    for data_i in range(obj_tensors.shape[0]):
+    for img_i in range(obj_tensors.shape[0]):
         line_indices_ith = []
         line_groups_ith = []
         exist_combs = []
-        two_point_line_indices = get_comb(torch.tensor(range(obj_tensors[data_i].shape[0])), 2).tolist()
+        two_point_line_indices = get_comb(torch.tensor(range(obj_tensors[img_i].shape[0])), 2).tolist()
         # detect lines by checking each possible combinations
         for g_i, obj_indices in enumerate(two_point_line_indices):
             # check duplicate
             if obj_indices in exist_combs:
                 continue
-            line_obj_tensors, line_indices = extend_line_group(args, obj_indices, obj_tensors[data_i])
+            line_obj_tensors, line_indices = extend_line_group(args, obj_indices, obj_tensors[img_i])
 
             if line_obj_tensors is not None and len(line_obj_tensors) >= args.line_group_min_sz:
                 exist_combs += get_comb(line_indices, 2).tolist()
 
                 line_indices_ith.append(line_indices)
                 line_groups_ith.append(line_obj_tensors)
-
         all_line_indices.append(line_indices_ith)
         all_line_tensors.append(line_groups_ith)
 
@@ -72,36 +74,39 @@ def encode_lines(args, percept_dict, obj_indices, obj_tensors):
         img_line_tensors_indices = []
         for obj_i, objs in enumerate(obj_tensors[img_i]):
             line_tensor, line_used_objs = record_line_group(args, objs, obj_indices[img_i][obj_i])
-            img_line_tensors.append(line_tensor)
-            img_line_tensors_indices.append(line_used_objs)
+            img_line_tensors.append(line_tensor.tolist())
+            img_line_tensors_indices.append(line_used_objs.tolist())
 
         all_line_tensors.append(img_line_tensors)
         all_line_tensors_indices.append(img_line_tensors_indices)
 
+    # all_line_tensors = torch.tensor(all_line_tensors)
+    # all_line_tensors_indices = torch.tensor(all_line_tensors_indices)
+
     return all_line_tensors, all_line_tensors_indices
 
 
-def prune_lines(args, line_tensors, line_tensors_indices):
+def prune_lines(args, lines_list, line_tensors_indices):
     pruned_tensors = []
     pruned_tensors_indices = []
-    for img_i in range(len(line_tensors)):
+    for img_i in range(len(lines_list)):
         img_scores = []
-        for line_tensor in line_tensors[img_i]:
-            line_scores = line_tensor[0, config.group_tensor_index["line"]]
-            img_scores.append(line_scores)
+        for line_tensor_list in lines_list[img_i]:
+            line_tensor = torch.tensor(line_tensor_list)
+            line_scores = line_tensor[config.group_tensor_index["line"]]
+            img_scores.append(line_scores.tolist())
 
         img_scores = torch.tensor(img_scores)
         _, prob_indices = img_scores.sort(descending=True)
         prob_indices = prob_indices[:args.group_e]
 
-        if len(line_tensors[img_i]) == 0:
+        if len(lines_list[img_i]) == 0:
             pruned_tensors.append(torch.zeros(size=(args.group_e, len(config.group_tensor_index))).tolist())
             pruned_tensors_indices.append(torch.zeros(1, args.n_obj, dtype=torch.bool).tolist())
         else:
-            pruned_tensors.append(line_tensors[img_i][prob_indices].tolist())
-            pruned_tensors_indices.append(line_tensors_indices[img_i][prob_indices].tolist())
-    pruned_tensors_indices = torch.tensor(pruned_tensors_indices)
-    pruned_tensors = torch.tensor(pruned_tensors)
+
+            pruned_tensors.append(torch.tensor(lines_list[img_i])[prob_indices].tolist())
+            pruned_tensors_indices.append(torch.tensor(line_tensors_indices[img_i])[prob_indices].tolist())
 
     return pruned_tensors, pruned_tensors_indices
 
@@ -172,11 +177,11 @@ def extend_line_group(args, obj_indices, obj_tensors):
         line_objs = obj_tensors[line_group_indices]
         extra_index = torch.tensor(sorted(set(list(range(obj_tensors.shape[0]))) - set(line_group_indices)))
         if len(extra_index) == 0:
-            return None, None, None
+            return None, None
         extra_objs = obj_tensors[extra_index]
         line_objs_extended = extend_groups(line_objs, extra_objs)
-        colinearities = calc_colinearity(line_objs_extended)
-        avg_distances = eval_utils.calc_avg_dist(line_objs_extended)
+        colinearities = calc_colinearity(line_objs_extended, config.indices_position)
+        avg_distances = eval_utils.calc_avg_dist(line_objs_extended, config.indices_position)
         is_line = colinearities < args.error_th
         is_even_dist = avg_distances < args.distribute_error_th
         passed_indices = is_line * is_even_dist
@@ -223,32 +228,9 @@ def extend_groups(group_objs, extend_objs):
     return group_points_candidate
 
 
-def eval_single_group(data_pos, data_neg):
-    group_pos_res, score_1, score_2 = eval_data(data_pos)
-    group_neg_res, _, _ = eval_data(data_neg)
-    res = eval_score(group_pos_res, group_neg_res)
-
-    res_dict = {
-        "result": res,
-        "score_1": score_1,
-        "score_2": score_2
-    }
-
-    return res_dict
-
-
-def eval_data(data):
-    sum_first = group_func(data)
-    eval_first = eval_group_diff(sum_first, dim=0)
-    sum_second = count_func(sum_first)
-    eval_second = eval_count_diff(sum_second, dim=0)
-    eval_res = torch.tensor([eval_first, eval_second])
-    return eval_res, sum_first[0], sum_second[0]
-
-
 def test_groups_on_one_image(data, val_result):
     test_score = 1
-    eval_color_positive_res, score_color_1, score_color_2 = eval_data(data[:, :, config.indices_color])
+    score_color_1, score_color_2 = eval_data(data[:, :, config.indices_color])
     eval_shape_positive_res, score_shape_1, score_shape_2 = eval_data(data[:, :, config.indices_shape])
 
     return test_score
@@ -337,16 +319,6 @@ def check_result(args, clause_with_scores, higher, max_clause, new_max_clause):
     return best_clause, False
 
 
-def check_group_result(args, eval_res_val):
-    shape_group_done = eval_res_val['shape_group']["result"] > args.group_conf_th
-    color_done = eval_res_val['color']["result"] > args.group_conf_th
-    shape_done = eval_res_val['shape']["result"] > args.group_conf_th
-
-    is_done = shape_group_done.sum() + color_done.sum() + shape_done.sum() > 0
-
-    return is_done
-
-
 def test_groups(test_positive, test_negative, groups):
     accuracy = 0
     for i in range(test_positive.shape[0]):
@@ -410,10 +382,7 @@ def detect_obj_groups(args, percept_dict_single, data_type):
         # pattern_cir, pattern_cir_used_objs = detect_circle_groups(args, percept_dict_single)
         # group_tensors, group_obj_index_tensors = merge_groups(args, line_tensors, pattern_cir, line_tensors_indices,
         #                                                       pattern_cir_used_objs)
-        group_res = {
-            "tensors": line_tensors,
-            "used_objs": line_tensors_indices,
-        }
+        group_res = {"tensors": line_tensors, "used_objs": line_tensors_indices}
         torch.save(group_res, save_file)
 
     return line_tensors, line_tensors_indices,

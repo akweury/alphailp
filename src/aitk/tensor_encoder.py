@@ -2,8 +2,8 @@
 import itertools
 import torch
 
-from aitk.fol import logic
-from aitk.fol.logic_ops import unify, subs_list
+from aitk.utils.fol import logic
+from aitk.utils.fol import unify, subs_list
 
 
 class TensorEncoder(object):

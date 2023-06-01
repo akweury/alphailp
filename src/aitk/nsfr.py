@@ -5,7 +5,7 @@ import torch
 from torch import nn as nn
 
 from aitk.infer import build_infer_module, build_clause_infer_module
-import utils.logic_utils as lu
+import aitk.utils.logic_utils as lu
 
 
 class NSFReasoner(nn.Module):

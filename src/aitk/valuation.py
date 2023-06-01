@@ -4,7 +4,7 @@ from torch import nn as nn
 from torch.nn import functional as F
 
 import config
-from aitk.fol import bk
+from aitk.utils.fol import bk
 from aitk.utils.neural_utils import LogisticRegression
 
 

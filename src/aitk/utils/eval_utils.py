@@ -1,6 +1,6 @@
 import copy
-
 import torch
+
 import config
 
 ness_index = config.score_type_index["ness"]
@@ -94,39 +94,20 @@ def eval_score(positive_score, negative_score):
     return res_score
 
 
-def eval_group_diff(data, dim):
-    mean = data.mean(dim=dim)
-    diff_sum = torch.abs(data - mean).sum()
-    possible_maximum = data.sum(dim=-1)[0] * data.shape[1] * data.shape[0]
-    diff_sum_norm = diff_sum / possible_maximum
-    return diff_sum_norm
+def op_count_nonzeros(data, axis, epsilon):
+    counter = (data / (data + epsilon)).sum(dim=axis)
+    return counter
 
 
-def eval_count_diff(data, dim):
-    """ calculate the difference """
-
-    mean = data.mean(dim=dim)
-    diff_sum = torch.abs(data - mean).sum()
-    possible_maximum = data.max() * data.shape[0]
-    diff_sum_norm = 1 - (diff_sum / possible_maximum)
-    return diff_sum_norm
+def metric_mse(data, axis):
+    error = ((data - data.mean(dim=axis)) ** 2).mean(dim=axis)
+    return error
 
 
-def count_func(data, epsilon=1e-10):
-    if len(data.shape) == 2:
-        count_res = torch.sum(data / (data + epsilon), dim=-1)
-    else:
-        raise ValueError
-
-    return count_res
-
-
-def group_func(data):
-    if len(data.shape) == 3:
-        group_res = data.sum(dim=-2)
-    else:
-        raise ValueError
-    return group_res
+def metric_count_mse(data, axis, epsilon=1e-10):
+    counter = op_count_nonzeros(data, axis, epsilon)
+    error = ((counter - counter.mean()) ** 2).mean()
+    return error
 
 
 def predict_circles(point_groups, collinear_th):
@@ -157,13 +138,13 @@ def predict_circles(point_groups, collinear_th):
     return center, r
 
 
-def calc_colinearity(obj_tensors):
+def calc_colinearity(obj_tensors, indices_position):
     if obj_tensors.shape[1] < 3:
         raise ValueError
 
     indices_a = list(range(1, obj_tensors.shape[1]))
     indices_b = list(range(obj_tensors.shape[1] - 1))
-    indices_pos = config.indices_position
+    indices_pos = indices_position
 
     collinearities = 0
     for i in range(len(indices_a)):
@@ -174,7 +155,7 @@ def calc_colinearity(obj_tensors):
     return collinearities
 
 
-def calc_avg_dist(obj_tensors):
+def calc_avg_dist(obj_tensors, indices_position):
     if obj_tensors.shape[1] < 3:
         raise ValueError
 
@@ -182,8 +163,8 @@ def calc_avg_dist(obj_tensors):
     indices_b = list(range(obj_tensors.shape[1] - 2, -1, -1))
     distances = []
     for i in range(len(indices_a)):
-        point_1 = obj_tensors[:, indices_a[i], config.indices_position]
-        point_2 = obj_tensors[:, indices_b[i], config.indices_position]
+        point_1 = obj_tensors[:, indices_a[i], indices_position]
+        point_2 = obj_tensors[:, indices_b[i], indices_position]
         distance = torch.sqrt(torch.sum((point_1 - point_2) ** 2, dim=-1))
         distances.append(distance.tolist())
 
@@ -218,3 +199,13 @@ def is_even_distributed_points(args, points_, shape):
         raise NotImplementedError
     else:
         raise ValueError
+
+
+def eval_clause_on_test_scenes(NSFR, args, clause, group_pred, ):
+    V_T = NSFR.clause_eval_quick(group_pred)[0, 0]
+    preds = [clause.head.pred.name]
+
+    score = NSFR.get_test_target_prediciton(V_T, preds, args.device)
+    score[score == 1] = 0.99
+
+    return score

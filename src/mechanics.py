@@ -4,23 +4,21 @@ from pathlib import Path
 import numpy as np
 from rtpt import RTPT
 
+from aitk import percept
 from aitk import ai_interface
-from aitk.fol import bk
-from aitk.fol.language import Language
-from aitk.utils.nsfr_utils import get_prob
-
-import data_hide
-import eval_clause_infer
-import ilp
-import perception
-import visual_utils
-from args_utils import get_args
-from mechanic_utils import *
+from aitk.utils.fol import bk
+from aitk.utils import nsfr_utils
 from aitk.utils import file_utils
+from aitk.utils import visual_utils
+from aitk.utils import args_utils
+
+from mechanic_utils import *
+
+import semantic as se
 
 
 def init():
-    args = get_args()
+    args = args_utils.get_args(config.data_path)
     if args.dataset_type == 'kandinsky':
         if args.small_data:
             name = str(Path("small_KP") / f"NeSy-PI_{args.dataset}")
@@ -36,7 +34,7 @@ def init():
 
     # get images names
     if args.dataset_type == "hide":
-        data_hide.get_image_names(args)
+        file_utils.get_image_names(args)
 
     exp_output_path = config.buffer_path / args.dataset_type / args.dataset / "logs"
     if not os.path.exists(exp_output_path):
@@ -66,7 +64,9 @@ def init():
     rtpt.start()
     torch.set_printoptions(precision=4)
     torch.autograd.set_detect_anomaly(True)
-    pm_prediction_dict = perception.get_perception_predictions(args)
+
+    file_path = config.buffer_path / "hide" / f"{args.dataset}"
+    pm_prediction_dict = percept.get_perception_predictions(args, file_path)
 
     # grouping objects to reduce the problem complexity
     group_val_pos, obj_avail_val_pos = detect_obj_groups(args, pm_prediction_dict["val_pos"], "val_pos")
@@ -98,21 +98,24 @@ def init():
     args.lark_path = str(config.root / 'src' / 'lark' / 'exp.lark')
     args.lang_base_path = config.root / 'data' / 'lang'
 
+    args.index_pos = config.score_example_index["pos"]
+    args.index_neg = config.score_example_index["neg"]
+
     return args, rtpt, pm_prediction_dict, group_tensors, group_tensors_indices
 
 
 def final_evaluation(NSFR, args):
     # validation split
     log_utils.add_lines(f"Predicting on validation data set...", args.log_file)
-    acc_val, rec_val, th_val = ilp.ilp_predict(NSFR, args.val_group_pos, args.val_group_neg,
-                                               args, th=0.33, split='val')
+
+    acc_val, rec_val, th_val = se.run_ilp_predict(args, NSFR, 0.33, "val")
     # training split
     log_utils.add_lines(f"Predicting on training data set...", args.log_file)
-    acc, rec, th = ilp.ilp_predict(NSFR, args.train_group_pos, args.train_group_neg, args, th=th_val, split='train')
+
+    acc, rec, th = se.run_ilp_predict(args, NSFR, th_val, "train")
     # test split
     log_utils.add_lines(f"Predicting on test data set...", args.log_file)
-    acc_test, rec_test, th_test = ilp.ilp_predict(NSFR, args.test_group_pos, args.test_group_neg, args, th=th_val,
-                                                  split='test')
+    acc_test, rec_test, th_test = se.run_ilp_predict(args, NSFR, th_val, "test")
 
     log_utils.add_lines(f"training acc: {acc}, threshold: {th}, recall: {rec}", args.log_file)
     log_utils.add_lines(f"val acc: {acc_val}, threshold: {th_val}, recall: {rec_val}", args.log_file)
@@ -120,21 +123,53 @@ def final_evaluation(NSFR, args):
 
 
 def train_and_eval(args, rtpt):
-    # init system
-    lang = Language(args, [])
+    """
+        ilp algorithm: call semantic API
+    """
+    lang = se.init_language(args, config.pi_type['bk'])
+    for neural_pred in args.neural_preds:
+        se.reset_args(args)
+        init_clauses = se.reset_lang(lang, args.e, neural_pred)
 
-    # run ilp + pi on group level
-    success = ilp.ilp_main(args, lang, level="group")
+        while args.iteration < args.max_step and not args.is_done:
+            # update system
+            VM = ai_interface.get_vm(args, lang)
+            FC = ai_interface.get_fc(args, lang, VM)
+            clauses = se.search_clauses(args, lang, init_clauses, FC, "group")
+            if args.with_pi:
+                se.predicate_invention(args, lang, clauses)
+            args.iteration += 1
+        # save the promising predicates
+        se.keep_best_preds(args, lang)
+        if args.found_ns:
+            break
 
-    # run ilp + pi on object level
+    success = se.run_ilp_test(args, lang, "group")
+
     if not success:
-        success = ilp.ilp_main(args, lang, level="object")
+        for neural_pred in args.neural_preds:
+            se.reset_args(args)
+            init_clause = se.reset_lang(lang, args.e, neural_pred)
+            while args.iteration < args.max_step and not args.is_done:
+                # update system
+                VM = ai_interface.get_vm(args, lang)
+                FC = ai_interface.get_fc(args, lang, VM)
+                clauses = se.search_clauses(args, lang, init_clause, FC, "object")
+                if args.with_explain:
+                    se.explain_clauses(args, lang)
+                if args.with_pi:
+                    se.predicate_invention(args, lang, clauses)
+                args.iteration += 1
+            # save the promising predicates
+            se.keep_best_preds(args, lang)
+            if args.found_ns:
+                break
 
     if success:
-        visualization(args, lang)
+        scores = se.run_ilp_eval(args, lang)
+        visual_utils.visualization(args, lang, scores)
         # train nsfr
         NSFR = train_nsfr(args, rtpt, lang)
-
         return NSFR
     else:
         return None
@@ -175,7 +210,6 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
     neural_preds = file_utils.load_neural_preds(bk.neural_predicate_2, pi_type)
 
     args.neural_preds = [neural_pred for neural_pred in neural_preds]
-    # args.neural_preds.append(neural_preds)
     args.p_inv_counter = 0
 
 
@@ -212,7 +246,7 @@ def train_nsfr(args, rtpt, lang):
             y_label = train_label[i * bz:(i + 1) * bz]
             V_T = NSFR(x_data).unsqueeze(0)
 
-            predicted = get_prob(V_T, NSFR, args)
+            predicted = nsfr_utils.get_prob(V_T, NSFR, args)
             predicted = predicted.squeeze(2)
             predicted = predicted.squeeze(0)
             loss = bce(predicted, y_label)
@@ -232,82 +266,15 @@ def train_nsfr(args, rtpt, lang):
             NSFR.print_program()
             log_utils.add_lines("Predicting on validation data set...", args.log_file)
 
-            acc_val, rec_val, th_val = ilp.ilp_predict(NSFR, val_pos, val_neg, args, th=0.33, split='val')
-            # writer.add_scalar("metric/val_acc", acc_val, global_step=epoch)
+            acc_val, rec_val, th_val = se.run_ilp_predict(args, NSFR, th=0.33, split='val')
             log_utils.add_lines(f"acc_val:{acc_val} ", args.log_file)
             log_utils.add_lines("Predi$\alpha$ILPcting on training data set...", args.log_file)
 
-            acc, rec, th = ilp.ilp_predict(NSFR, train_pos, train_neg, args, th=th_val, split='train')
-            # writer.add_scalar("metric/train_acc", acc, global_step=epoch)
+            acc, rec, th = se.run_ilp_predict(args, NSFR, th=th_val, split='train')
             log_utils.add_lines(f"acc_train: {acc}", args.log_file)
             log_utils.add_lines(f"Predicting on test data set...", args.log_file)
 
-            acc, rec, th = ilp.ilp_predict(NSFR, test_pos, test_neg, args, th=th_val, split='train')
-            # writer.add_scalar("metric/test_acc", acc, global_step=epoch)
+            acc, rec, th = se.run_ilp_predict(args, NSFR, th=th_val, split='train')
             log_utils.add_lines(f"acc_test: {acc}", args.log_file)
 
     return NSFR
-
-
-def visualization(args, lang, colors=None, thickness=None, radius=None):
-    if colors is None:
-        # Blue color in BGR
-        colors = [
-            (255, 0, 0),
-            (255, 255, 0),
-            (0, 255, 0),
-            (0, 0, 255),
-            (0, 255, 255),
-        ]
-    if thickness is None:
-        # Line thickness of 2 px
-        thickness = 2
-    if radius is None:
-        radius = 10
-
-    for data_type in ["true", "false"]:
-        for i in range(len(args.test_group_pos)):
-            data_name = args.image_name_dict['test'][data_type][i]
-            if data_type == "true":
-                data = args.test_group_pos[i]
-            else:
-                data = args.test_group_neg[i]
-
-            # calculate scores
-            VM = ai_interface.get_vm(args, lang)
-            FC = ai_interface.get_fc(args, lang, VM)
-            NSFR = ai_interface.get_nsfr(args, lang, FC)
-
-            # evaluate new clauses
-            scores = eval_clause_infer.eval_clause_on_test_scenes(NSFR, args, lang.clauses[0], data.unsqueeze(0))
-
-            visual_images = []
-            # input image
-            file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
-            image_file = file_prefix + ".image.png"
-            input_image = visual_utils.get_cv_image(image_file)
-
-            # group prediction
-            group_pred_image = visual_utils.visual_group_predictions(args, data, input_image, colors, thickness)
-
-            # information image
-            info_image = visual_utils.visual_info(lang, input_image.shape, font_size=0.4)
-
-            # adding header and footnotes
-            input_image = visual_utils.draw_text(input_image, "input")
-            visual_images.append(input_image)
-
-            group_pred_image = visual_utils.draw_text(group_pred_image, f"group:{round(scores[0].tolist(), 4)}")
-            group_pred_image = visual_utils.draw_text(group_pred_image, f"{lang.clauses[0]}", position="lower_left",
-                                                      font_size=0.4)
-            visual_images.append(group_pred_image)
-
-            info_image = visual_utils.draw_text(info_image, f"Info:")
-            visual_images.append(info_image)
-
-            # final processing
-            final_image = visual_utils.hconcat_resize(visual_images)
-            final_image_filename = str(
-                args.image_output_path / f"{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
-            # visual_utils.show_images(final_image, "Visualization")
-            visual_utils.save_image(final_image, final_image_filename)

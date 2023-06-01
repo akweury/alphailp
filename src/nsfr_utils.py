@@ -5,7 +5,7 @@ import torch
 
 import data_clevr
 import data_kandinsky
-from aitk.fol.language import Language
+from aitk.utils.fol import Language
 
 attrs = ['color', 'shape', 'material', 'size']
 
@@ -409,7 +409,7 @@ def get_clevr_pos_loader(args):
 #                 st_i += ''
 #         st += st_i + '\n'
 #     return st[:-2]
-def get_lang(args):
+def get_lang(args, pi_type):
     """Load the language of first-order logic from files.
 
     Read the language, clauses, background knowledge from files.
@@ -419,7 +419,8 @@ def get_lang(args):
     # du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
     #                dataset=args.dataset)
 
-    lang = Language(args, [])
+
+    lang = Language(args, [], pi_type)
 
     # init_clauses = du.load_clauses(lang, args)
 

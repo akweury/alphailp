@@ -1,10 +1,10 @@
 # Created by J.Sha
 # Create Date: 31.01.2023
-from aitk.fol.exp_parser import ExpTree
+from aitk.utils.fol import ExpTree
 from lark import Lark
 
 import logic_utils
-from aitk.fol.language import DataType
+from aitk.utils.fol import DataType
 
 
 def generate_new_predicate(args, lang, clause_clusters, pi_type=None):

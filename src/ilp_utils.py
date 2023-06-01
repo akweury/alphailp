@@ -1,29 +1,15 @@
 # Created by shaji on 21-Apr-23
+import torch
 
 import config
-from mechanic_utils import eval_single_group, check_group_result
-from pi import generate_explain_pred
-from pi_utils import generate_new_predicate
-from refinement import RefinementGenerator
 
-import eval_clause_infer
+from pi_utils import generate_new_predicate
+
 import logic_utils
 
-from aitk.fol import logic, bk
 from aitk.utils import log_utils
-from aitk import ai_interface
-
-def keep_best_preds(args, lang):
-    p_inv_best = sorted(lang.invented_preds_with_scores, key=lambda x: x[1][2], reverse=True)
-    p_inv_best = p_inv_best[:args.pi_top]
-    p_inv_best = logic_utils.extract_clauses_from_bs_clauses(p_inv_best, "best inv clause", args)
-
-    for new_p in p_inv_best:
-        if new_p not in lang.all_invented_preds:
-            lang.all_invented_preds.append(new_p)
-    for new_c in lang.pi_clauses:
-        if new_c not in lang.all_pi_clauses and new_c.head.pred in p_inv_best:
-            lang.all_pi_clauses.append(new_c)
+from aitk.utils import eval_utils
+from aitk.utils import data_utils
 
 
 def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
@@ -108,30 +94,6 @@ def remove_conflict_clauses(clauses, pi_clauses, args):
     return non_conflict_clauses
 
 
-def extend_clauses(args, lang):
-    refs = []
-    B_ = []
-
-    refinement_generator = RefinementGenerator(lang=lang)
-    for c in lang.clauses:
-        refs_i = refinement_generator.refinement_clause(c)
-        unused_args, used_args = log_utils.get_unused_args(c)
-        refs_i_removed = remove_duplicate_clauses(refs_i, unused_args, used_args, args)
-        # remove already appeared refs
-        refs_i_removed = list(set(refs_i_removed).difference(set(B_)))
-        B_.extend(refs_i_removed)
-        refs.extend(refs_i_removed)
-
-    # remove semantic conflict clauses
-    refs_no_conflict = remove_conflict_clauses(refs, lang.pi_clauses, args)
-    if len(refs_no_conflict) == 0:
-        args.is_done = True
-    else:
-        lang.clauses = refs_no_conflict
-
-    return refs_no_conflict
-
-
 # def remove_same_semantic_clauses(clauses):
 #     semantic_diff_clauses = []
 #     for c in clauses:
@@ -171,71 +133,6 @@ def semantic_same_pred_lists(added_pred_list, new_pred_list):
     return is_same
 
 
-def check_result(args, clauses):
-    if len(clauses) == 0:
-        args.is_done = True
-    elif len(clauses) > 0 and clauses[0][1][2] == 1.0:
-        log_utils.add_lines(f"found sufficient and necessary clause.", args.log_file)
-        # cs = extract_clauses_from_bs_clauses([clauses[0]], "sn", args)
-        args.is_done = True
-        # break
-    elif len(clauses) > 0 and clauses[0][1][2] > args.sn_th:
-        log_utils.add_lines(f"found quasi-sufficient and necessary clause.", args.log_file)
-        args.is_done = True
-        # for c in clauses:
-        # if c[1][2] > args.sn_th:
-        #     cs += extract_clauses_from_bs_clauses([c], "sn_good", args)
-
-
-def prune_clauses(clause_with_scores, args):
-    refs = []
-
-    # prune score similar clauses
-    log_utils.add_lines(f"================= score pruning ================", args.log_file)
-    # for c in clause_with_scores:
-    #     log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
-    if args.score_unique:
-        score_unique_c = []
-        score_repeat_c = []
-        appeared_scores = []
-        for c in clause_with_scores:
-            if not eval_clause_infer.eval_score_similarity(c[1][2], appeared_scores, args.similar_th):
-                score_unique_c.append(c)
-                appeared_scores.append(c[1][2])
-            else:
-                score_repeat_c.append(c)
-        c_score_pruned = score_unique_c
-    else:
-        c_score_pruned = clause_with_scores
-
-    # prune predicate similar clauses
-    log_utils.add_lines(f"================== semantic pruning ================", args.log_file)
-    if args.semantic_unique:
-        semantic_unique_c = []
-        semantic_repeat_c = []
-        appeared_semantics = []
-        for c in c_score_pruned:
-            c_semantic = logic_utils.get_semantic_from_c(c[0])
-            if not eval_clause_infer.eval_semantic_similarity(c_semantic, appeared_semantics, args):
-                semantic_unique_c.append(c)
-                appeared_semantics.append(c_semantic)
-            else:
-                semantic_repeat_c.append(c)
-        c_semantic_pruned = semantic_unique_c
-    else:
-        c_semantic_pruned = c_score_pruned
-
-    c_score_pruned = c_semantic_pruned
-    # select top N clauses
-    if args.c_top is not None and len(c_score_pruned) > args.c_top:
-        c_score_pruned = c_score_pruned[:args.c_top]
-    log_utils.add_lines(f"after top select: {len(c_score_pruned)}", args.log_file)
-
-    refs += update_refs(c_score_pruned, args)
-
-    return refs, c_score_pruned, False
-
-
 def cluster_invention(args, lang):
     found_ns = False
 
@@ -250,36 +147,6 @@ def cluster_invention(args, lang):
 
     args.is_done = found_ns
     return new_preds_with_scores
-
-
-def explain_invention(args, lang):
-    log_utils.add_lines("- (explain clause) -", args.log_file)
-
-    index_pos = config.score_example_index["pos"]
-    index_neg = config.score_example_index["neg"]
-    explained_clause = []
-    for clause, scores, score_all in lang.clause_with_scores:
-        increased_score = scores - scores
-        if scores[0] > args.sc_th:
-            for atom in clause.body:
-                if atom.pred.pi_type == config.pi_type['bk']:
-                    unclear_pred = atom.pred
-                    atom_terms = atom.terms
-                    if unclear_pred.name in bk.pred_pred_mapping.keys():
-                        new_pred = generate_explain_pred(args, lang, atom_terms, unclear_pred)
-                        if new_pred is not None:
-                            new_atom = logic.Atom(new_pred, atom_terms)
-                            clause.body.append(new_atom)
-            NSFR = ai_interface.get_nsfr(args, lang)
-            score_all_new = eval_clause_infer.get_clause_score(NSFR, args, ["kp"])
-            scores_new = eval_clause_infer.eval_clauses(score_all_new[:, :, index_pos], score_all_new[:, :, index_neg],
-                                                        args, 1)
-            increased_score = scores_new - scores
-
-        explained_clause.append([clause, scores])
-        log_utils.add_lines(f"(clause) {clause} {scores}", args.log_file)
-        log_utils.add_lines(f"(score increasing): {increased_score}", args.log_file)
-    return explained_clause
 
 
 def generate_new_clauses_str_list(new_predicates):
@@ -346,17 +213,6 @@ def extract_kp_pi(new_lang, all_pi_clauses, args):
     return new_all_pi_clausese
 
 
-def reset_args(args, lang):
-    args.is_done = False
-    args.iteration = 0
-    args.max_clause = [0.0, None]
-    args.no_new_preds = False
-    args.last_refs = lang.load_init_clauses(args)
-    args.no_new_preds = True
-    lang.all_clauses = []
-    lang.invented_preds_with_scores = []
-
-
 def update_refs(clause_with_scores, args):
     refs = []
     nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_with_scores, "clause", args)
@@ -365,26 +221,16 @@ def update_refs(clause_with_scores, args):
     return refs
 
 
-def eval_groups(args):
-    val_pattern_pos = args.val_pos
-    val_pattern_neg = args.val_neg
-    test_pattern_pos = args.test_pos
-    test_pattern_neg = args.test_neg
-    group_pos, group_neg = args.val_group_pos, args.val_group_neg
+def eval_groups(args, img_i):
+    log_utils.add_lines("- group evaluation", args.log_file)
+    # extract indices
 
-    shape_group_res = eval_single_group(group_pos[:, :, config.group_tensor_shapes],
-                                        group_neg[:, :, config.group_tensor_shapes])
-    color_res = eval_single_group(val_pattern_pos[:, :, config.indices_color],
-                                  val_pattern_neg[:, :, config.indices_color])
-    shape_res = eval_single_group(val_pattern_pos[:, :, config.indices_shape],
-                                  val_pattern_neg[:, :, config.indices_shape])
+    shape_group_res = eval_single_group(args, config.group_group_shapes, "group", img_i)
+    color_res = eval_single_group(args, config.group_color, "object", img_i)
+    shape_res = eval_single_group(args, config.group_shapes, "object", img_i)
 
-    result = {
-        'shape_group': shape_group_res,
-        'color': color_res,
-        'shape': shape_res
-    }
-    is_done = check_group_result(args, result)
+    result = {'shape_group': shape_group_res, 'color': color_res, 'shape': shape_res}
+
     # The pattern is too simple. Print the reason.
     # if False and is_done:
     # Dataset is too simple. Finish the program.
@@ -393,3 +239,37 @@ def eval_groups(args):
     # log_utils.print_dataset_simple(args, is_done, eval_result_test)
 
     return result
+
+
+def eval_single_group(args, props, g_type, img_i):
+    """ evaluate single group prop on single image """
+    indices = data_utils.prop2index(props, g_type)
+    # extract data
+    if g_type == "group":
+        data_pos = torch.tensor(args.val_group_pos[img_i])[:, indices]
+        data_neg = torch.tensor(args.val_group_pos[img_i])[:, indices]
+    elif g_type == "object":
+        data_pos = args.val_pos[img_i][:, indices]
+        data_neg = args.val_neg[img_i][:, indices]
+    else:
+        raise ValueError
+
+    # evaluation
+    log_utils.add_lines(f"{props}", args.log_file)
+    score_pos_1, score_pos_2 = eval_data(data_pos)
+    score_neg_1, score_neg_2 = eval_data(data_neg)
+
+    res_dict = {
+        "score_pos_1": score_pos_1, "score_pos_2": score_pos_2,
+        "score_neg_1": score_neg_1, "score_neg_2": score_neg_2
+    }
+
+    return res_dict
+
+
+def eval_data(data):
+    # first metric: mse
+    value_diff = eval_utils.metric_mse(data, axis=0)
+    # second metric
+    type_diff = eval_utils.metric_count_mse(data, axis=1)
+    return value_diff, type_diff

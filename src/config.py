@@ -3,21 +3,17 @@
 import os
 from pathlib import Path
 
+root = Path(__file__).parents[1]
 
 
 pi_type = {'bk': 'bk_pred',
-          'clu': 'clu_pred',
-          'exp': 'exp_pred'}
+           'clu': 'clu_pred',
+           'exp': 'exp_pred'}
 
 # dim0: ness, dim1: suff, dim2: sn
 score_type_index = {"ness": 0, "suff": 1, "sn": 2}
 score_example_index = {"neg": 0, "pos": 1}
-root = Path(__file__).parents[1]
 
-indices_position = [0, 1, 2]
-indices_color = [3, 4, 5]
-indices_shape = [6, 7]
-indices_screen_position = [9, 10]
 
 indices_x = [0]
 indices_y = [1]
@@ -35,6 +31,17 @@ group_index = {
     "position": 2
 }
 
+group_positions = ["x", "y", "z"]
+group_color = ["red", "green", "blue"]
+group_shapes = ["sphere", "cube"]
+group_group_shapes = ["line", "circle"]
+group_tenor_positions = [0, 1]
+group_tensor_shapes = [5, 6]
+
+indices_position = [0, 1, 2]
+indices_color = [3, 4, 5]
+indices_shape = [6, 7]
+indices_screen_position = [9, 10]
 # 0:2 center_x, center_z
 # 2 slope
 # 3 x_length
@@ -68,11 +75,6 @@ group_tensor_index = {
     "shape_counter": 22
 }
 
-
-
-
-
-
 obj_tensor_index = {
     'x': 0,
     'y': 1,
@@ -86,9 +88,6 @@ obj_tensor_index = {
     'screen_x': 9,
     'screen_y': 10
 }
-
-group_tenor_positions = [0, 1]
-group_tensor_shapes = [5, 6]
 
 buffer_path = root / ".." / "storage"
 data_path = root / "data"

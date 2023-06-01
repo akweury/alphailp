@@ -5,8 +5,8 @@ import torch.nn.functional as F
 import aitk.valuation
 import aitk.valuation_yolo
 
-from aitk.fol.logic import Atom
-from aitk.fol import bk
+from aitk.utils.fol import Atom
+from aitk.utils.fol import bk
 
 
 class PIValuationModule(nn.Module):

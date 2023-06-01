@@ -2,18 +2,17 @@ import numpy as np
 import torch
 import itertools
 
-import aitk.fol.language
+
 import config
 import ilp
 import eval_clause_infer
 
+import aitk.utils.fol.language
 from aitk.utils import log_utils
-from aitk.fol.data_utils import DataUtils
+from aitk.utils.fol import DataUtils
 from aitk.infer import ClauseInferModule
 from aitk.tensor_encoder import TensorEncoder
-from aitk.fol import logic
-
-
+from aitk.utils.fol import logic
 
 
 def build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device, m=3, infer_step=3, train=False):
@@ -34,7 +33,7 @@ def build_pi_clause_infer_module(args, clauses, pi_clauses, atoms, lang, device,
 
 
 def generate_atoms(lang):
-    spec_atoms = [aitk.fol.language.false, aitk.fol.language.true]
+    spec_atoms = [aitk.utils.fol.language.false, aitk.utils.fol.language.true]
     atoms = []
     for pred in lang.preds:
         dtypes = pred.dtypes
@@ -238,7 +237,7 @@ def search_independent_clauses_parallel(args, lang):
         # score_max[:, :, index_pos] = score_pos[:, :, 0]
         # score_max[:, :, index_neg] = score_neg[:, :, 0]
 
-        score_all = eval_clause_infer.eval_clauses(score_pos, score_neg, args, len(pattern[0][1].body) - args.e)
+        score_all = ilp.eval_clauses(score_pos, score_neg, args, len(pattern[0][1].body) - args.e)
         clu_all.append([pattern, score_all])
 
     index_suff = config.score_type_index['suff']

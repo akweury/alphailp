@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-from aitk.fol.logic import NeuralPredicate
+from aitk.utils.fol.logic import NeuralPredicate
 
 
 
