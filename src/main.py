@@ -13,7 +13,6 @@ time_now = datetime.datetime.now().strftime("%H_%M_%S")
 def main():
     # set up the environment, load the dataset and results from perception models
     args, rtpt, percept_dict, obj_groups, obj_avail = init()
-
     # ILP and PI system
     start = time.time()
     # update arguments
@@ -23,7 +22,8 @@ def main():
     end = time.time()
 
     log_utils.add_lines(f"=============================", args.log_file)
-    log_utils.add_lines(f"Experiment time: {((end - start) / 60):.2f} minute(s)", args.log_file)
+    log_utils.add_lines(f"Experiment time: "
+                        f"{((end - start) / 60):.2f} minute(s)", args.log_file)
     log_utils.add_lines(f"=============================", args.log_file)
 
     if NSFR is not None:

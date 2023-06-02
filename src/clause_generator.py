@@ -1,5 +1,7 @@
 import torch
 
+import aitk.utils.logic_utils
+import ilp
 import nsfr_utils
 from aitk.utils.fol.refinement import RefinementGenerator
 import logic_utils
@@ -371,7 +373,7 @@ class PIClauseGenerator(object):
     def cluster_invention(self, args, lang):
         found_ns = False
 
-        clu_lists = logic_utils.search_independent_clauses_parallel(args, lang)
+        clu_lists = ilp.search_independent_clauses_parallel(args, lang)
         new_predicates = self.generate_new_predicate(args, clu_lists)
         new_predicates = new_predicates[:args.pi_top]
 

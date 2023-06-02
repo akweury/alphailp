@@ -1,15 +1,13 @@
 # Created by shaji on 21-Apr-23
 import torch
 
-import config
-
-from pi_utils import generate_new_predicate
-
-import logic_utils
-
+import aitk.utils.logic_utils
 from aitk.utils import log_utils
 from aitk.utils import eval_utils
 from aitk.utils import data_utils
+
+import config
+import logic_utils
 
 
 def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
@@ -133,53 +131,6 @@ def semantic_same_pred_lists(added_pred_list, new_pred_list):
     return is_same
 
 
-def cluster_invention(args, lang):
-    found_ns = False
-
-    clu_lists = logic_utils.search_independent_clauses_parallel(args, lang)
-    new_preds_with_scores = generate_new_predicate(args, lang, clu_lists, pi_type=config.pi_type["clu"])
-    new_preds_with_scores = new_preds_with_scores[:args.pi_top]
-    lang.invented_preds_with_scores += new_preds_with_scores
-
-    log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
-    for new_c, new_c_score in new_preds_with_scores:
-        log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
-
-    args.is_done = found_ns
-    return new_preds_with_scores
-
-
-def generate_new_clauses_str_list(new_predicates):
-    pi_str_lists = []
-    kp_str_lists = []
-    for [new_predicate, p_score] in new_predicates:
-        single_pi_str_list = []
-        # head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
-        kp_clause = "kp(X):-"
-        head_args = "("
-
-        for arg in new_predicate.args:
-            head_args += arg + ","
-            kp_clause += f"in({arg},X),"
-        head_args = head_args[:-1]
-        head_args += ")"
-        kp_clause += f"{new_predicate.name}{head_args}."
-        kp_str_lists.append(kp_clause)
-
-        head = new_predicate.name + head_args + ":-"
-        for body in new_predicate.body:
-            body_str = ""
-            for atom_index in range(len(body)):
-                atom_str = str(body[atom_index])
-                end_str = "." if atom_index == len(body) - 1 else ","
-                body_str += atom_str + end_str
-            new_clause = head + body_str
-            single_pi_str_list.append(new_clause)
-        pi_str_lists.append([single_pi_str_list, p_score])
-
-    return pi_str_lists, kp_str_lists
-
-
 def extract_pi(lang, all_pi_clauses, args):
     for index, new_p in enumerate(lang.invented_preds):
         if new_p in lang.invented_preds:
@@ -205,17 +156,9 @@ def extract_pi(lang, all_pi_clauses, args):
     return new_all_pi_clausese
 
 
-def extract_kp_pi(new_lang, all_pi_clauses, args):
-    new_all_pi_clausese = []
-    for pi_c in all_pi_clauses:
-        pi_c_head_name = pi_c.head.pred.name
-        new_all_pi_clausese.append(pi_c)
-    return new_all_pi_clausese
-
-
 def update_refs(clause_with_scores, args):
     refs = []
-    nc_clauses = logic_utils.extract_clauses_from_bs_clauses(clause_with_scores, "clause", args)
+    nc_clauses = aitk.utils.logic_utils.extract_clauses_from_bs_clauses(clause_with_scores, "clause", args)
     refs += nc_clauses
 
     return refs

@@ -14,18 +14,19 @@ from ilp_utils import eval_data
 
 import semantic as se
 
-def record_line_group(args, objs, obj_indices):
+
+def record_line_group(args, objs, obj_indices, img_i):
     line_tensor = se.data2tensor_lines(objs)
     # convert the group to a tensor
 
     # line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
 
     # update point availabilities
-    line_used_objs = torch.zeros(1, args.n_obj, dtype=torch.bool)
-    line_used_objs[0, obj_indices] = True
+    line_used_objs = torch.zeros(args.n_obj, dtype=torch.bool)
+    line_used_objs[obj_indices] = True
 
     # groups_used_objs = torch.cat([groups_used_objs, line_used_objs], dim=0)
-    print(f'line group: {obj_indices}')
+    print(f'(img {img_i}) line group: {obj_indices}')
 
     return line_tensor, line_used_objs
 
@@ -73,7 +74,7 @@ def encode_lines(args, percept_dict, obj_indices, obj_tensors):
         img_line_tensors = []
         img_line_tensors_indices = []
         for obj_i, objs in enumerate(obj_tensors[img_i]):
-            line_tensor, line_used_objs = record_line_group(args, objs, obj_indices[img_i][obj_i])
+            line_tensor, line_used_objs = record_line_group(args, objs, obj_indices[img_i][obj_i], img_i)
             img_line_tensors.append(line_tensor.tolist())
             img_line_tensors_indices.append(line_used_objs.tolist())
 
@@ -87,14 +88,27 @@ def encode_lines(args, percept_dict, obj_indices, obj_tensors):
 
 
 def prune_lines(args, lines_list, line_tensors_indices):
+    tensor_len = len(config.group_tensor_index)
+    n_obj = args.n_obj
     pruned_tensors = []
     pruned_tensors_indices = []
     for img_i in range(len(lines_list)):
+        lines_ith_list = lines_list[img_i]
+
         img_scores = []
+
+        if len(lines_ith_list) < args.group_e:
+            d = args.group_e - len(lines_ith_list)
+            lines_zero_list = [[0] * tensor_len] * d
+            indices_zeros_list = [[False] * n_obj] * d
+            lines_list[img_i] += lines_zero_list
+            line_tensors_indices[img_i] += indices_zeros_list
+
         for line_tensor_list in lines_list[img_i]:
             line_tensor = torch.tensor(line_tensor_list)
             line_scores = line_tensor[config.group_tensor_index["line"]]
             img_scores.append(line_scores.tolist())
+        # align tensor number to arg.group_e
 
         img_scores = torch.tensor(img_scores)
         _, prob_indices = img_scores.sort(descending=True)
@@ -102,9 +116,8 @@ def prune_lines(args, lines_list, line_tensors_indices):
 
         if len(lines_list[img_i]) == 0:
             pruned_tensors.append(torch.zeros(size=(args.group_e, len(config.group_tensor_index))).tolist())
-            pruned_tensors_indices.append(torch.zeros(1, args.n_obj, dtype=torch.bool).tolist())
+            pruned_tensors_indices.append(torch.zeros(args.n_obj, dtype=torch.bool).tolist())
         else:
-
             pruned_tensors.append(torch.tensor(lines_list[img_i])[prob_indices].tolist())
             pruned_tensors_indices.append(torch.tensor(line_tensors_indices[img_i])[prob_indices].tolist())
 
@@ -225,6 +238,7 @@ def extend_circle_group(group_index, points, args):
 def extend_groups(group_objs, extend_objs):
     group_points_duplicate_all = group_objs.unsqueeze(0).repeat(extend_objs.shape[0], 1, 1)
     group_points_candidate = torch.cat([group_points_duplicate_all, extend_objs.unsqueeze(1)], dim=1)
+
     return group_points_candidate
 
 

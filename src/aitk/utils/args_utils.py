@@ -115,7 +115,7 @@ def get_args(data_path):
                         help="The maximum number of training data.")
     parser.add_argument("--with_bk", action="store_true",
                         help="Using background knowledge by PI.")
-    parser.add_argument("--error_th", type=float, default=0.1,
+    parser.add_argument("--error_th", type=float, default=0.001,
                         help="The threshold for MAE of obj group fitting.")
     parser.add_argument("--line_group_min_sz", type=int, default=3,
                         help="The minimum objects allowed to form a line.")

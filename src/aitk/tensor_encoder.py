@@ -3,7 +3,7 @@ import itertools
 import torch
 
 from aitk.utils.fol import logic
-from aitk.utils.fol import unify, subs_list
+from aitk.utils.fol import logic_ops
 
 
 class TensorEncoder(object):
@@ -57,9 +57,9 @@ class TensorEncoder(object):
             for fi, fact in enumerate(self.facts):
                 # if (clause.head, fact) in self.head_unifier_dic:
                 # theta = self.head_unifier_dic[(clause.head, fact)]
-                unify_flag, theta = unify([clause.head, fact])
+                unify_flag, theta = logic_ops.unify([clause.head, fact])
                 if unify_flag:
-                    clause_ = subs_list(clause, theta)
+                    clause_ = logic_ops.subs_list(clause, theta)
                     body = clause_.body
                     theta_list = self.generate_subs(body)
                     S_list.append(len(theta_list))
@@ -92,10 +92,10 @@ class TensorEncoder(object):
         # print("CLAUSE: ", clause)
         for fi, fact in enumerate(self.facts):
             # if (clause.head, fact) in self.head_unifier_dic:
-            unify_flag, theta = unify([clause.head, fact])
+            unify_flag, theta = logic_ops.unify([clause.head, fact])
             if unify_flag:
                 # theta = self.head_unifier_dic[(clause.head, fact)]
-                clause_ = subs_list(clause, theta)
+                clause_ = logic_ops.subs_list(clause, theta)
 
                 # I_c_b_file = str(config.buffer_path / "hide" / f"{args.dataset}" / f"I_c_b.pth.tar")
                 # convert body atoms into indices
@@ -122,7 +122,7 @@ class TensorEncoder(object):
         heads = set([c.head for c in self.clauses])
         for head in heads:
             for fi, fact in enumerate(self.facts):
-                unify_flag, theta_list = unify([head, fact])
+                unify_flag, theta_list = logic_ops.unify([head, fact])
                 if unify_flag:
                     dic[(head, fact)] = theta_list
         return dic
@@ -170,7 +170,7 @@ class TensorEncoder(object):
 
             # compute the grounded clause for each possible substitution, convert to the index tensor, and store it.
             for i, theta in enumerate(theta_list):
-                ground_body = [subs_list(bi, theta) for bi in body]
+                ground_body = [logic_ops.subs_list(bi, theta) for bi in body]
                 I_c_b[i] = self.pad_by_true(self.facts_to_index(ground_body))
             # if the number of substitutions is less than the maximum number of substitions (S),
             # the rest of the tensor is filled 0, which is the index of FALSE
@@ -218,7 +218,7 @@ class TensorEncoder(object):
 
             # compute the grounded clause for each possible substitution, convert to the index tensor, and store it.
             for i, theta in enumerate(theta_list):
-                ground_body = [subs_list(bi, theta) for bi in body]
+                ground_body = [logic_ops.subs_list(bi, theta) for bi in body]
                 I_c_b[i] = self.pad_by_true(self.facts_to_index(ground_body))
             # if the number of substitutions is less than the maximum number of substitions (S),
             # the rest of the tensor is filled 0, which is the index of FALSE

@@ -3,8 +3,8 @@ import torch
 
 import config
 
-from aitk.utils.fol import DataType
-from aitk.utils.fol import NeuralPredicate
+from aitk.utils.fol.language import DataType
+from aitk.utils.fol.logic import NeuralPredicate
 
 
 def load_neural_preds(neural_predicates, pi_type):

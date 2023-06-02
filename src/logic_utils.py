@@ -5,11 +5,10 @@ import itertools
 
 import config
 import ilp
-import eval_clause_infer
 
 import aitk.utils.fol.language
 from aitk.utils import log_utils
-from aitk.utils.fol import DataUtils
+from aitk.utils.fol.data_utils import DataUtils
 from aitk.infer import ClauseInferModule
 from aitk.tensor_encoder import TensorEncoder
 from aitk.utils.fol import logic
@@ -145,113 +144,6 @@ def is_repeat_clu(clu, clu_list):
     return is_repeat
 
 
-def has_same_preds(c1, c2):
-    if len(c1.body) != len(c2.body):
-        return False
-    same_preds = True
-    for i in range(len(c1.body)):
-        if not c1.body[i].pred.name == c2.body[i].pred.name:
-            same_preds = False
-    if same_preds:
-        return True
-    else:
-        return False
-
-
-def has_same_preds_and_atoms(c1, c2):
-    if len(c1.body) != len(c2.body):
-        return False
-    same_preds = True
-    for i in range(len(c1.body)):
-        if not same_preds:
-            break
-        if not c1.body[i].pred.name == c2.body[i].pred.name:
-            same_preds = False
-        else:
-            for j, term in enumerate(c1.body[i].terms):
-                if "O" not in term.name:
-                    if not term.name == c2.body[i].terms[j].name:
-                        same_preds = False
-    if same_preds:
-        return True
-    else:
-        return False
-
-
-def check_trivial_clusters(clause_clusters):
-    clause_clusters_untrivial = []
-    for c_clu in clause_clusters:
-        is_trivial = False
-        if len(c_clu) > 1:
-            for c_i, c in enumerate(c_clu):
-                clause = c[1]
-                clause.body = sorted(clause.body)
-                if c_i > 0:
-                    if has_same_preds_and_atoms(clause, c_clu[0][1]):
-                        is_trivial = True
-                        break
-                    if not has_same_preds(clause, c_clu[0][1]):
-                        is_trivial = True
-                        break
-        if not is_trivial:
-            clause_clusters_untrivial.append(c_clu)
-    return clause_clusters_untrivial
-
-
-def get_independent_clusters(args, lang):
-    clauses = lang.clause_with_scores
-    print(f"\nsearching for independent clauses from {len(lang.clauses)} clauses...")
-
-    clauses_with_score = []
-    for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
-        clauses_with_score.append([clause_i, clause, c_scores])
-
-    clause_clusters = sub_lists(clauses_with_score, min_len=args.min_cluster_size, max_len=args.max_cluster_size)
-
-    return clause_clusters
-
-
-def search_independent_clauses_parallel(args, lang):
-    patterns = get_independent_clusters(args, lang)
-    # trivial: contain multiple semantic identity bodies
-    patterns = check_trivial_clusters(patterns)
-
-    # TODO: parallel programming
-    index_neg = config.score_example_index["neg"]
-    index_pos = config.score_example_index["pos"]
-
-    # evaluate each new pattern
-    clu_all = []
-    for cc_i, pattern in enumerate(patterns):
-        score_neg = torch.zeros((1, pattern[0][2].shape[0], len(pattern))).to(args.device)
-        score_pos = torch.zeros((1, pattern[0][2].shape[0], len(pattern))).to(args.device)
-        # score_max = torch.zeros(size=(score_neg.shape[0], score_neg.shape[1], 2)).to(args.device)
-
-        for f_i, [c_i, c, c_score] in enumerate(pattern):
-            score_neg[0, :, f_i] = c_score[:, index_neg]
-            score_pos[0, :, f_i] = c_score[:, index_pos]
-
-        score_neg = score_neg.max(dim=2, keepdims=True)[0]
-        score_pos = score_pos.max(dim=2, keepdims=True)[0]
-
-        # score_max[:, :, index_pos] = score_pos[:, :, 0]
-        # score_max[:, :, index_neg] = score_neg[:, :, 0]
-
-        score_all = ilp.eval_clauses(score_pos, score_neg, args, len(pattern[0][1].body) - args.e)
-        clu_all.append([pattern, score_all])
-
-    index_suff = config.score_type_index['suff']
-    index_ness = config.score_type_index['ness']
-    index_sn = config.score_type_index['sn']
-
-    clu_suff = [clu for clu in clu_all if clu[1][index_suff] > args.sc_th and clu[1][index_sn] > args.sn_min_th]
-    clu_ness = [clu for clu in clu_all if clu[1][index_ness] > args.nc_th and clu[1][index_sn] > args.sn_min_th]
-    clu_sn = [clu for clu in clu_all if clu[1][index_sn] > args.sn_th]
-    clu_classified = sorted(clu_suff + clu_ness + clu_sn, key=lambda x: x[1][2], reverse=True)
-    clu_lists_sorted = sorted(clu_all, key=lambda x: x[1][index_ness], reverse=True)
-    return clu_classified
-
-
 def sub_clause_of(clause_a, clause_b):
     """
     Check if clause a is a sub-clause of clause b
@@ -267,20 +159,6 @@ def sub_clause_of(clause_a, clause_b):
             return False
 
     return True
-
-
-def sub_lists(l, min_len=0, max_len=None):
-    # initializing empty list
-    comb = []
-
-    # Iterating till length of list
-    if max_len is None:
-        max_len = len(l) + 1
-    for i in range(min_len, max_len):
-        # Generating sub list
-        comb += [list(j) for j in itertools.combinations(l, i)]
-    # Returning list
-    return comb
 
 
 def eval_clause_clusters(clause_clusters, clause_scores_full):
@@ -601,40 +479,6 @@ def get_best_clauses(clauses, clause_scores, step, args, max_clause):
     return max_clause, higher
 
 
-def sorted_clauses(clause_with_scores, args):
-    if len(clause_with_scores) > 0:
-        c_sorted = sorted(clause_with_scores, key=lambda x: x[1][2], reverse=True)
-        log_utils.add_lines(f"clause number: {len(c_sorted)}", args.log_file)
-        # for c in c_sorted:
-        #     log_utils.add_lines(f"clause: {c[0]} {c[1]}", args.log_file)
-        return c_sorted
-    else:
-        return []
-
-
-def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
-    clauses = []
-    if len(bs_clauses) == 0:
-        return clauses
-
-    for bs_clause in bs_clauses:
-        clauses.append(bs_clause[0])
-        log_utils.add_lines(f"({c_type}): {bs_clause[0]} {bs_clause[1].reshape(-1)}", args.log_file)
-
-    return clauses
-
-
-def extract_clauses_from_max_clause(bs_clauses, args):
-    clauses = []
-    if len(bs_clauses) == 0:
-        return clauses
-
-    for bs_clause in bs_clauses:
-        clauses.append(bs_clause[0])
-        log_utils.add_lines(f"add max clause: {bs_clause[0]}", args.log_file)
-    return clauses
-
-
 # def select_top_x_clauses(clause_candidates, c_type, args, threshold=None):
 #     top_clauses_with_scores = []
 #     clause_candidates_with_scores_sorted = []
@@ -654,21 +498,6 @@ def extract_clauses_from_max_clause(bs_clauses, args):
 #         log_utils.add_lines(f'TOP {(c_type)} {t[0]}, {clause_candidates_with_scores_sorted[t_i][1]}', args.log_file)
 #
 #     return top_clauses_with_scores
-
-
-def get_pred_names_from_clauses(clause, exclude_objects=False):
-    preds = []
-    for atom in clause.body:
-        pred = atom.pred.name
-        if "in" == pred:
-            continue
-        if exclude_objects:
-            terms = [t.name for t in atom.terms if "O" not in t.name]
-        else:
-            terms = [t.name for t in atom.terms]
-        if pred not in preds:
-            preds.append([pred, terms])
-    return preds
 
 
 def is_trivial_preds(preds_terms):
@@ -769,22 +598,6 @@ def get_equivalent_clauses(c):
                 equivalent_clauses.append(equiv_c)
 
     return equivalent_clauses
-
-
-def top_select(bs_clauses, args):
-    # all_c = bs_clauses['sn'] + bs_clauses['nc'] + bs_clauses['sc'] + bs_clauses['nc_good'] + bs_clauses['sc_good'] + \
-    #         bs_clauses['uc'] + bs_clauses['uc_good']
-
-    top_clauses = sorted_clauses(bs_clauses, args)
-    top_clauses = top_clauses[:args.c_top]
-    top_clauses = extract_clauses_from_max_clause(top_clauses, args)
-    return top_clauses
-
-
-def get_semantic_from_c(clause):
-    semantic = []
-    semantic += get_pred_names_from_clauses(clause)
-    return semantic
 
 
 def count_arity_from_clause_cluster(clause_cluster):

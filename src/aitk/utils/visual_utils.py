@@ -795,6 +795,7 @@ def save_image(final_image, image_output_path):
 
 
 def visual_group_predictions(args, data, input_image, colors, thickness, group_tensor_index):
+    data = torch.tensor(data)
     group_image = copy.deepcopy(input_image)
     indice_center_on_screen_x = group_tensor_index["x_center_screen"]
     indice_center_on_screen_y = group_tensor_index["y_center_screen"]
@@ -832,7 +833,9 @@ def visual_info(lang, image_shape, font_size):
     return info_image
 
 
-def visualization(args, lang, scores, colors=None, thickness=None, radius=None):
+def visualization(args, lang, clauses, scores=None, colors=None, thickness=None, radius=None):
+    if scores is None:
+        scores = [0]
     if colors is None:
         # Blue color in BGR
         colors = [
@@ -872,7 +875,7 @@ def visualization(args, lang, scores, colors=None, thickness=None, radius=None):
 
             # group prediction
             group_pred_image = visual_group_predictions(args, data, input_image, colors, thickness,
-                                                                     config.group_tensor_index)
+                                                        config.group_tensor_index)
 
             # information image
             info_image = visual_info(lang, input_image.shape, font_size=0.4)
@@ -881,9 +884,9 @@ def visualization(args, lang, scores, colors=None, thickness=None, radius=None):
             input_image = draw_text(input_image, "input")
             visual_images.append(input_image)
 
-            group_pred_image = draw_text(group_pred_image, f"group:{round(scores[0].tolist(), 4)}")
-            group_pred_image = draw_text(group_pred_image, f"{lang.clauses[0]}", position="lower_left",
-                                                      font_size=0.4)
+            group_pred_image = draw_text(group_pred_image, f"group:{round(scores[0], 4)}")
+            group_pred_image = draw_text(group_pred_image, f"{clauses[0]}", position="lower_left",
+                                         font_size=0.4)
             visual_images.append(group_pred_image)
 
             info_image = draw_text(info_image, f"Info:")

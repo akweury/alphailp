@@ -7,7 +7,6 @@ from .logic import *
 from . import bk
 
 
-
 # from fol import mode_declaration
 
 class Language(object):
@@ -35,7 +34,7 @@ class Language(object):
         self.invented_preds_with_scores = []
         self.funcs = funcs
         self.consts = []
-        self.clauses = []
+        # self.clauses = []
         self.pi_clauses = []
         self.clause_with_scores = []
         # self.pi_templates = pi_templates
@@ -53,7 +52,7 @@ class Language(object):
             self.lp_atom = Lark(grammar.read(), start="atom")
 
         self.load_lang(args, pi_type)
-        self.load_init_clauses(args.e)
+        # self.load_init_clauses(args.e)
 
     def __str__(self):
         s = "===Predicates===\n"
@@ -120,11 +119,11 @@ class Language(object):
         init_clause = init_clause[:-1]
         init_clause += "."
         tree = self.lp_clause.parse(init_clause)
-        self.clauses = ExpTree(self).transform(tree)
+        clauses = ExpTree(self).transform(tree)
         print(f"\n================= Initial clauses ===================\n"
-              f"{self.clauses}")
-        self.clauses = [self.clauses]
-        return self.clauses
+              f"{clauses}")
+        clauses = [clauses]
+        return clauses
 
     def parse_pred(self, line, pi_type):
         """Parse string to predicates.

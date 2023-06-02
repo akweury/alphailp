@@ -77,21 +77,15 @@ def init():
     group_test_neg, obj_avail_test_neg = detect_obj_groups(args, pm_prediction_dict["test_neg"], "test_neg")
 
     group_tensors = {
-        'group_val_pos': group_val_pos,
-        'group_val_neg': group_val_neg,
-        'group_train_pos': group_train_pos,
-        'group_train_neg': group_train_neg,
-        'group_test_pos': group_test_pos,
-        'group_test_neg': group_test_neg,
+        'group_val_pos': group_val_pos, 'group_val_neg': group_val_neg,
+        'group_train_pos': group_train_pos, 'group_train_neg': group_train_neg,
+        'group_test_pos': group_test_pos, 'group_test_neg': group_test_neg,
     }
 
     group_tensors_indices = {
-        'obj_avail_val_pos': obj_avail_val_pos,
-        'obj_avail_val_neg': obj_avail_val_neg,
-        'obj_avail_train_pos': obj_avail_train_pos,
-        'obj_avail_train_neg': obj_avail_train_neg,
-        'obj_avail_test_pos': obj_avail_test_pos,
-        'obj_avail_test_neg': obj_avail_test_neg,
+        'obj_avail_val_pos': obj_avail_val_pos, 'obj_avail_val_neg': obj_avail_val_neg,
+        'obj_avail_train_pos': obj_avail_train_pos, 'obj_avail_train_neg': obj_avail_train_neg,
+        'obj_avail_test_pos': obj_avail_test_pos, 'obj_avail_test_neg': obj_avail_test_neg,
     }
 
     # load logical representations
@@ -127,49 +121,18 @@ def train_and_eval(args, rtpt):
         ilp algorithm: call semantic API
     """
     lang = se.init_language(args, config.pi_type['bk'])
-    for neural_pred in args.neural_preds:
-        se.reset_args(args)
-        init_clauses = se.reset_lang(lang, args.e, neural_pred)
 
-        while args.iteration < args.max_step and not args.is_done:
-            # update system
-            VM = ai_interface.get_vm(args, lang)
-            FC = ai_interface.get_fc(args, lang, VM)
-            clauses = se.search_clauses(args, lang, init_clauses, FC, "group")
-            if args.with_pi:
-                se.predicate_invention(args, lang, clauses)
-            args.iteration += 1
-        # save the promising predicates
-        se.keep_best_preds(args, lang)
-        if args.found_ns:
-            break
-
-    success = se.run_ilp_test(args, lang, "group")
+    se.run_ilp_train(args, lang, "group")
+    success, clauses = se.run_ilp_test(args, lang, "group")
 
     if not success:
-        for neural_pred in args.neural_preds:
-            se.reset_args(args)
-            init_clause = se.reset_lang(lang, args.e, neural_pred)
-            while args.iteration < args.max_step and not args.is_done:
-                # update system
-                VM = ai_interface.get_vm(args, lang)
-                FC = ai_interface.get_fc(args, lang, VM)
-                clauses = se.search_clauses(args, lang, init_clause, FC, "object")
-                if args.with_explain:
-                    se.explain_clauses(args, lang)
-                if args.with_pi:
-                    se.predicate_invention(args, lang, clauses)
-                args.iteration += 1
-            # save the promising predicates
-            se.keep_best_preds(args, lang)
-            if args.found_ns:
-                break
+        se.run_ilp_train_explain(args, lang, "object")
+        success, clauses = se.run_ilp_test(args, lang, "object")
 
     if success:
-        scores = se.run_ilp_eval(args, lang)
-        visual_utils.visualization(args, lang, scores)
+        visual_utils.visualization(args, lang, clauses)
         # train nsfr
-        NSFR = train_nsfr(args, rtpt, lang)
+        NSFR = train_nsfr(args, rtpt, lang, clauses)
         return NSFR
     else:
         return None
@@ -213,11 +176,10 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
     args.p_inv_counter = 0
 
 
-def train_nsfr(args, rtpt, lang):
+def train_nsfr(args, rtpt, lang, clauses):
     VM = ai_interface.get_vm(args, lang)
     FC = ai_interface.get_fc(args, lang, VM)
-
-    NSFR = ai_interface.get_nsfr(args, lang, FC, train=True)
+    NSFR = ai_interface.get_nsfr(args, lang, FC, clauses, train=True)
 
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)
     bce = torch.nn.BCELoss()
@@ -225,8 +187,8 @@ def train_nsfr(args, rtpt, lang):
     stopping_threshold = 1e-4
     test_acc_list = np.zeros(shape=(1, args.epochs))
     # prepare perception result
-    train_pos = args.train_group_pos
-    train_neg = args.train_group_neg
+    train_pos = torch.tensor(args.train_group_pos)
+    train_neg = torch.tensor(args.train_group_neg)
     test_pos = args.test_group_pos
     test_neg = args.test_group_neg
     val_pos = args.val_group_pos

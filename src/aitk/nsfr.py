@@ -78,6 +78,7 @@ class NSFReasoner(nn.Module):
     #     return V_T
 
     def clause_eval_quick(self, x):
+        x = torch.tensor(x)
         # convert to the valuation tensor
         V_0 = self.fc(x, self.atoms, self.bk)
         # perform T-step forward-chaining reasoning
@@ -202,17 +203,17 @@ class NSFReasoner(nn.Module):
         return text
 
 
-def get_nsfr_model(args, lang, FC, train=False):
+def get_nsfr_model(args, lang, FC, clauses, train=False):
     device = args.device
-    clauses = lang.clauses
     atoms = lang.atoms
     pi_clauses = lang.pi_clauses
 
-    IM = build_infer_module(clauses, pi_clauses, atoms, lang, m=args.m, infer_step=args.cim_step, device=device,
-                            train=train, gamma=args.gamma)
-    CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses), infer_step=args.cim_step,
-                                    device=device, gamma=args.gamma)
+    IM = build_infer_module(clauses, pi_clauses, atoms, lang, m=args.m,
+                            infer_step=args.cim_step, device=device, train=train, gamma=args.gamma)
+    CIM = build_clause_infer_module(args, clauses, pi_clauses, atoms, lang, m=len(clauses),
+                                    infer_step=args.cim_step, device=device, gamma=args.gamma)
 
     # Neuro-Symbolic Forward Reasoner
-    NSFR = NSFReasoner(facts_converter=FC, infer_module=IM, clause_infer_module=CIM, atoms=atoms, clauses=clauses)
+    NSFR = NSFReasoner(facts_converter=FC, infer_module=IM, clause_infer_module=CIM,
+                       atoms=atoms, clauses=clauses)
     return NSFR

@@ -142,6 +142,18 @@ def calc_colinearity(obj_tensors, indices_position):
     if obj_tensors.shape[1] < 3:
         raise ValueError
 
+    # sort the objects by x or z axis
+    for group_i in range(obj_tensors.shape[0]):
+        x_range = obj_tensors[group_i, :, 0].max() - obj_tensors[group_i, :, 0].min()
+        z_range = obj_tensors[group_i, :, 2].max() - obj_tensors[group_i, :, 2].min()
+
+        if x_range > z_range:
+            values, indices = torch.sort(obj_tensors[group_i, :, 0])
+        else:
+            values, indices = torch.sort(obj_tensors[group_i, :, 2])
+        obj_tensors[group_i] = obj_tensors[group_i, indices]
+
+
     indices_a = list(range(1, obj_tensors.shape[1]))
     indices_b = list(range(obj_tensors.shape[1] - 1))
     indices_pos = indices_position

@@ -1,27 +1,54 @@
 # Created by shaji on 21-Apr-23
 import datetime
-
 import numpy as np
 from sklearn.metrics import roc_curve, accuracy_score, recall_score
 from tqdm import tqdm
+import torch
 
 import config
 import eval_clause_infer
+from aitk import ai_interface
+from aitk.utils.fol import bk, logic
 from aitk.utils import nsfr_utils
 from aitk.utils import lang_utils
 from aitk.utils import log_utils
-
-# from ilp_utils import *
-from aitk import ai_interface
-import logic_utils
-from aitk.utils.fol import bk, logic
-from ilp_utils import remove_duplicate_clauses, remove_conflict_clauses, update_refs
-from pi import generate_explain_pred
-from pi_utils import gen_clu_pi_clauses, gen_exp_pi_clauses
+from aitk.utils import eval_utils
+from aitk.utils import logic_utils
 from aitk.utils.fol.refinement import RefinementGenerator
 
+from ilp_utils import remove_duplicate_clauses, remove_conflict_clauses, update_refs
+from pi import generate_explain_pred
+from pi_utils import gen_clu_pi_clauses, gen_exp_pi_clauses, generate_new_predicate
 
-def search_clauses(args, lang, init_clauses, FC, level):
+
+def clause_eval(args, lang, FC, clauses, step):
+    # clause evaluation
+    NSFR = ai_interface.get_nsfr(args, lang, FC, clauses)
+    # evaluate new clauses
+    eval_predicates = [clauses[0].head.pred.name]
+    score_all = get_clause_score(NSFR, args, eval_predicates)
+    scores = get_clause_3score(score_all[:, :, args.index_pos], score_all[:, :, args.index_neg], args, step)
+    return score_all, scores
+
+
+def clause_prune(args, clauses, score_all, scores):
+    # classify clauses
+    clause_with_scores = prune_low_score_clauses(clauses, score_all, scores, args)
+    # print best clauses that have been found...
+    clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args)
+
+    # new_max, higher = logic_utils.get_best_clauses(refs_extended, scores, step, args, max_clause)
+    # max_clause, found_sn = check_result(args, clause_with_scores, higher, max_clause, new_max)
+
+    if args.pi_top > 0:
+        clauses, clause_with_scores = prune_clauses(clause_with_scores, args)
+    else:
+        clauses = logic_utils.top_select(clause_with_scores, args)
+
+    return clauses, clause_with_scores
+
+
+def ilp_search(args, lang, init_clauses, FC, level):
     """
     given one or multiple neural predicates, searching for high scoring clauses, which includes following steps
     1. extend given initial clauses
@@ -30,24 +57,19 @@ def search_clauses(args, lang, init_clauses, FC, level):
 
     """
     eval_pred = ['kp']
-    is_done = False
-    step = args.iteration
+    step = 0
     clause_with_scores = []
-
+    clauses = init_clauses
     while step <= args.iteration:
         # clause extension
-        clauses_extended = extend_clauses(args, lang, level)
+        clauses = clause_extend(args, lang, clauses, level)
         if args.is_done:
             break
 
         # clause evaluation
-        NSFR = ai_interface.get_nsfr(args, lang, FC)
-        # evaluate new clauses
-        score_all = get_clause_score(NSFR, args, eval_pred)
-        scores = eval_clauses(score_all[:, :, args.index_pos], score_all[:, :, args.index_neg], args,
-                              step)
+        score_all, scores = clause_eval(args, lang, FC, clauses, step)
         # classify clauses
-        clause_with_scores = prune_low_score_clauses(clauses_extended, score_all, scores, args)
+        clause_with_scores = prune_low_score_clauses(clauses, score_all, scores, args)
         # print best clauses that have been found...
         clause_with_scores = logic_utils.sorted_clauses(clause_with_scores, args)
 
@@ -55,17 +77,16 @@ def search_clauses(args, lang, init_clauses, FC, level):
         # max_clause, found_sn = check_result(args, clause_with_scores, higher, max_clause, new_max)
 
         if args.pi_top > 0:
-            clauses, clause_with_scores, is_done = prune_clauses(clause_with_scores, args)
+            clauses, clause_with_scores = prune_clauses(clause_with_scores, args)
         else:
             clauses = logic_utils.top_select(clause_with_scores, args)
         step += 1
         lang.all_clauses += clause_with_scores
     if len(clauses) > 0:
         lang.clause_with_scores = clause_with_scores
-        args.is_done = is_done
-        args.last_refs = clauses
+        # args.last_refs = clauses
 
-    lang.clauses = args.last_refs
+    # lang.clauses = args.last_refs
     check_result(args, clause_with_scores)
 
     return clauses
@@ -107,25 +128,30 @@ def ilp_test(args, lang, level):
     log_utils.print_result(args, lang)
 
     reset_args(args)
-    init_clauses = reset_lang(lang, args.e, args.neural_preds)
+    init_clauses = reset_lang(lang, args.e, args.neural_preds, full_bk=True)
 
     VM = ai_interface.get_vm(args, lang)
     FC = ai_interface.get_fc(args, lang, VM)
     # ILP
     # searching for a proper clause to describe the pattern.
     for i in range(args.max_step):
-        search_clauses(args, lang, init_clauses, FC, level)
+        args.iteration = i
+        ilp_search(args, lang, init_clauses, FC, level)
 
         if args.is_done:
             break
     sorted_clauses_with_scores = sorted(lang.all_clauses, key=lambda x: x[1][2], reverse=True)[:args.c_top]
-    lang.clauses = [c[0] for c in sorted_clauses_with_scores]
 
-    success = log_utils.print_test_result(args, lang, sorted_clauses_with_scores)
-    return success
+    # lang.clauses = [c[0] for c in sorted_clauses_with_scores]
+
+    success, clauses = log_utils.print_test_result(args, lang, sorted_clauses_with_scores)
+    return success, clauses
 
 
-def ilp_predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
+def ilp_predict(NSFR, args, th=None, split='train'):
+    pos_pred = torch.tensor(args.val_group_pos)
+    neg_pred = torch.tensor(args.val_group_neg)
+
     predicted_list = []
     target_list = []
     count = 0
@@ -177,8 +203,9 @@ def ilp_predict(NSFR, pos_pred, neg_pred, args, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def ilp_eval(args, lang):
+def ilp_eval(args, lang, clauses):
     scores_all = []
+    target_predicate = [clauses[0].head.pred.name]
     # calculate scores
     for data_type in ["true", "false"]:
         for i in range(len(args.test_group_pos)):
@@ -189,8 +216,8 @@ def ilp_eval(args, lang):
 
             VM = ai_interface.get_vm(args, lang)
             FC = ai_interface.get_fc(args, lang, VM)
-            NSFR = ai_interface.get_nsfr(args, lang, FC)
-
+            scores_all, scores = clause_eval(args, lang, FC, clauses, 0)
+            NSFR = ai_interface.get_nsfr(args, lang, FC, clauses)
             # evaluate new clauses
             scores = eval_utils.eval_clause_on_test_scenes(NSFR, args, lang.clauses[0], data.unsqueeze(0))
             scores_all.append(scores)
@@ -219,19 +246,19 @@ def reset_args(args):
     args.no_new_preds = True
 
 
-def reset_lang(lang, e, neural_pred):
+def reset_lang(lang, e, neural_pred, full_bk):
     lang.all_clauses = []
     lang.invented_preds_with_scores = []
     init_clause = lang.load_init_clauses(e)
     # update predicates
-    lang.update_bk(neural_pred, full_bk=False)
+    lang.update_bk(neural_pred, full_bk)
     # update language
     lang.mode_declarations = lang_utils.get_mode_declarations(e, lang)
 
     return init_clause
 
 
-def eval_clauses(score_pos, score_neg, args, c_length):
+def get_clause_3score(score_pos, score_neg, args, c_length=0):
     scores = torch.zeros(size=(3, score_pos.shape[0])).to(args.device)
 
     # negative scores are inversely proportional to sufficiency scores
@@ -265,7 +292,7 @@ def get_clause_score(NSFR, args, pred_names, pos_group_pred=None, neg_group_pred
     for i in range(int(train_size / batch_size)):
         date_now = datetime.datetime.today().date()
         time_now = datetime.datetime.now().strftime("%H_%M_%S")
-        print(f"({date_now} {time_now}) eval batch {i + 1}/{int(train_size / args.batch_size_train)}")
+        # print(f"({date_now} {time_now}) eval batch {i + 1}/{int(train_size / args.batch_size_train)}")
         V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_group_pred[i * bz:(i + 1) * bz])
         V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_group_pred[i * bz:(i + 1) * bz])
 
@@ -299,12 +326,12 @@ def prune_low_score_clauses(clauses, scores_all, scores, args):
     return clause_with_scores
 
 
-def extend_clauses(args, lang, level):
+def clause_extend(args, lang, clauses, level):
     refs = []
     B_ = []
 
     refinement_generator = RefinementGenerator(lang=lang)
-    for c in lang.clauses:
+    for c in clauses:
         refs_i = refinement_generator.refinement_clause(c)
         unused_args, used_args = log_utils.get_unused_args(c)
         refs_i_removed = remove_duplicate_clauses(refs_i, unused_args, used_args, args)
@@ -316,10 +343,12 @@ def extend_clauses(args, lang, level):
     # remove semantic conflict clauses
     refs_no_conflict = remove_conflict_clauses(refs, lang.pi_clauses, args)
     if len(refs_no_conflict) == 0:
+        refs_no_conflict = clauses
         args.is_done = True
-    else:
-        lang.clauses = refs_no_conflict
 
+    log_utils.add_lines(f"=============== extended clauses =================", args.log_file)
+    for ref in refs_no_conflict:
+        log_utils.add_lines(f"{ref}", args.log_file)
     return refs_no_conflict
 
 
@@ -327,10 +356,10 @@ def prune_clauses(clause_with_scores, args):
     refs = []
 
     # prune score similar clauses
-    log_utils.add_lines(f"================= score pruning ================", args.log_file)
-    # for c in clause_with_scores:
-    #     log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
     if args.score_unique:
+        log_utils.add_lines(f"- score pruning ...", args.log_file)
+        # for c in clause_with_scores:
+        #     log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
         score_unique_c = []
         score_repeat_c = []
         appeared_scores = []
@@ -345,8 +374,9 @@ def prune_clauses(clause_with_scores, args):
         c_score_pruned = clause_with_scores
 
     # prune predicate similar clauses
-    log_utils.add_lines(f"================== semantic pruning ================", args.log_file)
+
     if args.semantic_unique:
+        log_utils.add_lines(f"- semantic pruning ... ", args.log_file)
         semantic_unique_c = []
         semantic_repeat_c = []
         appeared_semantics = []
@@ -365,11 +395,11 @@ def prune_clauses(clause_with_scores, args):
     # select top N clauses
     if args.c_top is not None and len(c_score_pruned) > args.c_top:
         c_score_pruned = c_score_pruned[:args.c_top]
-    log_utils.add_lines(f"after top select: {len(c_score_pruned)}", args.log_file)
+    # log_utils.add_lines(f"after top select: {len(c_score_pruned)}", args.log_file)
 
     refs += update_refs(c_score_pruned, args)
 
-    return refs, c_score_pruned, False
+    return refs, c_score_pruned
 
 
 def check_result(args, clauses):
@@ -388,7 +418,7 @@ def check_result(args, clauses):
         #     cs += extract_clauses_from_bs_clauses([c], "sn_good", args)
 
 
-def explain_invention(args, lang):
+def explain_invention(args, lang, clauses):
     log_utils.add_lines("- (explain clause) -", args.log_file)
 
     index_pos = config.score_example_index["pos"]
@@ -410,11 +440,145 @@ def explain_invention(args, lang):
             FC = ai_interface.get_fc(args, lang, VM)
             NSFR = ai_interface.get_nsfr(args, lang, FC)
             score_all_new = get_clause_score(NSFR, args, ["kp"])
-            scores_new = eval_clauses(score_all_new[:, :, index_pos], score_all_new[:, :, index_neg],
-                                      args, 1)
+            scores_new = get_clause_3score(score_all_new[:, :, index_pos], score_all_new[:, :, index_neg],
+                                           args, 1)
             increased_score = scores_new - scores
 
         explained_clause.append([clause, scores])
         log_utils.add_lines(f"(clause) {clause} {scores}", args.log_file)
         log_utils.add_lines(f"(score increasing): {increased_score}", args.log_file)
     return explained_clause
+
+
+def cluster_invention(args, lang):
+    found_ns = False
+
+    clu_lists = search_independent_clauses_parallel(args, lang)
+    new_preds_with_scores = generate_new_predicate(args, lang, clu_lists, pi_type=config.pi_type["clu"])
+    new_preds_with_scores = new_preds_with_scores[:args.pi_top]
+    lang.invented_preds_with_scores += new_preds_with_scores
+
+    log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
+    for new_c, new_c_score in new_preds_with_scores:
+        log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
+
+    args.is_done = found_ns
+    return new_preds_with_scores
+
+
+def generate_new_clauses_str_list(new_predicates):
+    pi_str_lists = []
+    kp_str_lists = []
+    for [new_predicate, p_score] in new_predicates:
+        single_pi_str_list = []
+        # head_args = "(O1,O2)" if new_predicate.arity == 2 else "(X)"
+        kp_clause = "kp(X):-"
+        head_args = "("
+
+        for arg in new_predicate.args:
+            head_args += arg + ","
+            kp_clause += f"in({arg},X),"
+        head_args = head_args[:-1]
+        head_args += ")"
+        kp_clause += f"{new_predicate.name}{head_args}."
+        kp_str_lists.append(kp_clause)
+
+        head = new_predicate.name + head_args + ":-"
+        for body in new_predicate.body:
+            body_str = ""
+            for atom_index in range(len(body)):
+                atom_str = str(body[atom_index])
+                end_str = "." if atom_index == len(body) - 1 else ","
+                body_str += atom_str + end_str
+            new_clause = head + body_str
+            single_pi_str_list.append(new_clause)
+        pi_str_lists.append([single_pi_str_list, p_score])
+
+    return pi_str_lists, kp_str_lists
+
+
+def extract_kp_pi(new_lang, all_pi_clauses, args):
+    new_all_pi_clausese = []
+    for pi_c in all_pi_clauses:
+        pi_c_head_name = pi_c.head.pred.name
+        new_all_pi_clausese.append(pi_c)
+    return new_all_pi_clausese
+
+
+def search_independent_clauses_parallel(args, lang):
+    patterns = logic_utils.get_independent_clusters(args, lang)
+    # trivial: contain multiple semantic identity bodies
+    patterns = logic_utils.check_trivial_clusters(patterns)
+
+    # TODO: parallel programming
+    index_neg = config.score_example_index["neg"]
+    index_pos = config.score_example_index["pos"]
+
+    # evaluate each new pattern
+    clu_all = []
+    for cc_i, pattern in enumerate(patterns):
+        score_neg = torch.zeros((1, pattern[0][2].shape[0], len(pattern))).to(args.device)
+        score_pos = torch.zeros((1, pattern[0][2].shape[0], len(pattern))).to(args.device)
+        # score_max = torch.zeros(size=(score_neg.shape[0], score_neg.shape[1], 2)).to(args.device)
+
+        for f_i, [c_i, c, c_score] in enumerate(pattern):
+            score_neg[0, :, f_i] = c_score[:, index_neg]
+            score_pos[0, :, f_i] = c_score[:, index_pos]
+
+        score_neg = score_neg.max(dim=2, keepdims=True)[0]
+        score_pos = score_pos.max(dim=2, keepdims=True)[0]
+
+        # score_max[:, :, index_pos] = score_pos[:, :, 0]
+        # score_max[:, :, index_neg] = score_neg[:, :, 0]
+
+        score_all = get_clause_3score(score_pos, score_neg, args, len(pattern[0][1].body) - args.e)
+        clu_all.append([pattern, score_all])
+
+    index_suff = config.score_type_index['suff']
+    index_ness = config.score_type_index['ness']
+    index_sn = config.score_type_index['sn']
+
+    clu_suff = [clu for clu in clu_all if clu[1][index_suff] > args.sc_th and clu[1][index_sn] > args.sn_min_th]
+    clu_ness = [clu for clu in clu_all if clu[1][index_ness] > args.nc_th and clu[1][index_sn] > args.sn_min_th]
+    clu_sn = [clu for clu in clu_all if clu[1][index_sn] > args.sn_th]
+    clu_classified = sorted(clu_suff + clu_ness + clu_sn, key=lambda x: x[1][2], reverse=True)
+    clu_lists_sorted = sorted(clu_all, key=lambda x: x[1][index_ness], reverse=True)
+    return clu_classified
+
+
+def ilp_train(args, lang, level):
+    for neural_pred in args.neural_preds:
+        reset_args(args)
+        init_clauses = reset_lang(lang, args.e, neural_pred, full_bk=False)
+        while args.iteration < args.max_step and not args.is_done:
+            # update system
+            VM = ai_interface.get_vm(args, lang)
+            FC = ai_interface.get_fc(args, lang, VM)
+            clauses = ilp_search(args, lang, init_clauses, FC, level)
+            if args.with_pi:
+                ilp_pi(args, lang, clauses)
+            args.iteration += 1
+        # save the promising predicates
+        keep_best_preds(args, lang)
+        if args.found_ns:
+            break
+
+
+def ilp_train_explain(args, lang, level):
+    for neural_pred in args.neural_preds:
+        reset_args(args)
+        init_clause = reset_lang(lang, args.e, neural_pred, full_bk=False)
+        while args.iteration < args.max_step and not args.is_done:
+            # update system
+            VM = ai_interface.get_vm(args, lang)
+            FC = ai_interface.get_fc(args, lang, VM)
+            clauses = ilp_search(args, lang, init_clause, FC, level)
+            if args.with_explain:
+                explain_scenes(args, lang)
+            if args.with_pi:
+                ilp_pi(args, lang, clauses)
+            args.iteration += 1
+        # save the promising predicates
+        keep_best_preds(args, lang)
+        if args.found_ns:
+            break

@@ -12,6 +12,6 @@ def get_fc(args, lang, VM):
     return fc
 
 
-def get_nsfr(args, lang, FC, train=False):
-    NSFR = nsfr.get_nsfr_model(args, lang, FC, train)
+def get_nsfr(args, lang, FC, clauses, train=False):
+    NSFR = nsfr.get_nsfr_model(args, lang, FC, clauses, train)
     return NSFR
