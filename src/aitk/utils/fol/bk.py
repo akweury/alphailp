@@ -6,12 +6,12 @@ target_predicate = [
 neural_predicate = []
 
 neural_predicate_2 = {
-    'shape_counter': 'shape_counter:2:group,number',
-    'color_counter': 'color_counter:2:group,number',
-    'shape': 'shape:2:group,shape',
-    'color': 'color:2:group,color',
+    # 'shape_counter': 'shape_counter:2:group,number',
+    # 'color_counter': 'color_counter:2:group,number',
+    # 'shape': 'shape:2:group,shape',
+    # 'color': 'color:2:group,color',
     'phi': 'phi:3:group,group,phi',
-    'rho': 'rho:3:group,group,rho',
+    # 'rho': 'rho:3:group,group,rho',
     'slope': 'slope:2:group,slope',
 }
 
@@ -24,8 +24,8 @@ const_dict = {
     'color': 'enum',
     'shape': 'enum',
     'group': 'amount_e',
-    'phi': 'amount_8',
-    'rho': 'amount_8',
+    'phi': 'amount_4',
+    'rho': 'amount_4',
     'slope': 'amount_8',
     'number': 'amount_10',
 }

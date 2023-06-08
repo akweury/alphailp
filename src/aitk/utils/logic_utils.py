@@ -88,7 +88,6 @@ def vertex_normalization(data):
 def sorted_clauses(clause_with_scores, args):
     if len(clause_with_scores) > 0:
         c_sorted = sorted(clause_with_scores, key=lambda x: x[1][2], reverse=True)
-        log_utils.add_lines(f"clause number: {len(c_sorted)}", args.log_file)
         # for c in c_sorted:
         #     log_utils.add_lines(f"clause: {c[0]} {c[1]}", args.log_file)
         return c_sorted

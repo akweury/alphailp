@@ -97,8 +97,8 @@ def prune_lines(args, lines_list, line_tensors_indices):
 
         img_scores = []
 
-        if len(lines_ith_list) < args.group_e:
-            d = args.group_e - len(lines_ith_list)
+        if len(lines_ith_list) < args.group_max_e:
+            d = args.group_max_e - len(lines_ith_list)
             lines_zero_list = [[0] * tensor_len] * d
             indices_zeros_list = [[False] * n_obj] * d
             lines_list[img_i] += lines_zero_list
@@ -112,10 +112,10 @@ def prune_lines(args, lines_list, line_tensors_indices):
 
         img_scores = torch.tensor(img_scores)
         _, prob_indices = img_scores.sort(descending=True)
-        prob_indices = prob_indices[:args.group_e]
+        prob_indices = prob_indices[:args.group_max_e]
 
         if len(lines_list[img_i]) == 0:
-            pruned_tensors.append(torch.zeros(size=(args.group_e, len(config.group_tensor_index))).tolist())
+            pruned_tensors.append(torch.zeros(size=(args.group_max_e, len(config.group_tensor_index))).tolist())
             pruned_tensors_indices.append(torch.zeros(args.n_obj, dtype=torch.bool).tolist())
         else:
             pruned_tensors.append(torch.tensor(lines_list[img_i])[prob_indices].tolist())

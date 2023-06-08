@@ -25,9 +25,9 @@ class Language(object):
         consts (List[Const]): A set of constants.
     """
 
-    def __init__(self, args, funcs, pi_type):
-        self.vars = [Var(f"O{i + 1}") for i in range(args.e)]
-        self.var_num = args.e
+    def __init__(self, args, funcs, pi_type, level):
+        self.vars = [Var(f"O{i + 1}") for i in range(args.group_e)]
+        self.var_num = args.group_e
         self.atoms = []
         self.preds = []
         self.invented_preds = []
@@ -51,7 +51,7 @@ class Language(object):
         with open(args.lark_path, encoding="utf-8") as grammar:
             self.lp_atom = Lark(grammar.read(), start="atom")
 
-        self.load_lang(args, pi_type)
+        self.load_lang(args, pi_type, level)
         # self.load_init_clauses(args.e)
 
     def __str__(self):
@@ -133,14 +133,21 @@ class Language(object):
         dtypes = [DataType(dt) for dt in dtype_names]
         return NeuralPredicate(pred, int(arity), dtypes, pi_type)
 
-    def parse_const(self, args, const, const_type):
+    def parse_const(self, args, const, const_type, level):
         """Parse string to function symbols.
         """
+        if level == "object":
+            e = args.n_obj
+        elif level == "group":
+            e = args.group_e
+        else:
+            raise ValueError
+
         const_data_type = DataType(const)
         if "amount_" in const_type:
             _, num = const_type.split('_')
             if num == 'e':
-                num = args.e
+                num = e
             const_names = []
             for i in range(int(num)):
                 const_names.append(str(const) + str(i))
@@ -160,10 +167,10 @@ class Language(object):
 
         return [Const(const_name, const_data_type) for const_name in const_names]
 
-    def load_consts(self, args):
+    def load_consts(self, args, level):
         consts_str = []
         for const_name, const_type in bk.const_dict.items():
-            consts_str.extend(self.parse_const(args, const_name, const_type))
+            consts_str.extend(self.parse_const(args, const_name, const_type, level))
         return consts_str
 
     def rename_bk_preds_in_clause(self, bk_prefix, line):
@@ -203,10 +210,10 @@ class Language(object):
         preds = [self.parse_invented_bk_pred(bk_prefix, line) for line in lines]
         return preds
 
-    def load_lang(self, args, pi_type):
+    def load_lang(self, args, pi_type, level):
         self.preds = [self.parse_pred(line, pi_type) for line in bk.target_predicate]
         # preds += self.load_neural_preds()
-        self.consts = self.load_consts(args)
+        self.consts = self.load_consts(args, level)
         # pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
 
         if args.with_bk:

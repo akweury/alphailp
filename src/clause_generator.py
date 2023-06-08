@@ -239,9 +239,9 @@ class PIClauseGenerator(object):
         self.bk_clauses = None
         self.device = args.device
 
-    def invent_predicate(self, lang, pi_clauses, args, neural_pred, invented_p):
+    def invent_predicate(self, lang, pi_clauses, args, neural_pred, invented_p, e):
 
-        new_predicates, is_done = self.cluster_invention(args, lang)
+        new_predicates, is_done = self.cluster_invention(args, lang, e)
         log_utils.add_lines(f"new PI: {len(new_predicates)}", args.log_file)
         for new_c, new_c_score in new_predicates:
             log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
@@ -252,7 +252,6 @@ class PIClauseGenerator(object):
         # pi_languages = logic_utils.get_pi_clauses_objs(self.args, self.lang, new_clauses_str_list, new_predicates)
         du = DataUtils(lark_path=args.lark_path, lang_base_path=args.lang_base_path, dataset_type=args.dataset_type,
                        dataset=args.dataset)
-
 
         lang, vars, init_clauses, atoms = nsfr_utils.get_lang(args)
         if neural_pred is not None:
@@ -370,10 +369,10 @@ class PIClauseGenerator(object):
             new_all_pi_clausese.append(pi_c)
         return new_all_pi_clausese
 
-    def cluster_invention(self, args, lang):
+    def cluster_invention(self, args, lang, e):
         found_ns = False
 
-        clu_lists = ilp.search_independent_clauses_parallel(args, lang)
+        clu_lists = ilp.search_independent_clauses_parallel(args, lang, e)
         new_predicates = self.generate_new_predicate(args, clu_lists)
         new_predicates = new_predicates[:args.pi_top]
 

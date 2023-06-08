@@ -9,8 +9,8 @@ import ilp
 import converter
 
 
-def init_language(args, pi_type):
-    lang = Language(args, [], pi_type)
+def init_language(args, pi_type, level):
+    lang = Language(args, [], pi_type, level)
     return lang
 
 
@@ -41,9 +41,9 @@ def reset_args(args):
     ilp.reset_args(args)
 
 
-def reset_lang(lang, e, neural_pred, full_bk):
-    init_clause = ilp.reset_lang(lang, e, neural_pred, full_bk)
-    return init_clause
+def reset_lang(lang, args, level, neural_pred, full_bk):
+    init_clause, e = ilp.reset_lang(lang,args, level, neural_pred, full_bk)
+    return init_clause, e
 
 
 def search_clauses(args, lang, init_clauses, FC, level):
@@ -55,7 +55,7 @@ def explain_clauses(args, lang, clauses):
     ilp.explain_scenes(args, lang, clauses)
 
 
-def run_ilp_test(args, lang, level):
+def run_ilp(args, lang, level):
     # print all the invented predicates
     success, clauses = ilp.ilp_test(args, lang, level)
     return success, clauses
@@ -72,8 +72,8 @@ def data2tensor_lines(objs):
     return line_tensor
 
 
-def predicate_invention(args, lang, clauses):
-    ilp.ilp_pi(args, lang, clauses)
+def predicate_invention(args, lang, clauses, e):
+    ilp.ilp_pi(args, lang, clauses, e)
 
 
 def keep_best_preds(args, lang):

@@ -800,8 +800,8 @@ def visual_group_predictions(args, data, input_image, colors, thickness, group_t
     indice_center_on_screen_x = group_tensor_index["x_center_screen"]
     indice_center_on_screen_y = group_tensor_index["y_center_screen"]
     indice_radius_on_screen = group_tensor_index["screen_radius"]
-    screen_points = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.e, :]
-    screen_radius = data[:, indice_radius_on_screen][:args.e].to(torch.int16).tolist()
+    screen_points = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.group_e, :]
+    screen_radius = data[:, indice_radius_on_screen][:args.group_e].to(torch.int16).tolist()
     group_pred_image = draw_circles(group_image, screen_points, radius=screen_radius, color=colors,
                                     thickness=thickness)
 
@@ -810,8 +810,8 @@ def visual_group_predictions(args, data, input_image, colors, thickness, group_t
     indice_right_screen_x = group_tensor_index["screen_right_x"]
     indice_right_screen_y = group_tensor_index["screen_right_y"]
 
-    screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.e, :]
-    screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.e, :]
+    screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.group_e, :]
+    screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.group_e, :]
     group_pred_image = draw_lines(group_pred_image, screen_left_points, screen_right_points,
                                   color=colors, thickness=thickness)
 
@@ -834,8 +834,6 @@ def visual_info(lang, image_shape, font_size):
 
 
 def visualization(args, lang, clauses, scores=None, colors=None, thickness=None, radius=None):
-    if scores is None:
-        scores = [0]
     if colors is None:
         # Blue color in BGR
         colors = [
@@ -884,8 +882,8 @@ def visualization(args, lang, clauses, scores=None, colors=None, thickness=None,
             input_image = draw_text(input_image, "input")
             visual_images.append(input_image)
 
-            group_pred_image = draw_text(group_pred_image, f"group:{round(scores[0], 4)}")
-            group_pred_image = draw_text(group_pred_image, f"{clauses[0]}", position="lower_left",
+            group_pred_image = draw_text(group_pred_image, f"group:{round(scores[data_type]['score'][i].tolist(), 4)}")
+            group_pred_image = draw_text(group_pred_image, f"{scores[data_type]['clause'][i]}", position="lower_left",
                                          font_size=0.4)
             visual_images.append(group_pred_image)
 

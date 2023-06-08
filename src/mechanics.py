@@ -120,21 +120,22 @@ def train_and_eval(args, rtpt):
     """
         ilp algorithm: call semantic API
     """
-    lang = se.init_language(args, config.pi_type['bk'])
-
+    lang = se.init_language(args, config.pi_type['bk'], "group")
     se.run_ilp_train(args, lang, "group")
-    success, clauses = se.run_ilp_test(args, lang, "group")
+    success, clauses = se.run_ilp(args, lang, "group")
 
-    if not success:
+    if not success and args.with_explain:
         se.run_ilp_train_explain(args, lang, "object")
-        success, clauses = se.run_ilp_test(args, lang, "object")
+        success, clauses = se.run_ilp(args, lang, "object")
 
     if success:
-        visual_utils.visualization(args, lang, clauses)
+        scores = se.run_ilp_eval(args, lang, clauses)
+        visual_utils.visualization(args, lang, clauses, scores)
         # train nsfr
         NSFR = train_nsfr(args, rtpt, lang, clauses)
         return NSFR
     else:
+        log_utils.add_lines(f"ILP failed.", args.log_file)
         return None
 
 
@@ -178,7 +179,7 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
 
 def train_nsfr(args, rtpt, lang, clauses):
     VM = ai_interface.get_vm(args, lang)
-    FC = ai_interface.get_fc(args, lang, VM)
+    FC = ai_interface.get_fc(args, lang, VM, args.group_e)
     NSFR = ai_interface.get_nsfr(args, lang, FC, clauses, train=True)
 
     optimizer = torch.optim.RMSprop(NSFR.get_params(), lr=args.lr)

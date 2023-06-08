@@ -14,9 +14,9 @@ def get_args(data_path):
     parser.add_argument("--batch-size-train", type=int,
                         default=20, help="Batch size in nsfr train")
     parser.add_argument("--group_e", type=int, default=2,
-                        help="The maximum number of object groups in one image")
-    parser.add_argument("--e", type=int, default=5,
-                        help="The maximum number of objects in one image")
+                        help="The number of groups in one image")
+    parser.add_argument("--group_max_e", type=int, default=5,
+                        help="The maximum number of groups in one image")
     parser.add_argument("--dataset", default="red-triangle", help="Use kandinsky patterns dataset")
     parser.add_argument("--dataset-type", default="kandinsky",
                         help="kandinsky or clevr")
@@ -103,7 +103,7 @@ def get_args(data_path):
                         help="The accept number for necessary good clauses.")
     parser.add_argument("--pi_top", type=int, default=20,
                         help="The accept number for pi on each classes.")
-    parser.add_argument("--max_cluster_size", type=int, default=4,
+    parser.add_argument("--max_cluster_size", type=int, default=5,
                         help="The max size of clause cluster.")
     parser.add_argument("--min_cluster_size", type=int, default=2,
                         help="The min size of clause cluster.")

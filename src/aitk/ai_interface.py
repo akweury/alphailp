@@ -7,8 +7,8 @@ def get_vm(args, lang):
     return vm
 
 
-def get_fc(args, lang, VM):
-    fc = facts_converter.FactsConverter(args, lang, VM)
+def get_fc(args, lang, VM, e):
+    fc = facts_converter.FactsConverter(args, lang, VM, e)
     return fc
 
 
