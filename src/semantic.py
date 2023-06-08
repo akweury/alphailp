@@ -51,8 +51,8 @@ def search_clauses(args, lang, init_clauses, FC, level):
     return clauses
 
 
-def explain_clauses(args, lang):
-    ilp.explain_scenes(args, lang)
+def explain_clauses(args, lang, clauses):
+    ilp.explain_scenes(args, lang, clauses)
 
 
 def run_ilp_test(args, lang, level):

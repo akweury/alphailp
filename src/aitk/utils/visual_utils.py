@@ -823,7 +823,7 @@ def visual_info(lang, image_shape, font_size):
 
     # predicates info
     pi_c_text_position = [20, 80]
-    text_y_shift = 30
+    text_y_shift = 20
     if len(lang.pi_clauses) == 0:
         info_image = draw_custom_text(info_image, f"No invented predicates.", pi_c_text_position, font_size=font_size)
         pi_c_text_position[1] += text_y_shift
@@ -878,7 +878,7 @@ def visualization(args, lang, clauses, scores=None, colors=None, thickness=None,
                                                         config.group_tensor_index)
 
             # information image
-            info_image = visual_info(lang, input_image.shape, font_size=0.4)
+            info_image = visual_info(lang, input_image.shape, font_size=0.3)
 
             # adding header and footnotes
             input_image = draw_text(input_image, "input")

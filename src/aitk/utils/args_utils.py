@@ -24,9 +24,9 @@ def get_args(data_path):
                         help='cuda device, i.e. 0 or cpu')
     parser.add_argument("--no-cuda", action="store_true",
                         help="Run on CPU instead of GPU (not recommended)")
-    parser.add_argument("--with-pi", action="store_true",
+    parser.add_argument("--with_pi", action="store_true",
                         help="Generate Clause with predicate invention.")
-    parser.add_argument("--with-explain", action="store_true",
+    parser.add_argument("--with_explain", action="store_true",
                         help="Explain Clause with predicate invention.")
 
     parser.add_argument("--small-data", action="store_true",
@@ -125,7 +125,7 @@ def get_args(data_path):
                         help="The threshold of group confidence.")
     parser.add_argument("--maximum_obj_num", type=int, default=5,
                         help="The maximum number of objects/groups to deal with in a single image.")
-    parser.add_argument("--distribute_error_th", type=float, default=0.3,
+    parser.add_argument("--distribute_error_th", type=float, default=0.0005,
                         help="The threshold for group points forming a shape that evenly distributed on the whole shape.")
     args = parser.parse_args()
 

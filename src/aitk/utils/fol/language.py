@@ -340,7 +340,7 @@ class Language(object):
         pred_with_id = prefix + str(new_predicate_id)
 
         new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, p_args, pi_type=pi_type)
-        self.invented_preds.append(new_predicate)
+        # self.invented_preds.append(new_predicate)
 
         return new_predicate
 

@@ -7,7 +7,7 @@
   "collinear_th": 0.3,
   "dataset": "letter_i_12",
   "dataset-type": "hide",
-  "distribute_error_th": 0.0007,
+  "distribute_error_th": 0.0004,
   "score_unique": true,
   "semantic_unique": true,
   "small_data": false,

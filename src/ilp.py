@@ -92,16 +92,16 @@ def ilp_search(args, lang, init_clauses, FC, level):
     return clauses
 
 
-def explain_scenes(args, lang):
+def explain_scenes(args, lang, clauses):
     """ explaination should improve the sufficient percentage """
-    new_explain_pred_with_scores = explain_invention(args, lang)
+    new_explain_pred_with_scores = explain_invention(args, lang, clauses)
     pi_exp_clauses = gen_exp_pi_clauses(args, lang, new_explain_pred_with_scores)
     lang.pi_clauses += pi_exp_clauses
 
 
 def ilp_pi(args, lang, clauses):
     # predicate invention by clustering
-    new_clu_pred_with_scores = cluster_invention(args, lang)
+    new_clu_pred_with_scores = cluster_invention(args, lang, clauses)
     # convert to strings
     new_clauses_str_list, kp_str_list = generate_new_clauses_str_list(new_clu_pred_with_scores)
     pi_clu_clauses, pi_kp_clauses = gen_clu_pi_clauses(args, lang, new_clu_pred_with_scores, new_clauses_str_list,
@@ -450,10 +450,10 @@ def explain_invention(args, lang, clauses):
     return explained_clause
 
 
-def cluster_invention(args, lang):
+def cluster_invention(args, lang, clauses):
     found_ns = False
 
-    clu_lists = search_independent_clauses_parallel(args, lang)
+    clu_lists = search_independent_clauses_parallel(args, lang, clauses)
     new_preds_with_scores = generate_new_predicate(args, lang, clu_lists, pi_type=config.pi_type["clu"])
     new_preds_with_scores = new_preds_with_scores[:args.pi_top]
     lang.invented_preds_with_scores += new_preds_with_scores
@@ -505,8 +505,8 @@ def extract_kp_pi(new_lang, all_pi_clauses, args):
     return new_all_pi_clausese
 
 
-def search_independent_clauses_parallel(args, lang):
-    patterns = logic_utils.get_independent_clusters(args, lang)
+def search_independent_clauses_parallel(args, lang, clauses):
+    patterns = logic_utils.get_independent_clusters(args, lang, clauses)
     # trivial: contain multiple semantic identity bodies
     patterns = logic_utils.check_trivial_clusters(patterns)
 
@@ -574,7 +574,7 @@ def ilp_train_explain(args, lang, level):
             FC = ai_interface.get_fc(args, lang, VM)
             clauses = ilp_search(args, lang, init_clause, FC, level)
             if args.with_explain:
-                explain_scenes(args, lang)
+                explain_scenes(args, lang, clauses)
             if args.with_pi:
                 ilp_pi(args, lang, clauses)
             args.iteration += 1

@@ -150,12 +150,12 @@ def get_semantic_from_c(clause):
     return semantic
 
 
-def get_independent_clusters(args, lang):
-    clauses = lang.clause_with_scores
-    print(f"\nsearching for independent clauses from {len(lang.clauses)} clauses...")
+def get_independent_clusters(args, lang, clauses):
+    clause_with_scores = lang.clause_with_scores
+    print(f"- searching for independent clauses from {len(clause_with_scores)} clauses...")
 
     clauses_with_score = []
-    for clause_i, [clause, four_scores, c_scores] in enumerate(clauses):
+    for clause_i, [clause, four_scores, c_scores] in enumerate(clause_with_scores):
         clauses_with_score.append([clause_i, clause, c_scores])
 
     clause_clusters = sub_lists(clauses_with_score, min_len=args.min_cluster_size, max_len=args.max_cluster_size)
