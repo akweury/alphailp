@@ -3,11 +3,11 @@ import torch
 
 import aitk.utils.logic_utils
 from aitk.utils import log_utils
-from aitk.utils import eval_utils
 from aitk.utils import data_utils
 
 import config
 import logic_utils
+from aitk.utils.eval_utils import eval_data
 
 
 def remove_duplicate_clauses(refs_i, unused_args, used_args, args):
@@ -210,9 +210,3 @@ def eval_single_group(args, props, g_type, img_i):
     return res_dict
 
 
-def eval_data(data):
-    # first metric: mse
-    value_diff = eval_utils.metric_mse(data, axis=0)
-    # second metric
-    type_diff = eval_utils.metric_count_mse(data, axis=1)
-    return value_diff, type_diff

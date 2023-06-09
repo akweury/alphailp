@@ -295,7 +295,7 @@ def get_clause_3score(score_pos, score_neg, args, c_length=0):
     sn_index = config.score_type_index["sn"]
     scores[ness_index, :] = score_pos.sum(dim=1) / score_pos.shape[1]
     scores[suff_index, :] = score_negative_inv.sum(dim=1) / score_negative_inv.shape[1]
-    scores[sn_index, :] = scores[0, :] * scores[1, :]  # + (c_length + 1) * args.length_weight
+    scores[sn_index, :] = scores[0, :] * scores[1, :]  + (c_length + 1) * args.length_weight
     return scores
 
 

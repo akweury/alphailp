@@ -3,10 +3,10 @@
 """
 semantic implementation
 """
+import aitk.utils.data_utils
 from aitk.utils.fol.language import Language
 
 import ilp
-import converter
 
 
 def init_language(args, pi_type, level):
@@ -67,7 +67,7 @@ def run_ilp_eval(args, lang, clauses):
 
 
 def data2tensor_lines(objs):
-    line_tensor = converter.to_line_tensor(objs).reshape(-1)
+    line_tensor = aitk.utils.data_utils.to_line_tensor(objs).reshape(-1)
 
     return line_tensor
 

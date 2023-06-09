@@ -221,3 +221,11 @@ def eval_clause_on_test_scenes(NSFR, args, clause, group_pred, ):
     score[score == 1] = 0.99
 
     return score
+
+
+def eval_data(data):
+    # first metric: mse
+    value_diff = metric_mse(data, axis=0)
+    # second metric
+    type_diff = metric_count_mse(data, axis=1)
+    return value_diff, type_diff

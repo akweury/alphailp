@@ -1,19 +1,20 @@
 # Created by shaji on 18-Apr-23
-
+import os
+import torch
 from pathlib import Path
 import numpy as np
 from rtpt import RTPT
 
 from aitk import percept
 from aitk import ai_interface
+from aitk.percept_group import detect_obj_groups
 from aitk.utils.fol import bk
 from aitk.utils import nsfr_utils
 from aitk.utils import file_utils
 from aitk.utils import visual_utils
 from aitk.utils import args_utils
-
+import config
 from mechanic_utils import *
-
 import semantic as se
 
 
