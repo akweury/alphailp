@@ -1,9 +1,9 @@
 {
-  "n_obj": 8,
+  "n_obj": 10,
   "batch_size_train": 6,
   "group_max_e": 5,
-  "group_e": 1,
-  "dataset": "letter_O_8",
+  "group_e": 2,
+  "dataset": "letter_Q_10",
   "dataset-type": "hide",
   "score_unique": true,
   "semantic_unique": true,

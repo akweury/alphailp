@@ -928,3 +928,35 @@ def visual_lines(args, line_tensors, line_indices, data_type):
             args.image_output_path / f"gp_{data_type}_{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
 
         save_image(group_pred_image, final_image_filename)
+
+
+def visual_groups(args, group_tensors, data_type):
+    colors = [
+        (255, 0, 0),  # Blue
+        (255, 255, 0),  # Cyan
+        (0, 255, 0),  # Green
+        (0, 0, 255),  # Red
+        (0, 255, 255),  # Yellow
+    ]
+    thickness = 3
+
+    if "pos" in data_type:
+        dtype = "true"
+    else:
+        dtype = "false"
+
+    for i in range(len(group_tensors)):
+        data_name = args.image_name_dict['test'][dtype][i]
+        data = group_tensors[i]
+        # input image
+        file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
+        image_file = file_prefix + ".image.png"
+        input_image = get_cv_image(image_file)
+
+        # group prediction
+        group_pred_image = visual_group_predictions(args, data, input_image, colors, thickness,
+                                                    config.group_tensor_index)
+        final_image_filename = str(
+            args.image_output_path / f"gp_{data_type}_{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
+
+        save_image(group_pred_image, final_image_filename)

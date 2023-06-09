@@ -116,7 +116,9 @@ def get_args(data_path):
     parser.add_argument("--with_bk", action="store_true",
                         help="Using background knowledge by PI.")
     parser.add_argument("--error_th", type=float, default=0.001,
-                        help="The threshold for MAE of obj group fitting.")
+                        help="The threshold for MAE of line group fitting.")
+    parser.add_argument("--cir_error_th", type=float, default=0.05,
+                        help="The threshold for MAE of circle group fitting.")
     parser.add_argument("--line_group_min_sz", type=int, default=3,
                         help="The minimum objects allowed to form a line.")
     parser.add_argument("--cir_group_min_sz", type=int, default=5,

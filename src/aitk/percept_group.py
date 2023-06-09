@@ -4,43 +4,65 @@ import os
 
 import torch
 
-import aitk.utils.data_utils
 import config
 
 from aitk.utils import eval_utils
-from aitk.utils.data_utils import to_circle_tensor, get_comb
-from aitk.utils.visual_utils import visual_lines
+from aitk.utils import data_utils
+from aitk.utils import visual_utils
+from aitk.utils.data_utils import get_comb
 
 
-def detect_line_groups(args, obj_tensors, data_type):
-    """
-    input: object tensors
-    output: group tensors
-    """
+def detect_groups(args, obj_tensors, group_type):
+    if group_type == "line":
+        init_obj_num = 2
+        min_obj_num = args.line_group_min_sz
+        extend_func = extend_line_group
+    elif group_type == "cir":
+        init_obj_num = 3
+        min_obj_num = args.cir_group_min_sz
+        extend_func = extend_circle_group
+    else:
+        raise ValueError
 
-    line_indices, line_groups = detect_lines(args, obj_tensors)
-    line_tensors, line_tensors_indices = encode_lines(args, obj_tensors, line_indices, line_groups)
+    all_group_indices = []
+    all_group_tensors = []
 
-    # logic: prune strategy
-    pruned_tensors, pruned_tensors_indices = prune_lines(args, line_tensors, line_tensors_indices)
+    # detect lines image by image
+    for img_i in range(obj_tensors.shape[0]):
+        group_indices_ith = []
+        group_groups_ith = []
+        exist_combs = []
+        min_group_indices = data_utils.get_comb(torch.tensor(range(obj_tensors[img_i].shape[0])), init_obj_num).tolist()
+        # detect lines by checking each possible combinations
+        for g_i, obj_indices in enumerate(min_group_indices):
+            # check duplicate
+            if obj_indices in exist_combs:
+                continue
+            group_obj_tensors, group_indices = extend_func(args, obj_indices, obj_tensors[img_i], img_i)
 
-    visual_lines(args, pruned_tensors, pruned_tensors_indices, data_type)
+            if group_obj_tensors is not None and len(group_obj_tensors) >= min_obj_num:
+                exist_combs += data_utils.get_comb(group_indices, init_obj_num).tolist()
 
-    return pruned_tensors, pruned_tensors_indices
+                group_indices_ith.append(group_indices)
+                group_groups_ith.append(group_obj_tensors)
+        all_group_indices.append(group_indices_ith)
+        all_group_tensors.append(group_groups_ith)
+
+    return all_group_indices, all_group_tensors
 
 
-def detect_circle_groups(args, percept_dict):
-    point_data = percept_dict[:, :, config.indices_position]
-    color_data = percept_dict[:, :, config.indices_color]
-    shape_data = percept_dict[:, :, config.indices_shape]
-    point_screen_data = percept_dict[:, :, config.indices_screen_position]
+def detect_cir(args, obj_tensors):
+    point_data = obj_tensors[:, :, config.indices_position]
+    color_data = obj_tensors[:, :, config.indices_color]
+    shape_data = obj_tensors[:, :, config.indices_shape]
+    point_screen_data = obj_tensors[:, :, config.indices_screen_position]
 
     used_objs = torch.zeros(point_data.shape[0], args.group_e, point_data.shape[1], dtype=torch.bool)
     circle_tensors = torch.zeros(point_data.shape[0], args.e, len(config.group_tensor_index.keys()))
     for data_i in range(point_data.shape[0]):
         exist_combs = []
         tensor_counter = 0
-        group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 3).tolist()
+        group_indices = data_utils.get_comb(torch.tensor(range(point_data[data_i].shape[0])), 3).tolist()
         circle_tensor_candidates = torch.zeros(args.e, len(config.group_tensor_index.keys()))
         groups_used_objs = torch.zeros(args.group_e, point_data.shape[1], dtype=torch.bool)
 
@@ -52,15 +74,14 @@ def detect_circle_groups(args, percept_dict):
                     colors = color_data[data_i][p_indices]
                     shapes = shape_data[data_i][p_indices]
                     p_groups_screen = point_screen_data[data_i][p_indices]
-                    circle_tensor = to_circle_tensor(p_groups, p_groups_screen, colors, shapes, center=center,
-                                                     r=r).reshape(1, -1)
+                    circle_tensor = data_utils.to_circle_tensor(p_groups).reshape(1, -1)
                     circle_tensor_candidates = torch.cat([circle_tensor_candidates, circle_tensor], dim=0)
 
                     cir_used_objs = torch.zeros(1, point_data.shape[1], dtype=torch.bool)
                     cir_used_objs[0, p_indices] = True
                     groups_used_objs = torch.cat([groups_used_objs, cir_used_objs], dim=0)
 
-                    exist_combs += get_comb(p_indices, 3).tolist()
+                    exist_combs += data_utils.get_comb(p_indices, 3).tolist()
                     tensor_counter += 1
                     # print(f'circle group: {p_indices}')
         # print(f'\n')
@@ -71,7 +92,104 @@ def detect_circle_groups(args, percept_dict):
     return circle_tensors, used_objs
 
 
-def extend_line_group(args, obj_indices, obj_tensors):
+def encode_groups(args, obj_indices, obj_tensors, group_type):
+    """
+    Encode groups to tensors.
+    """
+
+    all_group_tensors = []
+    all_group_tensors_indices = []
+
+    for img_i in range(len(obj_tensors)):
+        img_group_tensors = []
+        img_group_tensors_indices = []
+        for obj_i, objs in enumerate(obj_tensors[img_i]):
+            if group_type == "line":
+                group_tensor, group_used_objs = record_line_group(args, objs, obj_indices[img_i][obj_i], img_i)
+            elif group_type == "cir":
+                group_tensor, group_used_objs = record_cir_group(args, objs, obj_indices[img_i][obj_i], img_i)
+            else:
+                raise ValueError
+
+            img_group_tensors.append(group_tensor.tolist())
+            img_group_tensors_indices.append(group_used_objs.tolist())
+
+        all_group_tensors.append(img_group_tensors)
+        all_group_tensors_indices.append(img_group_tensors_indices)
+
+    return all_group_tensors, all_group_tensors_indices
+
+
+def prune_groups(args, group_list, group_tensors_indices):
+    """ sort and select the high scoring groups"""
+
+    tensor_len = len(config.group_tensor_index)
+    n_obj = args.n_obj
+    pruned_tensors = []
+    pruned_tensors_indices = []
+    for img_i in range(len(group_list)):
+        group_ith_list = group_list[img_i]
+
+        img_scores = []
+
+        if len(group_ith_list) < args.group_max_e:
+            d = args.group_max_e - len(group_ith_list)
+            group_zero_list = [[0] * tensor_len] * d
+            indices_zeros_list = [[False] * n_obj] * d
+            group_list[img_i] += group_zero_list
+            group_tensors_indices[img_i] += indices_zeros_list
+
+        for group_tensor_list in group_list[img_i]:
+            group_tensor = torch.tensor(group_tensor_list)
+            group_scores = group_tensor[config.group_tensor_index["line"]]
+            img_scores.append(group_scores.tolist())
+        # align tensor number to arg.group_e
+
+        img_scores = torch.tensor(img_scores)
+        _, prob_indices = img_scores.sort(descending=True)
+        prob_indices = prob_indices[:args.group_max_e]
+
+        if len(group_list[img_i]) == 0:
+            pruned_tensors.append(torch.zeros(size=(args.group_max_e, len(config.group_tensor_index))).tolist())
+            pruned_tensors_indices.append(torch.zeros(args.n_obj, dtype=torch.bool).tolist())
+        else:
+            pruned_tensors.append(torch.tensor(group_list[img_i])[prob_indices].tolist())
+            pruned_tensors_indices.append(torch.tensor(group_tensors_indices[img_i])[prob_indices].tolist())
+
+    return pruned_tensors, pruned_tensors_indices
+
+
+def prune_cirs(args, cir_tensors, cir_tensors_indices):
+    pass
+
+
+def detect_line_groups(args, obj_tensors, data_type):
+    """
+    input: object tensors
+    output: group tensors
+    """
+
+    line_indices, line_groups = detect_groups(args, obj_tensors, "line")
+    line_tensors, line_tensors_indices = encode_groups(args, line_indices, line_groups, "line")
+
+    # logic: prune strategy
+    pruned_tensors, pruned_tensors_indices = prune_groups(args, line_tensors, line_tensors_indices)
+    return pruned_tensors, pruned_tensors_indices
+
+
+def detect_circle_groups(args, obj_tensors, data_type):
+    """
+    input: object tensors
+    output: group tensors
+    """
+
+    cir_indices, cir_groups = detect_groups(args, obj_tensors, "cir")
+    cir_tensors, cir_tensors_indices = encode_groups(args, cir_indices, cir_groups, "cir")
+    pruned_tensors, pruned_tensors_indices = prune_groups(args, cir_tensors, cir_tensors_indices)
+    return pruned_tensors, pruned_tensors_indices
+
+
+def extend_line_group(args, obj_indices, obj_tensors, img_i):
     # points = obj_tensors[:, :, config.indices_position]
     has_new_element = True
     line_groups = copy.deepcopy(obj_tensors)
@@ -81,7 +199,7 @@ def extend_line_group(args, obj_indices, obj_tensors):
         line_objs = obj_tensors[line_group_indices]
         extra_index = torch.tensor(sorted(set(list(range(obj_tensors.shape[0]))) - set(line_group_indices)))
         if len(extra_index) == 0:
-            return None, None
+            break
         extra_objs = obj_tensors[extra_index]
         line_objs_extended = extend_groups(line_objs, extra_objs)
         colinearities = eval_utils.calc_colinearity(line_objs_extended, config.indices_position)
@@ -103,27 +221,65 @@ def extend_line_group(args, obj_indices, obj_tensors):
     return line_groups, line_group_indices
 
 
-def extend_circle_group(group_index, points, args):
-    point_groups = points[group_index]
-    c, r = eval_utils.predict_circles(point_groups, args.error_th)
-    if c is None or r is None:
-        return None, None, None, None
-    extra_index = torch.tensor(sorted(set(list(range(points.shape[0]))) - set(group_index)))
-    extra_points = points[extra_index]
+def extend_circle_group(args, obj_indices, obj_tensors, img_i):
+    has_new_element = True
+    cir_groups = copy.deepcopy(obj_tensors)
+    cir_group_indices = copy.deepcopy(obj_indices)
 
-    group_error = eval_utils.get_circle_error(c, r, extra_points)
-    passed_points = extra_points[group_error < args.error_th]
-    if len(passed_points) == 0:
-        return None, None, None, None
-    point_groups_extended = extend_groups(point_groups, passed_points)
-    group_distribution = eval_utils.get_group_distribution(point_groups_extended, c)
-    passed_indices = extra_index[group_error < args.error_th][group_distribution]
-    passed_points = extra_points[group_error < args.error_th][group_distribution]
-    point_groups_new = torch.cat([point_groups, passed_points], dim=0)
-    point_groups_indices_new = torch.cat([torch.tensor(group_index), passed_indices])
-    # if not is_even_distributed_points(args, point_groups_new, shape="circle"):
-    #     return None, None, None, None
-    return point_groups_new, point_groups_indices_new, c, r
+    seed_objs = obj_tensors[cir_group_indices]
+    c, r = eval_utils.calc_circles(seed_objs, args.error_th)
+
+    while has_new_element and c is not None:
+
+        leaf_indices = torch.tensor(sorted(set(list(range(obj_tensors.shape[0]))) - set(cir_group_indices)))
+        if len(leaf_indices) == 0:
+            break
+        leaf_objs = obj_tensors[leaf_indices]
+        # branch_objs = extend_groups(seed_objs, leaf_objs)
+
+        cir_error = eval_utils.get_circle_error(c, r, leaf_objs)
+        print(f"(img {img_i}) cir error max: {cir_error.max()}")
+        is_circle = cir_error < args.cir_error_th
+        has_new_element = is_circle.sum() > 0
+        passed_leaf_objs = leaf_objs[is_circle]
+        passed_leaf_indices = leaf_indices[is_circle]
+        cir_groups = torch.cat([seed_objs, passed_leaf_objs], dim=0)
+        cir_group_indices += passed_leaf_indices.tolist()
+    cir_group_indices = torch.tensor(cir_group_indices)
+    print(f"")
+
+    # cir_data = {
+    #     "groups": cir_groups,
+    #     "centers": c,
+    #     "radius": r
+    # }
+    return cir_groups, cir_group_indices
+
+    # point_groups = obj_tensors[obj_indices]
+    # c, r = eval_utils.calc_circles(point_groups, args.error_th)
+    # if c is None or r is None:
+    #     return None, None
+    # extra_index = torch.tensor(sorted(set(list(range(obj_tensors.shape[0]))) - set(obj_indices)))
+    # extra_points = obj_tensors[extra_index]
+    #
+    # group_error = eval_utils.get_circle_error(c, r, extra_points)
+    # passed_points = extra_points[group_error < args.error_th]
+    # if len(passed_points) == 0:
+    #     return None, None
+    # point_groups_extended = extend_groups(point_groups, passed_points)
+    # group_distribution = eval_utils.get_group_distribution(point_groups_extended, c)
+    # passed_indices = extra_index[group_error < args.error_th][group_distribution]
+    # passed_points = extra_points[group_error < args.error_th][group_distribution]
+    # point_groups_new = torch.cat([point_groups, passed_points], dim=0)
+    # point_groups_indices_new = torch.cat([torch.tensor(obj_indices), passed_indices])
+    # # if not is_even_distributed_points(args, point_groups_new, shape="circle"):
+    # #     return None, None, None, None
+    # cir_data = {
+    #     "groups": point_groups_new,
+    #     "centers": c,
+    #     "radius": r
+    # }
+    # return cir_data, point_groups_indices_new
 
 
 def extend_groups(group_objs, extend_objs):
@@ -134,7 +290,7 @@ def extend_groups(group_objs, extend_objs):
 
 
 def record_line_group(args, objs, obj_indices, img_i):
-    line_tensor = aitk.utils.data_utils.to_line_tensor(objs).reshape(-1)
+    line_tensor = data_utils.to_line_tensor(objs).reshape(-1)
     # convert the group to a tensor
 
     # line_tensor_candidates = torch.cat([line_tensor_candidates, line_tensor], dim=0)
@@ -149,97 +305,18 @@ def record_line_group(args, objs, obj_indices, img_i):
     return line_tensor, line_used_objs
 
 
-def detect_lines(args, obj_tensors):
-    all_line_indices = []
-    all_line_tensors = []
+def record_cir_group(args, objs, obj_indices, img_i):
+    center, r = fit_circle(objs, args)
+    cir_tensor = data_utils.to_circle_tensor(objs, center, r).reshape(-1)
 
-    # detect lines image by image
-    for img_i in range(obj_tensors.shape[0]):
-        line_indices_ith = []
-        line_groups_ith = []
-        exist_combs = []
-        two_point_line_indices = get_comb(torch.tensor(range(obj_tensors[img_i].shape[0])), 2).tolist()
-        # detect lines by checking each possible combinations
-        for g_i, obj_indices in enumerate(two_point_line_indices):
-            # check duplicate
-            if obj_indices in exist_combs:
-                continue
-            line_obj_tensors, line_indices = extend_line_group(args, obj_indices, obj_tensors[img_i])
+    # update point availabilities
+    cir_used_objs = torch.zeros(args.n_obj, dtype=torch.bool)
+    cir_used_objs[obj_indices] = True
 
-            if line_obj_tensors is not None and len(line_obj_tensors) >= args.line_group_min_sz:
-                exist_combs += get_comb(line_indices, 2).tolist()
+    # groups_used_objs = torch.cat([groups_used_objs, line_used_objs], dim=0)
+    print(f'(img {img_i}) circle group: {obj_indices}')
 
-                line_indices_ith.append(line_indices)
-                line_groups_ith.append(line_obj_tensors)
-        all_line_indices.append(line_indices_ith)
-        all_line_tensors.append(line_groups_ith)
-
-    return all_line_indices, all_line_tensors
-
-
-def encode_lines(args, percept_dict, obj_indices, obj_tensors):
-    """
-    Encode lines to tensors.
-    """
-
-    used_objs = torch.zeros(len(obj_tensors), args.group_e, args.n_obj, dtype=torch.bool)
-    all_line_tensors = torch.zeros(len(obj_tensors), args.group_e, len(config.group_tensor_index.keys()))
-
-    all_line_tensors = []
-    all_line_tensors_indices = []
-
-    for img_i in range(len(obj_tensors)):
-        img_line_tensors = []
-        img_line_tensors_indices = []
-        for obj_i, objs in enumerate(obj_tensors[img_i]):
-            line_tensor, line_used_objs = record_line_group(args, objs, obj_indices[img_i][obj_i], img_i)
-            img_line_tensors.append(line_tensor.tolist())
-            img_line_tensors_indices.append(line_used_objs.tolist())
-
-        all_line_tensors.append(img_line_tensors)
-        all_line_tensors_indices.append(img_line_tensors_indices)
-
-    # all_line_tensors = torch.tensor(all_line_tensors)
-    # all_line_tensors_indices = torch.tensor(all_line_tensors_indices)
-
-    return all_line_tensors, all_line_tensors_indices
-
-
-def prune_lines(args, lines_list, line_tensors_indices):
-    tensor_len = len(config.group_tensor_index)
-    n_obj = args.n_obj
-    pruned_tensors = []
-    pruned_tensors_indices = []
-    for img_i in range(len(lines_list)):
-        lines_ith_list = lines_list[img_i]
-
-        img_scores = []
-
-        if len(lines_ith_list) < args.group_max_e:
-            d = args.group_max_e - len(lines_ith_list)
-            lines_zero_list = [[0] * tensor_len] * d
-            indices_zeros_list = [[False] * n_obj] * d
-            lines_list[img_i] += lines_zero_list
-            line_tensors_indices[img_i] += indices_zeros_list
-
-        for line_tensor_list in lines_list[img_i]:
-            line_tensor = torch.tensor(line_tensor_list)
-            line_scores = line_tensor[config.group_tensor_index["line"]]
-            img_scores.append(line_scores.tolist())
-        # align tensor number to arg.group_e
-
-        img_scores = torch.tensor(img_scores)
-        _, prob_indices = img_scores.sort(descending=True)
-        prob_indices = prob_indices[:args.group_max_e]
-
-        if len(lines_list[img_i]) == 0:
-            pruned_tensors.append(torch.zeros(size=(args.group_max_e, len(config.group_tensor_index))).tolist())
-            pruned_tensors_indices.append(torch.zeros(args.n_obj, dtype=torch.bool).tolist())
-        else:
-            pruned_tensors.append(torch.tensor(lines_list[img_i])[prob_indices].tolist())
-            pruned_tensors_indices.append(torch.tensor(line_tensors_indices[img_i])[prob_indices].tolist())
-
-    return pruned_tensors, pruned_tensors_indices
+    return cir_tensor, cir_used_objs
 
 
 def detect_dot_groups(args, percept_dict, valid_obj_indices):
@@ -251,7 +328,7 @@ def detect_dot_groups(args, percept_dict, valid_obj_indices):
     for data_i in range(point_data.shape[0]):
         exist_combs = []
         tensor_counter = 0
-        group_indices = get_comb(torch.tensor(range(point_data[data_i].shape[0])), 3).tolist()
+        group_indices = data_utils.get_comb(torch.tensor(range(point_data[data_i].shape[0])), 3).tolist()
         dot_tensor_candidates = torch.zeros(args.e, len(config.group_tensor_index.keys()))
         for g_i, group_index in enumerate(group_indices):
             # check duplicate
@@ -261,10 +338,9 @@ def detect_dot_groups(args, percept_dict, valid_obj_indices):
                     colors = color_data[data_i][p_indices]
                     shapes = shape_data[data_i][p_indices]
                     p_groups_screen = point_screen_data[data_i][p_indices]
-                    circle_tensor = to_circle_tensor(p_groups, p_groups_screen, colors, shapes, center=center,
-                                                     r=r).reshape(1, -1)
+                    circle_tensor = data_utils.to_circle_tensor(p_groups).reshape(1, -1)
                     dot_tensor_candidates = torch.cat([dot_tensor_candidates, circle_tensor], dim=0)
-                    exist_combs += get_comb(p_indices, 3).tolist()
+                    exist_combs += data_utils.get_comb(p_indices, 3).tolist()
                     tensor_counter += 1
                     print(f'dot group: {p_indices}')
         print(f'\n')
@@ -283,20 +359,23 @@ def detect_obj_groups(args, percept_dict_single, data_type):
 
     if os.path.exists(save_file):
         group_res = torch.load(save_file)
-        line_tensors = group_res["tensors"]
-        line_tensors_indices = group_res['used_objs']
+        group_tensors = group_res["tensors"]
+        group_obj_index_tensors = group_res['used_objs']
     else:
         # TODO: improve the generalization. Using a more general function to detect multiple group shapes by taking
         #  specific detect functions as arguments
         line_tensors, line_tensors_indices = detect_line_groups(args, percept_dict_single, data_type)
+        cir_tensors, cir_tensors_indices = detect_circle_groups(args, percept_dict_single, data_type)
         # pattern_dot = detect_dot_groups(args, percept_dict_single, used_objs)
-        # pattern_cir, pattern_cir_used_objs = detect_circle_groups(args, percept_dict_single)
-        # group_tensors, group_obj_index_tensors = merge_groups(args, line_tensors, pattern_cir, line_tensors_indices,
-        #                                                       pattern_cir_used_objs)
-        group_res = {"tensors": line_tensors, "used_objs": line_tensors_indices}
+        group_tensors, group_obj_index_tensors = merge_groups(args, line_tensors, cir_tensors,
+                                                              line_tensors_indices, cir_tensors_indices)
+
+        visual_utils.visual_groups(args, group_tensors, data_type)
+
+        group_res = {"tensors": group_tensors, "used_objs": group_obj_index_tensors}
         torch.save(group_res, save_file)
 
-    return line_tensors, line_tensors_indices,
+    return group_tensors, group_obj_index_tensors,
 
 
 def get_group_tree(args, obj_groups, group_by):
@@ -336,9 +415,44 @@ def test_groups_on_one_image(data, val_result):
 
 
 def merge_groups(args, line_groups, cir_groups, line_used_objs, cir_used_objs):
+    line_groups = torch.tensor(line_groups)
+    cir_groups = torch.tensor(cir_groups)
+
+    line_used_objs = torch.tensor(line_used_objs)
+    cir_used_objs = torch.tensor(cir_used_objs)
+
     object_groups = torch.cat((line_groups, cir_groups), dim=1)
     used_objs = torch.cat((line_used_objs, cir_used_objs), dim=1)
 
-    object_groups = object_groups[:, :args.group_e]
-    used_objs = used_objs[:, :args.group_e]
-    return object_groups, used_objs
+    prob = object_groups[:, :, config.group_tensor_index["line"]] + object_groups[:, :,
+                                                                    config.group_tensor_index["circle"]]
+    prob, g_indices = torch.sort(prob, dim=-1, descending=True)
+
+    groups = []
+    group_indices = []
+    for img_i in range(line_groups.shape[0]):
+        img_groups = object_groups[img_i][g_indices[img_i, :args.group_e]]
+        img_group_indices = used_objs[img_i][g_indices[img_i, :args.group_e]]
+        groups.append(img_groups.tolist())
+        group_indices.append(img_group_indices.tolist())
+
+    # object_groups = object_groups[:, :args.group_e]
+    # used_objs = used_objs[:, :args.group_e]
+
+    # object_groups = object_groups.tolist()
+    # used_objs = used_objs.tolist()
+    return groups, group_indices
+
+
+def fit_circle(data, args):
+    min_group_indices = get_comb(torch.tensor(range(data.shape[0])), 3).tolist()
+    centers = torch.zeros(len(min_group_indices), 2)
+    radius = torch.zeros(len(min_group_indices))
+    for g_i, group_indices in enumerate(min_group_indices):
+        c, r = eval_utils.calc_circles(data[group_indices], args.cir_error_th)
+        if c is not None:
+            centers[g_i] = c
+            radius[g_i] = r
+    centers = centers.mean(dim=0)
+    radius = radius.mean()
+    return centers, radius

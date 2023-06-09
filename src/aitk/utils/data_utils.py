@@ -1,12 +1,10 @@
 # Created by jing at 31.05.23
 import itertools
 import math
-
 import torch
 from sklearn.linear_model import LinearRegression
 
 import config
-from aitk.utils import eval_utils
 
 
 def prop2index(props, g_type="group"):
@@ -21,48 +19,6 @@ def prop2index(props, g_type="group"):
     else:
         raise ValueError
     return indices
-
-
-def to_circle_tensor(point_groups, point_groups_screen, colors, shapes, center, r):
-    tensor_index = config.group_tensor_index
-    cir_tensor = torch.zeros(len(tensor_index.keys()))
-    cir_tensor[tensor_index["x"]] = center[0]
-    cir_tensor[tensor_index["y"]] = point_groups[:, 1].mean()
-    cir_tensor[tensor_index["z"]] = center[1]
-
-    cir_tensor[tensor_index["color_counter"]] = eval_utils.op_count_nonzeros(colors.sum(dim=0), axis=0, epsilon=1e-10)
-    cir_tensor[tensor_index["shape_counter"]] = eval_utils.op_count_nonzeros(shapes.sum(dim=0), axis=0, epsilon=1e-10)
-
-    cir_tensor[tensor_index["red"]] = 0
-    cir_tensor[tensor_index["green"]] = 0
-    cir_tensor[tensor_index["blue"]] = 0
-    cir_tensor[tensor_index["sphere"]] = 0
-    cir_tensor[tensor_index["cube"]] = 0
-    cir_tensor[tensor_index["line"]] = 0
-
-    cir_tensor[tensor_index["circle"]] = 1 - torch.abs(
-        torch.sqrt(((point_groups[:, [0, 2]] - center) ** 2).sum(dim=1)) - r).sum() / point_groups.shape[0]
-
-    cir_tensor[tensor_index["x_length"]] = point_groups[:, 0].max() - point_groups[:, 0].min()
-    cir_tensor[tensor_index["y_length"]] = point_groups[:, 1].max() - point_groups[:, 1].min()
-    cir_tensor[tensor_index["z_length"]] = point_groups[:, 2].max() - point_groups[:, 2].min()
-    cir_tensor[tensor_index["x_center_screen"]] = point_groups_screen[:, 0].mean()
-    cir_tensor[tensor_index["y_center_screen"]] = point_groups_screen[:, 1].mean()
-    cir_tensor[tensor_index["screen_left_x"]] = 0
-    cir_tensor[tensor_index["screen_left_y"]] = 0
-    cir_tensor[tensor_index["screen_right_x"]] = 0
-    cir_tensor[tensor_index["screen_right_y"]] = 0
-
-    cir_tensor[tensor_index["radius"]] = euclidean_distance(point_groups[:, [0, 2]], (
-        point_groups[:, 0].mean(), point_groups[:, 2].mean())).mean()
-
-    cir_tensor[tensor_index["screen_radius"]] = euclidean_distance(point_groups_screen, (
-        point_groups_screen[:, 0].mean(), point_groups_screen[:, 1].mean())).mean()
-
-    # circle_tensor[tensor_index["x_length_screen"]] = point_groups_screen[:, 0].max() - point_groups_screen[:, 0].min()
-    # circle_tensor[tensor_index["y_length_screen"]] = point_groups_screen[:, 1].max() - point_groups_screen[:, 1].min()
-
-    return cir_tensor
 
 
 def get_comb(data, comb_size):
@@ -107,8 +63,8 @@ def to_line_tensor(objs):
     line_tensor[tensor_index["y"]] = objs[:, 1].mean()
     line_tensor[tensor_index["z"]] = objs[:, 2].mean()
 
-    line_tensor[tensor_index["color_counter"]] = eval_utils.op_count_nonzeros(colors.sum(dim=0), axis=0, epsilon=1e-10)
-    line_tensor[tensor_index["shape_counter"]] = eval_utils.op_count_nonzeros(shapes.sum(dim=0), axis=0, epsilon=1e-10)
+    line_tensor[tensor_index["color_counter"]] = op_count_nonzeros(colors.sum(dim=0), axis=0, epsilon=1e-10)
+    line_tensor[tensor_index["shape_counter"]] = op_count_nonzeros(shapes.sum(dim=0), axis=0, epsilon=1e-10)
 
     colors_normalized[colors_normalized < 0.99] = 0
     line_tensor[tensor_index['red']] = colors_normalized[0]
@@ -141,3 +97,54 @@ def to_line_tensor(objs):
     line_tensor[tensor_index["screen_radius"]] = 0
 
     return line_tensor
+
+
+def to_circle_tensor(objs, center, r):
+    colors = objs[:, config.indices_color]
+    shapes = objs[:, config.indices_shape]
+    point_groups_screen = objs[:, config.indices_screen_position]
+
+    tensor_index = config.group_tensor_index
+    cir_tensor = torch.zeros(len(tensor_index.keys()))
+    cir_tensor[tensor_index["x"]] = center[0]
+    cir_tensor[tensor_index["y"]] = objs[:, 1].mean()
+    cir_tensor[tensor_index["z"]] = center[1]
+
+    cir_tensor[tensor_index["color_counter"]] = op_count_nonzeros(colors.sum(dim=0), axis=0, epsilon=1e-10)
+    cir_tensor[tensor_index["shape_counter"]] = op_count_nonzeros(shapes.sum(dim=0), axis=0, epsilon=1e-10)
+
+    cir_tensor[tensor_index["red"]] = 0
+    cir_tensor[tensor_index["green"]] = 0
+    cir_tensor[tensor_index["blue"]] = 0
+    cir_tensor[tensor_index["sphere"]] = 0
+    cir_tensor[tensor_index["cube"]] = 0
+    cir_tensor[tensor_index["line"]] = 0
+
+    cir_tensor[tensor_index["circle"]] = 1 - torch.abs(
+        torch.sqrt(((objs[:, [0, 2]] - center) ** 2).sum(dim=1)) - r).sum() / objs.shape[0]
+
+    cir_tensor[tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
+    cir_tensor[tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()
+    cir_tensor[tensor_index["z_length"]] = objs[:, 2].max() - objs[:, 2].min()
+    cir_tensor[tensor_index["x_center_screen"]] = point_groups_screen[:, 0].mean()
+    cir_tensor[tensor_index["y_center_screen"]] = point_groups_screen[:, 1].mean()
+    cir_tensor[tensor_index["screen_left_x"]] = 0
+    cir_tensor[tensor_index["screen_left_y"]] = 0
+    cir_tensor[tensor_index["screen_right_x"]] = 0
+    cir_tensor[tensor_index["screen_right_y"]] = 0
+
+    cir_tensor[tensor_index["radius"]] = euclidean_distance(objs[:, [0, 2]], (
+        objs[:, 0].mean(), objs[:, 2].mean())).mean()
+
+    cir_tensor[tensor_index["screen_radius"]] = euclidean_distance(point_groups_screen, (
+        point_groups_screen[:, 0].mean(), point_groups_screen[:, 1].mean())).mean()
+
+    # circle_tensor[tensor_index["x_length_screen"]] = point_groups_screen[:, 0].max() - point_groups_screen[:, 0].min()
+    # circle_tensor[tensor_index["y_length_screen"]] = point_groups_screen[:, 1].max() - point_groups_screen[:, 1].min()
+
+    return cir_tensor
+
+
+def op_count_nonzeros(data, axis, epsilon):
+    counter = (data / (data + epsilon)).sum(dim=axis)
+    return counter

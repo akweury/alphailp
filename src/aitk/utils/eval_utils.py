@@ -2,6 +2,7 @@ import copy
 import torch
 
 import config
+from aitk.utils.data_utils import op_count_nonzeros
 
 ness_index = config.score_type_index["ness"]
 suff_index = config.score_type_index["suff"]
@@ -60,7 +61,7 @@ def check_clu_result(clu_result):
 
 def get_circle_error(c, r, points):
     dists = torch.sqrt(((points[:, [0, 2]] - c) ** 2).sum(1))
-    return torch.abs(dists - r)
+    return (dists - r) ** 2
 
 
 def get_group_distribution(points, center):
@@ -94,11 +95,6 @@ def eval_score(positive_score, negative_score):
     return res_score
 
 
-def op_count_nonzeros(data, axis, epsilon):
-    counter = (data / (data + epsilon)).sum(dim=axis)
-    return counter
-
-
 def metric_mse(data, axis):
     error = ((data - data.mean(dim=axis)) ** 2).mean(dim=axis)
     return error
@@ -110,7 +106,7 @@ def metric_count_mse(data, axis, epsilon=1e-10):
     return error
 
 
-def predict_circles(point_groups, collinear_th):
+def calc_circles(point_groups, collinear_th):
     # https://math.stackexchange.com/a/3503338
     complex_point_real = point_groups[:, 0]
     complex_point_imag = point_groups[:, 2]
@@ -152,7 +148,6 @@ def calc_colinearity(obj_tensors, indices_position):
         else:
             values, indices = torch.sort(obj_tensors[group_i, :, 2])
         obj_tensors[group_i] = obj_tensors[group_i, indices]
-
 
     indices_a = list(range(1, obj_tensors.shape[1]))
     indices_b = list(range(obj_tensors.shape[1] - 1))
