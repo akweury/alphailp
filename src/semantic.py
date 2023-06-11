@@ -42,7 +42,7 @@ def reset_args(args):
 
 
 def reset_lang(lang, args, level, neural_pred, full_bk):
-    init_clause, e = ilp.reset_lang(lang,args, level, neural_pred, full_bk)
+    init_clause, e = ilp.reset_lang(lang, args, level, neural_pred, full_bk)
     return init_clause, e
 
 
@@ -64,12 +64,6 @@ def run_ilp(args, lang, level):
 def run_ilp_eval(args, lang, clauses):
     scores = ilp.ilp_eval(args, lang, clauses)
     return scores
-
-
-def data2tensor_lines(objs):
-    line_tensor = aitk.utils.data_utils.to_line_tensor(objs).reshape(-1)
-
-    return line_tensor
 
 
 def predicate_invention(args, lang, clauses, e):

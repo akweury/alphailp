@@ -70,7 +70,8 @@ group_tensor_index = {
     "radius": 19,
     "screen_radius": 20,
     "color_counter": 21,
-    "shape_counter": 22
+    "shape_counter": 22,
+    "size": 23,
 }
 
 obj_tensor_index = {

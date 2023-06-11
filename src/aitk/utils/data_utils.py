@@ -5,6 +5,7 @@ import torch
 from sklearn.linear_model import LinearRegression
 
 import config
+from aitk.utils import eval_utils
 
 
 def prop2index(props, g_type="group"):
@@ -43,7 +44,7 @@ def euclidean_distance(point_groups_screen, center):
     return distance
 
 
-def to_line_tensor(objs):
+def to_line_tensor(objs, obj_indices, args, img_i):
     colors = objs[:, config.indices_color]
     shapes = objs[:, config.indices_shape]
     point_groups_screen = objs[:, config.indices_screen_position]
@@ -95,11 +96,20 @@ def to_line_tensor(objs):
 
     line_tensor[tensor_index["radius"]] = 0
     line_tensor[tensor_index["screen_radius"]] = 0
+    line_tensor[tensor_index["size"]] = objs.shape[0]
 
-    return line_tensor
+    line_tensor = line_tensor.reshape(-1)
+    line_used_objs = torch.zeros(args.n_obj, dtype=torch.bool)
+    line_used_objs[obj_indices] = True
+
+    print(f'(img {img_i}) line group: {obj_indices}')
+
+    return line_tensor, line_used_objs
 
 
-def to_circle_tensor(objs, center, r):
+def to_circle_tensor(args, objs, obj_indices, img_i):
+    center, r = fit_circle(objs, args)
+
     colors = objs[:, config.indices_color]
     shapes = objs[:, config.indices_shape]
     point_groups_screen = objs[:, config.indices_screen_position]
@@ -139,12 +149,33 @@ def to_circle_tensor(objs, center, r):
     cir_tensor[tensor_index["screen_radius"]] = euclidean_distance(point_groups_screen, (
         point_groups_screen[:, 0].mean(), point_groups_screen[:, 1].mean())).mean()
 
+    cir_tensor[tensor_index["size"]] = objs.shape[0]
+    cir_tensor = cir_tensor.reshape(-1)
     # circle_tensor[tensor_index["x_length_screen"]] = point_groups_screen[:, 0].max() - point_groups_screen[:, 0].min()
     # circle_tensor[tensor_index["y_length_screen"]] = point_groups_screen[:, 1].max() - point_groups_screen[:, 1].min()
+    # update point availabilities
+    cir_used_objs = torch.zeros(args.n_obj, dtype=torch.bool)
+    cir_used_objs[obj_indices] = True
 
-    return cir_tensor
+    print(f'(img {img_i}) circle group: {obj_indices}')
+
+    return cir_tensor, cir_used_objs
 
 
 def op_count_nonzeros(data, axis, epsilon):
     counter = (data / (data + epsilon)).sum(dim=axis)
     return counter
+
+
+def fit_circle(data, args):
+    min_group_indices = get_comb(torch.tensor(range(data.shape[0])), 3).tolist()
+    centers = torch.zeros(len(min_group_indices), 2)
+    radius = torch.zeros(len(min_group_indices))
+    for g_i, group_indices in enumerate(min_group_indices):
+        c, r = eval_utils.calc_circles(data[group_indices], args.cir_error_th)
+        if c is not None:
+            centers[g_i] = c
+            radius[g_i] = r
+    centers = centers.mean(dim=0)
+    radius = radius.mean()
+    return centers, radius
