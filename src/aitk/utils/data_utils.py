@@ -102,7 +102,6 @@ def to_line_tensor(objs, obj_indices, args, img_i):
     line_used_objs = torch.zeros(args.n_obj, dtype=torch.bool)
     line_used_objs[obj_indices] = True
 
-    print(f'(img {img_i}) line group: {obj_indices}')
 
     return line_tensor, line_used_objs
 
@@ -157,7 +156,7 @@ def to_circle_tensor(args, objs, obj_indices, img_i):
     cir_used_objs = torch.zeros(args.n_obj, dtype=torch.bool)
     cir_used_objs[obj_indices] = True
 
-    print(f'(img {img_i}) circle group: {obj_indices}')
+    # print(f'(img {img_i}) circle group: {obj_indices}')
 
     return cir_tensor, cir_used_objs
 

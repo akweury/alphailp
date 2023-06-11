@@ -407,8 +407,22 @@ def select_top_k_groups(args, object_groups, used_objs):
             if obj_num > used_objs_max:
                 objs_max_selection = group_index
                 used_objs_max = obj_num
-        obj_groups_top.append(object_groups[img_i, objs_max_selection.tolist()].tolist())
-        obj_groups_top_indices.append(used_objs[img_i, objs_max_selection.tolist()].tolist())
+        obj_groups_img_top = object_groups[img_i, objs_max_selection.tolist()[:args.group_e]]
+        obj_groups_img_top_indices = used_objs[img_i, objs_max_selection.tolist()[:args.group_e]]
+
+        obj_groups_top.append(obj_groups_img_top.tolist())
+        obj_groups_top_indices.append(obj_groups_img_top_indices.tolist())
+
+        # log
+        for obj_group in obj_groups_img_top:
+            if obj_group[config.group_tensor_index["circle"]] > 0.9:
+                group_name = "circle"
+            elif obj_group[config.group_tensor_index["line"]] > 0.9:
+                group_name = "line"
+            else:
+                group_name = "unknown"
+            print(f'(img {img_i}) {group_name}')
+
     return obj_groups_top, obj_groups_top_indices
 
 

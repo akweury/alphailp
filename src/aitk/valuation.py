@@ -369,8 +369,11 @@ class FCNNSlopeValuationFunction(nn.Module):
         Returns:
             A batch of probabilities.
         """
-        c_1 = self.to_left(z_1)
-        c_2 = self.to_right(z_1)
+        dir_pred = torch.zeros(dir.shape).to(dir.device)
+
+        z_without_line = z_1[:, config.group_tensor_index["line"]] == 0
+        c_1 = self.get_left(z_1)
+        c_2 = self.get_right(z_1)
 
         round_divide = dir.shape[1]
         area_angle = int(180 / round_divide)
@@ -386,9 +389,10 @@ class FCNNSlopeValuationFunction(nn.Module):
         # This is a threshold, but it can be decided automatically.
         # zone_id[rho >= 0.12] = zone_id[rho >= 0.12] + round_divide
 
-        dir_pred = torch.zeros(dir.shape).to(dir.device)
         for i in range(dir_pred.shape[0]):
             dir_pred[i, int(zone_id[i])] = 1
+
+        dir_pred[z_without_line] = 0
 
         return (dir * dir_pred).sum(dim=1)
 
@@ -398,11 +402,11 @@ class FCNNSlopeValuationFunction(nn.Module):
         phi = torch.rad2deg(phi)
         return (rho, phi)
 
-    def to_left(self, z):
+    def get_left(self, z):
         return torch.stack(
             (z[:, config.group_tensor_index["screen_left_x"]], z[:, config.group_tensor_index["screen_left_y"]]))
 
-    def to_right(self, z):
+    def get_right(self, z):
         return torch.stack(
             (z[:, config.group_tensor_index["screen_right_x"]], z[:, config.group_tensor_index["screen_right_y"]]))
 
