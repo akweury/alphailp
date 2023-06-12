@@ -414,14 +414,14 @@ def select_top_k_groups(args, object_groups, used_objs):
         obj_groups_top_indices.append(obj_groups_img_top_indices.tolist())
 
         # log
-        for obj_group in obj_groups_img_top:
+        for g_i, obj_group in enumerate(obj_groups_img_top):
             if obj_group[config.group_tensor_index["circle"]] > 0.9:
                 group_name = "circle"
             elif obj_group[config.group_tensor_index["line"]] > 0.9:
                 group_name = "line"
             else:
                 group_name = "unknown"
-            print(f'(img {img_i}) {group_name}')
+            print(f'(img {img_i}) {group_name} {((obj_groups_img_top_indices[g_i] == True).nonzero(as_tuple=True)[0])}')
 
     return obj_groups_top, obj_groups_top_indices
 
@@ -438,16 +438,5 @@ def merge_groups(args, line_groups, cir_groups, line_used_objs, cir_used_objs):
 
     # select top-k groups
     top_k_groups, top_k_group_indices = select_top_k_groups(args, object_groups, used_objs)
-    prob = object_groups[:, :, config.group_tensor_index["line"]] + object_groups[:, :,
-                                                                    config.group_tensor_index["circle"]]
-    prob, g_indices = torch.sort(prob, dim=-1, descending=True)
-
-    groups = []
-    group_indices = []
-    for img_i in range(line_groups.shape[0]):
-        img_groups = object_groups[img_i][g_indices[img_i, :args.group_e]]
-        img_group_indices = used_objs[img_i][g_indices[img_i, :args.group_e]]
-        groups.append(img_groups.tolist())
-        group_indices.append(img_group_indices.tolist())
 
     return top_k_groups, top_k_group_indices

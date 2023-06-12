@@ -810,8 +810,8 @@ def visual_group_predictions(args, data, input_image, colors, thickness, group_t
     indice_right_screen_x = group_tensor_index["screen_right_x"]
     indice_right_screen_y = group_tensor_index["screen_right_y"]
     # args.group_max_e = 3
-    screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.group_max_e, :]
-    screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.group_max_e, :]
+    screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.group_e, :]
+    screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.group_e, :]
     group_pred_image = draw_lines(group_pred_image, screen_left_points, screen_right_points,
                                   color=colors, thickness=thickness)
 

@@ -87,12 +87,20 @@ def to_line_tensor(objs, obj_indices, args, img_i):
 
     line_tensor[tensor_index["x_center_screen"]] = point_groups_screen[:, 0].mean()
     line_tensor[tensor_index["y_center_screen"]] = point_groups_screen[:, 1].mean()
-    sorted_x, sorted_x_indices = point_groups_screen[:, 0].sort(dim=0)
 
-    line_tensor[tensor_index["screen_left_x"]] = sorted_x[0]
-    line_tensor[tensor_index["screen_left_y"]] = point_groups_screen[:, 1][sorted_x_indices[0]]
-    line_tensor[tensor_index["screen_right_x"]] = sorted_x[-1]
-    line_tensor[tensor_index["screen_right_y"]] = point_groups_screen[:, 1][sorted_x_indices[-1]]
+    if line_tensor[tensor_index["x_length"]] > line_tensor[tensor_index["z_length"]]:
+
+        sorted_x, sorted_x_indices = point_groups_screen[:, 0].sort(dim=0)
+        line_tensor[tensor_index["screen_left_x"]] = sorted_x[0]
+        line_tensor[tensor_index["screen_left_y"]] = point_groups_screen[:, 1][sorted_x_indices[0]]
+        line_tensor[tensor_index["screen_right_x"]] = sorted_x[-1]
+        line_tensor[tensor_index["screen_right_y"]] = point_groups_screen[:, 1][sorted_x_indices[-1]]
+    else:
+        sorted_y, sorted_y_indices = point_groups_screen[:, 1].sort(dim=0)
+        line_tensor[tensor_index["screen_left_y"]] = sorted_y[0]
+        line_tensor[tensor_index["screen_left_x"]] = point_groups_screen[:, 0][sorted_y_indices[0]]
+        line_tensor[tensor_index["screen_right_y"]] = sorted_y[-1]
+        line_tensor[tensor_index["screen_right_x"]] = point_groups_screen[:, 0][sorted_y_indices[-1]]
 
     line_tensor[tensor_index["radius"]] = 0
     line_tensor[tensor_index["screen_radius"]] = 0
@@ -101,7 +109,6 @@ def to_line_tensor(objs, obj_indices, args, img_i):
     line_tensor = line_tensor.reshape(-1)
     line_used_objs = torch.zeros(args.n_obj, dtype=torch.bool)
     line_used_objs[obj_indices] = True
-
 
     return line_tensor, line_used_objs
 
