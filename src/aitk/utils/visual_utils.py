@@ -795,6 +795,8 @@ def save_image(final_image, image_output_path):
 
 
 def visual_group_predictions(args, data, input_image, colors, thickness, group_tensor_index):
+
+    # draw points on each objects
     data = torch.tensor(data)
     group_image = copy.deepcopy(input_image)
     indice_center_on_screen_x = group_tensor_index["x_center_screen"]
@@ -805,6 +807,7 @@ def visual_group_predictions(args, data, input_image, colors, thickness, group_t
     group_pred_image = draw_circles(group_image, screen_points, radius=screen_radius, color=colors,
                                     thickness=thickness)
 
+    # draw lines
     indice_left_screen_x = group_tensor_index["screen_left_x"]
     indice_left_screen_y = group_tensor_index["screen_left_y"]
     indice_right_screen_x = group_tensor_index["screen_right_x"]
