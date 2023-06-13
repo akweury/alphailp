@@ -8,8 +8,8 @@ neural_predicate = []
 neural_predicate_2 = {
     # 'shape_counter': 'shape_counter:2:group,number',
     # 'color_counter': 'color_counter:2:group,number',
-    'shape': 'shape:2:group,shape',
     # 'color': 'color:2:group,color',
+    'shape': 'shape:2:group,shape',
     'phi': 'phi:3:group,group,phi',
     'rho': 'rho:3:group,group,rho',
     'slope': 'slope:2:group,slope',
@@ -24,9 +24,9 @@ const_dict = {
     'color': 'enum',
     'shape': 'enum',
     'group': 'amount_e',
-    'phi': 'amount_4',
+    'phi': 'amount_10',
     'rho': 'amount_10',
-    'slope': 'amount_8',
+    'slope': 'amount_10',
     'number': 'amount_10',
 }
 

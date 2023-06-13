@@ -1,5 +1,6 @@
 import torch
 
+
 # def eval_clause_sign(p_scores):
 #     p_clauses_signs = []
 #
@@ -65,7 +66,9 @@ def eval_sn(positive_scores, negative_scores):
 def eval_score_similarity(score, appeared_scores, threshold):
     is_repeat = False
     for appeared_score in appeared_scores:
-        if torch.abs(score - appeared_score) / appeared_score < threshold:
+        if score > 0.9:
+            is_repeat = False
+        elif torch.abs(score - appeared_score) / appeared_score < threshold:
             is_repeat = True
 
     return is_repeat

@@ -82,7 +82,7 @@ class NSFReasoner(nn.Module):
         # convert to the valuation tensor
         V_0 = self.fc(x, self.atoms, self.bk)
         # perform T-step forward-chaining reasoning
-        V_T = self.cim(V_0)
+        V_T = self.cim(V_0, self.atoms)
         return V_T
 
     def clause_eval_v_0(self, x):

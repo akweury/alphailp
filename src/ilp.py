@@ -221,10 +221,10 @@ def ilp_eval(args, lang, clauses):
         scores_dict[data_type] = {}
         scores_dict[data_type]["clause"] = []
         scores_dict[data_type]["score"] = []
-        for i in range(len(args.test_group_pos)):
+        for img_i in range(len(args.test_group_pos)):
             # scores_sorted, scores_indices = torch.sort(img_scores[:, i, img_sign], descending=True)
 
-            score_best = img_scores[0, i, img_sign]
+            score_best = img_scores[0, img_i, img_sign]
             clause_best = clauses[0]
             scores_dict[data_type]["score"].append(score_best)
             scores_dict[data_type]["clause"].append(clause_best)

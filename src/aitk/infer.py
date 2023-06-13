@@ -277,7 +277,7 @@ class ClauseInferModule(nn.Module):
         assert m == self.C, "Invalid m and C: " + \
                             str(m) + ' and ' + str(self.C)
 
-    def forward(self, x):
+    def forward(self, x, atoms):
         """
         In the forward function we accept a Tensor of input data and we must return
         a Tensor of output data. We can use Modules defined in the constructor as
@@ -302,7 +302,7 @@ class ClauseInferModule(nn.Module):
             # A_B = r_bk.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
             if self.I_pi is not None:
 
-                r_pi = self.r_pi(R).unsqueeze(dim=0).expand(self.C, B, self.G)
+                r_pi = self.r_pi(R, atoms).unsqueeze(dim=0).expand(self.C, B, self.G)
                 R = softor([R, r_R, r_pi], dim=2, gamma=self.gamma)
 
                 # A_C = r_pi.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
@@ -345,7 +345,7 @@ class ClauseInferModule(nn.Module):
         R = softor(H, dim=0, gamma=self.gamma)
         return R
 
-    def r_pi(self, x):
+    def r_pi(self, x, atoms):
         x = x[0]
         B = x.size(0)  # batch size
         # apply each clause c_i and stack to a tensor C
@@ -363,4 +363,38 @@ class ClauseInferModule(nn.Module):
         # B * G
         res = softor(C, dim=0, gamma=self.gamma)
         b = res.detach().to("cpu").numpy().reshape(-1, 1)  # DEBUG
+
+        # equivalent or
+        inv_preds = []
+        left_indices = []
+        right_indices = []
+        same_pred = False
+        for a_i, atom in enumerate(atoms):
+            if "inv_pred" in atom.pred.name and atom.pred.name not in inv_preds:
+                same_pred = True
+                inv_preds.append(atom.pred.name)
+                left_indices.append(a_i)
+                # add right index of last inv if exists
+                if a_i > 0 and "inv_pred" in atoms[a_i - 1].pred.name:
+                    right_indices.append(a_i)
+
+            # last atom
+            if same_pred and a_i == len(atoms) - 1:
+                right_indices.append(a_i + 1)
+            # successive non inv atoms
+            if same_pred and (atom.pred.name != inv_preds[-1]):
+                if "inv_pred" in atom.pred.name and atom.pred.name not in inv_preds:
+                    inv_preds.append(atom.pred.name)
+                else:
+                    same_pred = False
+                right_indices.append(a_i)
+
+        for l_i, l_index in enumerate(left_indices):
+            common_res = softor(res[:, l_index:right_indices[l_i]], dim=1, gamma=self.gamma).unsqueeze(1)
+            common_res = common_res.repeat(1, right_indices[l_i] - l_index)
+            A = res[:, l_index:right_indices[l_i]]
+            if not A.shape == common_res.shape:
+                print("debug")
+            res[:, l_index:right_indices[l_i]] = common_res
+
         return res

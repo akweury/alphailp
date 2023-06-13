@@ -833,7 +833,7 @@ def visual_info(lang, image_shape, font_size):
     return info_image
 
 
-def visualization(args, lang, clauses, scores=None, colors=None, thickness=None, radius=None):
+def visualization(args, lang, scores=None, colors=None, thickness=None, radius=None):
     if colors is None:
         # Blue color in BGR
         colors = [
@@ -850,12 +850,12 @@ def visualization(args, lang, clauses, scores=None, colors=None, thickness=None,
         radius = 10
 
     for data_type in ["true", "false"]:
-        for i in range(len(args.test_group_pos)):
-            data_name = args.image_name_dict['test'][data_type][i]
+        for img_i in range(len(args.test_group_pos)):
+            data_name = args.image_name_dict['test'][data_type][img_i]
             if data_type == "true":
-                data = args.test_group_pos[i]
+                data = args.test_group_pos[img_i]
             else:
-                data = args.test_group_neg[i]
+                data = args.test_group_neg[img_i]
 
             # calculate scores
             # VM = ai_interface.get_vm(args, lang)
@@ -882,9 +882,10 @@ def visualization(args, lang, clauses, scores=None, colors=None, thickness=None,
             input_image = draw_text(input_image, "input")
             visual_images.append(input_image)
 
-            group_pred_image = draw_text(group_pred_image, f"group:{round(scores[data_type]['score'][i].tolist(), 4)}")
-            group_pred_image = draw_text(group_pred_image, f"{scores[data_type]['clause'][i]}", position="lower_left",
-                                         font_size=0.4)
+            group_pred_image = draw_text(group_pred_image,
+                                         f"group:{round(scores[data_type]['score'][img_i].tolist(), 4)}")
+            group_pred_image = draw_text(group_pred_image, f"{scores[data_type]['clause'][img_i]}",
+                                         position="lower_left", font_size=0.4)
             visual_images.append(group_pred_image)
 
             info_image = draw_text(info_image, f"Info:")

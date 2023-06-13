@@ -131,7 +131,7 @@ def train_and_eval(args, rtpt):
 
     if success:
         scores = se.run_ilp_eval(args, lang, clauses)
-        visual_utils.visualization(args, lang, clauses, scores)
+        visual_utils.visualization(args, lang, scores)
         # train nsfr
         NSFR = train_nsfr(args, rtpt, lang, clauses)
         return NSFR
