@@ -24,8 +24,8 @@ const_dict = {
     'color': 'enum',
     'shape': 'enum',
     'group': 'amount_e',
-    'phi': 'amount_10',
-    'rho': 'amount_10',
+    'phi': 'amount_20',
+    'rho': 'amount_20',
     'slope': 'amount_10',
     'number': 'amount_10',
 }
