@@ -1,8 +1,8 @@
 {
-  "dataset": "letter_V",
-  "n_obj": 7,
-  "group_e": 2,
-  "max_step": 3,
+  "dataset": "letter_W",
+  "n_obj": 13,
+  "group_e": 4,
+  "max_step": 5,
   "group_max_e": 10,
   "batch_size_train": 6,
   "dataset-type": "hide",
