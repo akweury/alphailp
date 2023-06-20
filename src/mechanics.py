@@ -13,6 +13,7 @@ from aitk.utils import nsfr_utils
 from aitk.utils import file_utils
 from aitk.utils import visual_utils
 from aitk.utils import args_utils
+
 import config
 from mechanic_utils import *
 import semantic as se

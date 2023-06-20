@@ -185,7 +185,7 @@ class FCNNShapeValuationFunction(nn.Module):
         Returns:
             A batch of probabilities.
         """
-        z_shape = z[:, 6:10]
+        z_shape = z[:, 6:11]
         # a_batch = a.repeat((z.size(0), 1))  # one-hot encoding for batch
         return (a * z_shape).sum(dim=1)
 

@@ -876,12 +876,15 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
             data_name = args.image_name_dict['test'][data_type][img_i]
             if data_type == "true":
                 data = args.test_group_pos[img_i]
-                data_indices = None
+                data_indices = args.obj_avail_test_pos[img_i]
+                obj_data = args.test_pos[img_i]
             else:
                 data = args.test_group_neg[img_i]
+                data_indices = args.obj_avail_test_neg[img_i]
+                obj_data = args.test_neg[img_i]
 
-            data_indices = None
-            obj_data = None
+
+
 
             # calculate scores
             # VM = ai_interface.get_vm(args, lang)

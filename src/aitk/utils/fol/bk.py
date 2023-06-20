@@ -9,7 +9,7 @@ neural_predicate_2 = {
     # 'shape_counter': 'shape_counter:2:group,number',
     # 'color_counter': 'color_counter:2:group,number',
     # 'color': 'color:2:group,color',
-    # 'shape': 'shape:2:group,shape',
+    'shape': 'shape:2:group,shape',
     'phi': 'phi:3:group,group,phi',
     'rho': 'rho:3:group,group,rho',
     'slope': 'slope:2:group,slope',
@@ -33,13 +33,13 @@ const_dict = {
 attr_names = ['color', 'shape', 'rho', 'phi', 'group_shape', "slope", 'number']
 
 color = ['pink', 'green', 'blue']
-shape = ['sphere', 'cube', 'line', 'circle']
+shape = ['sphere', 'cube', 'line', 'circle', "conic"]
 
 pred_obj_mapping = {
     'in': None,
     'shape_counter': ["sphere", "cube"],
     'color_counter': ["red", "green", "blue"],
-    'shape': ['sphere', 'cube', 'line', 'circle'],
+    'shape': ['sphere', 'cube', 'line', 'circle', 'conic'],
     'color:': ['red', 'green', 'blue'],
     'phi': ['x', 'y', 'z'],
     'rho': ['x', 'y', 'z'],
