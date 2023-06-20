@@ -759,9 +759,16 @@ def hconcat_resize(img_list, interpolation=cv.INTER_CUBIC):
     return cv.hconcat(im_list_resize)
 
 
-def draw_circles(img, data, radius, color, thickness):
-    for point_i, point in enumerate(data):
-        img = cv.circle(img, point.to(torch.int16).tolist(), radius[point_i], color[point_i], thickness)
+def draw_conic(img, center_sc, obj_pos_sc, major_axis, minor_axis, color, thickness):
+    for point_i, center in enumerate(center_sc):
+        if major_axis > 0 and minor_axis > 0:
+            img = cv.ellipse(img, center.to(torch.int16).tolist(), (major_axis, minor_axis), 0, 0, 360,
+                             color=color[point_i], thickness=thickness)
+
+        # draw a small circle on each object
+        # if obj_pos_sc is not None:
+        #     for i in range(len(obj_pos_sc[point_i])):
+        #         img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 10, color[point_i], thickness)
 
     return img
 
@@ -794,19 +801,31 @@ def save_image(final_image, image_output_path):
     cv.imwrite(image_output_path, final_image)
 
 
-def visual_group_predictions(args, data, input_image, colors, thickness, group_tensor_index):
-
-    # draw points on each objects
+def visual_group_predictions(args, data, data_indices, obj_data, input_image, colors, thickness,
+                             group_tensor_index, obj_tensor_index):
     data = torch.tensor(data)
     group_image = copy.deepcopy(input_image)
+    data_indices = torch.tensor(data_indices)
+
+    # draw circles
     indice_center_on_screen_x = group_tensor_index["x_center_screen"]
     indice_center_on_screen_y = group_tensor_index["y_center_screen"]
-    indice_radius_on_screen = group_tensor_index["screen_radius"]
-    screen_points = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.group_e, :]
-    screen_radius = data[:, indice_radius_on_screen][:args.group_e].to(torch.int16).tolist()
-    group_pred_image = draw_circles(group_image, screen_points, radius=screen_radius, color=colors,
-                                    thickness=thickness)
+    indice_axis_x_on_screen = group_tensor_index["screen_axis_x"]
+    indice_axis_z_on_screen = group_tensor_index["screen_axis_z"]
+    center_sc = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.group_e, :]
+    axis_x_sc = data[:, indice_axis_x_on_screen][:args.group_e].to(torch.int16).tolist()[0]
+    axis_z_sc = data[:, indice_axis_z_on_screen][:args.group_e].to(torch.int16).tolist()[0]
+    # draw points on each objects
+    obj_pos_sc = []
+    for group_i in range(data.shape[0]):
+        group_objs = obj_data[data_indices[group_i]]
+        index_obj_screen_x = obj_tensor_index["screen_x"]
+        index_obj_screen_y = obj_tensor_index["screen_y"]
+        obj_screen_points = group_objs[:, [index_obj_screen_x, index_obj_screen_y]][:args.group_e, :]
+        obj_pos_sc.append(obj_screen_points)
 
+    group_pred_image = draw_conic(group_image, center_sc, obj_pos_sc, major_axis=axis_x_sc,
+                                  minor_axis=axis_z_sc, color=colors, thickness=thickness)
     # draw lines
     indice_left_screen_x = group_tensor_index["screen_left_x"]
     indice_left_screen_y = group_tensor_index["screen_left_y"]
@@ -857,8 +876,12 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
             data_name = args.image_name_dict['test'][data_type][img_i]
             if data_type == "true":
                 data = args.test_group_pos[img_i]
+                data_indices = None
             else:
                 data = args.test_group_neg[img_i]
+
+            data_indices = None
+            obj_data = None
 
             # calculate scores
             # VM = ai_interface.get_vm(args, lang)
@@ -875,8 +898,9 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
             input_image = get_cv_image(image_file)
 
             # group prediction
-            group_pred_image = visual_group_predictions(args, data, input_image, colors, thickness,
-                                                        config.group_tensor_index)
+            group_pred_image = visual_group_predictions(args, data, data_indices, obj_data, input_image, colors,
+                                                        thickness,
+                                                        config.group_tensor_index, config.obj_tensor_index)
 
             # information image
             info_image = visual_info(lang, input_image.shape, font_size=0.3)
@@ -902,39 +926,61 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
             save_image(final_image, final_image_filename)
 
 
-def visual_lines(args, line_tensors, line_indices, data_type):
-    colors = [
-        (255, 0, 0),  # Blue
-        (255, 255, 0),  # Cyan
-        (0, 255, 0),  # Green
-        (0, 0, 255),  # Red
-        (0, 255, 255),  # Yellow
-    ]
-    thickness = 3
+# def visual_lines(args, line_tensors, line_indices, data_type):
+#     colors = [
+#         (255, 0, 0),  # Blue
+#         (255, 255, 0),  # Cyan
+#         (0, 255, 0),  # Green
+#         (0, 0, 255),  # Red
+#         (0, 255, 255),  # Yellow
+#     ]
+#     thickness = 3
+#
+#     if "pos" in data_type:
+#         dtype = "true"
+#     else:
+#         dtype = "false"
+#
+#     for i in range(len(line_tensors)):
+#         data_name = args.image_name_dict['test'][dtype][i]
+#         data = line_tensors[i]
+#         # input image
+#         file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
+#         image_file = file_prefix + ".image.png"
+#         input_image = get_cv_image(image_file)
+#
+#         # group prediction
+#         group_pred_image = visual_group_predictions(args, data, input_image, colors, thickness,
+#                                                     config.group_tensor_index)
+#         final_image_filename = str(
+#             args.image_output_path / f"gp_{data_type}_{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
+#
+#         save_image(group_pred_image, final_image_filename)
 
-    if "pos" in data_type:
-        dtype = "true"
-    else:
-        dtype = "false"
 
-    for i in range(len(line_tensors)):
-        data_name = args.image_name_dict['test'][dtype][i]
-        data = line_tensors[i]
-        # input image
-        file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
-        image_file = file_prefix + ".image.png"
-        input_image = get_cv_image(image_file)
+def visual_conic(x, point_groups, labels, show=False):
+    # Plot the noisy data
+    for g_i, point_group in enumerate(point_groups):
+        X1 = point_group[:, :1]
+        Y1 = point_group[:, 2:3]
+        plt.scatter(X1, Y1, label=labels[g_i])
+    # plt.scatter(X, Y, label='Rest Points')
 
-        # group prediction
-        group_pred_image = visual_group_predictions(args, data, input_image, colors, thickness,
-                                                    config.group_tensor_index)
-        final_image_filename = str(
-            args.image_output_path / f"gp_{data_type}_{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
+    # Plot the least squares ellipse
+    x_coord = np.linspace(-5, 5, 300)
+    y_coord = np.linspace(-5, 5, 300)
+    X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
+    Z_coord = x[0] * X_coord ** 2 + x[1] * X_coord * Y_coord + x[2] * Y_coord ** 2 + x[3] * X_coord + x[4] * Y_coord
+    plt.contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
 
-        save_image(group_pred_image, final_image_filename)
+    plt.legend()
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    if show:
+        plt.show()
 
 
-def visual_groups(args, group_tensors, data_type):
+def visual_groups(args, group_tensors, percept_dict_single, group_obj_index_tensors, data_type):
     colors = [
         (255, 0, 0),  # Blue
         (255, 255, 0),  # Cyan
@@ -952,14 +998,17 @@ def visual_groups(args, group_tensors, data_type):
     for i in range(len(group_tensors)):
         data_name = args.image_name_dict['test'][dtype][i]
         data = group_tensors[i]
+        data_indices = group_obj_index_tensors[i]
+        obj_data = percept_dict_single[i]
         # input image
         file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
         image_file = file_prefix + ".image.png"
         input_image = get_cv_image(image_file)
 
         # group prediction
-        group_pred_image = visual_group_predictions(args, data, input_image, colors, thickness,
-                                                    config.group_tensor_index)
+
+        group_pred_image = visual_group_predictions(args, data, data_indices, obj_data, input_image, colors, thickness,
+                                                    config.group_tensor_index, config.obj_tensor_index)
         final_image_filename = str(
             args.image_output_path / f"gp_{data_type}_{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
 

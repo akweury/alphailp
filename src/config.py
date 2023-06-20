@@ -32,14 +32,9 @@ group_index = {
 group_positions = ["x", "y", "z"]
 group_color = ["red", "green", "blue"]
 group_shapes = ["sphere", "cube"]
-group_group_shapes = ["line", "circle"]
-group_tenor_positions = [0, 1]
-group_tensor_shapes = [5, 6]
+group_group_shapes = ["line", "circle", "conic"]
+group_screen_positions = ["x_center_screen", "y_center_screen"]
 
-indices_position = [0, 1, 2]
-indices_color = [3, 4, 5]
-indices_shape = [6, 7]
-indices_screen_position = [9, 10]
 # 0:2 center_x, center_z
 # 2 slope
 # 3 x_length
@@ -58,21 +53,29 @@ group_tensor_index = {
     'cube': 7,
     'line': 8,
     'circle': 9,
-    'x_length': 10,
-    'y_length': 11,
-    'z_length': 12,
-    "x_center_screen": 13,
-    "y_center_screen": 14,
-    "screen_left_x": 15,
-    "screen_left_y": 16,
-    "screen_right_x": 17,
-    "screen_right_y": 18,
-    "radius": 19,
-    "screen_radius": 20,
-    "color_counter": 21,
-    "shape_counter": 22,
-    "size": 23,
+    'conic': 10,
+    'x_length': 11,
+    'y_length': 12,
+    'z_length': 13,
+    "x_center_screen": 14,
+    "y_center_screen": 15,
+    "screen_left_x": 16,
+    "screen_left_y": 17,
+    "screen_right_x": 18,
+    "screen_right_y": 19,
+    "axis_x": 20,
+    "axis_z": 21,
+    "screen_axis_x": 22,
+    "screen_axis_z": 23,
+    "color_counter": 24,
+    "shape_counter": 25,
+    "size": 26,
 }
+
+obj_positions = ["x", "y", "z"]
+obj_color = ["red", "green", "blue"]
+obj_shapes = ["sphere", "cube"]
+obj_screen_positions = ["screen_x", "screen_y"]
 
 obj_tensor_index = {
     'x': 0,

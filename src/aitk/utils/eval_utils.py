@@ -1,8 +1,12 @@
 import copy
 import torch
+import numpy as np
+import matplotlib
 
 import config
-from aitk.utils.data_utils import op_count_nonzeros
+
+from aitk.utils import data_utils
+from sklearn.linear_model import LinearRegression
 
 ness_index = config.score_type_index["ness"]
 suff_index = config.score_type_index["suff"]
@@ -64,6 +68,45 @@ def get_circle_error(c, r, points):
     return (dists - r) ** 2
 
 
+def get_conic_error(poly_coef, center, points):
+    # intersections
+    k = (points[:, 2] - center[1]) / (points[:, 0] - center[0])
+    b = points[:, 2] - k * points[:, 0]
+
+    # solve intersections
+    inter_coef_0 = poly_coef[0] + poly_coef[1] * k + poly_coef[2] * k ** 2
+    inter_coef_1 = poly_coef[1] * b + 2 * k * b * poly_coef[2] + poly_coef[3] + poly_coef[4] * k
+    inter_coef_2 = b ** 2 * poly_coef[2] + poly_coef[4] * b + (-1)
+
+    x_intersects = []
+    y_intersects = []
+    for x_i, _x in enumerate(points[:, 0]):
+        p = np.poly1d([inter_coef_0[x_i], inter_coef_1[x_i], inter_coef_2[x_i]])
+        x_roots = p.r
+        if _x > center[0]:
+            x_intersects.append(x_roots.max())
+        else:
+            x_intersects.append(x_roots.min())
+
+        if np.abs(x_intersects[x_i].imag) > 0.1:
+            x_intersects[x_i] = 100
+        else:
+            x_intersects[x_i] = x_intersects[x_i].real
+
+        y_intersects.append(x_intersects[x_i] * k[x_i] + b[x_i])
+
+    intersects = torch.cat((torch.tensor(x_intersects).unsqueeze(1), torch.tensor(y_intersects).unsqueeze(1)), 1)
+    dist = calc_dist(points[:, [0, 2]], intersects)
+
+    # dist_real = []
+    # for i in range(dist.shape[0]):
+    #     if torch.abs(dist[i].imag) < 0.1:
+    #         dist_real.append(dist[i].real)
+    #     else:
+    #         dist_real.append(100)
+    return dist
+
+
 def get_group_distribution(points, center):
     def cart2pol(x, y):
         rho = torch.sqrt(x ** 2 + y ** 2)
@@ -101,15 +144,65 @@ def metric_mse(data, axis):
 
 
 def metric_count_mse(data, axis, epsilon=1e-10):
-    counter = op_count_nonzeros(data, axis, epsilon)
+    counter = data_utils.op_count_nonzeros(data, axis, epsilon)
     error = ((counter - counter.mean()) ** 2).mean()
     return error
+
+
+def fit_circle(data, args):
+    min_group_indices = data_utils.get_comb(torch.tensor(range(data.shape[0])), 3).tolist()
+    centers = torch.zeros(len(min_group_indices), 2)
+    radius = torch.zeros(len(min_group_indices))
+    for g_i, group_indices in enumerate(min_group_indices):
+        c, r = calc_circles(data[group_indices], args.cir_error_th)
+        if c is not None:
+            centers[g_i] = c
+            radius[g_i] = r
+    centers = centers.mean(dim=0)
+    radius = radius.mean()
+
+    cir = {"center": centers, "radius": radius}
+    return cir
+
+
+def fit_conic(point_groups):
+    matplotlib.use('TkAgg')
+
+    # https://stackoverflow.com/a/47881806
+    X = point_groups[:, 0:1]
+    Y = point_groups[:, 1:2]
+
+    # Formulate and solve the least squares problem ||Px - b ||^2
+    P = np.hstack([X ** 2, X * Y, Y ** 2, X, Y])
+    b = np.ones_like(X)
+    x = np.linalg.lstsq(P, b)[0].squeeze().astype(np.float64)
+
+    A, B, C, D, E, F = x[0], x[1], x[2], x[3], x[4], -1
+    # conic center:   https://en.wikipedia.org/wiki/Ellipse
+    c_x = (2 * x[2] * x[3] - x[1] * x[4]) / (x[1] ** 2 - 4 * x[0] * x[2])
+    c_z = (2 * x[0] * x[4] - x[1] * x[3]) / (x[1] ** 2 - 4 * x[0] * x[2])
+    center = torch.tensor([c_x, c_z])
+    a = -np.sqrt(2 * (A * E ** 2 + C * D ** 2 - B * D * E + (B ** 2 - 4 * A * C) * F) * (
+            (A + C) + np.sqrt((A - C) ** 2 + B ** 2))) / (B ** 2 - 4 * A * C)
+    b = -np.sqrt(2 * (A * E ** 2 + C * D ** 2 - B * D * E + (B ** 2 - 4 * A * C) * F) * (
+            (A + C) - np.sqrt((A - C) ** 2 + B ** 2))) / (B ** 2 - 4 * A * C)
+    axis = torch.tensor([a * 2, b * 2])
+
+    # if a <= 0 or b <= 0:
+    #     print("debug ellipse axis ")
+
+    # Print the equation of the ellipse in standard form
+    # print(f'Ellipse: {x[0]:.3}x^2 + {x[1]:.3}xy+{x[2]:.3}y^2+{x[3]:.3}x+{x[4]:.3}y = 1, center:{center}.')
+
+    conics = {"coef": x, "center": center, "axis": axis}
+
+    return conics
 
 
 def calc_circles(point_groups, collinear_th):
     # https://math.stackexchange.com/a/3503338
     complex_point_real = point_groups[:, 0]
-    complex_point_imag = point_groups[:, 2]
+    complex_point_imag = point_groups[:, 1]
 
     complex_points = torch.complex(complex_point_real, complex_point_imag)
 
@@ -160,6 +253,11 @@ def calc_colinearity(obj_tensors, indices_position):
     collinearities -= torch.sqrt(
         torch.sum((obj_tensors[:, 0, indices_pos] - obj_tensors[:, -1, indices_pos]) ** 2, dim=-1))
     return collinearities
+
+
+def calc_dist(points, center):
+    distance = torch.sqrt(torch.sum((points - center) ** 2, dim=-1))
+    return distance
 
 
 def calc_avg_dist(obj_tensors, indices_position):
@@ -224,3 +322,33 @@ def eval_data(data):
     # second metric
     type_diff = metric_count_mse(data, axis=1)
     return value_diff, type_diff
+
+
+def fit_line(point_group):
+    # https://stackoverflow.com/a/47881806
+    X = point_group[:, 0:1]
+    Z = point_group[:, 1:2]
+
+    line_model = LinearRegression().fit(X, Z)
+    slope = line_model.coef_
+    intercept = line_model.intercept_
+
+    c_x = X.mean()
+    c_z = Z.mean()
+    center = torch.tensor([c_x, c_z])
+
+    end_A, end_B = None, None
+    if X.max() - X.min() > Z.max() - Z.min():
+        sorted_x, sorted_x_indices = X.sort(dim=0)
+        end_A = torch.tensor([sorted_x[0], Z[sorted_x_indices[0]]])
+        end_B = torch.tensor([sorted_x[-1], Z[sorted_x_indices[-1]]])
+    else:
+        sorted_z, sorted_z_indices = Z.sort(dim=0)
+        end_A = torch.tensor([X[sorted_z_indices[0]], sorted_z[0]])
+        end_B = torch.tensor([X[sorted_z_indices[-1]], sorted_z[-1]])
+
+    # Print the equation of the line
+    # print(f'Line: y = {slope[0][0]} * x + {intercept[0]}.')
+    line = {"center": center, "slope": slope, "end_A": end_A, "end_B": end_B}
+
+    return line

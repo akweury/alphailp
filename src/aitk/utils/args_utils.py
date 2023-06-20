@@ -119,10 +119,14 @@ def get_args(data_path):
                         help="The threshold for MAE of line group fitting.")
     parser.add_argument("--cir_error_th", type=float, default=0.05,
                         help="The threshold for MAE of circle group fitting.")
+    parser.add_argument("--poly_error_th", type=float, default=0.1,
+                        help="The threshold for error of poly group fitting.")
     parser.add_argument("--line_group_min_sz", type=int, default=3,
-                        help="The minimum objects allowed to form a line.")
+                        help="The minimum objects allowed to fit a line.")
     parser.add_argument("--cir_group_min_sz", type=int, default=5,
-                        help="The minimum objects allowed to form a circle.")
+                        help="The minimum objects allowed to fit a circle.")
+    parser.add_argument("--conic_group_min_sz", type=int, default=5,
+                        help="The minimum objects allowed to fit a conic section.")
     parser.add_argument("--group_conf_th", type=float, default=0.98,
                         help="The threshold of group confidence.")
     parser.add_argument("--maximum_obj_num", type=int, default=5,
