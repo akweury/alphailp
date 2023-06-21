@@ -766,9 +766,9 @@ def draw_conic(img, center_sc, obj_pos_sc, major_axis, minor_axis, color, thickn
                              color=color[point_i], thickness=thickness)
 
         # draw a small circle on each object
-        # if obj_pos_sc is not None:
-        #     for i in range(len(obj_pos_sc[point_i])):
-        #         img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 10, color[point_i], thickness)
+        if obj_pos_sc is not None:
+            for i in range(len(obj_pos_sc[point_i])):
+                img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 10, color[point_i], thickness)
 
     return img
 
