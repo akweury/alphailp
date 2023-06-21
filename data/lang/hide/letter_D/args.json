@@ -27,6 +27,7 @@
   "error_th": 0.015,
   "cir_error_th": 0.001,
   "cir_group_min_sz": 4,
+  "conic_group_min_sz": 6,
   "with_bk": false,
   "plot_four_zone": false,
   "with_explain": false,

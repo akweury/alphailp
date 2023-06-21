@@ -883,9 +883,6 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
                 data_indices = args.obj_avail_test_neg[img_i]
                 obj_data = args.test_neg[img_i]
 
-
-
-
             # calculate scores
             # VM = ai_interface.get_vm(args, lang)
             # FC = ai_interface.get_fc(args, lang, VM)
@@ -960,27 +957,107 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
 #
 #         save_image(group_pred_image, final_image_filename)
 
+def visual_group(group_type, vis_file, g_data, g_objs, rest_objs, unfit_error):
+    # rest_indices = list(set(list(range(len(g_indices)))) - set([i for i, e in enumerate(g_indices) if e == True]))
+    # rest_objs = g_objs[rest_indices]
+    if group_type == "conic":
+        visual_conic(vis_file, g_data["coef"], g_data["coef"], [g_objs, rest_objs], [g_objs],
+                     errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
+    elif group_type == "line":
+        visual_line(vis_file, g_data["slope"], g_data["end_A"], g_data["end_B"], g_data["intercept"],
+                    [g_objs, rest_objs], [g_objs],
+                    errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
+    elif group_type == "cir":
+        visual_cir(vis_file, g_data["coef"], g_data["coef"], [g_objs, rest_objs], [g_objs],
+                   errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
+    else:
+        raise ValueError
 
-def visual_conic(x, point_groups, labels, show=False):
+
+def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_groups_2, errors, labels, labels_2,
+                show=False, save=True):
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 7))
     # Plot the noisy data
-    for g_i, point_group in enumerate(point_groups):
+    for p_i, point_group in enumerate(point_groups):
         X1 = point_group[:, :1]
         Y1 = point_group[:, 2:3]
-        plt.scatter(X1, Y1, label=labels[g_i])
-    # plt.scatter(X, Y, label='Rest Points')
+        axes[0].scatter(X1, Y1, label=labels[p_i])
+    for i, txt in enumerate(errors):
+        axes[0].annotate(f"Point_{i}: "
+                         f"({round(point_groups[1][i, 0].tolist(), 3)},{round(point_groups[1][i, 2].tolist(), 3)})  "
+                         f"Error: {round(txt.tolist(), 3)}", (-0.5, 1.4 - 0.1 * i))
+
+    # Plot the least squares line
+    axes[0].plot([end_A[0], end_B[0]], [end_A[1], end_B[1]], color="red", linewidth=2)
+    axes[0].set_xlim([-0.5, 1.5])
+    axes[0].set_ylim([-0.5, 1.5])
+
+    # Plot the noisy data
+    for p_i, point_group in enumerate(point_groups_2):
+        X1 = point_group[:, :1]
+        Y1 = point_group[:, 2:3]
+        axes[1].scatter(X1, Y1, label=labels_2[p_i])
 
     # Plot the least squares ellipse
-    x_coord = np.linspace(-5, 5, 300)
-    y_coord = np.linspace(-5, 5, 300)
-    X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
-    Z_coord = x[0] * X_coord ** 2 + x[1] * X_coord * Y_coord + x[2] * Y_coord ** 2 + x[3] * X_coord + x[4] * Y_coord
-    plt.contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
+    x_coord = np.linspace(end_A[0], end_B[0], 300)
+    y_coord = x_coord * slope.tolist() + intercept
+    axes[1].plot([end_A[0], end_B[0]], [end_A[1], end_B[1]], color="red", linewidth=2)
+    axes[1].set_xlim([-0.5, 1.5])
+    axes[1].set_ylim([-0.5, 1.5])
 
     plt.legend()
     plt.xlabel('X')
     plt.ylabel('Y')
     if show:
         plt.show()
+    if save:
+        plt.savefig(f"{vis_file}")
+    plt.close()
+
+
+def visual_conic(vis_file, x, x_2, point_groups, point_groups_2, errors, labels, labels_2, show=False,
+                 save=True):
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 7))
+    # Plot the noisy data
+    for p_i, point_group in enumerate(point_groups):
+        X1 = point_group[:, :1]
+        Y1 = point_group[:, 2:3]
+        axes[0].scatter(X1, Y1, label=labels[p_i])
+    # plt.scatter(X, Y, label='Rest Points')
+    for i, txt in enumerate(errors):
+        axes[0].annotate(f"Point_{i}: "
+                         f"({round(point_groups[1][i, 0].tolist(), 3)},{round(point_groups[1][i, 2].tolist(), 3)})  "
+                         f"Error: {round(txt.tolist(), 3)}", (-0.5, 1.4 - 0.1 * i))
+
+    # Plot the least squares ellipse
+    x_coord = np.linspace(-0.5, 1.5, 300)
+    y_coord = np.linspace(-0.5, 1.5, 300)
+    X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
+    Z_coord = x[0] * X_coord ** 2 + x[1] * X_coord * Y_coord + x[2] * Y_coord ** 2 + x[3] * X_coord + x[4] * Y_coord
+    axes[0].contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
+
+    # Plot the noisy data
+    for p_i, point_group in enumerate(point_groups_2):
+        X1 = point_group[:, :1]
+        Y1 = point_group[:, 2:3]
+        axes[1].scatter(X1, Y1, label=labels_2[p_i])
+
+    # Plot the least squares ellipse
+    x_coord = np.linspace(-0.5, 1.5, 300)
+    y_coord = np.linspace(-0.5, 1.5, 300)
+    X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
+    Z_coord = x_2[0] * X_coord ** 2 + x_2[1] * X_coord * Y_coord + x_2[2] * Y_coord ** 2 + x_2[3] * X_coord + x_2[
+        4] * Y_coord
+    axes[1].contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
+
+    plt.legend()
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    if show:
+        plt.show()
+    if save:
+        plt.savefig(f"{vis_file}")
+    plt.close()
 
 
 def visual_groups(args, group_tensors, percept_dict_single, group_obj_index_tensors, data_type):

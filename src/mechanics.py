@@ -51,6 +51,18 @@ def init():
         os.mkdir(img_output_path)
     args.image_output_path = img_output_path
 
+    analysis_path = config.buffer_path / args.dataset_type / args.dataset / "analysis"
+    if not os.path.exists(analysis_path):
+        os.mkdir(analysis_path)
+        os.mkdir(analysis_path / "train_pos")
+        os.mkdir(analysis_path / "train_neg")
+        os.mkdir(analysis_path / "test_pos")
+        os.mkdir(analysis_path / "test_neg")
+        os.mkdir(analysis_path / "val_pos")
+        os.mkdir(analysis_path / "val_neg")
+
+    args.analysis_path = analysis_path
+
     if args.no_cuda:
         args.device = torch.device('cpu')
     elif len(str(args.device).split(',')) > 1:

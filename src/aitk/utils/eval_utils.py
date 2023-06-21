@@ -349,6 +349,7 @@ def fit_line(point_group):
 
     # Print the equation of the line
     # print(f'Line: y = {slope[0][0]} * x + {intercept[0]}.')
-    line = {"center": center, "slope": slope, "end_A": end_A, "end_B": end_B}
+    # slope = (end_B[1] - end_A[1] - intercept) / ((end_B[0] - end_A[0]) + 1e-20)
+    line = {"center": center, "slope": slope, "end_A": end_A, "end_B": end_B, "intercept":intercept}
 
     return line
