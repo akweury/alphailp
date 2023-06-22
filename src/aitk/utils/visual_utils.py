@@ -773,6 +773,16 @@ def draw_conic(img, center_sc, obj_pos_sc, major_axis, minor_axis, color, thickn
     return img
 
 
+def draw_obj_cir(img, center_sc, obj_pos_sc, color, thickness):
+    for point_i, center in enumerate(center_sc):
+        # draw a small circle on each object
+        if obj_pos_sc is not None:
+            for i in range(len(obj_pos_sc[point_i])):
+                img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 10, color[point_i], thickness)
+
+    return img
+
+
 def draw_lines(image, left_points, right_points, color=None, thickness=None):
     left_points = left_points.to(torch.int16).tolist()
     right_points = right_points.to(torch.int16).tolist()
@@ -812,19 +822,21 @@ def visual_group_predictions(args, data, data_indices, obj_data, input_image, co
     indice_center_on_screen_y = group_tensor_index["y_center_screen"]
     indice_axis_x_on_screen = group_tensor_index["screen_axis_x"]
     indice_axis_z_on_screen = group_tensor_index["screen_axis_z"]
-    center_sc = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.group_e, :]
+    g_center_sc = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.group_e, :]
     axis_x_sc = data[:, indice_axis_x_on_screen][:args.group_e].to(torch.int16).tolist()[0]
     axis_z_sc = data[:, indice_axis_z_on_screen][:args.group_e].to(torch.int16).tolist()[0]
+
     # draw points on each objects
+
     obj_pos_sc = []
     for group_i in range(data.shape[0]):
         group_objs = obj_data[data_indices[group_i]]
         index_obj_screen_x = obj_tensor_index["screen_x"]
         index_obj_screen_y = obj_tensor_index["screen_y"]
-        obj_screen_points = group_objs[:, [index_obj_screen_x, index_obj_screen_y]][:args.group_e, :]
+        obj_screen_points = group_objs[:, [index_obj_screen_x, index_obj_screen_y]]
         obj_pos_sc.append(obj_screen_points)
-
-    group_pred_image = draw_conic(group_image, center_sc, obj_pos_sc, major_axis=axis_x_sc,
+    group_pred_image = draw_obj_cir(group_image, g_center_sc, obj_pos_sc, color=colors, thickness=thickness)
+    group_pred_image = draw_conic(group_pred_image, g_center_sc, obj_pos_sc, major_axis=axis_x_sc,
                                   minor_axis=axis_z_sc, color=colors, thickness=thickness)
     # draw lines
     indice_left_screen_x = group_tensor_index["screen_left_x"]
@@ -961,31 +973,43 @@ def visual_group(group_type, vis_file, g_data, g_objs, rest_objs, unfit_error):
     # rest_indices = list(set(list(range(len(g_indices)))) - set([i for i, e in enumerate(g_indices) if e == True]))
     # rest_objs = g_objs[rest_indices]
     if group_type == "conic":
-        visual_conic(vis_file, g_data["coef"], g_data["coef"], [g_objs, rest_objs], [g_objs],
+        visual_conic(vis_file, g_data["coef"], g_data["coef"], g_data["center"], [g_objs, rest_objs], [g_objs],
                      errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
     elif group_type == "line":
         visual_line(vis_file, g_data["slope"], g_data["end_A"], g_data["end_B"], g_data["intercept"],
                     [g_objs, rest_objs], [g_objs],
                     errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
     elif group_type == "cir":
-        visual_cir(vis_file, g_data["coef"], g_data["coef"], [g_objs, rest_objs], [g_objs],
+        visual_cir(vis_file, g_data["radius"], g_data["center"], [g_objs, rest_objs], [g_objs],
                    errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
     else:
         raise ValueError
 
 
-def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_groups_2, errors, labels, labels_2,
-                show=False, save=True):
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 7))
+def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_groups_2, errors, labels,
+                labels_2, show=False, save=True):
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+    line_height = config.txt_line_height
+    font_size = config.txt_font_size
     # Plot the noisy data
     for p_i, point_group in enumerate(point_groups):
         X1 = point_group[:, :1]
         Y1 = point_group[:, 2:3]
         axes[0].scatter(X1, Y1, label=labels[p_i])
+
+    axes[0].annotate(f"Line Group", (-0.4, 1.4))
+
+    g_errors = eval_utils.get_line_error(slope, intercept, point_groups[0])
+    for i, txt in enumerate(g_errors):
+        axes[0].annotate(f"In {i}: "
+                         f"({round(point_groups[0][i, 0].tolist(), 2)},{round(point_groups[0][i, 2].tolist(), 2)})  "
+                         f"e: {round(txt.tolist(), 4)}", (-0.4, 1.3 - line_height * i), fontsize=font_size)
+
     for i, txt in enumerate(errors):
-        axes[0].annotate(f"Point_{i}: "
-                         f"({round(point_groups[1][i, 0].tolist(), 3)},{round(point_groups[1][i, 2].tolist(), 3)})  "
-                         f"Error: {round(txt.tolist(), 3)}", (-0.5, 1.4 - 0.1 * i))
+        axes[0].annotate(f"Out {i}: "
+                         f"({round(point_groups[1][i, 0].tolist(), 2)},{round(point_groups[1][i, 2].tolist(), 2)})  "
+                         f"e: {round(txt.tolist(), 2)}",
+                         (-0.4, 1.3 - (len(g_errors) + 1) * line_height - line_height * i), fontsize=font_size)
 
     # Plot the least squares line
     axes[0].plot([end_A[0], end_B[0]], [end_A[1], end_B[1]], color="red", linewidth=2)
@@ -998,9 +1022,7 @@ def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_gr
         Y1 = point_group[:, 2:3]
         axes[1].scatter(X1, Y1, label=labels_2[p_i])
 
-    # Plot the least squares ellipse
-    x_coord = np.linspace(end_A[0], end_B[0], 300)
-    y_coord = x_coord * slope.tolist() + intercept
+    # Plot the least squares line
     axes[1].plot([end_A[0], end_B[0]], [end_A[1], end_B[1]], color="red", linewidth=2)
     axes[1].set_xlim([-0.5, 1.5])
     axes[1].set_ylim([-0.5, 1.5])
@@ -1015,19 +1037,84 @@ def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_gr
     plt.close()
 
 
-def visual_conic(vis_file, x, x_2, point_groups, point_groups_2, errors, labels, labels_2, show=False,
-                 save=True):
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 7))
+def visual_cir(vis_file, radius, center, point_groups, point_groups_2, errors, labels, labels_2, show=False,
+               save=True):
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+    line_height = config.txt_line_height
+    font_size = config.txt_font_size
     # Plot the noisy data
     for p_i, point_group in enumerate(point_groups):
         X1 = point_group[:, :1]
         Y1 = point_group[:, 2:3]
         axes[0].scatter(X1, Y1, label=labels[p_i])
     # plt.scatter(X, Y, label='Rest Points')
+    axes[0].annotate(f"Circle Group", (-0.4, 1.4))
+
+    g_errors = eval_utils.get_circle_error(center, radius, point_groups[0][:, [0, 2]])
+    for i, txt in enumerate(g_errors):
+        axes[0].annotate(f"In {i}: "
+                         f"({round(point_groups[0][i, 0].tolist(), 2)},{round(point_groups[0][i, 2].tolist(), 2)})  "
+                         f"e: {round(txt.tolist(), 4)}", (-0.4, 1.3 - line_height * i), fontsize=font_size)
     for i, txt in enumerate(errors):
-        axes[0].annotate(f"Point_{i}: "
-                         f"({round(point_groups[1][i, 0].tolist(), 3)},{round(point_groups[1][i, 2].tolist(), 3)})  "
-                         f"Error: {round(txt.tolist(), 3)}", (-0.5, 1.4 - 0.1 * i))
+        axes[0].annotate(f"Out {i}: "
+                         f"({round(point_groups[1][i, 0].tolist(), 2)},{round(point_groups[1][i, 2].tolist(), 2)})  "
+                         f"e: {round(txt.tolist(), 3)}",
+                         (-0.4, 1.3 - line_height * (len(g_errors) + 1) - line_height * i), fontsize=font_size)
+
+    # Plot the least squares circle
+    x = np.linspace(-0.5, 1.5, 150)
+    y = np.linspace(-0.5, 1.5, 150)
+    a, b = np.meshgrid(x, y)
+    C = (a - center[0].tolist()) ** 2 + (b - center[1].tolist()) ** 2 - radius.tolist() ** 2
+    axes[0].contour(a, b, C, [0], colors=('r'), linewidths=2)
+    axes[0].set_aspect(1)
+
+    # Plot the noisy data
+    for p_i, point_group in enumerate(point_groups_2):
+        X1 = point_group[:, :1]
+        Y1 = point_group[:, 2:3]
+        axes[1].scatter(X1, Y1, label=labels_2[p_i])
+
+    # Plot the least squares circle
+    x = np.linspace(-0.5, 1.5, 150)
+    y = np.linspace(-0.5, 1.5, 150)
+    a, b = np.meshgrid(x, y)
+    C = (a - center[0].tolist()) ** 2 + (b - center[1].tolist()) ** 2 - radius.tolist() ** 2
+    axes[1].contour(a, b, C, [0], colors=('r'), linewidths=2)
+    axes[1].set_aspect(1)
+
+    plt.legend()
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    if show:
+        plt.show()
+    if save:
+        plt.savefig(f"{vis_file}")
+    plt.close()
+
+
+def visual_conic(vis_file, x, x_2, center, point_groups, point_groups_2, errors, labels, labels_2, show=False,
+                 save=True):
+    line_height = config.txt_line_height
+    font_size = config.txt_font_size
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+    # Plot the noisy data
+    for p_i, point_group in enumerate(point_groups):
+        X1 = point_group[:, :1]
+        Y1 = point_group[:, 2:3]
+        axes[0].scatter(X1, Y1, label=labels[p_i])
+    # plt.scatter(X, Y, label='Rest Points')
+    axes[0].annotate(f"Conic Group", (-0.4, 1.4))
+    g_errors = eval_utils.get_conic_error(x, center, point_groups[0][:, [0, 2]])
+    for i, txt in enumerate(g_errors):
+        axes[0].annotate(f"In{i}: "
+                         f"({round(point_groups[0][i, 0].tolist(), 2)},{round(point_groups[0][i, 2].tolist(), 2)})  "
+                         f"e: {round(txt.tolist(), 4)}", (-0.4, 1.3 - line_height * i), fontsize=font_size)
+    for i, txt in enumerate(errors):
+        axes[0].annotate(f"Out{i}: "
+                         f"({round(point_groups[1][i, 0].tolist(), 2)},{round(point_groups[1][i, 2].tolist(), 2)})  "
+                         f"e: {round(txt.tolist(), 3)}",
+                         (-0.4, 1.3 - (len(g_errors) + 1) * line_height - line_height * i), fontsize=font_size)
 
     # Plot the least squares ellipse
     x_coord = np.linspace(-0.5, 1.5, 300)

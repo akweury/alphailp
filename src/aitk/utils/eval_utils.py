@@ -64,14 +64,14 @@ def check_clu_result(clu_result):
 
 
 def get_circle_error(c, r, points):
-    dists = torch.sqrt(((points[:, [0, 2]] - c) ** 2).sum(1))
+    dists = torch.sqrt(((points - c) ** 2).sum(1))
     return (dists - r) ** 2
 
 
 def get_conic_error(poly_coef, center, points):
     # intersections
-    k = (points[:, 2] - center[1]) / (points[:, 0] - center[0])
-    b = points[:, 2] - k * points[:, 0]
+    k = (points[:, 1] - center[1]) / (points[:, 0] - center[0])
+    b = points[:, 1] - k * points[:, 0]
 
     # solve intersections
     inter_coef_0 = poly_coef[0] + poly_coef[1] * k + poly_coef[2] * k ** 2
@@ -95,8 +95,9 @@ def get_conic_error(poly_coef, center, points):
 
         y_intersects.append(x_intersects[x_i] * k[x_i] + b[x_i])
 
-    intersects = torch.cat((torch.tensor(x_intersects).unsqueeze(1), torch.tensor(y_intersects).unsqueeze(1)), 1)
-    dist = calc_dist(points[:, [0, 2]], intersects)
+    intercept = torch.cat((torch.tensor(x_intersects).unsqueeze(1), torch.tensor(y_intersects).unsqueeze(1)), 1)
+
+    dist = calc_dist(points, intercept)
 
     # dist_real = []
     # for i in range(dist.shape[0]):
@@ -166,7 +167,7 @@ def fit_circle(data, args):
 
 
 def fit_conic(point_groups):
-    matplotlib.use('TkAgg')
+    # matplotlib.use('TkAgg')
 
     # https://stackoverflow.com/a/47881806
     X = point_groups[:, 0:1]
@@ -324,14 +325,23 @@ def eval_data(data):
     return value_diff, type_diff
 
 
+def get_line_error(slope, intercept, points):
+    dists = []
+
+    for point in points:
+        d = torch.abs(slope * point[0] + -1 * point[1] + intercept) / torch.sqrt(slope ** 2 + 1)
+        dists.append(d.reshape(-1)[0])
+    return dists
+
+
 def fit_line(point_group):
     # https://stackoverflow.com/a/47881806
     X = point_group[:, 0:1]
     Z = point_group[:, 1:2]
 
     line_model = LinearRegression().fit(X, Z)
-    slope = line_model.coef_
-    intercept = line_model.intercept_
+    slope = torch.from_numpy(line_model.coef_)
+    intercept = torch.from_numpy(line_model.intercept_)
 
     c_x = X.mean()
     c_z = Z.mean()
@@ -350,6 +360,7 @@ def fit_line(point_group):
     # Print the equation of the line
     # print(f'Line: y = {slope[0][0]} * x + {intercept[0]}.')
     # slope = (end_B[1] - end_A[1] - intercept) / ((end_B[0] - end_A[0]) + 1e-20)
-    line = {"center": center, "slope": slope, "end_A": end_A, "end_B": end_B, "intercept":intercept}
+    error = get_line_error(slope[0], intercept, point_group)
+    line = {"center": center, "slope": slope, "end_A": end_A, "end_B": end_B, "intercept": intercept, "error": error}
 
     return line

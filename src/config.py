@@ -5,6 +5,10 @@ from pathlib import Path
 
 root = Path(__file__).parents[1]
 
+# plot setting
+txt_line_height = 0.06
+txt_font_size = 8
+
 pi_type = {'bk': 'bk_pred',
            'clu': 'clu_pred',
            'exp': 'exp_pred'}

@@ -1,7 +1,7 @@
 {
   "dataset": "letter_D",
   "n_obj": 9,
-  "group_e": 3,
+  "group_e": 2,
   "max_step": 4,
   "group_max_e": 10,
   "batch_size_train": 6,
@@ -25,7 +25,8 @@
   "length_weight": 0.02,
   "max_cluster_size": 8,
   "error_th": 0.015,
-  "cir_error_th": 0.001,
+  "cir_error_th": 0.0005,
+  "poly_error_th": 0.01,
   "cir_group_min_sz": 4,
   "conic_group_min_sz": 6,
   "with_bk": false,

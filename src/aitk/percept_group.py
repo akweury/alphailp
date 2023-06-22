@@ -293,7 +293,7 @@ def extend_conic_group(args, obj_indices, obj_tensors):
         leaf_objs = obj_tensors[leaf_indices]
         all_points = [group_objs, leaf_objs]
 
-        poly_error = eval_utils.get_conic_error(conics["coef"], conics["center"], leaf_objs)
+        poly_error = eval_utils.get_conic_error(conics["coef"], conics["center"], leaf_objs[:, [0, 2]])
 
         is_poly = poly_error < args.poly_error_th
         has_new_element = is_poly.sum() > 0
@@ -324,7 +324,7 @@ def extend_circle_group(args, obj_indices, obj_tensors):
         leaf_objs = obj_tensors[leaf_indices]
         # branch_objs = extend_groups(seed_objs, leaf_objs)
 
-        cir_error = eval_utils.get_circle_error(cir["center"], cir["radius"], leaf_objs)
+        cir_error = eval_utils.get_circle_error(cir["center"], cir["radius"], leaf_objs[:, [0, 2]])
 
         is_circle = cir_error < args.cir_error_th
         has_new_element = is_circle.sum() > 0
