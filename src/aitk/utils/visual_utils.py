@@ -759,17 +759,11 @@ def hconcat_resize(img_list, interpolation=cv.INTER_CUBIC):
     return cv.hconcat(im_list_resize)
 
 
-def draw_conic(img, center_sc, obj_pos_sc, major_axis, minor_axis, color, thickness):
-    for point_i, center in enumerate(center_sc):
-        if major_axis > 0 and minor_axis > 0:
-            img = cv.ellipse(img, center.to(torch.int16).tolist(), (major_axis, minor_axis), 0, 0, 360,
-                             color=color[point_i], thickness=thickness)
-
-        # draw a small circle on each object
-        if obj_pos_sc is not None:
-            for i in range(len(obj_pos_sc[point_i])):
-                img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 10, color[point_i], thickness)
-
+def draw_conic(img, g_center_sc, obj_pos_sc, major_axis, minor_axis, color, thickness):
+    for c_i, center in enumerate(g_center_sc):
+        if major_axis[c_i] > 0 and minor_axis[c_i] > 0:
+            img = cv.ellipse(img, center.to(torch.int16).tolist(), (major_axis[c_i], minor_axis[c_i]), 0, 0, 360,
+                             color=color[c_i], thickness=thickness)
     return img
 
 
@@ -778,7 +772,7 @@ def draw_obj_cir(img, center_sc, obj_pos_sc, color, thickness):
         # draw a small circle on each object
         if obj_pos_sc is not None:
             for i in range(len(obj_pos_sc[point_i])):
-                img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 10, color[point_i], thickness)
+                img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 5, color[point_i],  -1)
 
     return img
 
@@ -822,12 +816,11 @@ def visual_group_predictions(args, data, data_indices, obj_data, input_image, co
     indice_center_on_screen_y = group_tensor_index["y_center_screen"]
     indice_axis_x_on_screen = group_tensor_index["screen_axis_x"]
     indice_axis_z_on_screen = group_tensor_index["screen_axis_z"]
-    g_center_sc = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]][:args.group_e, :]
-    axis_x_sc = data[:, indice_axis_x_on_screen][:args.group_e].to(torch.int16).tolist()[0]
-    axis_z_sc = data[:, indice_axis_z_on_screen][:args.group_e].to(torch.int16).tolist()[0]
+    g_center_sc = data[:, [indice_center_on_screen_x, indice_center_on_screen_y]]
+    axis_x_sc = data[:, indice_axis_x_on_screen].to(torch.int16).tolist()
+    axis_z_sc = data[:, indice_axis_z_on_screen].to(torch.int16).tolist()
 
     # draw points on each objects
-
     obj_pos_sc = []
     for group_i in range(data.shape[0]):
         group_objs = obj_data[data_indices[group_i]]
@@ -844,8 +837,8 @@ def visual_group_predictions(args, data, data_indices, obj_data, input_image, co
     indice_right_screen_x = group_tensor_index["screen_right_x"]
     indice_right_screen_y = group_tensor_index["screen_right_y"]
     # args.group_max_e = 3
-    screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]][:args.group_e, :]
-    screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]][:args.group_e, :]
+    screen_left_points = data[:, [indice_left_screen_x, indice_left_screen_y]]
+    screen_right_points = data[:, [indice_right_screen_x, indice_right_screen_y]]
     group_pred_image = draw_lines(group_pred_image, screen_left_points, screen_right_points,
                                   color=colors, thickness=thickness)
 
