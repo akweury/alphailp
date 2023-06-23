@@ -3,13 +3,15 @@
 """
 semantic implementation
 """
-import aitk.utils.data_utils
+from aitk.utils import logic_utils
 from aitk.utils.fol.language import Language
 
 import ilp
 
 
-def init_language(args, pi_type, level):
+
+def init_ilp(args,percept_dict, obj_groups, obj_avail, pi_type, level):
+    logic_utils.update_args(args, percept_dict, obj_groups, obj_avail)
     lang = Language(args, [], pi_type, level)
     return lang
 
@@ -57,13 +59,8 @@ def explain_clauses(args, lang, clauses):
 
 def run_ilp(args, lang, level):
     # print all the invented predicates
-    success, clauses = ilp.ilp_test(args, lang, level)
     return success, clauses
 
-
-def run_ilp_eval(args, lang, clauses):
-    scores = ilp.ilp_eval(args, lang, clauses)
-    return scores
 
 
 def predicate_invention(args, lang, clauses, e):
@@ -76,7 +73,18 @@ def keep_best_preds(args, lang):
 
 def run_ilp_train(args, lang, level):
     ilp.ilp_train(args, lang, level)
+    success, clauses = ilp.ilp_test(args, lang, level)
+    return success, clauses
 
 
 def run_ilp_train_explain(args, lang, level):
     ilp.ilp_train_explain(args, lang, level)
+
+
+def ilp_eval(success, args, lang, clauses, g_data):
+    scores = ilp.ilp_eval(success, args, lang, clauses, g_data)
+
+
+
+def train_nsfr(args, rtpt, lang, clauses):
+    ilp.train_nsfr(args, rtpt, lang, clauses)

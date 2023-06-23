@@ -7,7 +7,9 @@ import itertools
 import os
 import torch
 
-from aitk.utils import log_utils
+import config
+from aitk.utils import log_utils, file_utils
+from aitk.utils.fol import bk
 
 
 def get_index_by_predname(pred_str, atoms):
@@ -227,3 +229,41 @@ def sub_lists(l, min_len=0, max_len=None):
         comb += [list(j) for j in itertools.combinations(l, i)]
     # Returning list
     return comb
+
+
+def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
+    args.val_pos = pm_prediction_dict["val_pos"].to(args.device)
+    args.val_neg = pm_prediction_dict["val_neg"].to(args.device)
+    args.test_pos = pm_prediction_dict["test_pos"].to(args.device)
+    args.test_neg = pm_prediction_dict["test_neg"].to(args.device)
+    args.train_pos = pm_prediction_dict["train_pos"].to(args.device)
+    args.train_neg = pm_prediction_dict["train_neg"].to(args.device)
+
+    args.val_group_pos = obj_groups['group_val_pos']
+    args.val_group_neg = obj_groups['group_val_neg']
+    args.train_group_pos = obj_groups['group_train_pos']
+    args.train_group_neg = obj_groups['group_train_neg']
+    args.test_group_pos = obj_groups['group_test_pos']
+    args.test_group_neg = obj_groups['group_test_neg']
+
+    args.obj_avail_val_pos = obj_avail['obj_avail_val_pos']
+    args.obj_avail_val_neg = obj_avail['obj_avail_val_neg']
+    args.obj_avail_train_pos = obj_avail['obj_avail_train_pos']
+    args.obj_avail_train_neg = obj_avail['obj_avail_train_neg']
+    args.obj_avail_test_pos = obj_avail['obj_avail_test_pos']
+    args.obj_avail_test_neg = obj_avail['obj_avail_test_neg']
+
+    args.data_size = args.val_pos.shape[0]
+    args.invented_pred_num = 0
+    args.last_refs = []
+    args.found_ns = False
+    args.d = len(config.group_tensor_index)
+
+    # clause generation and predicate invention
+    lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
+
+    pi_type = config.pi_type['bk']
+    neural_preds = file_utils.load_neural_preds(bk.neural_predicate_2, pi_type)
+
+    args.neural_preds = [neural_pred for neural_pred in neural_preds]
+    args.p_inv_counter = 0

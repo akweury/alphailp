@@ -7,13 +7,10 @@ import torch
 
 import config
 import eval_clause_infer
+import semantic as se
 from aitk import ai_interface
 from aitk.utils.fol import bk, logic
-from aitk.utils import nsfr_utils
-from aitk.utils import lang_utils
-from aitk.utils import log_utils
-from aitk.utils import eval_utils
-from aitk.utils import logic_utils
+from aitk.utils import nsfr_utils, visual_utils, lang_utils, logic_utils, log_utils
 from aitk.utils.fol.refinement import RefinementGenerator
 
 from ilp_utils import remove_duplicate_clauses, remove_conflict_clauses, update_refs
@@ -25,8 +22,8 @@ def clause_eval(args, lang, FC, clauses, step):
     # clause evaluation
     NSFR = ai_interface.get_nsfr(args, lang, FC, clauses)
     # evaluate new clauses
-    eval_predicates = [clauses[0].head.pred.name]
-    img_scores = get_clause_score(NSFR, args, eval_predicates)
+    target_preds = [clauses[0].head.pred.name]
+    img_scores = get_clause_score(NSFR, args, target_preds)
     clause_scores = get_clause_3score(img_scores[:, :, args.index_pos], img_scores[:, :, args.index_neg], args, step)
     return img_scores, clause_scores
 
@@ -57,17 +54,22 @@ def ilp_search(args, lang, init_clauses, FC, level):
 
     """
     eval_pred = ['kp']
-    step = 0
+    extend_step = 0
     clause_with_scores = []
     clauses = init_clauses
-    while step <= args.iteration:
+
+    # get predicate related data from tensors
+    shape_indices = [config.group_tensor_index[s] for s in config.group_group_shapes]
+    pred_related_data = torch.tensor(args.val_group_pos)[:, :, shape_indices]
+
+    while extend_step <= args.iteration:
         # clause extension
         clauses = clause_extend(args, lang, clauses, level)
         if args.is_done:
             break
 
         # clause evaluation
-        img_scores, clause_scores = clause_eval(args, lang, FC, clauses, step)
+        img_scores, clause_scores = clause_eval(args, lang, FC, clauses, extend_step)
         # classify clauses
         clause_with_scores = sort_clauses_by_score(clauses, img_scores, clause_scores, args)
         # print best clauses that have been found...
@@ -76,12 +78,16 @@ def ilp_search(args, lang, init_clauses, FC, level):
         # new_max, higher = logic_utils.get_best_clauses(refs_extended, scores, step, args, max_clause)
         # max_clause, found_sn = check_result(args, clause_with_scores, higher, max_clause, new_max)
 
+        # prune clauses
         if args.pi_top > 0:
             clauses, clause_with_scores = prune_clauses(clause_with_scores, args)
         else:
             clauses = logic_utils.top_select(clause_with_scores, args)
-        step += 1
+
+        # save data
         lang.all_clauses += clause_with_scores
+        extend_step += 1
+
     if len(clauses) > 0:
         lang.clause_with_scores = clause_with_scores
         # args.last_refs = clauses
@@ -89,7 +95,7 @@ def ilp_search(args, lang, init_clauses, FC, level):
     # lang.clauses = args.last_refs
     check_result(args, clause_with_scores)
 
-    return clauses
+    return clauses, pred_related_data
 
 
 def explain_scenes(args, lang, clauses):
@@ -136,7 +142,7 @@ def ilp_test(args, lang, level):
     # searching for a proper clause to describe the pattern.
     for i in range(args.max_step):
         args.iteration = i
-        ilp_search(args, lang, init_clauses, FC, level)
+        step_clauses, step_data = ilp_search(args, lang, init_clauses, FC, level)
 
         if args.is_done:
             break
@@ -203,15 +209,19 @@ def ilp_predict(NSFR, args, th=None, split='train'):
         return accuracy, rec_score, th
 
 
-def ilp_eval(args, lang, clauses):
+def ilp_eval(success, args, lang, clauses, g_data):
     scores_dict = {}
+    if not success:
+        log_utils.add_lines(f"ILP failed.", args.log_file)
+        return scores_dict
+
     target_predicate = [clauses[0].head.pred.name]
     # calculate scores
-
     VM = ai_interface.get_vm(args, lang)
     FC = ai_interface.get_fc(args, lang, VM, args.group_e)
+
+    # evaluate all test images at once
     img_scores, clauses_scores = clause_eval(args, lang, FC, clauses, 0)
-    # img_scores = img_scores.permute(1, 2, 0)
 
     for data_type in ["true", "false"]:
         if data_type == "true":
@@ -230,15 +240,10 @@ def ilp_eval(args, lang, clauses):
             scores_dict[data_type]["clause"].append(clause_best)
 
             if data_type == "false" and score_best > 0.9:
-                print("debug")
-            elif data_type == "true" and score_best<0.1:
-                print("debug")
-
-
-        # NSFR = ai_interface.get_nsfr(args, lang, FC, clauses)
-        # # evaluate new clauses
-        # scores = eval_utils.eval_clause_on_test_scenes(NSFR, args, lang.clauses[0], data.unsqueeze(0))
-        # scores_all.append(scores)
+                print("(FP)")
+            elif data_type == "true" and score_best < 0.1:
+                print("(FN)")
+    visual_utils.visualization(args, lang, scores_dict)
 
     return scores_dict
 
@@ -295,7 +300,7 @@ def get_clause_3score(score_pos, score_neg, args, c_length=0):
     sn_index = config.score_type_index["sn"]
     scores[ness_index, :] = score_pos.sum(dim=1) / score_pos.shape[1]
     scores[suff_index, :] = score_negative_inv.sum(dim=1) / score_negative_inv.shape[1]
-    scores[sn_index, :] = scores[0, :] * scores[1, :]  + (c_length + 1) * args.length_weight
+    scores[sn_index, :] = scores[0, :] * scores[1, :] + (c_length + 1) * args.length_weight
     return scores
 
 
@@ -318,9 +323,12 @@ def get_clause_score(NSFR, args, pred_names, pos_group_pred=None, neg_group_pred
         date_now = datetime.datetime.today().date()
         time_now = datetime.datetime.now().strftime("%H_%M_%S")
         # print(f"({date_now} {time_now}) eval batch {i + 1}/{int(train_size / args.batch_size_train)}")
-        V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(pos_group_pred[i * bz:(i + 1) * bz])
-        V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(neg_group_pred[i * bz:(i + 1) * bz])
-
+        g_tensors_pos = pos_group_pred[i * bz:(i + 1) * bz]
+        g_tensors_neg = neg_group_pred[i * bz:(i + 1) * bz]
+        # V_T_pos.dim = clause num * img num * atoms num
+        V_T_pos[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(g_tensors_pos)
+        V_T_neg[:, i * bz:(i + 1) * bz, :] = NSFR.clause_eval_quick(g_tensors_neg)
+    # each score needs an explanation
     score_positive = NSFR.get_target_prediciton(V_T_pos, pred_names, args.device)
     score_negative = NSFR.get_target_prediciton(V_T_neg, pred_names, args.device)
 
@@ -337,6 +345,8 @@ def get_clause_score(NSFR, args, pred_names, pos_group_pred=None, neg_group_pred
 
     img_scores[:, :, index_pos] = score_positive[:, :, 0]
     img_scores[:, :, index_neg] = score_negative[:, :, 0]
+
+    data_match_score = 0
 
     return img_scores
 
@@ -588,7 +598,7 @@ def ilp_train(args, lang, level):
             # update system
             VM = ai_interface.get_vm(args, lang)
             FC = ai_interface.get_fc(args, lang, VM, e)
-            clauses = ilp_search(args, lang, init_clauses, FC, level)
+            clauses, pred_related_data = ilp_search(args, lang, init_clauses, FC, level)
             if args.with_pi:
                 ilp_pi(args, lang, clauses, e)
             args.iteration += 1
@@ -616,3 +626,86 @@ def ilp_train_explain(args, lang, level):
         keep_best_preds(args, lang)
         if args.found_ns:
             break
+
+
+def train_nsfr(args, rtpt, lang, clauses):
+    VM = ai_interface.get_vm(args, lang)
+    FC = ai_interface.get_fc(args, lang, VM, args.group_e)
+    nsfr = ai_interface.get_nsfr(args, lang, FC, clauses, train=True)
+
+    optimizer = torch.optim.RMSprop(nsfr.get_params(), lr=args.lr)
+    bce = torch.nn.BCELoss()
+    loss_list = []
+    stopping_threshold = 1e-4
+    test_acc_list = np.zeros(shape=(1, args.epochs))
+    # prepare perception result
+    train_pos = torch.tensor(args.train_group_pos)
+    train_neg = torch.tensor(args.train_group_neg)
+    test_pos = args.test_group_pos
+    test_neg = args.test_group_neg
+    val_pos = args.val_group_pos
+    val_neg = args.val_group_neg
+    train_pred = torch.cat((train_pos, train_neg), dim=0)
+    train_label = torch.zeros(len(train_pred)).to(args.device)
+    train_label[:len(train_pos)] = 1.0
+
+    for epoch in range(args.epochs):
+
+        # infer and predict the target probability
+        loss_i = 0
+        train_size = train_pred.shape[0]
+        bz = args.batch_size_train
+        for i in range(int(train_size / args.batch_size_train)):
+            x_data = train_pred[i * bz:(i + 1) * bz]
+            y_label = train_label[i * bz:(i + 1) * bz]
+            V_T = nsfr(x_data).unsqueeze(0)
+
+            predicted = nsfr_utils.get_prob(V_T, nsfr, args)
+            predicted = predicted.squeeze(2)
+            predicted = predicted.squeeze(0)
+            loss = bce(predicted, y_label)
+            loss_i += loss.item()
+            loss.backward()
+            optimizer.step()
+        loss_i = loss_i / (i + 1)
+        loss_list.append(loss_i)
+        rtpt.step(subtitle=f"loss={loss_i:2.2f}")
+        # writer.add_scalar("metric/train_loss", loss_i, global_step=epoch)
+        log_utils.add_lines(f"(epoch {epoch}/{args.epochs - 1}) loss: {loss_i}", args.log_file)
+
+        if epoch > 5 and loss_list[epoch - 1] - loss_list[epoch] < stopping_threshold:
+            break
+
+        if epoch % 20 == 0:
+            nsfr.print_program()
+            log_utils.add_lines("Predicting on validation data set...", args.log_file)
+
+            acc_val, rec_val, th_val = se.run_ilp_predict(args, nsfr, th=0.33, split='val')
+            log_utils.add_lines(f"acc_val:{acc_val} ", args.log_file)
+            log_utils.add_lines("Predi$\alpha$ILPcting on training data set...", args.log_file)
+
+            acc, rec, th = se.run_ilp_predict(args, nsfr, th=th_val, split='train')
+            log_utils.add_lines(f"acc_train: {acc}", args.log_file)
+            log_utils.add_lines(f"Predicting on test data set...", args.log_file)
+
+            acc, rec, th = se.run_ilp_predict(args, nsfr, th=th_val, split='train')
+            log_utils.add_lines(f"acc_test: {acc}", args.log_file)
+
+    final_evaluation(nsfr, args)
+    return nsfr
+
+
+def final_evaluation(NSFR, args):
+    # validation split
+    log_utils.add_lines(f"Predicting on validation data set...", args.log_file)
+    acc_val, rec_val, th_val = ilp_predict(NSFR, args, 0.33, split="val")
+    # training split
+    log_utils.add_lines(f"Predicting on training data set...", args.log_file)
+    acc, rec, th = ilp_predict(NSFR, args, th_val, "train")
+    # test split
+    log_utils.add_lines(f"Predicting on test data set...", args.log_file)
+    acc_test, rec_test, th_test = ilp_predict(NSFR, args, th_val, "test")
+
+    log_utils.add_lines(f"training acc: {acc}, threshold: {th}, recall: {rec}", args.log_file)
+    log_utils.add_lines(f"val acc: {acc_val}, threshold: {th_val}, recall: {rec_val}", args.log_file)
+    log_utils.add_lines(f"test acc: {acc_test}, threshold: {th_test}, recall: {rec_test}", args.log_file)
