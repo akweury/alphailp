@@ -174,7 +174,7 @@ def eval_groups(args, img_i):
 
     result = {'shape_group': shape_group_res, 'color': color_res, 'shape': shape_res}
 
-    # The pattern is too simple. Print the reason.
+    # The patterns is too simple. Print the reason.
     # if False and is_done:
     # Dataset is too simple. Finish the program.
     # eval_result_test = eval_groups(test_pattern_pos, test_pattern_neg, clu_result)

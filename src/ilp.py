@@ -139,7 +139,7 @@ def ilp_test(args, lang, level):
     VM = ai_interface.get_vm(args, lang)
     FC = ai_interface.get_fc(args, lang, VM, e)
     # ILP
-    # searching for a proper clause to describe the pattern.
+    # searching for a proper clause to describe the patterns.
     for i in range(args.max_step):
         args.iteration = i
         step_clauses, step_data = ilp_search(args, lang, init_clauses, FC, level)
@@ -556,7 +556,7 @@ def search_independent_clauses_parallel(args, lang, clauses, e):
     index_neg = config.score_example_index["neg"]
     index_pos = config.score_example_index["pos"]
 
-    # evaluate each new pattern
+    # evaluate each new patterns
     clu_all = []
     for cc_i, pattern in enumerate(patterns):
         score_neg = torch.zeros((pattern[0][2].shape[0], len(pattern))).to(args.device)
