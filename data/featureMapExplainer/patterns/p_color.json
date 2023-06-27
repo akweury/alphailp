@@ -1,0 +1,17 @@
+{
+  "device": "cpu",
+  "net_type": "color_net",
+  "num_channels": 24,
+  "exp": "p_color",
+  "resume": null,
+  "batch_size": 8,
+  "train_on": "100",
+  "epochs": 1000,
+  "optimizer": "adam",
+  "lr": 0.001,
+  "lr_scheduler": "10,100",
+  "lr_decay_factor": 0.5,
+  "momentum": 0.9,
+  "loss": "l2",
+  "print_freq": 3
+}
