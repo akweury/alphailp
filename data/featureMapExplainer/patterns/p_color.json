@@ -5,7 +5,7 @@
   "exp": "p_color",
   "resume": null,
   "batch_size": 8,
-  "train_on": "100",
+  "train_on": "full",
   "epochs": 1000,
   "optimizer": "adam",
   "lr": 0.001,

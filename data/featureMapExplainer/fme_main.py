@@ -101,8 +101,14 @@ def init():
     args.eval_loss_best = 1e+10
     args.is_best = False
     args.output_path = args.data_path / "output"
+    args.analysis_path = args.data_path / "analysis"
     if not os.path.exists(args.output_path):
         os.mkdir(args.output_path)
+    if not os.path.exists(args.analysis_path):
+        os.mkdir(args.analysis_path)
+    args.FEATURE_MAP_NUM = 2
+    args.CV_COLOR = cv.COLORMAP_TURBO
+    # args.CV_COLOR = cv.COLORMAP_DEEPGREEN
 
     # init network
     network = load_network(args)
@@ -130,5 +136,5 @@ def init():
 
 
 if __name__ == '__main__':
-    args = init()
+    args =  init()
     train_engine.main(args)

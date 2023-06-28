@@ -6,7 +6,7 @@ import config
 def main():
     width = 64
     height = 64
-    p_color.generate(config.data_path, width, height, train_num=100, test_num=20)
+    p_color.generate(config.data_path, width, height, train_num=1000, test_num=100)
     print("done!")
 
 
