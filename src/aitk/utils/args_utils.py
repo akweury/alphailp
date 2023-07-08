@@ -18,6 +18,8 @@ def get_args(data_path):
     parser.add_argument("--group_max_e", type=int, default=5,
                         help="The maximum number of groups in one image")
     parser.add_argument("--dataset", default="red-triangle", help="Use kandinsky patterns dataset")
+    parser.add_argument("--is_visual", action="store_true",
+                        help="Analysis visualization for grouping results.")
     parser.add_argument("--dataset-type", default="kandinsky",
                         help="kandinsky or clevr")
     parser.add_argument('--device', default='cpu',

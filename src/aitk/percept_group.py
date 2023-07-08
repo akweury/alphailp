@@ -200,7 +200,7 @@ def visual_group_analysis(args, g_tensors, g_indices, obj_tensors, g_type, g_sha
                 visual_utils.visual_group(g_type, vis_file, data, objs, rest_objs, error)
 
 
-def detect_line_groups(args, obj_tensors, data_type):
+def detect_line_groups(args, obj_tensors, visual):
     """
     input: object tensors
     output: group tensors
@@ -210,11 +210,12 @@ def detect_line_groups(args, obj_tensors, data_type):
     line_tensors, line_tensors_indices = encode_groups(args, line_indices, line_groups, "line")
     # logic: prune strategy
     g_tensors, indices, data, error = prune_groups(args, line_tensors, line_tensors_indices, line_data, line_error)
-    visual_group_analysis(args, g_tensors, indices, obj_tensors, "line", data, error)
+    if visual:
+        visual_group_analysis(args, g_tensors, indices, obj_tensors, "line", data, error)
     return g_tensors, indices
 
 
-def detect_conic_groups(args, obj_tensors, data_type):
+def detect_conic_groups(args, obj_tensors, is_visual):
     """
     input: object tensors
     output: group tensors
@@ -223,11 +224,12 @@ def detect_conic_groups(args, obj_tensors, data_type):
     conic_indices, conic_groups, conic_data, conic_error = detect_groups(args, obj_tensors, "conic")
     conic_tensors, conic_tensors_indices = encode_groups(args, conic_indices, conic_groups, "conic")
     tensors, indices, data, error = prune_groups(args, conic_tensors, conic_tensors_indices, conic_data, conic_error)
-    visual_group_analysis(args, tensors, indices, obj_tensors, "conic", data, error)
+    if is_visual:
+        visual_group_analysis(args, tensors, indices, obj_tensors, "conic", data, error)
     return tensors, indices
 
 
-def detect_circle_groups(args, obj_tensors, data_type):
+def detect_circle_groups(args, obj_tensors, is_visual):
     """
     input: object tensors
     output: group tensors
@@ -236,7 +238,8 @@ def detect_circle_groups(args, obj_tensors, data_type):
     cir_indices, cir_groups, cir_data, cir_error = detect_groups(args, obj_tensors, "cir")
     cir_tensors, cir_tensors_indices = encode_groups(args, cir_indices, cir_groups, "cir")
     tensors, indices, data, error = prune_groups(args, cir_tensors, cir_tensors_indices, cir_data, cir_error)
-    visual_group_analysis(args, tensors, indices, obj_tensors, "cir", data, error)
+    if is_visual:
+        visual_group_analysis(args, tensors, indices, obj_tensors, "cir", data, error)
     return tensors, indices
 
 
@@ -405,7 +408,7 @@ def detect_obj_groups(args, percept_dict_single, data_type):
     save_path = config.buffer_path / "hide" / args.dataset / "buffer_groups"
     save_file = save_path / f"{args.dataset}_group_res_{data_type}.pth.tar"
     args.analysis_output_path = args.analysis_path / data_type
-
+    is_visual = args.is_visual
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
@@ -414,14 +417,14 @@ def detect_obj_groups(args, percept_dict_single, data_type):
         group_tensors = group_res["tensors"]
         group_obj_index_tensors = group_res['used_objs']
     else:
-        line_tensors, line_tensors_indices = detect_line_groups(args, percept_dict_single, data_type)
-        conic_tensors, conic_tensors_indices = detect_conic_groups(args, percept_dict_single, data_type)
-        cir_tensors, cir_tensors_indices = detect_circle_groups(args, percept_dict_single, data_type)
+        line_tensors, line_tensors_indices = detect_line_groups(args, percept_dict_single, visual=is_visual)
+        conic_tensors, conic_tensors_indices = detect_conic_groups(args, percept_dict_single, is_visual=is_visual)
+        cir_tensors, cir_tensors_indices = detect_circle_groups(args, percept_dict_single, is_visual=is_visual)
 
         group_tensors, group_obj_index_tensors = merge_groups(args, line_tensors, cir_tensors, conic_tensors,
                                                               line_tensors_indices, cir_tensors_indices,
                                                               conic_tensors_indices)
-        visual_utils.visual_groups(args, group_tensors, percept_dict_single, group_obj_index_tensors, data_type)
+        # visual_utils.visual_groups(args, group_tensors, percept_dict_single, group_obj_index_tensors, data_type)
         group_res = {"tensors": group_tensors, "used_objs": group_obj_index_tensors}
         torch.save(group_res, save_file)
 
