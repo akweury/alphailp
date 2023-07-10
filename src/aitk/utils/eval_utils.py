@@ -65,7 +65,7 @@ def check_clu_result(clu_result):
 
 def get_circle_error(c, r, points):
     dists = torch.sqrt(((points - c) ** 2).sum(1))
-    return (dists - r) ** 2
+    return torch.abs(dists - r)
 
 
 def get_conic_error(poly_coef, center, points):
@@ -331,6 +331,7 @@ def get_line_error(slope, intercept, points):
     for point in points:
         d = torch.abs(slope * point[0] + -1 * point[1] + intercept) / torch.sqrt(slope ** 2 + 1)
         dists.append(d.reshape(-1)[0])
+
     return dists
 
 

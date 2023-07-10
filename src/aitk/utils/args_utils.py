@@ -131,6 +131,8 @@ def get_args(data_path):
                         help="The minimum objects allowed to fit a conic section.")
     parser.add_argument("--group_conf_th", type=float, default=0.98,
                         help="The threshold of group confidence.")
+    parser.add_argument("--re_eval_groups", action="store_true",
+                        help="Overwrite the evaluated group detection files.")
     parser.add_argument("--maximum_obj_num", type=int, default=5,
                         help="The maximum number of objects/groups to deal with in a single image.")
     parser.add_argument("--distribute_error_th", type=float, default=0.0005,

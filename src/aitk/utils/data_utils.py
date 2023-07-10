@@ -43,7 +43,7 @@ def euclidean_distance(point_groups_screen, center):
     return distance
 
 
-def to_line_tensor(objs, line_sc):
+def to_line_tensor(objs, line_sc, line_error):
     obj_tensor_index = config.obj_tensor_index
     group_tensor_index = config.group_tensor_index
     line_tensor = torch.zeros(len(group_tensor_index.keys()))
@@ -77,7 +77,7 @@ def to_line_tensor(objs, line_sc):
     line_tensor[group_tensor_index['sphere']] = shapes_normalized[0]
     line_tensor[group_tensor_index['cube']] = shapes_normalized[1]
 
-    line_tensor[group_tensor_index["line"]] = 1
+    line_tensor[group_tensor_index["line"]] = -torch.tensor(line_error).sum()
     line_tensor[group_tensor_index['circle']] = 0
     line_tensor[group_tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
     line_tensor[group_tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()
@@ -103,7 +103,7 @@ def to_line_tensor(objs, line_sc):
     return line_tensor
 
 
-def to_circle_tensor(objs, cir, cir_sc):
+def to_circle_tensor(objs, cir, cir_sc, cir_error):
     group_tensor_index = config.group_tensor_index
     obj_tensor_index = config.obj_tensor_index
     cir_tensor = torch.zeros(len(group_tensor_index.keys()))
@@ -124,7 +124,7 @@ def to_circle_tensor(objs, cir, cir_sc):
     cir_tensor[group_tensor_index["sphere"]] = 0
     cir_tensor[group_tensor_index["cube"]] = 0
     cir_tensor[group_tensor_index["line"]] = 0
-    cir_tensor[group_tensor_index["circle"]] = 1
+    cir_tensor[group_tensor_index["circle"]] = -cir_error.sum()
 
     cir_tensor[group_tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
     cir_tensor[group_tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()
@@ -152,7 +152,7 @@ def op_count_nonzeros(data, axis, epsilon):
     return counter
 
 
-def to_conic_tensor(objs, conics, conics_sc):
+def to_conic_tensor(objs, conics, conics_sc, conic_error):
     group_tensor_index = config.group_tensor_index
     obj_tensor_index = config.obj_tensor_index
     conic_tensor = torch.zeros(len(group_tensor_index.keys()))
@@ -176,7 +176,7 @@ def to_conic_tensor(objs, conics, conics_sc):
 
     conic_tensor[group_tensor_index["circle"]] = 0
 
-    conic_tensor[group_tensor_index["conic"]] = 1
+    conic_tensor[group_tensor_index["conic"]] = -conic_error.sum()
 
     conic_tensor[group_tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
     conic_tensor[group_tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()

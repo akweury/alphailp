@@ -772,7 +772,7 @@ def draw_obj_cir(img, center_sc, obj_pos_sc, color, thickness):
         # draw a small circle on each object
         if obj_pos_sc is not None:
             for i in range(len(obj_pos_sc[point_i])):
-                img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 5, color[point_i],  -1)
+                img = cv.circle(img, obj_pos_sc[point_i][i].to(torch.int16).tolist(), 5, color[point_i], -1)
 
     return img
 
@@ -1020,6 +1020,8 @@ def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_gr
     axes[1].set_xlim([-0.5, 1.5])
     axes[1].set_ylim([-0.5, 1.5])
 
+    axes[0].invert_yaxis()
+    axes[1].invert_yaxis()
     plt.legend()
     plt.xlabel('X')
     plt.ylabel('Y')
@@ -1075,7 +1077,8 @@ def visual_cir(vis_file, radius, center, point_groups, point_groups_2, errors, l
     C = (a - center[0].tolist()) ** 2 + (b - center[1].tolist()) ** 2 - radius.tolist() ** 2
     axes[1].contour(a, b, C, [0], colors=('r'), linewidths=2)
     axes[1].set_aspect(1)
-
+    axes[0].invert_yaxis()
+    axes[1].invert_yaxis()
     plt.legend()
     plt.xlabel('X')
     plt.ylabel('Y')
@@ -1104,10 +1107,13 @@ def visual_conic(vis_file, x, x_2, center, point_groups, point_groups_2, errors,
                          f"({round(point_groups[0][i, 0].tolist(), 2)},{round(point_groups[0][i, 2].tolist(), 2)})  "
                          f"e: {round(txt.tolist(), 4)}", (-0.4, 1.3 - line_height * i), fontsize=font_size)
     for i, txt in enumerate(errors):
-        axes[0].annotate(f"Out{i}: "
-                         f"({round(point_groups[1][i, 0].tolist(), 2)},{round(point_groups[1][i, 2].tolist(), 2)})  "
-                         f"e: {round(txt.tolist(), 3)}",
-                         (-0.4, 1.3 - (len(g_errors) + 1) * line_height - line_height * i), fontsize=font_size)
+        if len(point_groups[1]) > 0:
+            value_x = round(point_groups[1][i, 0].tolist(), 2)
+            value_y = round(point_groups[1][i, 2].tolist(), 2)
+            value_err = round(txt.tolist(), 3)
+            pos_x = -0.4
+            pos_y = 1.3 - (len(g_errors) + 1) * line_height - line_height * i
+            axes[0].annotate(f"Out{i}: ({value_x},{value_y})  e: {value_err}", (pos_x, pos_y), fontsize=font_size)
 
     # Plot the least squares ellipse
     x_coord = np.linspace(-0.5, 1.5, 300)
@@ -1129,6 +1135,8 @@ def visual_conic(vis_file, x, x_2, center, point_groups, point_groups_2, errors,
     Z_coord = x_2[0] * X_coord ** 2 + x_2[1] * X_coord * Y_coord + x_2[2] * Y_coord ** 2 + x_2[3] * X_coord + x_2[
         4] * Y_coord
     axes[1].contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
+    axes[0].invert_yaxis()
+    axes[1].invert_yaxis()
 
     plt.legend()
     plt.xlabel('X')
