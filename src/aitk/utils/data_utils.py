@@ -77,7 +77,7 @@ def to_line_tensor(objs, line_sc, line_error):
     line_tensor[group_tensor_index['sphere']] = shapes_normalized[0]
     line_tensor[group_tensor_index['cube']] = shapes_normalized[1]
 
-    line_tensor[group_tensor_index["line"]] = -torch.tensor(line_error).sum()
+    line_tensor[group_tensor_index["line"]] = 1 - torch.tensor(line_error).sum() / torch.tensor(line_error).shape[0]
     line_tensor[group_tensor_index['circle']] = 0
     line_tensor[group_tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
     line_tensor[group_tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()
@@ -110,6 +110,8 @@ def to_circle_tensor(objs, cir, cir_sc, cir_error):
 
     colors = objs[:, [obj_tensor_index[i] for i in config.obj_color]]
     shapes = objs[:, [obj_tensor_index[i] for i in config.obj_shapes]]
+    colors_normalized = colors.sum(dim=0) / colors.shape[0]
+    shapes_normalized = shapes.sum(dim=0) / shapes.shape[0]
 
     cir_tensor[group_tensor_index["x"]] = cir["center"][0]
     cir_tensor[group_tensor_index["y"]] = objs[:, 1].mean()
@@ -118,13 +120,17 @@ def to_circle_tensor(objs, cir, cir_sc, cir_error):
     cir_tensor[group_tensor_index["color_counter"]] = op_count_nonzeros(colors.sum(dim=0), axis=0, epsilon=1e-10)
     cir_tensor[group_tensor_index["shape_counter"]] = op_count_nonzeros(shapes.sum(dim=0), axis=0, epsilon=1e-10)
 
-    cir_tensor[group_tensor_index["red"]] = 0
-    cir_tensor[group_tensor_index["green"]] = 0
-    cir_tensor[group_tensor_index["blue"]] = 0
-    cir_tensor[group_tensor_index["sphere"]] = 0
-    cir_tensor[group_tensor_index["cube"]] = 0
+    colors_normalized[colors_normalized < 0.99] = 0
+    cir_tensor[group_tensor_index['red']] = colors_normalized[0]
+    cir_tensor[group_tensor_index['green']] = colors_normalized[1]
+    cir_tensor[group_tensor_index['blue']] = colors_normalized[2]
+
+    shapes_normalized[shapes_normalized < 0.99] = 0
+    cir_tensor[group_tensor_index['sphere']] = shapes_normalized[0]
+    cir_tensor[group_tensor_index['cube']] = shapes_normalized[1]
+
     cir_tensor[group_tensor_index["line"]] = 0
-    cir_tensor[group_tensor_index["circle"]] = -cir_error.sum()
+    cir_tensor[group_tensor_index["circle"]] = 1 - cir_error.sum() / cir_error.shape[0]
 
     cir_tensor[group_tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
     cir_tensor[group_tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()
@@ -167,16 +173,21 @@ def to_conic_tensor(objs, conics, conics_sc, conic_error):
     conic_tensor[group_tensor_index["color_counter"]] = op_count_nonzeros(colors.sum(dim=0), axis=0, epsilon=1e-10)
     conic_tensor[group_tensor_index["shape_counter"]] = op_count_nonzeros(shapes.sum(dim=0), axis=0, epsilon=1e-10)
 
-    conic_tensor[group_tensor_index["red"]] = 0
-    conic_tensor[group_tensor_index["green"]] = 0
-    conic_tensor[group_tensor_index["blue"]] = 0
-    conic_tensor[group_tensor_index["sphere"]] = 0
-    conic_tensor[group_tensor_index["cube"]] = 0
+    colors_normalized = colors.sum(dim=0) / colors.shape[0]
+    shapes_normalized = shapes.sum(dim=0) / shapes.shape[0]
+
+    colors_normalized[colors_normalized < 0.99] = 0
+    conic_tensor[group_tensor_index['red']] = colors_normalized[0]
+    conic_tensor[group_tensor_index['green']] = colors_normalized[1]
+    conic_tensor[group_tensor_index['blue']] = colors_normalized[2]
+
+    shapes_normalized[shapes_normalized < 0.99] = 0
+    conic_tensor[group_tensor_index['sphere']] = shapes_normalized[0]
+    conic_tensor[group_tensor_index['cube']] = shapes_normalized[1]
+
     conic_tensor[group_tensor_index["line"]] = 0
-
     conic_tensor[group_tensor_index["circle"]] = 0
-
-    conic_tensor[group_tensor_index["conic"]] = -conic_error.sum()
+    conic_tensor[group_tensor_index["conic"]] = 1 - conic_error.sum() / conic_error.shape[0]
 
     conic_tensor[group_tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
     conic_tensor[group_tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()

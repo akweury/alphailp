@@ -11,7 +11,7 @@ neural_predicate_2 = {
     # 'color': 'color:2:group,color',
     'shape': 'shape:2:group,shape',
     'phi': 'phi:3:group,group,phi',
-    'rho': 'rho:3:group,group,rho',
+    # 'rho': 'rho:3:group,group,rho',
     'slope': 'slope:2:group,slope',
 }
 
