@@ -2,11 +2,13 @@ import copy
 import torch
 import numpy as np
 import matplotlib
+import math
+from sklearn.linear_model import LinearRegression
+from scipy.integrate import quad
 
 import config
 
 from aitk.utils import data_utils
-from sklearn.linear_model import LinearRegression
 
 ness_index = config.score_type_index["ness"]
 suff_index = config.score_type_index["suff"]
@@ -82,6 +84,9 @@ def get_conic_error(poly_coef, center, points):
     y_intersects = []
     for x_i, _x in enumerate(points[:, 0]):
         p = np.poly1d([inter_coef_0[x_i], inter_coef_1[x_i], inter_coef_2[x_i]])
+
+        if np.isnan(p.c[0]) or np.isnan(p.c[1]):
+            return None
         x_roots = p.r
         if _x > center[0]:
             x_intersects.append(x_roots.max())
@@ -365,3 +370,57 @@ def fit_line(point_group):
     line = {"center": center, "slope": slope, "end_A": end_A, "end_B": end_B, "intercept": intercept, "error": error}
 
     return line
+
+
+def even_dist_error_on_cir(group_objs, cir):
+    delta_y = group_objs[:, 2] - cir["center"][1]
+    delta_x = group_objs[:, 0] - cir["center"][0]
+    theta = torch.tensor([math.atan2(delta_y[i], delta_x[i]) for i in range(group_objs.shape[0])])
+    theta_ordered, theta_ordered_index = theta.sort()
+    delta_arcs = (torch.roll(theta_ordered, -1, 0) - theta_ordered)[:-1]
+    even_dist_error = metric_mse(delta_arcs, 0)
+    return even_dist_error
+
+
+def even_dist_error_on_line(group_objs, line):
+    delta_x = group_objs[:, 0].max() - group_objs[:, 0].min()
+    delta_y = group_objs[:, 2].max() - group_objs[:, 2].min()
+    points = group_objs[:, [0, 2]]
+    if delta_y > delta_x:
+        obj_ordered_y, obj_index = group_objs[:, 2].sort()
+        obj_ordered_x = group_objs[obj_index][:, 0]
+    else:
+        obj_ordered_x, obj_index = group_objs[:, 0].sort()
+        obj_ordered_y = group_objs[obj_index][:, 2]
+
+    delta_objs_x = (torch.roll(obj_ordered_x, -1, 0) - obj_ordered_x)[:-1]
+    delta_objs_y = (torch.roll(obj_ordered_y, -1, 0) - obj_ordered_y)[:-1]
+    delta_objs = torch.sqrt(delta_objs_y ** 2 + delta_objs_x ** 2)
+    even_dist_error = metric_mse(delta_objs, 0)
+    return even_dist_error
+
+
+def conic_arc_length(point_a, point_b, conic):
+    a = conic["axis"][0]
+    b = conic["axis"][1]
+
+    def integr_arc_length(x, a, b):
+        return torch.sqrt(1 + ((a ** 2) / (b ** 2) - 1) * torch.pow(torch.sin(x), 2))
+
+    return -b * quad(integr_arc_length, float(torch.arccos(point_a[0] / a)), float(torch.arccos(point_b[0] / a)),
+                     args=(a, b))
+
+
+def even_dist_error_on_conic(group_objs, conic):
+    delta_y = group_objs[:, 2] - conic["center"][1]
+    delta_x = group_objs[:, 0] - conic["center"][0]
+    theta = torch.tensor([math.atan2(delta_y[i], delta_x[i]) for i in range(group_objs.shape[0])])
+    theta_ordered, theta_ordered_index = theta.sort()
+
+    obj_ordered = group_objs[theta_ordered_index]
+    arc_lengths = []
+    for i in range(obj_ordered.shape[0]):
+        arc_lengths.append(conic_arc_length(obj_ordered[i], obj_ordered[i + 1], conic))
+
+    even_dist_error = metric_mse(arc_lengths, 0)
+    return even_dist_error

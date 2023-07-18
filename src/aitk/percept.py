@@ -84,13 +84,10 @@ def get_perception_predictions(args, file_path):
     #     test_pos_pred, test_neg_pred = percept.eval_images(args, pm_test_res_file, args.device, test_pos_loader,
     #                                                        test_neg_loader)
 
-    if args.dataset_type == "hide":
-        train_pos_pred, train_neg_pred = get_pred_res(args, "train", file_path)
-        test_pos_pred, test_neg_pred = get_pred_res(args, "test", file_path)
-        val_pos_pred, val_neg_pred = get_pred_res(args, "val", file_path)
 
-    else:
-        raise ValueError
+    train_pos_pred, train_neg_pred = get_pred_res(args, "train", file_path)
+    test_pos_pred, test_neg_pred = get_pred_res(args, "test", file_path)
+    val_pos_pred, val_neg_pred = get_pred_res(args, "val", file_path)
 
     log_utils.add_lines(f"==== positive image number: {len(val_pos_pred)}", args.log_file)
     log_utils.add_lines(f"==== negative image number: {len(val_neg_pred)}", args.log_file)

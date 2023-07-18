@@ -69,6 +69,10 @@ def get_args(data_path):
                         help="The number of max steps for nc searching.")
     parser.add_argument("--max_step", type=int, default=5,
                         help="The number of max steps for clause searching.")
+    parser.add_argument("--weight_tp", type=float, default=0.95,
+                        help="The weight of true positive in evaluation equation.")
+    parser.add_argument("--weight_length", type=float, default=0.05,
+                        help="The weight of length in evaluation equation.")
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="The learning rate.")
     parser.add_argument("--suff_min", type=float, default=0.1,
@@ -119,8 +123,12 @@ def get_args(data_path):
                         help="Using background knowledge by PI.")
     parser.add_argument("--error_th", type=float, default=0.001,
                         help="The threshold for MAE of line group fitting.")
+    parser.add_argument("--line_even_error", type=float, default=0.001,
+                        help="The threshold for MAE of  point distribution in a line group.")
     parser.add_argument("--cir_error_th", type=float, default=0.05,
                         help="The threshold for MAE of circle group fitting.")
+    parser.add_argument("--cir_even_error", type=float, default=0.001,
+                        help="The threshold for MAE of point distribution in a circle group.")
     parser.add_argument("--poly_error_th", type=float, default=0.1,
                         help="The threshold for error of poly group fitting.")
     parser.add_argument("--line_group_min_sz", type=int, default=3,
@@ -139,7 +147,7 @@ def get_args(data_path):
                         help="The threshold for group points forming a shape that evenly distributed on the whole shape.")
     args = parser.parse_args()
 
-    args_file = data_path / "lang" / args.dataset_type / args.dataset / "args.json"
+    args_file = data_path / "lang" / args.dataset_type / str(str(args.dataset) + ".json")
     load_args_from_file(str(args_file), args)
 
     return args

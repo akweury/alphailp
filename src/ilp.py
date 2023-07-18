@@ -245,6 +245,17 @@ def ilp_eval(success, args, lang, clauses, g_data):
                 print("(FN)")
     visual_utils.visualization(args, lang, scores_dict)
 
+    log_utils.add_lines("===================== top clause score ================================", args.log_file)
+    positive_res = torch.tensor(scores_dict['true']['score'])
+    negative_res = torch.tensor(scores_dict['false']['score'])
+    tp_count = len(positive_res[positive_res > 0.95])
+    p_total = len(positive_res)
+    fp_count = len(negative_res[negative_res > 0.95])
+    f_total = len(negative_res)
+    log_utils.add_lines(f"positive: {tp_count / p_total} ({tp_count}/{p_total})", args.log_file)
+    log_utils.add_lines(f"negative: {fp_count / f_total} ({fp_count}/{f_total})", args.log_file)
+    log_utils.add_lines("=======================================================================", args.log_file)
+
     return scores_dict
 
 
@@ -300,7 +311,7 @@ def get_clause_3score(score_pos, score_neg, args, c_length=0):
     sn_index = config.score_type_index["sn"]
     scores[ness_index, :] = score_pos.sum(dim=1) / score_pos.shape[1]
     scores[suff_index, :] = score_negative_inv.sum(dim=1) / score_negative_inv.shape[1]
-    scores[sn_index, :] = scores[0, :] * scores[1, :] + (c_length + 1) * args.length_weight
+    scores[sn_index, :] = scores[0, :] * scores[1, :] * args.weight_tp + c_length * (args.weight_length / args.max_step)
     return scores
 
 

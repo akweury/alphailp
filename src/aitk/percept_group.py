@@ -281,6 +281,12 @@ def extend_line_group(args, obj_indices, obj_tensors):
     line_group_indices = torch.tensor(line_group_indices)
     line = eval_utils.fit_line(obj_tensors[line_group_indices][:, [0, 2]])
 
+    even_dist_error = eval_utils.even_dist_error_on_line(line_groups, line)
+    if even_dist_error > args.line_even_error:
+        line_group_indices = None
+        line = None
+        colinearities = None
+
     return line_group_indices, line, colinearities
 
 
@@ -304,7 +310,8 @@ def extend_conic_group(args, obj_indices, obj_tensors):
         all_points = [group_objs, leaf_objs]
 
         poly_error = eval_utils.get_conic_error(conics["coef"], conics["center"], leaf_objs[:, [0, 2]])
-
+        if poly_error is None:
+            break
         is_poly = poly_error < args.poly_error_th
         has_new_element = is_poly.sum() > 0
         passed_leaf_objs = leaf_objs[is_poly]
@@ -316,8 +323,13 @@ def extend_conic_group(args, obj_indices, obj_tensors):
             break
         else:
             poly_group_indices += passed_leaf_indices.tolist()
-
     poly_group_indices = torch.tensor(poly_group_indices)
+
+    # even_dist_error = eval_utils.even_dist_error_on_conic(group_objs, conics)
+    # if even_dist_error > args.conic_even_error:
+    #     poly_group_indices = None
+    #     conics = None
+    #     poly_error = None
 
     return poly_group_indices, conics, poly_error
 
@@ -348,6 +360,13 @@ def extend_circle_group(args, obj_indices, obj_tensors):
         group_objs = torch.cat([group_objs, passed_leaf_objs], dim=0)
         cir_group_indices += passed_leaf_indices.tolist()
     cir_group_indices = torch.tensor(cir_group_indices)
+
+    # if points are not evenly distributed, return None
+    even_dist_error = eval_utils.even_dist_error_on_cir(group_objs, cir)
+    if even_dist_error > args.cir_even_error:
+        cir = None
+        cir_group_indices = None
+        cir_error = None
 
     return cir_group_indices, cir, cir_error
 

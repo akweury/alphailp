@@ -1047,14 +1047,16 @@ def visual_cir(vis_file, radius, center, point_groups, point_groups_2, errors, l
 
     g_errors = eval_utils.get_circle_error(center, radius, point_groups[0][:, [0, 2]])
     for i, txt in enumerate(g_errors):
-        axes[0].annotate(f"In {i}: "
-                         f"({round(point_groups[0][i, 0].tolist(), 2)},{round(point_groups[0][i, 2].tolist(), 2)})  "
-                         f"e: {round(txt.tolist(), 4)}", (-0.4, 1.3 - line_height * i), fontsize=font_size)
+        if len(point_groups[0]) > 0:
+            axes[0].annotate(f"In {i}: "
+                             f"({round(point_groups[0][i, 0].tolist(), 2)},{round(point_groups[0][i, 2].tolist(), 2)})  "
+                             f"e: {round(txt.tolist(), 4)}", (-0.4, 1.3 - line_height * i), fontsize=font_size)
     for i, txt in enumerate(errors):
-        axes[0].annotate(f"Out {i}: "
-                         f"({round(point_groups[1][i, 0].tolist(), 2)},{round(point_groups[1][i, 2].tolist(), 2)})  "
-                         f"e: {round(txt.tolist(), 3)}",
-                         (-0.4, 1.3 - line_height * (len(g_errors) + 1) - line_height * i), fontsize=font_size)
+        if len(point_groups[1]) > 0:
+            axes[0].annotate(f"Out {i}: "
+                             f"({round(point_groups[1][i, 0].tolist(), 2)},{round(point_groups[1][i, 2].tolist(), 2)})  "
+                             f"e: {round(txt.tolist(), 3)}",
+                             (-0.4, 1.3 - line_height * (len(g_errors) + 1) - line_height * i), fontsize=font_size)
 
     # Plot the least squares circle
     x = np.linspace(-0.5, 1.5, 150)

@@ -25,6 +25,8 @@ def init():
             name = str(Path("KP") / f"NeSy-PI_{args.dataset}")
     elif args.dataset_type == "hide":
         name = str(Path("HIDE") / f"NeSy-PI_{args.dataset}")
+    elif args.dataset_type == "alphabet":
+        name = str(Path("ALPHABET") / f"NeSy-PI_{args.dataset}")
     else:
         if not args.no_xil:
             name = str(Path('CH') / Path(f"/aILP_{args.dataset}"))
@@ -34,7 +36,8 @@ def init():
     # get images names
     if args.dataset_type == "hide":
         file_utils.get_image_names(args)
-
+    elif args.dataset_type == "alphabet":
+        file_utils.get_image_names(args)
     exp_output_path = config.buffer_path / args.dataset_type / args.dataset / "logs"
     if not os.path.exists(exp_output_path):
         os.mkdir(exp_output_path)
@@ -76,7 +79,7 @@ def init():
     torch.set_printoptions(precision=4)
     torch.autograd.set_detect_anomaly(True)
 
-    file_path = config.buffer_path / "hide" / f"{args.dataset}"
+    file_path = config.buffer_path / args.dataset_type / f"{args.dataset}"
     pm_prediction_dict = percept.get_perception_predictions(args, file_path)
 
     # grouping objects to reduce the problem complexity
@@ -116,15 +119,17 @@ def main():
     start = time.time()
     lang = se.init_ilp(args, percept_dict, obj_groups, obj_avail, config.pi_type['bk'], "group")
     success, clauses = se.run_ilp_train(args, lang, "group")
+    train_end = time.time()
     g_data = None
     se.ilp_eval(success, args, lang, clauses, g_data)
-    end = time.time()
+    eval_end = time.time()
 
     log_utils.add_lines(f"=============================", args.log_file)
-    log_utils.add_lines(f"Experiment time: {((end - start) / 60):.2f} minute(s)", args.log_file)
+    log_utils.add_lines(f"Training time: {((train_end - start) / 60):.3f} minute(s)", args.log_file)
+    log_utils.add_lines(f"Evaluation time: {((eval_end - train_end) / 60):.3f} minute(s)", args.log_file)
     log_utils.add_lines(f"=============================", args.log_file)
 
-    se.train_nsfr(args, rtpt, lang, clauses)
+    # se.train_nsfr(args, rtpt, lang, clauses)
 
 
 if __name__ == "__main__":
