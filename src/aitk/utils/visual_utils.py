@@ -906,6 +906,9 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
             group_pred_image = visual_group_predictions(args, data, data_indices, obj_data, input_image, colors,
                                                         thickness,
                                                         config.group_tensor_index, config.obj_tensor_index)
+            group_img_name = str(
+                args.image_output_path / f"{data_name[0].split('/')[-1].split('.data0.json')[0]}.group.output.png")
+            save_image(group_pred_image, group_img_name)
 
             # information image
             info_image = visual_info(lang, input_image.shape, font_size=0.3)
