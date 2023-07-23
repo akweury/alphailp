@@ -823,7 +823,8 @@ def visual_group_predictions(args, data, data_indices, obj_data, input_image, co
     # draw points on each objects
     obj_pos_sc = []
     for group_i in range(data.shape[0]):
-        group_objs = obj_data[data_indices[group_i]]
+        group_i_indices = data_indices[group_i][:obj_data.shape[0]]
+        group_objs = obj_data[group_i_indices]
         index_obj_screen_x = obj_tensor_index["screen_x"]
         index_obj_screen_y = obj_tensor_index["screen_y"]
         obj_screen_points = group_objs[:, [index_obj_screen_x, index_obj_screen_y]]
@@ -878,7 +879,7 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
 
     for data_type in ["true", "false"]:
         for img_i in range(len(args.test_group_pos)):
-            data_name = args.image_name_dict['test'][data_type][img_i]
+            data_name = args.image_name_dict['test'][data_type][img_i][0].split("/")[-1]
             if data_type == "true":
                 data = args.test_group_pos[img_i]
                 data_indices = args.obj_avail_test_pos[img_i]
@@ -898,7 +899,9 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
 
             visual_images = []
             # input image
-            file_prefix = str(config.root / ".." / data_name[0]).split(".data0.json")[0]
+            file_prefix = \
+            str(config.buffer_path / args.dataset_type / args.dataset / "test" / data_type / data_name).split(
+                ".data0.json")[0]
             image_file = file_prefix + ".image.png"
             input_image = get_cv_image(image_file)
 
@@ -907,7 +910,7 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
                                                         thickness,
                                                         config.group_tensor_index, config.obj_tensor_index)
             group_img_name = str(
-                args.image_output_path / f"{data_name[0].split('/')[-1].split('.data0.json')[0]}.group.output.png")
+                args.image_output_path / f"{data_name.split('.data0.json')[0]}.group.output.png")
             save_image(group_pred_image, group_img_name)
 
             # information image
@@ -929,7 +932,7 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
             # final processing
             final_image = hconcat_resize(visual_images)
             final_image_filename = str(
-                args.image_output_path / f"{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
+                args.image_output_path / f"{data_name.split('.data0.json')[0]}.output.png")
 
             save_image(final_image, final_image_filename)
 

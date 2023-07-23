@@ -125,7 +125,8 @@ def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
 
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
-        log_utils.add_lines(f"({c_type}): {bs_clause[0]} {bs_clause[1].reshape(-1)}", args.log_file)
+        if args.show_process:
+            log_utils.add_lines(f"({c_type}): {bs_clause[0]} {bs_clause[1].reshape(-1)}", args.log_file)
 
     return clauses
 
@@ -153,7 +154,9 @@ def get_semantic_from_c(clause):
 
 def get_independent_clusters(args, lang, clauses):
     clause_with_scores = lang.clause_with_scores
-    print(f"- searching for independent clauses from {len(clause_with_scores)} clauses...")
+
+    if args.show_process:
+        print(f"- searching for independent clauses from {len(clause_with_scores)} clauses...")
 
     clauses_with_score = []
     for clause_i, [clause, four_scores, c_scores] in enumerate(clause_with_scores):

@@ -120,8 +120,6 @@ class Language(object):
         init_clause += "."
         tree = self.lp_clause.parse(init_clause)
         clauses = ExpTree(self).transform(tree)
-        print(f"\n================= Initial clauses ===================\n"
-              f"{clauses}")
         clauses = [clauses]
         return clauses
 

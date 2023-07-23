@@ -8,7 +8,7 @@ import config
 from aitk.utils import eval_utils
 from aitk.utils import data_utils
 from aitk.utils import visual_utils
-
+from aitk.utils import log_utils
 
 def detect_groups(args, obj_tensors, g_type):
     if g_type == "line":
@@ -38,15 +38,16 @@ def detect_groups(args, obj_tensors, g_type):
         group_shape_ith = []
         group_error_ith = []
         exist_combs = []
-        min_group_indices = data_utils.get_comb(torch.tensor(range(obj_tensors[img_i].shape[0])), init_obj_num).tolist()
+        img_i_obj_tensors = obj_tensors[img_i][obj_tensors[img_i][:, config.obj_tensor_index["prob"]] > 0]
+        min_group_indices = data_utils.get_comb(torch.tensor(range(img_i_obj_tensors.shape[0])), init_obj_num).tolist()
         # detect lines by checking each possible combinations
         for g_i, obj_indices in enumerate(min_group_indices):
             # check duplicate
             if obj_indices in exist_combs:
                 continue
-            g_indices, g_shape_data, fit_error = extend_func(args, obj_indices, obj_tensors[img_i])
+            g_indices, g_shape_data, fit_error = extend_func(args, obj_indices, img_i_obj_tensors)
             if g_shape_data is not None:
-                g_obj_tensors = obj_tensors[img_i][g_indices]
+                g_obj_tensors = img_i_obj_tensors[g_indices]
                 if g_obj_tensors is not None and len(g_obj_tensors) >= min_obj_num:
                     exist_combs += data_utils.get_comb(g_indices, init_obj_num).tolist()
                     group_indices_ith.append(g_indices)
@@ -109,7 +110,6 @@ def encode_groups(args, obj_indices, obj_tensors, group_type):
 
     all_group_tensors = []
     all_group_tensors_indices = []
-
     for img_i in range(len(obj_tensors)):
         img_group_tensors = []
         img_group_tensors_indices = []
@@ -297,7 +297,7 @@ def extend_conic_group(args, obj_indices, obj_tensors):
 
     group_objs = obj_tensors[poly_group_indices]
     conics = eval_utils.fit_conic(group_objs[:, [0, 2]])
-    if not (conics["axis"][0] > 0 and conics["axis"][1] > 0):
+    if conics["axis"] is None:
         group_objs = None
         conics = None
 
@@ -319,7 +319,7 @@ def extend_conic_group(args, obj_indices, obj_tensors):
         group_objs = torch.cat([group_objs, passed_leaf_objs], dim=0)
 
         conics = eval_utils.fit_conic(group_objs[:, [0, 2]])
-        if not (conics["axis"][0] > 0 and conics["axis"][1] > 0):
+        if conics["axis"] is None:
             break
         else:
             poly_group_indices += passed_leaf_indices.tolist()
@@ -436,7 +436,8 @@ def detect_dot_groups(args, percept_dict, valid_obj_indices):
 
 
 def detect_obj_groups(args, percept_dict_single, data_type):
-    save_path = config.buffer_path / "hide" / args.dataset / "buffer_groups"
+    log_utils.add_lines(f"- grouping {data_type} objects ...", args.log_file)
+    save_path = config.buffer_path / args.dataset_type / args.dataset / "buffer_groups"
     save_file = save_path / f"{args.dataset}_group_res_{data_type}.pth.tar"
     if save_file.is_file() and args.re_eval_groups:
         os.remove(str(save_file))
@@ -539,7 +540,8 @@ def select_top_k_groups(args, object_groups, used_objs):
                 group_name = "unknown"
                 group_msg = f""
             group_obj_indices = ((obj_groups_img_top_indices[g_i] == True).nonzero(as_tuple=True)[0])
-            print(f'(img {img_i}) {group_name} {group_obj_indices} {group_msg}')
+            if args.show_process:
+                print(f'(img {img_i}) {group_name} {group_obj_indices} {group_msg}')
 
     return obj_groups_top, obj_groups_top_indices
 

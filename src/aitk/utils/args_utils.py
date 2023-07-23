@@ -17,7 +17,8 @@ def get_args(data_path):
                         help="The number of groups in one image")
     parser.add_argument("--group_max_e", type=int, default=5,
                         help="The maximum number of groups in one image")
-    parser.add_argument("--dataset", default="red-triangle", help="Use kandinsky patterns dataset")
+    parser.add_argument("--dataset", default="red-triangle",
+                        help="Use kandinsky patterns dataset")
     parser.add_argument("--is_visual", action="store_true",
                         help="Analysis visualization for grouping results.")
     parser.add_argument("--dataset-type", default="kandinsky",
@@ -59,8 +60,9 @@ def get_args(data_path):
                         help="The maximum number of clauses.")
     parser.add_argument("--m", type=int, default=1,
                         help="The size of the logic program.")
-    parser.add_argument("--n-obj", type=int, default=5,
-                        help="The number of objects to be focused.")
+    parser.add_argument("--max_group_num", type=int, default=6,
+                        help="The max number of groups to be clustered.")
+    # parser.add_argument("--n-obj", type=int, default=5, help="The number of objects to be focused.")
     parser.add_argument("--epochs", type=int, default=101,
                         help="The number of epochs.")
     parser.add_argument("--pi_epochs", type=int, default=3,
@@ -145,6 +147,8 @@ def get_args(data_path):
                         help="The maximum number of objects/groups to deal with in a single image.")
     parser.add_argument("--distribute_error_th", type=float, default=0.0005,
                         help="The threshold for group points forming a shape that evenly distributed on the whole shape.")
+    parser.add_argument("--show_process", action="store_false",
+                        help="Print process to the logs and screen.")
     args = parser.parse_args()
 
     args_file = data_path / "lang" / args.dataset_type / str(str(args.dataset) + ".json")

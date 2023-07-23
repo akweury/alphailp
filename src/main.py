@@ -16,8 +16,7 @@ date_now = datetime.datetime.today().date()
 time_now = datetime.datetime.now().strftime("%H_%M_%S")
 
 
-def init():
-    args = args_utils.get_args(config.data_path)
+def init(args):
     if args.dataset_type == 'kandinsky':
         if args.small_data:
             name = str(Path("small_KP") / f"NeSy-PI_{args.dataset}")
@@ -34,17 +33,18 @@ def init():
             name = str(Path('CH') / f"aILP-noXIL_{args.dataset}")
 
     # get images names
-    if args.dataset_type == "hide":
-        file_utils.get_image_names(args)
-    elif args.dataset_type == "alphabet":
+    if args.dataset_type in ["hide", "alphabet", "single_pattern"]:
         file_utils.get_image_names(args)
     exp_output_path = config.buffer_path / args.dataset_type / args.dataset / "logs"
     if not os.path.exists(exp_output_path):
         os.mkdir(exp_output_path)
     log_file = log_utils.create_log_file(exp_output_path)
-    print(f"log_file_path:{log_file}")
+
+    print(f"- log_file_path:{log_file}")
     args.log_file = log_file
-    log_utils.add_lines(f"args: {args}", log_file)
+    log_utils.add_lines(f"============================= Group Num: {args.group_e} =======================",
+                        args.log_file)
+    # log_utils.add_lines(f"args: {args}", log_file)
 
     img_output_path = config.buffer_path / args.dataset_type / args.dataset / "image_output"
     if not os.path.exists(img_output_path):
@@ -70,7 +70,8 @@ def init():
         args.device = torch.device('cuda')
     else:
         args.device = torch.device('cuda:' + str(args.device))
-    log_utils.add_lines(f"device: {args.device}", log_file)
+
+    log_utils.add_lines(f"- device: {args.device}", log_file)
 
     # Create RTPT object
     rtpt = RTPT(name_initials='JS', experiment_name=name, max_iterations=args.epochs)
@@ -82,6 +83,8 @@ def init():
     file_path = config.buffer_path / args.dataset_type / f"{args.dataset}"
     pm_prediction_dict = percept.get_perception_predictions(args, file_path)
 
+    args.n_obj = pm_prediction_dict["val_pos"][0].shape[0]
+    args.n_obj = 100
     # grouping objects to reduce the problem complexity
     group_val_pos, obj_avail_val_pos = detect_obj_groups(args, pm_prediction_dict["val_pos"], "val_pos")
     group_val_neg, obj_avail_val_neg = detect_obj_groups(args, pm_prediction_dict["val_neg"], "val_neg")
@@ -113,19 +116,31 @@ def init():
 
 
 def main():
-    # set up the environment, load the dataset and results from perception models
-    args, rtpt, percept_dict, obj_groups, obj_avail, nsfr = init()
-    # ILP and PI system
-    start = time.time()
-    lang = se.init_ilp(args, percept_dict, obj_groups, obj_avail, config.pi_type['bk'], "group")
-    success, clauses = se.run_ilp_train(args, lang, "group")
-    train_end = time.time()
-    g_data = None
-    se.ilp_eval(success, args, lang, clauses, g_data)
-    eval_end = time.time()
+    args = args_utils.get_args(config.data_path)
+    for group_num in range(1, args.max_group_num):
+        args.group_e = group_num
 
+        # set up the environment, load the dataset and results from perception models
+        start = time.time()
+        args, rtpt, percept_dict, obj_groups, obj_avail, nsfr = init(args)
+        group_end = time.time()
+
+        # ILP and PI system
+        lang = se.init_ilp(args, percept_dict, obj_groups, obj_avail, config.pi_type['bk'], "group")
+        success, clauses = se.run_ilp_train(args, lang, "group")
+
+        if success:
+            train_end = time.time()
+            # evaluation
+            g_data = None
+            se.ilp_eval(success, args, lang, clauses, g_data)
+            eval_end = time.time()
+            break
+
+    # log
     log_utils.add_lines(f"=============================", args.log_file)
-    log_utils.add_lines(f"Training time: {((train_end - start) / 60):.3f} minute(s)", args.log_file)
+    log_utils.add_lines(f"Grouping time: {((group_end - start) / 60):.3f} minute(s)", args.log_file)
+    log_utils.add_lines(f"Training time: {((train_end - group_end) / 60):.3f} minute(s)", args.log_file)
     log_utils.add_lines(f"Evaluation time: {((eval_end - train_end) / 60):.3f} minute(s)", args.log_file)
     log_utils.add_lines(f"=============================", args.log_file)
 

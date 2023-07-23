@@ -181,18 +181,25 @@ def fit_conic(point_groups):
     # Formulate and solve the least squares problem ||Px - b ||^2
     P = np.hstack([X ** 2, X * Y, Y ** 2, X, Y])
     b = np.ones_like(X)
-    x = np.linalg.lstsq(P, b)[0].squeeze().astype(np.float64)
+    x = np.linalg.lstsq(P, b, rcond=None)[0].squeeze().astype(np.float64)
 
     A, B, C, D, E, F = x[0], x[1], x[2], x[3], x[4], -1
     # conic center:   https://en.wikipedia.org/wiki/Ellipse
     c_x = (2 * x[2] * x[3] - x[1] * x[4]) / (x[1] ** 2 - 4 * x[0] * x[2])
     c_z = (2 * x[0] * x[4] - x[1] * x[3]) / (x[1] ** 2 - 4 * x[0] * x[2])
     center = torch.tensor([c_x, c_z])
-    a = -np.sqrt(2 * (A * E ** 2 + C * D ** 2 - B * D * E + (B ** 2 - 4 * A * C) * F) * (
-            (A + C) + np.sqrt((A - C) ** 2 + B ** 2))) / (B ** 2 - 4 * A * C)
-    b = -np.sqrt(2 * (A * E ** 2 + C * D ** 2 - B * D * E + (B ** 2 - 4 * A * C) * F) * (
-            (A + C) - np.sqrt((A - C) ** 2 + B ** 2))) / (B ** 2 - 4 * A * C)
-    axis = torch.tensor([a * 2, b * 2])
+
+    a_numerator = 2 * (A * E ** 2 + C * D ** 2 - B * D * E + (B ** 2 - 4 * A * C) * F) * (
+            (A + C) + np.sqrt((A - C) ** 2 + B ** 2))
+    b_numerator = 2 * (A * E ** 2 + C * D ** 2 - B * D * E + (B ** 2 - 4 * A * C) * F) * (
+            (A + C) - np.sqrt((A - C) ** 2 + B ** 2))
+
+    if a_numerator < 0 or b_numerator < 0:
+        axis = None
+    else:
+        a = -np.sqrt(a_numerator) / (B ** 2 - 4 * A * C)
+        b = -np.sqrt(b_numerator) / (B ** 2 - 4 * A * C)
+        axis = torch.tensor([a * 2, b * 2])
 
     # if a <= 0 or b <= 0:
     #     print("debug ellipse axis ")
@@ -201,7 +208,6 @@ def fit_conic(point_groups):
     # print(f'Ellipse: {x[0]:.3}x^2 + {x[1]:.3}xy+{x[2]:.3}y^2+{x[3]:.3}x+{x[4]:.3}y = 1, center:{center}.')
 
     conics = {"coef": x, "center": center, "axis": axis}
-
     return conics
 
 

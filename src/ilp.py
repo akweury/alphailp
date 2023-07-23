@@ -120,18 +120,21 @@ def ilp_pi(args, lang, clauses, e):
         args.no_new_preds = False
         lang.generate_atoms()
 
-    log_utils.add_lines(f"======  Total PI Number: {len(lang.invented_preds)}  ======", args.log_file)
-    for p in lang.invented_preds:
-        log_utils.add_lines(f"{p}", args.log_file)
+    # log
+    if args.show_process:
+        log_utils.add_lines(f"======  Total PI Number: {len(lang.invented_preds)}  ======", args.log_file)
+        for p in lang.invented_preds:
+            log_utils.add_lines(f"{p}", args.log_file)
 
-    log_utils.add_lines(f"========== Total {len(lang.pi_clauses)} PI Clauses ======== ", args.log_file)
-    for c in lang.pi_clauses:
-        log_utils.add_lines(f"{c}", args.log_file)
+        log_utils.add_lines(f"========== Total {len(lang.pi_clauses)} PI Clauses ======== ", args.log_file)
+        for c in lang.pi_clauses:
+            log_utils.add_lines(f"{c}", args.log_file)
 
 
 def ilp_test(args, lang, level):
     log_utils.add_lines(f"================== ILP TEST ==================", args.log_file)
-    log_utils.print_result(args, lang)
+    if args.show_process:
+        log_utils.print_result(args, lang)
 
     reset_args(args)
     init_clauses, e = reset_lang(lang, args, level, args.neural_preds, full_bk=True)
@@ -398,9 +401,10 @@ def clause_extend(args, lang, clauses, level):
         refs_no_conflict = clauses
         args.is_done = True
 
-    log_utils.add_lines(f"=============== extended clauses =================", args.log_file)
-    for ref in refs_no_conflict:
-        log_utils.add_lines(f"{ref}", args.log_file)
+    if args.show_process:
+        log_utils.add_lines(f"=============== extended clauses =================", args.log_file)
+        for ref in refs_no_conflict:
+            log_utils.add_lines(f"{ref}", args.log_file)
     return refs_no_conflict
 
 
@@ -409,7 +413,8 @@ def prune_clauses(clause_with_scores, args):
 
     # prune score similar clauses
     if args.score_unique:
-        log_utils.add_lines(f"- score pruning ... ({len(clause_with_scores)} clauses)", args.log_file)
+        if args.show_process:
+            log_utils.add_lines(f"- score pruning ... ({len(clause_with_scores)} clauses)", args.log_file)
         # for c in clause_with_scores:
         #     log_utils.add_lines(f"(clause before pruning) {c[0]} {c[1].reshape(3)}", args.log_file)
         score_unique_c = []
@@ -424,11 +429,14 @@ def prune_clauses(clause_with_scores, args):
         c_score_pruned = score_unique_c
     else:
         c_score_pruned = clause_with_scores
-    log_utils.add_lines(f"- {len(c_score_pruned)} clauses left.", args.log_file)
+
+    if args.show_process:
+        log_utils.add_lines(f"- {len(c_score_pruned)} clauses left.", args.log_file)
     # prune predicate similar clauses
 
     if args.semantic_unique:
-        log_utils.add_lines(f"- semantic pruning ... ({len(c_score_pruned)} clauses)", args.log_file)
+        if args.show_process:
+            log_utils.add_lines(f"- semantic pruning ... ({len(c_score_pruned)} clauses)", args.log_file)
         semantic_unique_c = []
         semantic_repeat_c = []
         appeared_semantics = []
@@ -444,7 +452,9 @@ def prune_clauses(clause_with_scores, args):
         c_semantic_pruned = c_score_pruned
 
     c_score_pruned = c_semantic_pruned
-    log_utils.add_lines(f"- {len(c_score_pruned)} clauses left.", args.log_file)
+
+    if args.show_process:
+        log_utils.add_lines(f"- {len(c_score_pruned)} clauses left.", args.log_file)
 
     # select top N clauses
     if args.c_top is not None and len(c_score_pruned) > args.c_top:
@@ -512,9 +522,10 @@ def cluster_invention(args, lang, clauses, e):
     new_preds_with_scores = new_preds_with_scores[:args.pi_top]
     lang.invented_preds_with_scores += new_preds_with_scores
 
-    log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
-    for new_c, new_c_score in new_preds_with_scores:
-        log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
+    if args.show_process:
+        log_utils.add_lines(f"new PI: {len(new_preds_with_scores)}", args.log_file)
+        for new_c, new_c_score in new_preds_with_scores:
+            log_utils.add_lines(f"{new_c} {new_c_score.reshape(3)}", args.log_file)
 
     args.is_done = found_ns
     return new_preds_with_scores

@@ -98,8 +98,8 @@ def gen_clu_pi_clauses(args, lang, new_predicates, clause_str_list_with_score, k
         clause = ExpTree(lang).transform(tree)
         clauses.append(clause)
 
-    for str in kp_str_list:
-        print(str)
+    # for str in kp_str_list:
+    #     print(str)
     kp_clause = []
     for clause_str in kp_str_list:
         tree = lp_clause.parse(clause_str)
