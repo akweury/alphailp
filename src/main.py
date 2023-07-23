@@ -119,7 +119,6 @@ def main():
     args = args_utils.get_args(config.data_path)
     for group_num in range(1, args.max_group_num):
         args.group_e = group_num
-
         # set up the environment, load the dataset and results from perception models
         start = time.time()
         args, rtpt, percept_dict, obj_groups, obj_avail, nsfr = init(args)

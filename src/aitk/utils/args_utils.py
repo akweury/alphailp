@@ -149,6 +149,14 @@ def get_args(data_path):
                         help="The threshold for group points forming a shape that evenly distributed on the whole shape.")
     parser.add_argument("--show_process", action="store_false",
                         help="Print process to the logs and screen.")
+    parser.add_argument("--obj_group", action="store_false",
+                        help="Treat a single object as a group.")
+    parser.add_argument("--line_group", action="store_false",
+                        help="Treat a line of objects as a group.")
+    parser.add_argument("--circle_group", action="store_false",
+                        help="Treat a circle of objects as a group.")
+    parser.add_argument("--conic_group", action="store_false",
+                        help="Treat a conic of objects as a group.")
     args = parser.parse_args()
 
     args_file = data_path / "lang" / args.dataset_type / str(str(args.dataset) + ".json")

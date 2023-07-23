@@ -1,6 +1,10 @@
 {
   "dataset": "check_mark_4",
   "dataset-type": "single_pattern",
+  "obj_group": true,
+  "line_group": false,
+  "circle_group":false,
+  "conic_group": false,
   "max_step": 4,
   "weight_tp": 0.95,
   "weight_length": 0.05,

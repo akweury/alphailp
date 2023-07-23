@@ -209,3 +209,63 @@ def to_conic_tensor(objs, conics, conics_sc, conic_error):
     conic_tensor = conic_tensor.reshape(-1)
 
     return conic_tensor
+
+
+def to_obj_tensor(objs):
+    obj_tensor_index = config.obj_tensor_index
+    group_tensor_index = config.group_tensor_index
+    obj_tensor = torch.zeros(len(group_tensor_index.keys()))
+
+    colors = objs[:, [obj_tensor_index[i] for i in config.obj_color]]
+    shapes = objs[:, [obj_tensor_index[i] for i in config.obj_shapes]]
+
+    colors_normalized = colors.sum(dim=0) / colors.shape[0]
+    shapes_normalized = shapes.sum(dim=0) / shapes.shape[0]
+    # 0:2 center_x, center_z
+    # 2 slope
+    # 3 x_length
+    # 4 z_length
+    # 5 is_line
+    # 6 is_circle
+    # 7 probability
+
+    obj_tensor[group_tensor_index["x"]] = objs[:, 0].mean()
+    obj_tensor[group_tensor_index["y"]] = objs[:, 1].mean()
+    obj_tensor[group_tensor_index["z"]] = objs[:, 2].mean()
+
+    obj_tensor[group_tensor_index["color_counter"]] = op_count_nonzeros(colors.sum(dim=0), axis=0, epsilon=1e-10)
+    obj_tensor[group_tensor_index["shape_counter"]] = op_count_nonzeros(shapes.sum(dim=0), axis=0, epsilon=1e-10)
+
+    colors_normalized[colors_normalized < 0.99] = 0
+    obj_tensor[group_tensor_index['red']] = colors_normalized[0]
+    obj_tensor[group_tensor_index['green']] = colors_normalized[1]
+    obj_tensor[group_tensor_index['blue']] = colors_normalized[2]
+
+    shapes_normalized[shapes_normalized < 0.99] = 0
+    obj_tensor[group_tensor_index['sphere']] = shapes_normalized[0]
+    obj_tensor[group_tensor_index['cube']] = shapes_normalized[1]
+    obj_tensor[group_tensor_index["obj"]] = 1
+    obj_tensor[group_tensor_index["line"]] = 0
+    obj_tensor[group_tensor_index['circle']] = 0
+    obj_tensor[group_tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()
+    obj_tensor[group_tensor_index["y_length"]] = objs[:, 1].max() - objs[:, 1].min()
+    obj_tensor[group_tensor_index["z_length"]] = objs[:, 2].max() - objs[:, 2].min()
+
+    obj_tensor[group_tensor_index["x_center_screen"]] = objs[:, obj_tensor_index['screen_x']]
+    obj_tensor[group_tensor_index["y_center_screen"]] = objs[:, obj_tensor_index['screen_y']]
+
+    obj_tensor[group_tensor_index["screen_left_x"]] = objs[:, obj_tensor_index['screen_x']]
+    obj_tensor[group_tensor_index["screen_left_y"]] = objs[:, obj_tensor_index['screen_y']]
+    obj_tensor[group_tensor_index["screen_right_x"]] = objs[:, obj_tensor_index['screen_x']]
+    obj_tensor[group_tensor_index["screen_right_y"]] = objs[:, obj_tensor_index['screen_y']]
+
+    obj_tensor[group_tensor_index["axis_x"]] = 0
+    obj_tensor[group_tensor_index["axis_z"]] = 0
+    obj_tensor[group_tensor_index["screen_axis_x"]] = 0
+    obj_tensor[group_tensor_index["screen_axis_z"]] = 0
+
+    obj_tensor[group_tensor_index["size"]] = objs.shape[0]
+
+    obj_tensor = obj_tensor.reshape(-1)
+
+    return obj_tensor

@@ -10,8 +10,13 @@ from aitk.utils import data_utils
 from aitk.utils import visual_utils
 from aitk.utils import log_utils
 
+
 def detect_groups(args, obj_tensors, g_type):
-    if g_type == "line":
+    if g_type == "obj":
+        init_obj_num = 1
+        min_obj_num = 1
+        extend_func = extend_obj_group
+    elif g_type == "line":
         init_obj_num = 2
         min_obj_num = args.line_group_min_sz
         extend_func = extend_line_group
@@ -49,7 +54,8 @@ def detect_groups(args, obj_tensors, g_type):
             if g_shape_data is not None:
                 g_obj_tensors = img_i_obj_tensors[g_indices]
                 if g_obj_tensors is not None and len(g_obj_tensors) >= min_obj_num:
-                    exist_combs += data_utils.get_comb(g_indices, init_obj_num).tolist()
+                    if not g_type == "obj":
+                        exist_combs += data_utils.get_comb(g_indices, init_obj_num).tolist()
                     group_indices_ith.append(g_indices)
                     group_groups_ith.append(g_obj_tensors)
                     group_shape_ith.append(g_shape_data)
@@ -115,7 +121,9 @@ def encode_groups(args, obj_indices, obj_tensors, group_type):
         img_group_tensors_indices = []
         for obj_i, objs in enumerate(obj_tensors[img_i]):
             group_used_objs = torch.zeros(args.n_obj, dtype=torch.bool)
-            if group_type == "line":
+            if group_type == "obj":
+                group_tensor = data_utils.to_obj_tensor(objs)
+            elif group_type == "line":
                 lines = eval_utils.fit_line(objs[:, [0, 2]])
                 line_sc = eval_utils.fit_line(objs[:, [obj_tensor_index[i] for i in config.obj_screen_positions]])
                 line_error = eval_utils.get_line_error(lines["slope"], lines["intercept"], objs[:, [0, 2]])
@@ -210,7 +218,8 @@ def detect_line_groups(args, obj_tensors, visual):
     input: object tensors
     output: group tensors
     """
-
+    if not args.line_group:
+        return None, None
     line_indices, line_groups, line_data, line_error = detect_groups(args, obj_tensors, "line")
     line_tensors, line_tensors_indices = encode_groups(args, line_indices, line_groups, "line")
     # logic: prune strategy
@@ -226,6 +235,8 @@ def detect_conic_groups(args, obj_tensors, is_visual):
     input: object tensors
     output: group tensors
     """
+    if not args.conic_group:
+        return None, None
 
     conic_indices, conic_groups, conic_data, conic_error = detect_groups(args, obj_tensors, "conic")
     conic_tensors, conic_tensors_indices = encode_groups(args, conic_indices, conic_groups, "conic")
@@ -241,13 +252,21 @@ def detect_circle_groups(args, obj_tensors, is_visual):
     input: object tensors
     output: group tensors
     """
-
+    if not args.circle_group:
+        return None, None
     cir_indices, cir_groups, cir_data, cir_error = detect_groups(args, obj_tensors, "cir")
     cir_tensors, cir_tensors_indices = encode_groups(args, cir_indices, cir_groups, "cir")
     tensors, indices, data, error = prune_groups(args, cir_tensors, cir_tensors_indices, cir_data, cir_error, "circle")
     if is_visual:
         visual_group_analysis(args, tensors, indices, obj_tensors, "cir", data, error)
     return tensors, indices
+
+
+def extend_obj_group(args, obj_indices, obj_tensors):
+    obj_group_index = obj_indices
+    obj = obj_tensors[obj_group_index]
+    obj_error = 0
+    return obj_group_index, obj, obj_error
 
 
 def extend_line_group(args, obj_indices, obj_tensors):
@@ -435,6 +454,24 @@ def detect_dot_groups(args, percept_dict, valid_obj_indices):
     return dot_tensors
 
 
+def gen_single_obj_groups(args, obj_tensors, visual):
+    """
+    input: object tensors
+    output: group tensors
+    """
+    if not args.obj_group:
+        return None, None
+
+    obj_indices, obj_groups, obj_data, obj_error = detect_groups(args, obj_tensors, "obj")
+    line_tensors, line_tensors_indices = encode_groups(args, obj_indices, obj_groups, "obj")
+    # logic: prune strategy
+    g_tensors, indices, data, error = prune_groups(args, line_tensors, line_tensors_indices, obj_data, obj_error,
+                                                   "obj")
+    if visual:
+        visual_group_analysis(args, g_tensors, indices, obj_tensors, "obj", data, error)
+    return g_tensors, indices
+
+
 def detect_obj_groups(args, percept_dict_single, data_type):
     log_utils.add_lines(f"- grouping {data_type} objects ...", args.log_file)
     save_path = config.buffer_path / args.dataset_type / args.dataset / "buffer_groups"
@@ -452,11 +489,14 @@ def detect_obj_groups(args, percept_dict_single, data_type):
         group_tensors = group_res["tensors"]
         group_obj_index_tensors = group_res['used_objs']
     else:
+        single_tensors, single_tensors_indices = gen_single_obj_groups(args, percept_dict_single, visual=is_visual)
+
         line_tensors, line_tensors_indices = detect_line_groups(args, percept_dict_single, visual=is_visual)
         conic_tensors, conic_tensors_indices = detect_conic_groups(args, percept_dict_single, is_visual=is_visual)
         cir_tensors, cir_tensors_indices = detect_circle_groups(args, percept_dict_single, is_visual=is_visual)
 
-        group_tensors, group_obj_index_tensors = merge_groups(args, line_tensors, cir_tensors, conic_tensors,
+        group_tensors, group_obj_index_tensors = merge_groups(args, single_tensors, single_tensors_indices,
+                                                              line_tensors, cir_tensors, conic_tensors,
                                                               line_tensors_indices, cir_tensors_indices,
                                                               conic_tensors_indices)
         # visual_utils.visual_groups(args, group_tensors, percept_dict_single, group_obj_index_tensors, data_type)
@@ -546,17 +586,29 @@ def select_top_k_groups(args, object_groups, used_objs):
     return obj_groups_top, obj_groups_top_indices
 
 
-def merge_groups(args, line_groups, cir_groups, conic_groups, line_used_objs, cir_used_objs, conic_used_objs):
-    line_groups = torch.tensor(line_groups)
-    cir_groups = torch.tensor(cir_groups)
-    conic_groups = torch.tensor(conic_groups)
+def merge_groups(args, single_groups, single_used_objs,
+                 line_groups, cir_groups, conic_groups, line_used_objs, cir_used_objs, conic_used_objs):
+    final_groups = []
+    final_used_objs = []
 
-    line_used_objs = torch.tensor(line_used_objs)
-    cir_used_objs = torch.tensor(cir_used_objs)
-    conic_used_objs = torch.tensor(conic_used_objs)
+    if single_groups is not None:
+        final_groups.append(torch.tensor(single_groups))
+        final_used_objs.append(torch.tensor(single_used_objs))
 
-    object_groups = torch.cat((line_groups, cir_groups, conic_groups), dim=1)
-    used_objs = torch.cat((line_used_objs, cir_used_objs, conic_used_objs), dim=1)
+    if line_groups is not None:
+        final_groups.append(torch.tensor(line_groups))
+        final_used_objs.append(torch.tensor(line_used_objs))
+
+    if cir_groups is not None:
+        final_groups.append(torch.tensor(cir_groups))
+        final_used_objs.append(torch.tensor(cir_used_objs))
+
+    if conic_groups is not None:
+        final_groups.append(torch.tensor(conic_groups))
+        final_used_objs.append(torch.tensor(conic_used_objs))
+
+    object_groups = torch.cat(final_groups, dim=1)
+    used_objs = torch.cat(final_used_objs, dim=1)
 
     # select top-k groups
     top_k_groups, top_k_group_indices = select_top_k_groups(args, object_groups, used_objs)
