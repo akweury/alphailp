@@ -1,7 +1,8 @@
+
 {
-  "dataset": "six_same_6",
+  "dataset": "ten_same_10",
   "dataset-type": "single_pattern",
-  "max_group_num": 6,
+  "max_group_num": 10,
   "obj_group": true,
   "line_group": false,
   "circle_group": false,
