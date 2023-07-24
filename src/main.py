@@ -117,6 +117,7 @@ def init(args):
 
 def main():
     args = args_utils.get_args(config.data_path)
+    group_round_time = []
     for group_num in range(1, args.max_group_num):
         args.group_e = group_num
         # set up the environment, load the dataset and results from perception models
@@ -127,6 +128,8 @@ def main():
         # ILP and PI system
         lang = se.init_ilp(args, percept_dict, obj_groups, obj_avail, config.pi_type['bk'], "group")
         success, clauses = se.run_ilp_train(args, lang, "group")
+        group_round_end = time.time()
+        group_round_time.append(group_round_end - start)
 
         if success:
             train_end = time.time()
@@ -134,14 +137,16 @@ def main():
             g_data = None
             se.ilp_eval(success, args, lang, clauses, g_data)
             eval_end = time.time()
-            break
 
-    # log
-    log_utils.add_lines(f"=============================", args.log_file)
-    log_utils.add_lines(f"Grouping time: {((group_end - start) / 60):.3f} minute(s)", args.log_file)
-    log_utils.add_lines(f"Training time: {((train_end - group_end) / 60):.3f} minute(s)", args.log_file)
-    log_utils.add_lines(f"Evaluation time: {((eval_end - train_end) / 60):.3f} minute(s)", args.log_file)
-    log_utils.add_lines(f"=============================", args.log_file)
+            # log
+            log_utils.add_lines(f"=============================", args.log_file)
+            log_utils.add_lines(f"Grouping time: {((group_end - start) / 60):.3f} minute(s)", args.log_file)
+            log_utils.add_lines(f"Training time: {((train_end - group_end) / 60):.3f} minute(s)", args.log_file)
+            log_utils.add_lines(f"Evaluation time: {((eval_end - train_end) / 60):.3f} minute(s)", args.log_file)
+            log_utils.add_lines(f"=============================", args.log_file)
+            break
+    for i in range(len(group_round_time)):
+        log_utils.add_lines(f"+ group num {i} time: {group_round_time[i]}", args.log_file)
 
     # se.train_nsfr(args, rtpt, lang, clauses)
 
