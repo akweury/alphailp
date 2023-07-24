@@ -23,7 +23,7 @@ def get_args(data_path):
                         help="Analysis visualization for grouping results.")
     parser.add_argument("--dataset-type", default="kandinsky",
                         help="kandinsky or clevr")
-    parser.add_argument('--device', default='cpu',
+    parser.add_argument('--device_id', default='cpu',
                         help='cuda device, i.e. 0 or cpu')
     parser.add_argument("--no-cuda", action="store_true",
                         help="Run on CPU instead of GPU (not recommended)")

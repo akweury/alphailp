@@ -65,11 +65,11 @@ def init(args):
 
     if args.no_cuda:
         args.device = torch.device('cpu')
-    elif len(str(args.device).split(',')) > 1:
+    elif len(str(args.device_id).split(',')) > 1:
         # multi gpu
         args.device = torch.device('cuda')
     else:
-        args.device = torch.device(int(args.device))
+        args.device = torch.device(int(args.device_id))
 
     log_utils.add_lines(f"- device: {args.device}", log_file)
 
