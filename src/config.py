@@ -17,16 +17,6 @@ pi_type = {'bk': 'bk_pred',
 score_type_index = {"ness": 0, "suff": 1, "sn": 2}
 score_example_index = {"neg": 0, "pos": 1}
 
-indices_x = [0]
-indices_y = [1]
-indices_z = [2]
-indices_red = [3]
-indices_green = [4]
-indices_blue = [5]
-indices_sphere = [6]
-indices_cube = [7]
-indices_prob = [8]
-
 group_index = {
     "color": 0,
     "shape": 1,
@@ -35,7 +25,7 @@ group_index = {
 
 group_positions = ["x", "y", "z"]
 group_color = ["red", "green", "blue"]
-group_shapes = ["sphere", "cube"]
+group_shapes = ["sphere", "cube", "cone", "cylinder"]
 group_group_shapes = ["obj", "line", "circle", "conic"]
 group_screen_positions = ["x_center_screen", "y_center_screen"]
 
@@ -56,30 +46,32 @@ group_tensor_index = {
     'sphere': 6,
     'cube': 7,
     'obj': 8,
-    'line': 9,
-    'circle': 10,
-    'conic': 11,
-    'x_length': 12,
-    'y_length': 13,
-    'z_length': 14,
-    "x_center_screen": 15,
-    "y_center_screen": 16,
-    "screen_left_x": 17,
-    "screen_left_y": 18,
-    "screen_right_x": 19,
-    "screen_right_y": 20,
-    "axis_x": 21,
-    "axis_z": 22,
-    "screen_axis_x": 23,
-    "screen_axis_z": 24,
-    "color_counter": 25,
-    "shape_counter": 26,
-    "size": 27,
+    'cone': 9,
+    'cylinder': 10,
+    'line': 11,
+    'circle': 12,
+    'conic': 13,
+    'x_length': 14,
+    'y_length': 15,
+    'z_length': 16,
+    "x_center_screen": 17,
+    "y_center_screen": 18,
+    "screen_left_x": 19,
+    "screen_left_y": 20,
+    "screen_right_x": 21,
+    "screen_right_y": 22,
+    "axis_x": 23,
+    "axis_z": 24,
+    "screen_axis_x": 25,
+    "screen_axis_z": 26,
+    "color_counter": 27,
+    "shape_counter": 28,
+    "size": 29,
 }
 
 obj_positions = ["x", "y", "z"]
 obj_color = ["red", "green", "blue"]
-obj_shapes = ["sphere", "cube"]
+obj_shapes = ["sphere", "cube", "cone", "cylinder"]
 obj_screen_positions = ["screen_x", "screen_y"]
 
 obj_tensor_index = {
@@ -91,9 +83,11 @@ obj_tensor_index = {
     'blue': 5,
     'sphere': 6,
     'cube': 7,
-    'prob': 8,
-    'screen_x': 9,
-    'screen_y': 10
+    'cone':8,
+    'cylinder':9,
+    'prob': 10,
+    'screen_x': 11,
+    'screen_y': 12
 }
 
 buffer_path = root / ".." / "storage"

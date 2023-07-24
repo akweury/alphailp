@@ -37,9 +37,9 @@ shape = ['sphere', 'cube', 'line', 'circle', "conic"]
 
 pred_obj_mapping = {
     'in': None,
-    'shape_counter': ["sphere", "cube"],
+    'shape_counter': ["sphere", "cube", "cone", "cylinder"],
     'color_counter': ["red", "green", "blue"],
-    'shape': ['sphere', 'cube', 'line', 'circle', 'conic'],
+    'shape': ['sphere', 'cube', 'cone', 'cylinder', 'line', 'circle', 'conic'],
     'color:': ['red', 'green', 'blue'],
     'phi': ['x', 'y', 'z'],
     'rho': ['x', 'y', 'z'],
