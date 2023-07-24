@@ -8,11 +8,11 @@ neural_predicate = []
 neural_predicate_2 = {
     # 'shape_counter': 'shape_counter:2:group,number',
     # 'color_counter': 'color_counter:2:group,number',
-    # 'color': 'color:2:group,color',
+    'color': 'color:2:group,color',
     'shape': 'shape:2:group,shape',
-    'phi': 'phi:3:group,group,phi',
+    # 'phi': 'phi:3:group,group,phi',
     # 'rho': 'rho:3:group,group,rho',
-    'slope': 'slope:2:group,slope',
+    # 'slope': 'slope:2:group,slope',
 }
 
 neural_predicate_3 = [
