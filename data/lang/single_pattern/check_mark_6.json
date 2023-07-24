@@ -1,6 +1,7 @@
 {
   "dataset": "check_mark_6",
   "dataset-type": "single_pattern",
+  "bk_pred_names": "shape,phi,rho,slope",
   "obj_group": true,
   "line_group": false,
   "circle_group": false,

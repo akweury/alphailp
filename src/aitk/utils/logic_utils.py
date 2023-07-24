@@ -266,7 +266,8 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
     lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
 
     pi_type = config.pi_type['bk']
-    neural_preds = file_utils.load_neural_preds(bk.neural_predicate_2, pi_type)
+    bk_preds = [bk.neural_predicate_2[bk_pred_name] for bk_pred_name in  args.bk_pred_names.split(",")]
+    neural_preds = file_utils.load_neural_preds(bk_preds, pi_type)
 
     args.neural_preds = [neural_pred for neural_pred in neural_preds]
     args.p_inv_counter = 0

@@ -8,7 +8,7 @@ from aitk.utils.fol.logic import NeuralPredicate
 
 
 def load_neural_preds(neural_predicates, pi_type):
-    preds = [parse_neural_pred(value, pi_type) for key, value in neural_predicates.items()]
+    preds = [parse_neural_pred(value, pi_type) for value in neural_predicates]
     return preds
 
 

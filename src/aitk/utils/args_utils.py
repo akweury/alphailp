@@ -157,6 +157,8 @@ def get_args(data_path):
                         help="Treat a circle of objects as a group.")
     parser.add_argument("--conic_group", action="store_false",
                         help="Treat a conic of objects as a group.")
+    parser.add_argument("--bk_pred_names", type=str,
+                        help="BK predicates used in this exp.")
     args = parser.parse_args()
 
     args_file = data_path / "lang" / args.dataset_type / str(str(args.dataset) + ".json")
