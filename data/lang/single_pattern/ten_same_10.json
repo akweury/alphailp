@@ -2,7 +2,7 @@
   "dataset": "ten_same_10",
   "dataset-type": "single_pattern",
   "bk_pred_names": "shape,color",
-  "max_group_num": 10,
+  "max_group_num": 7,
   "obj_group": true,
   "line_group": false,
   "circle_group": false,
