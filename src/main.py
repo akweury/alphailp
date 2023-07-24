@@ -69,7 +69,7 @@ def init(args):
         # multi gpu
         args.device = torch.device('cuda')
     else:
-        args.device = torch.device(str(args.device))
+        args.device = torch.device(int(str(args.device)))
 
     log_utils.add_lines(f"- device: {args.device}", log_file)
 
