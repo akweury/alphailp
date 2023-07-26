@@ -30,7 +30,7 @@ def get_image_names(args):
     for data_mode in ['test', 'train', 'val']:
         tar_file = image_root / f"{args.dataset}_pm_res_{data_mode}.pth.tar"
         if not os.path.exists(tar_file):
-            raise FileNotFoundError
+            raise FileNotFoundError('OD result is not found.')
         tensor_dict = torch.load(tar_file)
 
         image_name_dict[data_mode] = {}
