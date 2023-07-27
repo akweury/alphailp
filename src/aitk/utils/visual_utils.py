@@ -1045,9 +1045,12 @@ def visual_cir(vis_file, radius, center, point_groups, point_groups_2, errors, l
     font_size = config.txt_font_size
     # Plot the noisy data
     for p_i, point_group in enumerate(point_groups):
-        X1 = point_group[:, :1]
-        Y1 = point_group[:, 2:3]
-        axes[0].scatter(X1, Y1, label=labels[p_i])
+        if len(point_group) > 0:
+            X1 = point_group[:, :1]
+            Y1 = point_group[:, 2:3]
+            axes[0].scatter(X1, Y1, label=labels[p_i])
+        # else:
+        #     print("break")
     # plt.scatter(X, Y, label='Rest Points')
     axes[0].annotate(f"Circle Group", (-0.4, 1.4))
 
@@ -1059,10 +1062,13 @@ def visual_cir(vis_file, radius, center, point_groups, point_groups_2, errors, l
                              f"e: {round(txt.tolist(), 4)}", (-0.4, 1.3 - line_height * i), fontsize=font_size)
     for i, txt in enumerate(errors):
         if len(point_groups[1]) > 0:
-            axes[0].annotate(f"Out {i}: "
-                             f"({round(point_groups[1][i, 0].tolist(), 2)},{round(point_groups[1][i, 2].tolist(), 2)})  "
-                             f"e: {round(txt.tolist(), 3)}",
-                             (-0.4, 1.3 - line_height * (len(g_errors) + 1) - line_height * i), fontsize=font_size)
+            value_x = round(point_groups[1][i, 0].tolist(), 2)
+            value_y = round(point_groups[1][i, 2].tolist(), 2)
+            value_err = round(txt.tolist(), 3)
+            pos_x = -0.4
+            pos_y = 1.3 - (len(g_errors) + 1) * line_height - line_height * i
+
+            axes[0].annotate(f"Out {i}: ({value_x},{value_y}) e: {value_err}", (pos_x, pos_y), fontsize=font_size)
 
     # Plot the least squares circle
     x = np.linspace(-0.5, 1.5, 150)
