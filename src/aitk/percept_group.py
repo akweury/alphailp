@@ -185,7 +185,7 @@ def prune_groups(args, OBJ_N, groups_all, group_indices, group_data, group_error
             # group_error[img_i] += [None] * d
             # else:
             for group in img_groups:
-                group_tensor = torch.tensor(group)
+                group_tensor = group
                 group_scores = group_tensor[config.group_tensor_index[g_type]]
                 img_scores.append(group_scores.tolist())
             img_scores = torch.tensor(img_scores)
@@ -231,7 +231,10 @@ def visual_group_analysis(args, g_indices, valid_obj_all, g_type, g_shape_data, 
             data = g_shape_data[img_i][g_i]
             g_in_indices = g_indices[img_i][g_i]
             error = fit_error[img_i][g_i]
+            if len(valid_obj_all[img_i]) != len(g_in_indices):
+                continue
             g_in_objs = torch.tensor(valid_obj_all[img_i])[g_in_indices]
+
 
             if isinstance(g_in_indices, list):
                 indices_rest = list(set(list(range(len(valid_obj_all[img_i])))) - set(
