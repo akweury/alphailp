@@ -111,11 +111,11 @@ def get_pred_res(args, data_type, file_path):
     pred_neg_norm = logic_utils.vertex_normalization(pred_neg)
 
     # order the data by vertices (align the axis with higher delta)
-    pred_pos_ordered = logic_utils.data_ordering(pred_pos_norm)
-    pred_neg_ordered = logic_utils.data_ordering(pred_neg_norm)
+    # pred_pos_ordered = logic_utils.data_ordering(pred_pos_norm)
+    # pred_neg_ordered = logic_utils.data_ordering(pred_neg_norm)
 
-    if args.top_data < len(pred_pos_ordered):
-        pred_pos_ordered = pred_pos_ordered[:args.top_data]
-        pred_neg_ordered = pred_neg_ordered[:args.top_data]
+    if args.top_data < len(pred_neg_norm):
+        pred_pos_norm = pred_pos_norm[:args.top_data]
+        pred_neg_norm = pred_neg_norm[:args.top_data]
 
-    return pred_pos_ordered, pred_neg_ordered
+    return pred_pos_norm, pred_neg_norm

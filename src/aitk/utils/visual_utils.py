@@ -900,8 +900,8 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
             visual_images = []
             # input image
             file_prefix = \
-            str(config.buffer_path / args.dataset_type / args.dataset / "test" / data_type / data_name).split(
-                ".data0.json")[0]
+                str(config.buffer_path / args.dataset_type / args.dataset / "test" / data_type / data_name).split(
+                    ".data0.json")[0]
             image_file = file_prefix + ".image.png"
             input_image = get_cv_image(image_file)
 
@@ -968,18 +968,18 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
 #
 #         save_image(group_pred_image, final_image_filename)
 
-def visual_group(group_type, vis_file, g_data, g_objs, rest_objs, unfit_error):
+def visual_group(group_type, vis_file, g_data, g_in_objs, g_out_objs, unfit_error):
     # rest_indices = list(set(list(range(len(g_indices)))) - set([i for i, e in enumerate(g_indices) if e == True]))
     # rest_objs = g_objs[rest_indices]
     if group_type == "conic":
-        visual_conic(vis_file, g_data["coef"], g_data["coef"], g_data["center"], [g_objs, rest_objs], [g_objs],
-                     errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
+        visual_conic(vis_file, g_data["coef"], g_data["center"], [g_in_objs, g_out_objs],
+                     errors=unfit_error, labels=["base", "rest"], labels_2="detect")
     elif group_type == "line":
         visual_line(vis_file, g_data["slope"], g_data["end_A"], g_data["end_B"], g_data["intercept"],
-                    [g_objs, rest_objs], [g_objs],
+                    [g_in_objs, g_out_objs], [g_in_objs],
                     errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
     elif group_type == "cir":
-        visual_cir(vis_file, g_data["radius"], g_data["center"], [g_objs, rest_objs], [g_objs],
+        visual_cir(vis_file, g_data["radius"], g_data["center"], [g_in_objs, g_out_objs], [g_in_objs],
                    errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
     else:
         raise ValueError
@@ -1097,7 +1097,7 @@ def visual_cir(vis_file, radius, center, point_groups, point_groups_2, errors, l
     plt.close()
 
 
-def visual_conic(vis_file, x, x_2, center, point_groups, point_groups_2, errors, labels, labels_2, show=False,
+def visual_conic(vis_file, x, center, point_groups, errors, labels, labels_2, show=False,
                  save=True):
     line_height = config.txt_line_height
     font_size = config.txt_font_size
@@ -1129,29 +1129,28 @@ def visual_conic(vis_file, x, x_2, center, point_groups, point_groups_2, errors,
     X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
     Z_coord = x[0] * X_coord ** 2 + x[1] * X_coord * Y_coord + x[2] * Y_coord ** 2 + x[3] * X_coord + x[4] * Y_coord
     axes[0].contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
-
+    axes[0].legend(prop={'size': 10})
     # Plot the noisy data
-    for p_i, point_group in enumerate(point_groups_2):
-        X1 = point_group[:, :1]
-        Y1 = point_group[:, 2:3]
-        axes[1].scatter(X1, Y1, label=labels_2[p_i])
+    X1 = point_groups[0][:, :1]
+    Y1 = point_groups[0][:, 2:3]
+    axes[1].scatter(X1, Y1, label=labels_2)
 
     # Plot the least squares ellipse
     x_coord = np.linspace(-0.5, 1.5, 300)
     y_coord = np.linspace(-0.5, 1.5, 300)
     X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
-    Z_coord = x_2[0] * X_coord ** 2 + x_2[1] * X_coord * Y_coord + x_2[2] * Y_coord ** 2 + x_2[3] * X_coord + x_2[
-        4] * Y_coord
+    Z_coord = x[0] * X_coord ** 2 + x[1] * X_coord * Y_coord + x[2] * Y_coord ** 2 + x[3] * X_coord + x[4] * Y_coord
     axes[1].contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
     axes[0].invert_yaxis()
     axes[1].invert_yaxis()
+    axes[1].legend(prop={'size': 10})
 
-    plt.legend()
+    # plt.legend()
     plt.xlabel('X')
     plt.ylabel('Y')
     if show:
         plt.show()
-    if save:
+    if save and vis_file is not None:
         plt.savefig(f"{vis_file}")
     plt.close()
 

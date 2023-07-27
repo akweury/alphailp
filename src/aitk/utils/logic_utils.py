@@ -24,6 +24,7 @@ def get_index_by_predname(pred_str, atoms):
 
 
 def data_ordering(data):
+
     data_ordered = torch.zeros(data.shape)
     delta = data[:, :, :3].max(dim=1, keepdims=True)[0] - data[:, :, :3].min(dim=1, keepdims=True)[0]
     order_axis = torch.argmax(delta, dim=2)

@@ -15,7 +15,7 @@
   "score_unique": true,
   "semantic_unique": true,
   "small_data": false,
-  "top_data": 36,
+  "top_data": 4,
   "epochs": 100,
   "t_beam": 6,
   "n_beam": 5,
@@ -31,13 +31,13 @@
   "length_weight": 0.02,
   "max_cluster_size": 8,
   "error_th": 0.003,
-  "line_group_min_sz": 3,
+  "line_group_min_sz": 5,
   "line_even_error": 0.001,
   "cir_group_min_sz": 4,
   "cir_error_th": 0.01,
   "cir_even_error": 0.05,
-  "conic_group_min_sz": 15,
-  "conic_even_error": 0.00000000001,
+  "conic_group_min_sz": 5,
+  "conic_even_error": 0.001,
   "poly_error_th": 0.05,
   "with_bk": false,
   "plot_four_zone": false,
@@ -45,5 +45,5 @@
   "with_pi": true,
   "is_visual": false,
   "re_eval_groups": true,
-  "show_process": false
+  "show_process": true
 }
