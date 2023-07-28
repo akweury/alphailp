@@ -133,17 +133,18 @@ def encode_groups(args, valid_obj_all, obj_indices, obj_tensors, group_type):
                 cir = eval_utils.fit_circle(objs[:, [0, 2]], args)
                 cir_sc = eval_utils.fit_circle(objs[:, [obj_tensor_index[i] for i in config.obj_screen_positions]],
                                                args)
-                cir_error = eval_utils.get_circle_error(cir["center"], cir["radius"], objs[:, [0, 2]])
-                if cir_error.sum() > 1:
-                    print("break")
-                group_tensor = data_utils.to_circle_tensor(objs, cir, cir_sc, cir_error)
+                if cir_sc is not None and cir_sc["center"] is not None:
+                    cir_error = eval_utils.get_circle_error(cir["center"], cir["radius"], objs[:, [0, 2]])
+                    if cir_error.sum() > 1:
+                        print("break")
+                    group_tensor = data_utils.to_circle_tensor(objs, cir, cir_sc, cir_error)
 
             elif group_type == "conic":
                 conics = eval_utils.fit_conic(objs[:, [0, 2]])
                 conics_sc = eval_utils.fit_conic(objs[:, [obj_tensor_index[i] for i in config.obj_screen_positions]])
-                # if conics_sc['axis'] is not None:
-                conic_error = eval_utils.get_conic_error(conics["coef"], conics["center"], objs[:, [0, 2]])
-                group_tensor = data_utils.to_conic_tensor(objs, conics, conics_sc, conic_error)
+                if conics_sc['axis'] is not None:
+                    conic_error = eval_utils.get_conic_error(conics["coef"], conics["center"], objs[:, [0, 2]])
+                    group_tensor = data_utils.to_conic_tensor(objs, conics, conics_sc, conic_error)
                 # else:
                 #     continue
             else:
@@ -233,8 +234,8 @@ def visual_group_analysis(args, g_indices, valid_obj_all, g_type, g_shape_data, 
             data = g_shape_data[img_i][g_i]
             g_in_indices = g_indices[img_i][g_i]
             unfit_error = unfit_error_all[img_i][g_i]
-            if len(valid_obj_all[img_i]) != len(g_in_indices):
-                continue
+            # if len(valid_obj_all[img_i]) != len(g_in_indices):
+            #     continue
             g_in_objs = torch.tensor(valid_obj_all[img_i])[g_in_indices]
 
             if isinstance(g_in_indices, list):
@@ -322,6 +323,9 @@ def detect_circle_groups(args, valid_obj_all, is_visual):
     if not args.circle_group:
         return None, None
     cir_indices, cir_groups, cir_data, unfit_error_all = detect_groups(args, valid_obj_all, "cir")
+
+    visual_group_analysis(args, cir_indices, valid_obj_all, "cir", cir_data, unfit_error_all)
+
     cir_tensors, cir_tensors_indices = encode_groups(args, valid_obj_all, cir_indices, cir_groups, "cir")
     tensors, indices, data, unfit_err_pruned = prune_groups(args, OBJ_N, cir_tensors, cir_tensors_indices, cir_data,
                                                             unfit_error_all, "circle")
@@ -419,29 +423,20 @@ def extend_conic_group(args, group_indices, obj_tensors):
 
 
 def extend_circle_group(args, obj_indices, obj_tensors):
-    cir_error = None
+    unfit_err = torch.tensor([])
     has_new_element = True
     # cir_groups = copy.deepcopy(obj_tensors)
     cir_group_indices = copy.deepcopy(obj_indices)
 
     group_objs = obj_tensors[cir_group_indices]
     cir = eval_utils.fit_circle(group_objs[:, [0, 2]], args)
-    if cir is None:
-        return None, None, None
-
-    cir_error = eval_utils.get_circle_error(cir["center"], cir["radius"], group_objs[:, [0, 2]])
-    if cir_error.sum() > 0.1:
-        return None, None, None
     while has_new_element and cir is not None:
-
         leaf_indices = torch.tensor(sorted(set(list(range(obj_tensors.shape[0]))) - set(cir_group_indices)))
         if len(leaf_indices) == 0:
             break
+
         leaf_objs = obj_tensors[leaf_indices]
-        # branch_objs = extend_groups(seed_objs, leaf_objs)
-
         cir_error = eval_utils.get_circle_error(cir["center"], cir["radius"], leaf_objs[:, [0, 2]])
-
         is_circle = cir_error < args.cir_error_th
         has_new_element = is_circle.sum() > 0
         passed_leaf_objs = leaf_objs[is_circle]
@@ -450,24 +445,20 @@ def extend_circle_group(args, obj_indices, obj_tensors):
         cir_group_indices += passed_leaf_indices.tolist()
 
         cir = eval_utils.fit_circle(group_objs[:, [0, 2]], args)
-        cir_error = eval_utils.get_circle_error(cir["center"], cir["radius"], group_objs[:, [0, 2]])
-        if cir_error.sum() > 1:
-            return None, None, None
 
     cir_group_indices = torch.tensor(cir_group_indices)
 
-    # if points are not evenly distributed, return None
-    if cir is not None:
+    if cir is not None and cir["center"] is not None:
+        # if points are not evenly distributed, return None
         even_dist_error = eval_utils.even_dist_error_on_cir(group_objs, cir)
-
         if even_dist_error > args.cir_even_error:
             return None, None, None
 
-    unfit_indices = torch.tensor(sorted(set(list(range(obj_tensors.shape[0]))) - set(cir_group_indices.tolist())))
-    if len(unfit_indices) == 0:
-        unfit_err = torch.tensor([])
+        unfit_indices = torch.tensor(sorted(set(list(range(obj_tensors.shape[0]))) - set(cir_group_indices.tolist())))
+        if len(unfit_indices) > 0:
+            unfit_err = eval_utils.get_circle_error(cir["center"], cir["radius"], obj_tensors[unfit_indices][:, [0, 2]])
     else:
-        unfit_err = eval_utils.get_circle_error(cir["center"], cir["radius"], obj_tensors[unfit_indices][:, [0, 2]])
+        return None, None, None
     return cir_group_indices, cir, unfit_err
 
     # point_groups = obj_tensors[obj_indices]

@@ -202,9 +202,9 @@ def to_conic_tensor(objs, conics, conics_sc, conic_error):
     conic_tensor[group_tensor_index["axis_x"]] = conics["axis"][0]
     conic_tensor[group_tensor_index["axis_z"]] = conics["axis"][1]
 
-    if conics_sc["axis"] is not None:
-        conic_tensor[group_tensor_index["screen_axis_x"]] = conics_sc["axis"][0]
-        conic_tensor[group_tensor_index["screen_axis_z"]] = conics_sc["axis"][1]
+
+    conic_tensor[group_tensor_index["screen_axis_x"]] = conics_sc["axis"][0]
+    conic_tensor[group_tensor_index["screen_axis_z"]] = conics_sc["axis"][1]
 
     conic_tensor[group_tensor_index["size"]] = objs.shape[0]
     conic_tensor = conic_tensor.reshape(-1)

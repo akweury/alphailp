@@ -6,7 +6,7 @@
   "obj_group": false,
   "line_group": true,
   "circle_group": true,
-  "conic_group": true,
+  "conic_group": false,
   "max_step": 4,
   "weight_tp": 0.95,
   "weight_length": 0.05,
@@ -34,8 +34,8 @@
   "line_group_min_sz": 5,
   "line_even_error": 0.001,
   "cir_group_min_sz": 4,
-  "cir_error_th": 0.05,
-  "cir_even_error": 0.05,
+  "cir_error_th": 0.03,
+  "cir_even_error": 0.01,
   "conic_group_min_sz": 5,
   "conic_even_error": 0.001,
   "poly_error_th": 0.05,
@@ -44,6 +44,6 @@
   "with_explain": false,
   "with_pi": true,
   "is_visual": false,
-  "re_eval_groups": false,
-  "show_process": false
+  "re_eval_groups": true,
+  "show_process": true
 }

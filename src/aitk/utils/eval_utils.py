@@ -164,6 +164,8 @@ def fit_circle(data, args):
         if c is not None:
             centers[g_i] = c
             radius[g_i] = r
+        else:
+            return None
     centers = centers.mean(dim=0)
     radius = radius.mean()
 
