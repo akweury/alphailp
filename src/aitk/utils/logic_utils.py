@@ -24,7 +24,6 @@ def get_index_by_predname(pred_str, atoms):
 
 
 def data_ordering(data):
-
     data_ordered = torch.zeros(data.shape)
     delta = data[:, :, :3].max(dim=1, keepdims=True)[0] - data[:, :, :3].min(dim=1, keepdims=True)[0]
     order_axis = torch.argmax(delta, dim=2)
@@ -127,8 +126,13 @@ def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
     for bs_clause in bs_clauses:
         clauses.append(bs_clause[0])
         if args.show_process:
-            log_utils.add_lines(f"({c_type}): {bs_clause[0]} {bs_clause[1].reshape(-1)}", args.log_file)
-
+            if len(bs_clause) == 3:
+                positive_score = bs_clause[2][:, config.score_example_index["pos"]]
+                failed_img_index = ((positive_score < 0.9).nonzero(as_tuple=True)[0]).tolist()
+                log_utils.add_lines(
+                    f"({c_type}): {bs_clause[0]} {bs_clause[1].reshape(-1)} "
+                    f"Failed Image: {failed_img_index}  ({len(failed_img_index)}/{bs_clause[2].shape[0]})",
+                    args.log_file)
     return clauses
 
 
@@ -267,7 +271,7 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
     lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
 
     pi_type = config.pi_type['bk']
-    bk_preds = [bk.neural_predicate_2[bk_pred_name] for bk_pred_name in  args.bk_pred_names.split(",")]
+    bk_preds = [bk.neural_predicate_2[bk_pred_name] for bk_pred_name in args.bk_pred_names.split(",")]
     neural_preds = file_utils.load_neural_preds(bk_preds, pi_type)
 
     args.neural_preds = [neural_pred for neural_pred in neural_preds]

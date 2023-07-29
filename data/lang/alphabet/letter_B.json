@@ -34,7 +34,7 @@
   "line_group_min_sz": 5,
   "line_even_error": 0.001,
   "cir_group_min_sz": 4,
-  "cir_error_th": 0.03,
+  "cir_error_th": 0.04,
   "cir_even_error": 0.01,
   "conic_group_min_sz": 5,
   "conic_even_error": 0.001,
@@ -43,7 +43,7 @@
   "plot_four_zone": false,
   "with_explain": false,
   "with_pi": true,
-  "is_visual": false,
+  "is_visual": true,
   "re_eval_groups": true,
-  "show_process": true
+  "show_process": false
 }

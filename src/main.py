@@ -118,7 +118,7 @@ def init(args):
 def main():
     args = args_utils.get_args(config.data_path)
     group_round_time = []
-    for group_num in range(3, args.max_group_num):
+    for group_num in range(2, args.max_group_num):
         args.group_e = group_num
         # set up the environment, load the dataset and results from perception models
         start = time.time()

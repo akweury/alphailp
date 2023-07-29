@@ -114,7 +114,7 @@ def encode_groups(args, valid_obj_all, obj_indices, obj_tensors, group_type):
     """
 
     obj_tensor_index = config.obj_tensor_index
-
+    group_tensor = None
     all_group_tensors = []
     all_group_tensors_indices = []
     for img_i in range(len(obj_tensors)):
@@ -138,6 +138,8 @@ def encode_groups(args, valid_obj_all, obj_indices, obj_tensors, group_type):
                     if cir_error.sum() > 1:
                         print("break")
                     group_tensor = data_utils.to_circle_tensor(objs, cir, cir_sc, cir_error)
+                else:
+                    continue
 
             elif group_type == "conic":
                 conics = eval_utils.fit_conic(objs[:, [0, 2]])
@@ -145,8 +147,8 @@ def encode_groups(args, valid_obj_all, obj_indices, obj_tensors, group_type):
                 if conics_sc['axis'] is not None:
                     conic_error = eval_utils.get_conic_error(conics["coef"], conics["center"], objs[:, [0, 2]])
                     group_tensor = data_utils.to_conic_tensor(objs, conics, conics_sc, conic_error)
-                # else:
-                #     continue
+                else:
+                    continue
             else:
                 raise ValueError
 
@@ -198,18 +200,19 @@ def prune_groups(args, OBJ_N, groups_all, group_indices, group_data, unfit_error
             img_group_indices = img_group_indices[prob_indices.tolist()].tolist()
             group_data[img_i] = [group_data[img_i][ind] for ind in prob_indices.tolist()]
             unfit_error_all[img_i] = [unfit_error_all[img_i][ind] for ind in prob_indices.tolist()]
-        else:
-            d = args.group_max_e - len(img_groups)
-            img_groups = torch.cat((img_groups, torch.tensor([[0] * len(config.group_tensor_index)] * d)), 0)
-            # img_group_indices = torch.cat((img_group_indices, torch.tensor([[False] * OBJ_N] * d)), 0)
-            img_group_indices = img_group_indices.tolist() + [[False] * OBJ_N] * d
-
-            group_data[img_i] += [None] * d
-            unfit_error_all[img_i] += [None] * d
+        # else:
+        #     d = args.group_max_e - len(img_groups)
+        #     img_groups = torch.cat((img_groups, torch.tensor([[0] * len(config.group_tensor_index)] * d)), 0)
+        #     # img_group_indices = torch.cat((img_group_indices, torch.tensor([[False] * OBJ_N] * d)), 0)
+        #     img_group_indices = img_group_indices.tolist() + [[False] * OBJ_N] * d
+        #
+        #     group_data[img_i] += [None] * d
+        #     unfit_error_all[img_i] += [None] * d
 
         if len(img_groups) == 0:
             # no groups detected in the image
-            pruned_tensors.append(torch.zeros(size=(args.group_max_e, len(config.group_tensor_index))).tolist())
+            # pruned_tensors.append(torch.zeros(size=(args.group_max_e, len(config.group_tensor_index))).tolist())
+            pruned_tensors.append(None)
             pruned_tensors_indices.append(None)
             pruned_data.append(None)
             unfit_error_pruned.append(None)
@@ -229,6 +232,8 @@ def prune_cirs(args, cir_tensors, cir_tensors_indices):
 def visual_group_analysis(args, g_indices, valid_obj_all, g_type, g_shape_data, unfit_error_all):
     # detect lines image by image
     for img_i in range(args.top_data):
+        if g_indices[img_i] is None:
+            continue
         for g_i, obj_indices in enumerate(g_indices[img_i]):
             vis_file = args.analysis_output_path / f"{args.dataset}_img_{img_i}_{g_type}_g_{g_i}.png"
             data = g_shape_data[img_i][g_i]
@@ -243,6 +248,9 @@ def visual_group_analysis(args, g_indices, valid_obj_all, g_type, g_shape_data, 
                     [i for i, e in enumerate(g_in_indices) if e == True]))
             elif g_in_indices.dtype == torch.int64:
                 indices_rest = list(set(list(range(len(valid_obj_all[img_i])))) - set(g_in_indices.tolist()))
+            elif g_in_indices.dtype == torch.bool:
+                in_indices = ((g_in_indices == True).nonzero(as_tuple=True)[0])
+                indices_rest = list(set(list(range(len(valid_obj_all[img_i])))) - set(in_indices.tolist()))
             else:
                 raise ValueError
             g_out_objs = torch.tensor(valid_obj_all[img_i])[indices_rest]
@@ -576,6 +584,7 @@ def detect_obj_groups(args, percept_dict_single, data_type):
                                                               line_tensors, cir_tensors, conic_tensors,
                                                               line_tensors_indices, cir_tensors_indices,
                                                               conic_tensors_indices)
+        group_tensors, group_obj_index_tensors = align_groups(args, group_tensors, group_obj_index_tensors)
         # visual_utils.visual_groups(args, group_tensors, percept_dict_single, group_obj_index_tensors, data_type)
         group_res = {"tensors": group_tensors, "used_objs": group_obj_index_tensors}
         torch.save(group_res, save_file)
@@ -619,38 +628,48 @@ def test_groups_on_one_image(data, val_result):
     return test_score
 
 
-def select_top_k_groups(args, object_groups, used_objs):
-    obj_indices = []
-    for i in range(len(used_objs[0])):
-        obj_indices_img = []
-        for shape_i in range(len(used_objs)):
-            obj_indices_img += used_objs[shape_i][i]
-        obj_indices.append(obj_indices_img)
+def select_top_k_groups(args, object_groups, obj_indices):
+    # obj_indices = []
+    # for i in range(len(used_objs[0])):
+    #     obj_indices_img = []
+    #     for shape_i in range(len(used_objs)):
+    #         if used_objs[shape_i][i] is not None:
+    #             obj_indices_img += used_objs[shape_i][i]
+    #     obj_indices.append(obj_indices_img)
 
     obj_groups_top = []
     obj_groups_top_indices = []
-    group_indices = data_utils.get_comb(torch.tensor(range(object_groups.shape[1])), args.group_e)
+
     for img_i in range(args.top_data):
-        groups = object_groups[img_i]
-        # select groups including as many objects as possible
-        objs_max_selection = group_indices[0]
-        used_objs_max = 0
-        for group_index in group_indices:
+        # TODO: deal with group number less than group_e
+        actual_group_num = len(object_groups[img_i])
 
-            used_obj_in_img_group = [obj_indices[img_i][g_i] for g_i in group_index]
-            # comb_used_objs = torch.sum(used_obj_in_img_group, dim=0)
+        if actual_group_num < args.group_e:
+            objs_max_selection = []
+            groups = []
+        else:
+            group_indices = data_utils.get_comb(torch.tensor(range(actual_group_num)), args.group_e)
+            groups = object_groups[img_i]
+            # select groups including as many objects as possible
+            objs_max_selection = group_indices[0]
+            used_objs_max = 0
+            for group_index in group_indices:
+                if len(obj_indices[img_i]) > 0:
+                    used_obj_in_img_group = [obj_indices[img_i][g_i] for g_i in group_index]
+                    # comb_used_objs = torch.sum(used_obj_in_img_group, dim=0)
+                    obj_num = sum(
+                        [used_obj_in_img_group[g_i].sum().tolist() for g_i in
+                         range(len(used_obj_in_img_group))])
+                    if obj_num > used_objs_max:
+                        objs_max_selection = group_index
+                        used_objs_max = obj_num
 
-            obj_num = sum(
-                [torch.tensor(used_obj_in_img_group[g_i]).sum().tolist() for g_i in range(len(used_obj_in_img_group))])
-            if obj_num > used_objs_max:
-                objs_max_selection = group_index
-                used_objs_max = obj_num
-        obj_groups_img_top = groups[objs_max_selection.tolist()[:args.group_e]]
+        obj_groups_img_top = [groups[_g_i] for _g_i in objs_max_selection[:args.group_e]]
         # obj_groups_img_top_indices = used_objs[img_i, objs_max_selection.tolist()[:args.group_e]]
         # obj_groups_img_top_indices = obj_indices[img_i][objs_max_selection]
         obj_groups_img_top_indices = [obj_indices[img_i][g_i] for g_i in objs_max_selection]
 
-        obj_groups_top.append(obj_groups_img_top.tolist())
+        obj_groups_top.append(obj_groups_img_top)
         obj_groups_top_indices.append(obj_groups_img_top_indices)
 
         # log
@@ -669,7 +688,7 @@ def select_top_k_groups(args, object_groups, used_objs):
             else:
                 group_name = "unknown"
                 group_msg = f""
-            group_obj_indices = ((torch.tensor(obj_groups_img_top_indices[g_i]) == True).nonzero(as_tuple=True)[0])
+            group_obj_indices = ((obj_groups_img_top_indices[g_i] == True).nonzero(as_tuple=True)[0])
             if args.show_process:
                 print(f'(img {img_i}) {group_name} {group_obj_indices} {group_msg}')
 
@@ -682,25 +701,45 @@ def merge_groups(args, single_groups, single_used_objs,
     final_used_objs = []
 
     if single_groups is not None:
-        final_groups.append(torch.tensor(single_groups))
+        final_groups.append(single_groups)
         final_used_objs.append(single_used_objs)
 
-    if line_groups is not None:
-        final_groups.append(torch.tensor(line_groups))
+    if line_groups is not None and line_groups[0] is not None:
+        final_groups.append(line_groups)
         final_used_objs.append(line_used_objs)
 
-    if cir_groups is not None:
-        final_groups.append(torch.tensor(cir_groups))
+    if cir_groups is not None and cir_groups[0] is not None:
+        final_groups.append(cir_groups)
         final_used_objs.append(cir_used_objs)
 
-    if conic_groups is not None:
-        final_groups.append(torch.tensor(conic_groups))
+    if conic_groups is not None and conic_groups[0] is not None:
+        final_groups.append(conic_groups)
         final_used_objs.append(conic_used_objs)
 
-    object_groups = torch.cat(final_groups, dim=1)
-    # used_objs = torch.cat(final_used_objs, dim=1)
+    # object_groups = torch.cat(final_groups, dim=1)
+
+    groups_all = []
+    group_indices = []
+    for img_i in range(len(final_groups[0])):
+        img_groups = []
+        img_group_indices = []
+        for type_i in range(len(final_groups)):
+            if final_groups[type_i][img_i] is not None:
+                img_groups += final_groups[type_i][img_i]
+                img_group_indices += final_used_objs[type_i][img_i]
+        groups_all.append(img_groups)
+        group_indices.append(img_group_indices)
 
     # select top-k groups
-    top_k_groups, top_k_group_indices = select_top_k_groups(args, object_groups, final_used_objs)
+    top_k_groups, top_k_group_indices = select_top_k_groups(args, groups_all, group_indices)
 
     return top_k_groups, top_k_group_indices
+
+
+def align_groups(args, group_tensors, group_obj_index_tensors):
+    for i in range(len(group_tensors)):
+        if len(group_tensors[i]) < args.group_e:
+            diff_num = args.group_e - len(group_tensors[i])
+            group_tensors[i] += diff_num * [[0] * len(config.group_tensor_index)]
+            group_obj_index_tensors[i] += diff_num * [None]
+    return group_tensors, group_obj_index_tensors

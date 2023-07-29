@@ -112,7 +112,7 @@ def print_result(args, lang):
         add_lines(f"{pi_c}", args.log_file)
 
 
-def print_test_result(args,lang, c_with_scores):
+def print_test_result(args, lang, c_with_scores):
     success = False
     clauses = []
     if len(c_with_scores) > 0:
@@ -121,7 +121,13 @@ def print_test_result(args,lang, c_with_scores):
             add_lines(f"{inv_pred}", args.log_file)
         add_lines(f"================== all clauses ==================", args.log_file)
         for c in c_with_scores:
-            add_lines(f"{c[0]} {c[1]}", args.log_file)
+
+            positive_score = c[2][:, 1]
+            failed_img_index = ((positive_score < 0.9).nonzero(as_tuple=True)[0]).tolist()
+            add_lines(f"({c[0]} {c[1].reshape(-1)} "
+                      f"Failed Image: {failed_img_index}  ({len(failed_img_index)}/{c[2].shape[0]})",
+                      args.log_file)
+            # add_lines(f"{c[0]} {c[1]}", args.log_file)
             clauses.append(c[0])
             if c[1][2] > args.sn_th:
                 success = True
