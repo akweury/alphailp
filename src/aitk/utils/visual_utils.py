@@ -807,8 +807,12 @@ def save_image(final_image, image_output_path):
 
 def visual_group_predictions(args, data, data_indices, obj_data, input_image, colors, thickness,
                              group_tensor_index, obj_tensor_index):
+
+    if None in data_indices:
+        return input_image
     data = torch.tensor(data)
     group_image = copy.deepcopy(input_image)
+
     data_indices = torch.tensor(data_indices)
 
     # draw circles

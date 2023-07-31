@@ -128,7 +128,7 @@ class FCNNValuationModule(nn.Module):
         if term.dtype.name == 'group':
             return zs[:, term_index].to(self.device)
         elif term.dtype.name in bk.attr_names:
-            return self.attrs[term].unsqueeze(0).repeat(zs.shape[0],  1).to(self.device)
+            return self.attrs[term].unsqueeze(0).repeat(zs.shape[0], 1).to(self.device)
         elif term.dtype.name == 'image':
             return None
         else:
@@ -185,7 +185,8 @@ class FCNNShapeValuationFunction(nn.Module):
         Returns:
             A batch of probabilities.
         """
-        z_shape = z[:, 6:11]
+        shape_indices = [config.group_tensor_index[_shape] for _shape in config.group_pred_shapes]
+        z_shape = z[:, shape_indices]
         # a_batch = a.repeat((z.size(0), 1))  # one-hot encoding for batch
         return (a * z_shape).sum(dim=1)
 
@@ -235,7 +236,7 @@ class FCNNInValuationFunction(nn.Module):
             A batch of probabilities.
         """
 
-        prob, _ = z[:, 6:11].max(dim=-1)
+        prob, _ = z[:, 6:14].max(dim=-1)
         return prob
 
 

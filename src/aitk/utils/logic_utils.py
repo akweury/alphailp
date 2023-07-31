@@ -240,12 +240,12 @@ def sub_lists(l, min_len=0, max_len=None):
 
 
 def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
-    args.val_pos = pm_prediction_dict["val_pos"].to(args.device)
-    args.val_neg = pm_prediction_dict["val_neg"].to(args.device)
-    args.test_pos = pm_prediction_dict["test_pos"].to(args.device)
-    args.test_neg = pm_prediction_dict["test_neg"].to(args.device)
-    args.train_pos = pm_prediction_dict["train_pos"].to(args.device)
-    args.train_neg = pm_prediction_dict["train_neg"].to(args.device)
+    args.val_pos = pm_prediction_dict["val_pos"]#.to(args.device)
+    args.val_neg = pm_prediction_dict["val_neg"]#.to(args.device)
+    args.test_pos = pm_prediction_dict["test_pos"]#.to(args.device)
+    args.test_neg = pm_prediction_dict["test_neg"]#.to(args.device)
+    args.train_pos = pm_prediction_dict["train_pos"]#.to(args.device)
+    args.train_neg = pm_prediction_dict["train_neg"]#.to(args.device)
 
     args.val_group_pos = obj_groups['group_val_pos']
     args.val_group_neg = obj_groups['group_val_neg']
@@ -261,7 +261,7 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
     args.obj_avail_test_pos = obj_avail['obj_avail_test_pos']
     args.obj_avail_test_neg = obj_avail['obj_avail_test_neg']
 
-    args.data_size = args.val_pos.shape[0]
+    args.data_size = len(args.val_pos)
     args.invented_pred_num = 0
     args.last_refs = []
     args.found_ns = False

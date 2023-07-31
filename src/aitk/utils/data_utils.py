@@ -77,6 +77,7 @@ def to_line_tensor(objs, line_sc, line_error):
     line_tensor[group_tensor_index['sphere']] = shapes_normalized[0]
     line_tensor[group_tensor_index['cube']] = shapes_normalized[1]
 
+    # single_error = torch.tensor(line_error).sum() / torch.tensor(line_error).shape[0]
     line_tensor[group_tensor_index["line"]] = 1 - torch.tensor(line_error).sum() / torch.tensor(line_error).shape[0]
     line_tensor[group_tensor_index['circle']] = 0
     line_tensor[group_tensor_index["x_length"]] = objs[:, 0].max() - objs[:, 0].min()

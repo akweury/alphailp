@@ -98,6 +98,17 @@ def get_perception_predictions(args, file_path):
         'test_pos': test_pos_pred,
         'test_neg': test_neg_pred
     }
+    return pm_prediction_dict
+
+
+def remove_zero_tensors(pm_prediction_dict, prob_index):
+    for data_name, data in pm_prediction_dict.items():
+        objs_all = []
+        for img_i in range(data.shape[0]):
+            objs_img_all = []
+            valid_objs = data[img_i][data[img_i, :, prob_index] > 0]
+            objs_all.append(valid_objs)
+        pm_prediction_dict[data_name] = objs_all
 
     return pm_prediction_dict
 

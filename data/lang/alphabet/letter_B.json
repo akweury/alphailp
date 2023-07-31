@@ -6,7 +6,7 @@
   "obj_group": false,
   "line_group": true,
   "circle_group": true,
-  "conic_group": false,
+  "conic_group": true,
   "max_step": 4,
   "weight_tp": 0.95,
   "weight_length": 0.05,
@@ -43,7 +43,7 @@
   "plot_four_zone": false,
   "with_explain": false,
   "with_pi": true,
-  "is_visual": true,
+  "is_visual": false,
   "re_eval_groups": true,
   "show_process": false
 }

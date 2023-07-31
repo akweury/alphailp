@@ -82,6 +82,7 @@ def init(args):
 
     file_path = config.buffer_path / args.dataset_type / f"{args.dataset}"
     pm_prediction_dict = percept.get_perception_predictions(args, file_path)
+    pm_prediction_dict = percept.remove_zero_tensors(pm_prediction_dict, config.obj_tensor_index['prob'])
 
     args.n_obj = pm_prediction_dict["val_pos"][0].shape[0]
     args.n_obj = 100
@@ -118,7 +119,7 @@ def init(args):
 def main():
     args = args_utils.get_args(config.data_path)
     group_round_time = []
-    for group_num in range(2, args.max_group_num):
+    for group_num in range(1, args.max_group_num):
         args.group_e = group_num
         # set up the environment, load the dataset and results from perception models
         start = time.time()

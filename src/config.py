@@ -27,6 +27,7 @@ group_positions = ["x", "y", "z"]
 group_color = ["red", "green", "blue"]
 group_shapes = ["sphere", "cube", "cone", "cylinder"]
 group_group_shapes = ["obj", "line", "circle", "conic"]
+group_pred_shapes = ["sphere", "cube", "obj", "cone", "cylinder", "line", "circle", "conic"]
 group_screen_positions = ["x_center_screen", "y_center_screen"]
 
 # 0:2 center_x, center_z
@@ -83,8 +84,8 @@ obj_tensor_index = {
     'blue': 5,
     'sphere': 6,
     'cube': 7,
-    'cone':8,
-    'cylinder':9,
+    'cone': 8,
+    'cylinder': 9,
     'prob': 10,
     'screen_x': 11,
     'screen_y': 12
