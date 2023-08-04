@@ -33,13 +33,13 @@ const_dict = {
 attr_names = ['color', 'shape', 'rho', 'phi', 'group_shape', "slope", 'number']
 
 color = ['pink', 'green', 'blue']
-shape = ['sphere', 'cube','obj', 'cone','cylinder', 'line', 'circle', "conic"]
+shape = ['sphere', 'cube', 'cone','cylinder', 'line', 'circle', "conic"]
 
 pred_obj_mapping = {
     'in': None,
     'shape_counter': ["sphere", "cube", "cone", "cylinder"],
     'color_counter': ["red", "green", "blue"],
-    'shape': ['sphere', 'cube', 'obj', 'cone', 'cylinder', 'line', 'circle', 'conic'],
+    'shape': ['sphere', 'cube', 'cone', 'cylinder', 'line', 'circle', 'conic'],
     'color:': ['red', 'green', 'blue'],
     'phi': ['x', 'y', 'z'],
     'rho': ['x', 'y', 'z'],

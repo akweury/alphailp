@@ -203,7 +203,6 @@ def to_conic_tensor(objs, conics, conics_sc, conic_error):
     conic_tensor[group_tensor_index["axis_x"]] = conics["axis"][0]
     conic_tensor[group_tensor_index["axis_z"]] = conics["axis"][1]
 
-
     conic_tensor[group_tensor_index["screen_axis_x"]] = conics_sc["axis"][0]
     conic_tensor[group_tensor_index["screen_axis_z"]] = conics_sc["axis"][1]
 
@@ -246,6 +245,8 @@ def to_obj_tensor(objs):
     shapes_normalized[shapes_normalized < 0.99] = 0
     obj_tensor[group_tensor_index['sphere']] = shapes_normalized[0]
     obj_tensor[group_tensor_index['cube']] = shapes_normalized[1]
+    obj_tensor[group_tensor_index['cone']] = shapes_normalized[2]
+    obj_tensor[group_tensor_index['cylinder']] = shapes_normalized[3]
     obj_tensor[group_tensor_index["obj"]] = 1
     obj_tensor[group_tensor_index["line"]] = 0
     obj_tensor[group_tensor_index['circle']] = 0

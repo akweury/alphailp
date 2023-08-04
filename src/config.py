@@ -27,7 +27,7 @@ group_positions = ["x", "y", "z"]
 group_color = ["red", "green", "blue"]
 group_shapes = ["sphere", "cube", "cone", "cylinder"]
 group_group_shapes = ["obj", "line", "circle", "conic"]
-group_pred_shapes = ["sphere", "cube", "obj", "cone", "cylinder", "line", "circle", "conic"]
+group_pred_shapes = ["sphere", "cube", "cone", "cylinder", "line", "circle", "conic"]
 group_screen_positions = ["x_center_screen", "y_center_screen"]
 
 # 0:2 center_x, center_z
