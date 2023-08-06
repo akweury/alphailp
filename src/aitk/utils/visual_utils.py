@@ -1,3 +1,4 @@
+import os
 import time
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -883,7 +884,8 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
 
     for data_type in ["true", "false"]:
         for img_i in range(len(args.test_group_pos)):
-            data_name = args.image_name_dict['test'][data_type][img_i][0].split("/")[-1]
+
+            data_name = args.image_name_dict['test'][data_type][img_i]
             if data_type == "true":
                 data = args.test_group_pos[img_i]
                 data_indices = args.obj_avail_test_pos[img_i]
