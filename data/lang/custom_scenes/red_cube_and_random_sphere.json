@@ -1,12 +1,12 @@
 {
   "dataset": "red_cube_and_random_sphere",
   "dataset-type": "custom_scenes",
-  "bk_pred_names": "shape,color,phi,rho",
+  "bk_pred_names": "shape,color",
   "obj_group": true,
   "line_group": false,
   "circle_group":false,
   "conic_group": false,
-  "max_step": 5,
+  "max_step": 3,
   "weight_tp": 0.95,
   "weight_length": 0.05,
   "group_max_e": 10,
@@ -44,5 +44,5 @@
   "with_pi": true,
   "is_visual": false,
   "re_eval_groups": true,
-  "show_process": false
+  "show_process": true
 }
