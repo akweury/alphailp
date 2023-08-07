@@ -147,7 +147,8 @@ def main():
             log_utils.add_lines(f"=============================", args.log_file)
             break
     for i in range(len(group_round_time)):
-        log_utils.add_lines(f"+ group num {i} time: {(group_round_time[i]/60):.3f} minute(s)", args.log_file)
+        log_utils.add_lines(f"+ group round {i} time: {(group_round_time[i]/60):.3f} minute(s)", args.log_file)
+        log_utils.add_lines(f"+ group total time: {(sum(group_round_time)/60):.3f} minute(s)", args.log_file)
 
     # se.train_nsfr(args, rtpt, lang, clauses)
 
