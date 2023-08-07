@@ -33,8 +33,8 @@ def init(args):
             name = str(Path('CH') / f"aILP-noXIL_{args.dataset}")
 
     # get images names
-    if args.dataset_type in ["hide", "alphabet", "single_pattern"]:
-        file_utils.get_image_names(args)
+
+    file_utils.get_image_names(args)
     exp_output_path = config.buffer_path / args.dataset_type / args.dataset / "logs"
     if not os.path.exists(exp_output_path):
         os.mkdir(exp_output_path)
@@ -148,7 +148,7 @@ def main():
             break
     for i in range(len(group_round_time)):
         log_utils.add_lines(f"+ group round {i} time: {(group_round_time[i]/60):.3f} minute(s)", args.log_file)
-        log_utils.add_lines(f"+ group total time: {(sum(group_round_time)/60):.3f} minute(s)", args.log_file)
+    log_utils.add_lines(f"+ group total time: {(sum(group_round_time)/60):.3f} minute(s)", args.log_file)
 
     # se.train_nsfr(args, rtpt, lang, clauses)
 
