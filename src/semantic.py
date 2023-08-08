@@ -81,6 +81,7 @@ def run_ilp_train_explain(args, lang, level):
 
 def ilp_eval(success, args, lang, clauses, g_data):
     scores = ilp.ilp_eval(success, args, lang, clauses, g_data)
+    return scores
 
 
 def train_nsfr(args, rtpt, lang, clauses):

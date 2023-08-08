@@ -1,5 +1,5 @@
 {
-  "dataset": "letter_B",
+  "dataset": "letter_Y",
   "dataset-type": "alphabet",
   "bk_pred_names": "shape,phi,rho,slope",
   "max_group_num": 10,
