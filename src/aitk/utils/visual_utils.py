@@ -1066,15 +1066,15 @@ def visual_cir(vis_file, radius, center, point_groups, point_groups_2, errors, l
             axes[0].annotate(f"In {i}: "
                              f"({round(point_groups[0][i, 0].tolist(), 2)},{round(point_groups[0][i, 2].tolist(), 2)})  "
                              f"e: {round(txt.tolist(), 4)}", (-0.4, 1.3 - line_height * i), fontsize=font_size)
-    for i, txt in enumerate(errors):
-        if len(point_groups[1]) > 0:
-            value_x = round(point_groups[1][i, 0].tolist(), 2)
-            value_y = round(point_groups[1][i, 2].tolist(), 2)
-            value_err = round(txt.tolist(), 3)
-            pos_x = -0.4
-            pos_y = 1.3 - (len(g_errors) + 1) * line_height - line_height * i
-
-            axes[0].annotate(f"Out {i}: ({value_x},{value_y}) e: {value_err}", (pos_x, pos_y), fontsize=font_size)
+    # for i, txt in enumerate(errors):
+    #     if len(point_groups[1]) > 0:
+    #         value_x = round(point_groups[1][i, 0].tolist(), 2)
+    #         value_y = round(point_groups[1][i, 2].tolist(), 2)
+    #         value_err = round(txt.tolist(), 3)
+    #         pos_x = -0.4
+    #         pos_y = 1.3 - (len(g_errors) + 1) * line_height - line_height * i
+    #
+    #         axes[0].annotate(f"Out {i}: ({value_x},{value_y}) e: {value_err}", (pos_x, pos_y), fontsize=font_size)
 
     # Plot the least squares circle
     x = np.linspace(-0.5, 1.5, 150)
