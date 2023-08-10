@@ -32,7 +32,7 @@
   "max_cluster_size": 8,
   "error_th": 0.003,
   "line_group_min_sz": 3,
-  "line_even_error": 0.001,
+  "line_even_error": 0.`1,
   "cir_group_min_sz": 4,
   "cir_error_th": 0.015,
   "cir_even_error": 0.5,
