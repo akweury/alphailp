@@ -2,6 +2,7 @@
   "dataset": "diagonal",
   "dataset-type": "custom_scenes",
   "bk_pred_names": "shape,phi,rho",
+  "max_group_num": 3,
   "obj_group": true,
   "line_group": false,
   "circle_group":false,

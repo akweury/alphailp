@@ -128,12 +128,15 @@ def print_test_result(args, lang, c_with_scores):
             failed_neg_img_index = ((negative_score > 0.1).nonzero(as_tuple=True)[0]).tolist()
             tp_count = (img_num - len(failed_pos_img_index))
             recall = tp_count/img_num
-            precision = tp_count / (len(failed_neg_img_index)+tp_count)
+            if tp_count == 0:
+                precision = 0
+            else:
+                precision = tp_count / (len(failed_neg_img_index)+tp_count)
             add_lines(f"({c[0]} {c[1].reshape(-1)} "
                       f"Failed Pos Image: {failed_pos_img_index}  ({len(failed_pos_img_index)}/{c[2].shape[0]}) "
                       f"Failed Neg Image: {failed_neg_img_index}  ({len(failed_neg_img_index)}/{c[2].shape[0]})"
-                      f"Recall: {recall}"
-                      f"Precision: {precision}",
+                      f"Recall: {recall:.2f} "
+                      f"Precision: {precision:.2f}",
                       args.log_file)
             # add_lines(f"{c[0]} {c[1]}", args.log_file)
             clauses.append(c[0])

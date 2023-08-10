@@ -406,6 +406,8 @@ def extend_conic_group(args, group_indices, obj_tensors):
 
         leaf_objs = obj_tensors[leaf_indices]
         leaf_error = eval_utils.get_conic_error(conics["coef"], conics["center"], leaf_objs[:, [0, 2]])
+        if leaf_error is None:
+            break
         is_poly = leaf_error < args.poly_error_th
         has_new_element = is_poly.sum() > 0
         passed_leaf_objs = leaf_objs[is_poly]

@@ -119,18 +119,22 @@ def init(args):
 def main():
     args = args_utils.get_args(config.data_path)
     group_round_time = []
+    train_round_time = []
+    train_end = 0
+    eval_end = 0
     for group_num in range(1, args.max_group_num):
         args.group_e = group_num
         # set up the environment, load the dataset and results from perception models
         start = time.time()
         args, rtpt, percept_dict, obj_groups, obj_avail, nsfr = init(args)
         group_end = time.time()
+        group_round_time.append(group_end - start)
 
         # ILP and PI system
         lang = se.init_ilp(args, percept_dict, obj_groups, obj_avail, config.pi_type['bk'], "group")
         success, clauses = se.run_ilp_train(args, lang, "group")
-        group_round_end = time.time()
-        group_round_time.append(group_round_end - start)
+        train_end = time.time()
+        train_round_time.append(train_end - group_end)
 
         if success:
             train_end = time.time()
@@ -138,18 +142,19 @@ def main():
             g_data = None
             se.ilp_eval(success, args, lang, clauses, g_data)
             eval_end = time.time()
-
-            # log
-            log_utils.add_lines(f"=============================", args.log_file)
-            log_utils.add_lines(f"Grouping time: {((group_end - start) / 60):.3f} minute(s)", args.log_file)
-            log_utils.add_lines(f"Training time: {((train_end - group_end) / 60):.3f} minute(s)", args.log_file)
-            log_utils.add_lines(f"Evaluation time: {((eval_end - train_end) / 60):.3f} minute(s)", args.log_file)
-            log_utils.add_lines(f"=============================", args.log_file)
             break
+    # log
+    log_utils.add_lines(f"=============================", args.log_file)
+    if args.show_process:
+        for i in range(len(group_round_time)):
+            log_utils.add_lines(f"- group round {i + 1} time: {(group_round_time[i] / 60):.3f} minute(s)", args.log_file)
+            log_utils.add_lines(f"- train round {i + 1} time: {(train_round_time[i] / 60):.3f} minute(s)", args.log_file)
+            log_utils.add_lines(f"=============================", args.log_file)
 
-    for i in range(len(group_round_time)):
-        log_utils.add_lines(f"+ group round {i+1} time: {(group_round_time[i]/60):.3f} minute(s)", args.log_file)
-    log_utils.add_lines(f"+ group total time: {(sum(group_round_time)/60):.3f} minute(s)", args.log_file)
+    log_utils.add_lines(f"+ Grouping total time: {(sum(group_round_time) / 60):.3f} minute(s)", args.log_file)
+    log_utils.add_lines(f"+ Training total time: {(sum(train_round_time) / 60):.3f} minute(s)", args.log_file)
+    log_utils.add_lines(f"+ Evaluation time: {((eval_end - train_end) / 60):.3f} minute(s)", args.log_file)
+    log_utils.add_lines(f"=============================", args.log_file)
 
 if __name__ == "__main__":
     main()

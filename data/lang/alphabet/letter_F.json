@@ -1,5 +1,5 @@
 {
-  "dataset": "letter_A",
+  "dataset": "letter_F",
   "dataset-type": "alphabet",
   "bk_pred_names": "shape,phi,rho,slope",
   "max_group_num": 4,
@@ -15,7 +15,7 @@
   "score_unique": true,
   "semantic_unique": true,
   "small_data": false,
-  "top_data": 30,
+  "top_data": 52,
   "epochs": 100,
   "t_beam": 6,
   "n_beam": 5,
