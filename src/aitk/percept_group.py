@@ -369,7 +369,7 @@ def extend_line_group(args, obj_indices, obj_tensors):
         avg_distances = eval_utils.calc_avg_dist(line_objs_extended, [tensor_index[i] for i in config.obj_positions])
 
         is_line = colinearities < args.error_th
-        is_even_dist = avg_distances < args.distribute_error_th
+        is_even_dist = avg_distances < args.line_even_error
         passed_indices = is_line * is_even_dist
         has_new_element = passed_indices.sum() > 0
         passed_objs = extra_objs[passed_indices]

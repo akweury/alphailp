@@ -43,7 +43,7 @@
   "plot_four_zone": false,
   "with_explain": false,
   "with_pi": true,
-  "is_visual": false,
+  "is_visual": true,
   "re_eval_groups": true,
-  "show_process": false
+  "show_process": true
 }
