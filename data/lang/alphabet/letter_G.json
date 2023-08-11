@@ -2,7 +2,7 @@
   "dataset": "letter_G",
   "dataset-type": "alphabet",
   "bk_pred_names": "shape,phi,rho,slope",
-  "max_group_num": 4,
+  "max_group_num":8,
   "obj_group": false,
   "line_group": true,
   "circle_group": true,
@@ -30,9 +30,9 @@
   "pi_top": 1,
   "length_weight": 0.02,
   "max_cluster_size": 8,
-  "error_th": 0.003,
+  "error_th": 1e-4,
   "line_group_min_sz": 3,
-  "line_even_error": 0.1,
+  "line_even_error": 1e-3,
   "cir_group_min_sz": 5,
   "cir_error_th": 0.015,
   "cir_even_error": 0.5,
@@ -45,5 +45,5 @@
   "with_pi": false,
   "is_visual": false,
   "re_eval_groups": true,
-  "show_process": true
+  "show_process": false
 }

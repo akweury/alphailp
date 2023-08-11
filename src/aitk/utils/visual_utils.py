@@ -808,7 +808,6 @@ def save_image(final_image, image_output_path):
 
 def visual_group_predictions(args, data, data_indices, obj_data, input_image, colors, thickness,
                              group_tensor_index, obj_tensor_index):
-
     if None in data_indices:
         return input_image
     data = torch.tensor(data)
@@ -1034,6 +1033,93 @@ def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_gr
 
     axes[0].invert_yaxis()
     axes[1].invert_yaxis()
+    plt.legend()
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    if show:
+        plt.show()
+    if save:
+        plt.savefig(f"{vis_file}")
+    plt.close()
+
+
+def visual_selected_groups(args, g_indices, valid_obj_all, show=False, save=True):
+    for img_i in range(args.top_data):
+        # if no groups in this image, continue
+        if g_indices[img_i] is None:
+            continue
+
+        # visual image name
+        vis_file = args.analysis_output_path / f"all_groups_{args.dataset}_img_{img_i}.png"
+        sub_fig_num = len(g_indices[img_i]) + 1
+        fig, axes = plt.subplots(nrows=1, ncols=sub_fig_num, figsize=(5 * sub_fig_num, 5))
+
+        # plot each group on one sub_figure
+        for g_i, obj_indices in enumerate(g_indices[img_i]):
+            g_in_objs = valid_obj_all[img_i][obj_indices]
+            if len(g_in_objs) > 0:
+                X1 = g_in_objs[:, :1]
+                Y1 = g_in_objs[:, 2:3]
+                axes[g_i].scatter(X1, Y1)
+            axes[g_i].annotate(f"Group {g_i + 1}", (-0.4, 1.4))
+
+        # Plot all selected points in last sub_figure
+        for p_i, obj_indices in enumerate(g_indices[img_i]):
+            g_in_objs = valid_obj_all[img_i][obj_indices]
+            if len(g_in_objs) > 0:
+                X1 = g_in_objs[:, :1]
+                Y1 = g_in_objs[:, 2:3]
+                axes[-1].scatter(X1, Y1, label=f"group{p_i + 1}")
+        axes[-1].annotate(f"Selected Points", (-0.4, 1.4))
+
+        # # Plot all unselected points in last sub_figure
+        # for p_i, obj_indices in enumerate(g_indices[img_i]):
+        #     all_indices = set(list(range(len(valid_obj_all[img_i]))))
+        #     in_indices = set([i for i, e in enumerate(obj_indices) if e == True])
+        #     indices_rest = list(all_indices - in_indices)
+        #     g_out_objs = valid_obj_all[img_i][indices_rest]
+        #     if len(g_out_objs) > 0:
+        #         X1 = g_out_objs[:, :1]
+        #         Y1 = g_out_objs[:, 2:3]
+        #         axes[-1].scatter(X1, Y1, label=f"un_group{p_i}")
+
+        # figure configs
+        for i in range(sub_fig_num):
+            axes[i].set_aspect(1)
+            axes[i].set_xlim([-0.5, 1.5])
+            axes[i].set_ylim([-0.5, 1.5])
+            axes[i].invert_yaxis()
+
+        plt.legend()
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        if show:
+            plt.show()
+        if save:
+            plt.savefig(f"{vis_file}")
+        plt.close()
+
+
+def visual_points(vis_file, positive_points, negative_points, show=False, save=True):
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+
+    # Plot the positive points
+    for p_i, point_group in enumerate(positive_points):
+        if len(point_group) > 0:
+            X1 = point_group[:, :1]
+            Y1 = point_group[:, 2:3]
+            axes[0].scatter(X1, Y1, label="positive")
+    axes[0].annotate(f"Positive Points", (-0.4, 1.4))
+
+    # Plot the negative data
+    for p_i, point_group in enumerate(negative_points):
+        X1 = point_group[:, :1]
+        Y1 = point_group[:, 2:3]
+        axes[0].scatter(X1, Y1, label="negative")
+    axes[0].annotate(f"Negative Points", (-0.4, 1.4))
+
+    # figure configs
+    axes[0].invert_yaxis()
     plt.legend()
     plt.xlabel('X')
     plt.ylabel('Y')

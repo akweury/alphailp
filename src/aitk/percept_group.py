@@ -229,6 +229,36 @@ def prune_cirs(args, cir_tensors, cir_tensors_indices):
     pass
 
 
+# def visual_selected_points(args, g_indices, valid_obj_all):
+#     for img_i in range(args.top_data):
+#         # if no groups in this image, continue
+#         if g_indices[img_i] is None:
+#             continue
+#
+#         # visual image name
+#         vis_file = args.analysis_output_path / f"{args.dataset}_img_{img_i}_groups.png"
+#         for g_i, obj_indices in enumerate(g_indices[img_i]):
+#
+#
+#             g_in_indices = g_indices[img_i][g_i]
+#             g_in_objs = valid_obj_all[img_i][g_in_indices]
+#
+#             if isinstance(g_in_indices, list):
+#                 indices_rest = list(set(list(range(len(valid_obj_all[img_i])))) - set(
+#                     [i for i, e in enumerate(g_in_indices) if e == True]))
+#             elif g_in_indices.dtype == torch.int64:
+#                 indices_rest = list(set(list(range(len(valid_obj_all[img_i])))) - set(g_in_indices.tolist()))
+#             elif g_in_indices.dtype == torch.bool:
+#                 in_indices = ((g_in_indices == True).nonzero(as_tuple=True)[0])
+#                 indices_rest = list(set(list(range(len(valid_obj_all[img_i])))) - set(in_indices.tolist()))
+#             else:
+#                 raise ValueError
+#             g_out_objs = valid_obj_all[img_i][indices_rest]
+#             g_out_objs = torch.tensor(
+#                 [obj.tolist() for obj in g_out_objs if obj[config.obj_tensor_index['prob']] > 0.5])
+#
+#             visual_utils.visual_points(vis_file, g_in_objs, g_out_objs, show=False, save=True)
+
 def visual_group_analysis(args, g_indices, valid_obj_all, g_type, g_shape_data, unfit_error_all):
     # detect lines image by image
     for img_i in range(args.top_data):
@@ -586,7 +616,8 @@ def detect_obj_groups(args, percept_dict_single, data_type):
         conic_tensors, conic_tensors_indices = detect_conic_groups(args, percept_dict_single, is_visual=is_visual)
         cir_tensors, cir_tensors_indices = detect_circle_groups(args, percept_dict_single, is_visual=is_visual)
 
-        group_tensors, group_obj_index_tensors = merge_groups(args, single_tensors, single_tensors_indices,
+        group_tensors, group_obj_index_tensors = merge_groups(args, percept_dict_single,
+                                                              single_tensors, single_tensors_indices,
                                                               line_tensors, cir_tensors, conic_tensors,
                                                               line_tensors_indices, cir_tensors_indices,
                                                               conic_tensors_indices)
@@ -642,7 +673,6 @@ def select_top_k_groups(args, object_groups, obj_indices):
     #         if used_objs[shape_i][i] is not None:
     #             obj_indices_img += used_objs[shape_i][i]
     #     obj_indices.append(obj_indices_img)
-
     obj_groups_top = []
     obj_groups_top_indices = []
 
@@ -700,7 +730,7 @@ def select_top_k_groups(args, object_groups, obj_indices):
     return obj_groups_top, obj_groups_top_indices
 
 
-def merge_groups(args, single_groups, single_used_objs,
+def merge_groups(args,percept_dict_single, single_groups, single_used_objs,
                  line_groups, cir_groups, conic_groups, line_used_objs, cir_used_objs, conic_used_objs):
     final_groups = []
     final_used_objs = []
@@ -737,6 +767,11 @@ def merge_groups(args, single_groups, single_used_objs,
 
     # select top-k groups
     top_k_groups, top_k_group_indices = select_top_k_groups(args, groups_all, group_indices)
+    # visualize selected groups
+    if args.is_visual:
+        visual_utils.visual_selected_groups(args, top_k_group_indices, percept_dict_single)
+        # visual_selected_points(args, top_k_group_indices, percept_dict_single)
+
 
     return top_k_groups, top_k_group_indices
 
