@@ -122,7 +122,7 @@ def main():
     train_round_time = []
     train_end = 0
     eval_end = 0
-    for group_num in range(3, args.max_group_num):
+    for group_num in range(1, args.max_group_num):
         args.group_e = group_num
         # set up the environment, load the dataset and results from perception models
         start = time.time()
