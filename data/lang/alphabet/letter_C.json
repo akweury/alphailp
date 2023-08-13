@@ -3,7 +3,7 @@
   "dataset-type": "alphabet",
   "bk_pred_names": "color,shape,phi,rho,slope",
   "max_group_num": 4,
-  "obj_group": false,
+  "obj_group": true,
   "line_group": true,
   "circle_group": true,
   "conic_group": true,
