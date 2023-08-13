@@ -122,6 +122,10 @@ def main():
     train_round_time = []
     train_end = 0
     eval_end = 0
+    success = False
+    lang = None
+    clauses = None
+
     for group_num in range(1, args.max_group_num):
         args.group_e = group_num
         # set up the environment, load the dataset and results from perception models
@@ -143,6 +147,13 @@ def main():
             se.ilp_eval(success, args, lang, clauses, g_data)
             eval_end = time.time()
             break
+    if not success:
+        train_end = time.time()
+        # evaluation
+        g_data = None
+        se.ilp_eval(success, args, lang, clauses, g_data)
+        eval_end = time.time()
+
     # log
     log_utils.add_lines(f"=============================", args.log_file)
     if args.show_process:
