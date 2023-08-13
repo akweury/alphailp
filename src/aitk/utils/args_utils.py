@@ -27,7 +27,7 @@ def get_args(data_path):
                         help='cuda device, i.e. 0 or cpu')
     parser.add_argument("--no-cuda", action="store_true",
                         help="Run on CPU instead of GPU (not recommended)")
-    parser.add_argument("--with_pi", action="store_false",
+    parser.add_argument("--with_pi", action="store_true",
                         help="Generate Clause with predicate invention.")
     parser.add_argument("--with_explain", action="store_true",
                         help="Explain Clause with predicate invention.")
