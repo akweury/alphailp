@@ -1286,3 +1286,5 @@ def visual_groups(args, group_tensors, percept_dict_single, group_obj_index_tens
             args.image_output_path / f"gp_{data_type}_{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
 
         save_image(group_pred_image, final_image_filename)
+
+

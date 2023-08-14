@@ -199,8 +199,10 @@ def plot_4_zone(is_plot_4zone, B_new, four_scores, all_scores, step):
 
 
 exp_result_data = {
-    "twopairs": [0.28, 0.45, 0.70, 1.0],
-    "red-triangle": [0.69, 0.76, 0.93, 0.93, 1.0],
-    "5-online": [0.5, 0.93, 1.0],
-    "circle_3": {"nc_round": [0.27, 0.42], "sc_round": [0.42, 0.43, 0.43, 0.43, 0.66, 1.0]}
+    "PI_Train": [12.84, 22.75, 0, 2.90, 4.02, 12.69],
+    "NoPI_Train": [24.95, 21.30, 0, 24.72, 67.66, 37.04],
+    "PI_Group": [8.24, 20.39, 0, 21.71, 10.99, 9.55],
+    "NoPI_Group": [12.92, 20.68, 0, 42.14, 21.43, 21.52]
 }
+
+plot_line_chart(np.array(list(exp_result_data.values())), config.buffer_path, labels=list(exp_result_data.keys()))
