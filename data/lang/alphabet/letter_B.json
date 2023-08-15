@@ -1,7 +1,7 @@
 {
   "dataset": "letter_B",
   "dataset-type": "alphabet",
-  "bk_pred_names": "color,shape,phi,rho,slope",
+  "bk_pred_names": "shape,phi,rho,slope",
   "max_group_num": 4,
   "obj_group": false,
   "line_group": true,
