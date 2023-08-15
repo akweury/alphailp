@@ -134,7 +134,7 @@ def print_test_result(args, lang, c_with_scores):
                 precision = tp_count / (len(failed_neg_img_index)+tp_count)
             add_lines(f"({c[0]} {c[1].reshape(-1)} "
                       f"Failed Pos Image: {failed_pos_img_index}  ({len(failed_pos_img_index)}/{c[2].shape[0]}) "
-                      f"Failed Neg Image: {failed_neg_img_index}  ({len(failed_neg_img_index)}/{c[2].shape[0]})"
+                      f"Failed Neg Image: {failed_neg_img_index}  ({len(failed_neg_img_index)}/{c[2].shape[0]}) "
                       f"Recall: {recall:.2f} "
                       f"Precision: {precision:.2f}",
                       args.log_file)
