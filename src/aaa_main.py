@@ -147,12 +147,12 @@ def main():
             se.ilp_eval(success, args, lang, clauses, g_data)
             eval_end = time.time()
             break
-    if not success:
-        train_end = time.time()
-        # evaluation
-        g_data = None
-        se.ilp_eval(success, args, lang, clauses, g_data)
-        eval_end = time.time()
+        if not success:
+            train_end = time.time()
+            # evaluation
+            g_data = None
+            se.ilp_eval(success, args, lang, clauses, g_data)
+            eval_end = time.time()
 
     # log
     log_utils.add_lines(f"=============================", args.log_file)
