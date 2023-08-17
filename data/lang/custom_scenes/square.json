@@ -11,7 +11,7 @@
   "weight_tp": 0.95,
   "weight_length": 0.05,
   "group_max_e": 10,
-  "batch_size_train": 5,
+  "batch_size_train": 4,
   "score_unique": true,
   "semantic_unique": true,
   "small_data": false,
