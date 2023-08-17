@@ -1,6 +1,6 @@
 # Select the base image
 #FROM nvcr.io/nvidia/pytorch:21.06-py3
-FROM nvcr.io/nvidia/pytorch:23.02-py3
+FROM nvcr.io/nvidia/pytorch:22.11-py3
 # Select the working directory
 WORKDIR  /aILP
 
