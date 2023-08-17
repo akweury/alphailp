@@ -1,6 +1,6 @@
 # Select the base image
 #FROM nvcr.io/nvidia/pytorch:21.06-py3
-FROM nvcr.io/nvidia/pytorch:22.11-py3
+FROM nvcr.io/nvidia/pytorch:22.08-py3
 # Select the working directory
 WORKDIR  /aILP
 
@@ -10,7 +10,7 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # Add cuda
-RUN pip3 install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip3 install pytorch==1.13.0 torchvision==0.14.0 torchaudio==0.13.0 pytorch-cuda=11.7 -c pytorch -c nvidia
 # Add fonts for serif rendering in MPL plots
 RUN apt-get update
 RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections
