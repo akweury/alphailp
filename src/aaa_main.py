@@ -146,11 +146,6 @@ def main():
         se.ilp_eval(success, args, lang, clauses, g_data)
         eval_end = time.time()
 
-        log_utils.add_lines(f"- group round {group_num} time: {(group_round_time[group_num] / 60):.2f} minute(s)",
-                            args.log_file)
-        log_utils.add_lines(f"- train round {group_num} time: {(train_round_time[group_num] / 60):.2f} minute(s)",
-                            args.log_file)
-
         if success:
             break
     # log
