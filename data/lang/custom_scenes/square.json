@@ -7,7 +7,7 @@
   "line_group": true,
   "circle_group":false,
   "conic_group": false,
-  "max_step": 3,
+  "max_step": 5,
   "weight_tp": 0.95,
   "weight_length": 0.05,
   "group_max_e": 10,
