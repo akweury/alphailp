@@ -32,16 +32,6 @@ def init(args):
         else:
             name = str(Path('CH') / f"aILP-noXIL_{args.dataset}")
 
-    # get images names
-
-    file_utils.get_image_names(args)
-    exp_output_path = config.buffer_path / args.dataset_type / args.dataset / "logs"
-    if not os.path.exists(exp_output_path):
-        os.mkdir(exp_output_path)
-    log_file = log_utils.create_log_file(exp_output_path)
-
-    print(f"- log_file_path:{log_file}")
-    args.log_file = log_file
     log_utils.add_lines(f"============================= Group Num: {args.group_e} =======================",
                         args.log_file)
     # log_utils.add_lines(f"args: {args}", log_file)
@@ -71,7 +61,7 @@ def init(args):
     else:
         args.device = torch.device(int(args.device_id))
 
-    log_utils.add_lines(f"- device: {args.device}", log_file)
+    log_utils.add_lines(f"- device: {args.device}", args.log_file)
 
     # Create RTPT object
     rtpt = RTPT(name_initials='JS', experiment_name=name, max_iterations=args.epochs)
@@ -126,6 +116,16 @@ def main():
     lang = None
     clauses = None
 
+    # get images names
+    file_utils.get_image_names(args)
+    exp_output_path = config.buffer_path / args.dataset_type / args.dataset / "logs"
+    if not os.path.exists(exp_output_path):
+        os.mkdir(exp_output_path)
+    log_file = log_utils.create_log_file(exp_output_path)
+
+    print(f"- log_file_path:{log_file}")
+    args.log_file = log_file
+
     for group_num in range(1, args.max_group_num):
         args.group_e = group_num
         # set up the environment, load the dataset and results from perception models
@@ -140,32 +140,26 @@ def main():
         train_end = time.time()
         train_round_time.append(train_end - group_end)
 
-        if success:
-            train_end = time.time()
-            # evaluation
-            g_data = None
-            se.ilp_eval(success, args, lang, clauses, g_data)
-            eval_end = time.time()
-            break
-        if not success:
-            train_end = time.time()
-            # evaluation
-            g_data = None
-            se.ilp_eval(success, args, lang, clauses, g_data)
-            eval_end = time.time()
+        train_end = time.time()
+        # evaluation
+        g_data = None
+        se.ilp_eval(success, args, lang, clauses, g_data)
+        eval_end = time.time()
 
+        log_utils.add_lines(f"- group round {group_num} time: {(group_round_time[group_num] / 60):.2f} minute(s)",
+                            args.log_file)
+        log_utils.add_lines(f"- train round {group_num} time: {(train_round_time[group_num] / 60):.2f} minute(s)",
+                            args.log_file)
+
+        if success:
+            break
     # log
     log_utils.add_lines(f"=============================", args.log_file)
-    if args.show_process:
-        for i in range(len(group_round_time)):
-            log_utils.add_lines(f"- group round {i + 1} time: {(group_round_time[i] / 60):.2f} minute(s)", args.log_file)
-            log_utils.add_lines(f"- train round {i + 1} time: {(train_round_time[i] / 60):.2f} minute(s)", args.log_file)
-            log_utils.add_lines(f"=============================", args.log_file)
-
     log_utils.add_lines(f"+ Grouping total time: {(sum(group_round_time) / 60):.2f} minute(s)", args.log_file)
     log_utils.add_lines(f"+ Training total time: {(sum(train_round_time) / 60):.2f} minute(s)", args.log_file)
     log_utils.add_lines(f"+ Evaluation time: {((eval_end - train_end) / 60):.2f} minute(s)", args.log_file)
     log_utils.add_lines(f"=============================", args.log_file)
+
 
 if __name__ == "__main__":
     main()
