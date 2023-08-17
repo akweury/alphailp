@@ -1,5 +1,5 @@
 {
-  "dataset": "close",
+  "dataset": "square",
   "dataset-type": "custom_scenes",
   "bk_pred_names": "shape,phi,rho,slope",
   "max_group_num": 5,
