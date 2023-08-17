@@ -755,6 +755,8 @@ def merge_groups(args,percept_dict_single, single_groups, single_used_objs,
 
     groups_all = []
     group_indices = []
+    if len(final_groups)==0:
+        return [], []
     for img_i in range(len(final_groups[0])):
         img_groups = []
         img_group_indices = []
