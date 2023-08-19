@@ -107,14 +107,12 @@ def init(args):
 
 
 def main():
+    exp_start = time.time()
     args = args_utils.get_args(config.data_path)
     group_round_time = []
     train_round_time = []
     train_end = 0
     eval_end = 0
-    success = False
-    lang = None
-    clauses = None
 
     # get images names
     file_utils.get_image_names(args)
@@ -146,14 +144,19 @@ def main():
         se.ilp_eval(success, args, lang, clauses, g_data)
         eval_end = time.time()
 
+        # log
+        log_utils.add_lines(f"=============================", args.log_file)
+        log_utils.add_lines(f"+ Grouping round time: {(sum(group_round_time) / 60):.2f} minute(s)", args.log_file)
+        log_utils.add_lines(f"+ Training round time: {(sum(train_round_time) / 60):.2f} minute(s)", args.log_file)
+        log_utils.add_lines(f"+ Evaluation round time: {((eval_end - train_end) / 60):.2f} minute(s)", args.log_file)
+        log_utils.add_lines(f"+ Running time: {((eval_end - exp_start) / 60):.2f} minute(s)", args.log_file)
+        log_utils.add_lines(f"=============================", args.log_file)
+
+
         if success:
             break
-    # log
-    log_utils.add_lines(f"=============================", args.log_file)
-    log_utils.add_lines(f"+ Grouping total time: {(sum(group_round_time) / 60):.2f} minute(s)", args.log_file)
-    log_utils.add_lines(f"+ Training total time: {(sum(train_round_time) / 60):.2f} minute(s)", args.log_file)
-    log_utils.add_lines(f"+ Evaluation time: {((eval_end - train_end) / 60):.2f} minute(s)", args.log_file)
-    log_utils.add_lines(f"=============================", args.log_file)
+
+
 
 
 if __name__ == "__main__":
