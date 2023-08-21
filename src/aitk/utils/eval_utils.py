@@ -269,6 +269,21 @@ def calc_colinearity(obj_tensors, indices_position):
     return collinearities
 
 
+def calc_colinearity_cuda(obj_tensors, indices_position):
+    if obj_tensors.shape[1] < 3:
+        raise ValueError
+
+    x1 = obj_tensors[:, :, 0, indices_position[0]]
+    x2 = obj_tensors[:, :, 1, indices_position[0]]
+    x3 = obj_tensors[:, :, 2, indices_position[0]]
+
+    z1 = obj_tensors[:, :, 0, indices_position[2]]
+    z2 = obj_tensors[:, :, 1, indices_position[2]]
+    z3 = obj_tensors[:, :, 2, indices_position[2]]
+    colinearity = x1 * (z2 - z3) + x2 * (z3 - z1) + x3 * (z1 - z2)
+    return torch.abs(colinearity)
+
+
 def calc_dist(points, center):
     distance = torch.sqrt(torch.sum((points - center) ** 2, dim=-1))
     return distance
@@ -288,6 +303,41 @@ def calc_avg_dist(obj_tensors, indices_position):
         distances.append(distance.tolist())
 
     error = torch.mean((torch.tensor(distances) - torch.mean(torch.tensor(distances), dim=0)) ** 2, dim=0)
+
+    return error
+
+
+def calc_avg_dist_cuda(obj_tensors):
+    if obj_tensors.shape[1] < 3:
+        raise ValueError
+
+    pos = obj_tensors[:, :, :, [0, 2]]
+    pos_x = pos[:, :, :, 0]
+    pos_z = pos[:, :, :, 0]
+    pos_x_sorted, pos_x_indices = torch.sort(pos_x, dim=-1)
+    pos_z_sorted, pos_z_indices = torch.sort(pos_z, dim=-1)
+
+    line_diff_th = 0.05
+    pos_x_max_diff = pos_x_sorted[:, :, -1] - pos_x_sorted[:, :, 0]
+    pos_z_max_diff = pos_z_sorted[:, :, -1] - pos_z_sorted[:, :, 0]
+    line_mask_vertical = pos_x_max_diff < line_diff_th
+    line_mask_horizontal = pos_z_max_diff < line_diff_th
+
+    # calculate distance
+    pos_x_sorted_shift = torch.roll(pos_x_sorted, 1, -1)
+    pos_z_sorted_shift = torch.roll(pos_z_sorted, 1, -1)
+    delta_x = (pos_x_sorted - pos_x_sorted_shift)[:, :, 1:]
+    delta_z = (pos_z_sorted - pos_z_sorted_shift)[:, :, 1:]
+
+    error_x = torch.mean(torch.abs(delta_x - torch.mean(delta_x, dim=-1, keepdim=True)), dim=-1)
+    error_z = torch.mean(torch.abs(delta_z - torch.mean(delta_z, dim=-1, keepdim=True)), dim=-1)
+
+    error = torch.ones(error_x.shape)
+
+    # if is not vertical line, use x error as measurement
+    error[~line_mask_vertical] = error_x[~line_mask_vertical]
+    # if is vertical line, use z error as measurement
+    error[line_mask_vertical] = error_z[line_mask_vertical]
 
     return error
 

@@ -17,7 +17,7 @@ time_now = datetime.datetime.now().strftime("%H_%M_%S")
 
 
 def init(args):
-    if args.dataset_type == "alphabet":
+    if "alphabet" in args.dataset_type:
         name = str(Path("ALP") / f"{args.dataset}")
     else:
         if not args.no_xil:
