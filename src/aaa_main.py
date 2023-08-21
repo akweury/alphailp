@@ -17,15 +17,8 @@ time_now = datetime.datetime.now().strftime("%H_%M_%S")
 
 
 def init(args):
-    if args.dataset_type == 'kandinsky':
-        if args.small_data:
-            name = str(Path("small_KP") / f"NeSy-PI_{args.dataset}")
-        else:
-            name = str(Path("KP") / f"NeSy-PI_{args.dataset}")
-    elif args.dataset_type == "hide":
-        name = str(Path("HIDE") / f"NeSy-PI_{args.dataset}")
-    elif args.dataset_type == "alphabet":
-        name = str(Path("ALPHABET") / f"NeSy-PI_{args.dataset}")
+    if args.dataset_type == "alphabet":
+        name = str(Path("ALP") / f"{args.dataset}")
     else:
         if not args.no_xil:
             name = str(Path('CH') / Path(f"/aILP_{args.dataset}"))
