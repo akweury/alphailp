@@ -375,8 +375,8 @@ def detect_line_groups(args, valid_obj_all, visual):
 
     if not args.line_group:
         return None, None
-    line_indices, line_groups, line_data, line_error = detect_groups_cuda(args, valid_obj_all, "line")
-    # line_indices, line_groups, line_data, line_error = detect_groups(args, valid_obj_all, "line")
+    # line_indices, line_groups, line_data, line_error = detect_groups_cuda(args, valid_obj_all, "line")
+    line_indices, line_groups, line_data, line_error = detect_groups(args, valid_obj_all, "line")
     line_tensors, line_tensors_indices = encode_groups(args, valid_obj_all, line_indices, line_groups, "line")
     # logic: prune strategy
     g_tensors, indices, data, error = prune_groups(args, OBJ_N, line_tensors, line_tensors_indices, line_data,
