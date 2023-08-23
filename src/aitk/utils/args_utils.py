@@ -159,6 +159,12 @@ def get_args(data_path):
                         help="Treat a conic of objects as a group.")
     parser.add_argument("--bk_pred_names", type=str,
                         help="BK predicates used in this exp.")
+    parser.add_argument("--phi_num", type=int, default=20,
+                        help="The number of directions for direction predicates.")
+    parser.add_argument("--rho_num", type=int, default=20,
+                        help="The number of distance for distance predicates.")
+    parser.add_argument("--slope_num", type=int, default=10,
+                        help="The number of directions for direction predicates.")
     args = parser.parse_args()
 
     args_file = data_path / "lang" / args.dataset_type / str(str(args.dataset) + ".json")

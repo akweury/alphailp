@@ -146,6 +146,13 @@ class Language(object):
             _, num = const_type.split('_')
             if num == 'e':
                 num = e
+            elif num == "phi":
+                num = args.phi_num
+            elif num == "rho":
+                num = args.rho_num
+            elif num == "slope":
+                num = args.slope_num
+
             const_names = []
             for i in range(int(num)):
                 const_names.append(str(const) + str(i))
