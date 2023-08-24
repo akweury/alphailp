@@ -33,7 +33,7 @@
   "length_weight": 0.02,
   "max_cluster_size": 8,
   "error_th": 0.003,
-  "line_group_min_sz": 5,
+  "line_group_min_sz": 3,
   "line_even_error": 0.001,
   "cir_group_min_sz": 4,
   "cir_error_th": 0.04,
