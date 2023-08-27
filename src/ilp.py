@@ -216,7 +216,7 @@ def ilp_eval(success, args, lang, clauses, g_data):
     scores_dict = {}
     if not success:
         log_utils.add_lines(f"ILP failed.", args.log_file)
-        return scores_dict
+
 
     target_predicate = [clauses[0].head.pred.name]
     # calculate scores
