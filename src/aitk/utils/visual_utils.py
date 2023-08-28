@@ -986,6 +986,8 @@ def visual_group(group_type, vis_file, g_data, g_in_objs, g_out_objs, unfit_erro
     elif group_type == "cir":
         visual_cir(vis_file, g_data["radius"], g_data["center"], [g_in_objs, g_out_objs], [g_in_objs],
                    errors=unfit_error, labels=["base", "rest"], labels_2=["detect"])
+    elif group_type == "obj":
+        pass
     else:
         raise ValueError
 
@@ -1055,22 +1057,37 @@ def visual_selected_groups(args, g_indices, valid_obj_all, show=False, save=True
         fig, axes = plt.subplots(nrows=1, ncols=sub_fig_num, figsize=(5 * sub_fig_num, 5))
 
         # plot each group on one sub_figure
+        g_not_selected_indices = torch.ones(len(valid_obj_all[img_i]), dtype=torch.bool)
+
         for g_i, obj_indices in enumerate(g_indices[img_i]):
             g_in_objs = valid_obj_all[img_i][obj_indices]
+            not_obj_indices = [not i for i in obj_indices]
+            g_out_objs = valid_obj_all[img_i][not_obj_indices]
+            g_not_selected_indices[obj_indices] = False
             if len(g_in_objs) > 0:
                 X1 = g_in_objs[:, :1]
                 Y1 = g_in_objs[:, 2:3]
-                axes[g_i].scatter(X1, Y1)
+                axes[g_i].scatter(X1, Y1, label="in", color="blue")
+                axes[g_i].legend(loc="upper right")
+            if len(g_out_objs)>0:
+                X1 = g_out_objs[:, :1]
+                Y1 = g_out_objs[:, 2:3]
+                axes[g_i].scatter(X1, Y1, label="out", color="red")
+                axes[g_i].legend(loc="upper right")
             axes[g_i].annotate(f"Group {g_i + 1}", (-0.4, 1.4))
 
+
+
         # Plot all selected points in last sub_figure
-        for p_i, obj_indices in enumerate(g_indices[img_i]):
-            g_in_objs = valid_obj_all[img_i][obj_indices]
-            if len(g_in_objs) > 0:
-                X1 = g_in_objs[:, :1]
-                Y1 = g_in_objs[:, 2:3]
-                axes[-1].scatter(X1, Y1, label=f"group{p_i + 1}")
-        axes[-1].annotate(f"Selected Points", (-0.4, 1.4))
+
+        g_not_selected_objs = valid_obj_all[img_i][g_not_selected_indices]
+        if len(g_not_selected_objs) > 0:
+            X1 = g_not_selected_objs[:, :1]
+            Y1 = g_not_selected_objs[:, 2:3]
+            axes[-1].scatter(X1, Y1, color="red")
+            axes[-1].legend(loc="upper right")
+
+        axes[-1].annotate(f"Not selected Points", (-0.4, 1.4))
 
         # # Plot all unselected points in last sub_figure
         # for p_i, obj_indices in enumerate(g_indices[img_i]):
@@ -1090,7 +1107,6 @@ def visual_selected_groups(args, g_indices, valid_obj_all, show=False, save=True
             axes[i].set_ylim([-0.5, 1.5])
             axes[i].invert_yaxis()
 
-        plt.legend()
         plt.xlabel('X')
         plt.ylabel('Y')
         if show:
@@ -1286,5 +1302,3 @@ def visual_groups(args, group_tensors, percept_dict_single, group_obj_index_tens
             args.image_output_path / f"gp_{data_type}_{data_name[0].split('/')[-1].split('.data0.json')[0]}.output.png")
 
         save_image(group_pred_image, final_image_filename)
-
-

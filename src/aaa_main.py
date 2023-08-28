@@ -117,7 +117,7 @@ def main():
     print(f"- log_file_path:{log_file}")
     args.log_file = log_file
 
-    for group_num in range(1, args.max_group_num):
+    for group_num in range(3, args.max_group_num):
         args.group_e = group_num
         # set up the environment, load the dataset and results from perception models
         start = time.time()
