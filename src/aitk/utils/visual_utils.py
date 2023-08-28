@@ -1054,6 +1054,11 @@ def visual_selected_groups(args, g_indices, valid_obj_all, show=False, save=True
         # visual image name
         vis_file = args.analysis_output_path / f"all_groups_{args.dataset}_img_{img_i}.png"
         sub_fig_num = len(g_indices[img_i]) + 1
+
+        # no group have been detected
+        if sub_fig_num == 1:
+            continue
+
         fig, axes = plt.subplots(nrows=1, ncols=sub_fig_num, figsize=(5 * sub_fig_num, 5))
 
         # plot each group on one sub_figure
@@ -1067,16 +1072,14 @@ def visual_selected_groups(args, g_indices, valid_obj_all, show=False, save=True
             if len(g_in_objs) > 0:
                 X1 = g_in_objs[:, :1]
                 Y1 = g_in_objs[:, 2:3]
-                axes[g_i].scatter(X1, Y1, label="in", color="blue")
+                axes[g_i].scatter(X1, Y1, label="in", color="green")
                 axes[g_i].legend(loc="upper right")
-            if len(g_out_objs)>0:
+            if len(g_out_objs) > 0:
                 X1 = g_out_objs[:, :1]
                 Y1 = g_out_objs[:, 2:3]
-                axes[g_i].scatter(X1, Y1, label="out", color="red")
+                axes[g_i].scatter(X1, Y1, label="out", color="gray")
                 axes[g_i].legend(loc="upper right")
             axes[g_i].annotate(f"Group {g_i + 1}", (-0.4, 1.4))
-
-
 
         # Plot all selected points in last sub_figure
 
@@ -1084,7 +1087,7 @@ def visual_selected_groups(args, g_indices, valid_obj_all, show=False, save=True
         if len(g_not_selected_objs) > 0:
             X1 = g_not_selected_objs[:, :1]
             Y1 = g_not_selected_objs[:, 2:3]
-            axes[-1].scatter(X1, Y1, color="red")
+            axes[-1].scatter(X1, Y1, color="red", label="unselected")
             axes[-1].legend(loc="upper right")
 
         axes[-1].annotate(f"Not selected Points", (-0.4, 1.4))
