@@ -32,9 +32,9 @@
   "pi_top": 1,
   "length_weight": 0.05,
   "max_cluster_size": 8,
-  "error_th": 0.003,
+  "error_th": 0.01,
   "line_group_min_sz": 3,
-  "line_even_error": 1e-3,
+  "line_even_error": 1e-2,
   "cir_group_min_sz": 4,
   "cir_error_th": 0.01,
   "cir_even_error": 0.05,
@@ -46,5 +46,5 @@
   "with_explain": false,
   "is_visual": true,
   "re_eval_groups": true,
-  "show_process": true
+  "show_process": false
 }

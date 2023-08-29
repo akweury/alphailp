@@ -999,6 +999,8 @@ def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_gr
     font_size = config.txt_font_size
     # Plot the noisy data
     for p_i, point_group in enumerate(point_groups):
+        if len(point_group.shape) != 2:
+            return
         X1 = point_group[:, :1]
         Y1 = point_group[:, 2:3]
         axes[0].scatter(X1, Y1, label=labels[p_i])
