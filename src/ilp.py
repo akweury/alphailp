@@ -218,7 +218,7 @@ def ilp_eval(success, args, lang, clauses, g_data):
         log_utils.add_lines(f"ILP failed.", args.log_file)
 
 
-    target_predicate = [clauses[0].head.pred.name]
+    # target_predicate = [clauses[0].head.pred.name]
     # calculate scores
     VM = ai_interface.get_vm(args, lang)
     FC = ai_interface.get_fc(args, lang, VM, args.group_e)
