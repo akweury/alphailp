@@ -131,7 +131,7 @@ def extract_clauses_from_bs_clauses(bs_clauses, c_type, args):
                 failed_img_index = ((positive_score < 0.9).nonzero(as_tuple=True)[0]).tolist()
                 log_utils.add_lines(
                     f"({c_type}): {bs_clause[0]} {bs_clause[1].reshape(-1)} "
-                    f"Failed Image: {failed_img_index}  ({len(failed_img_index)}/{bs_clause[2].shape[0]})",
+                    f"Failed Positive Image: ({len(failed_img_index)}/{bs_clause[2].shape[0]}) {failed_img_index} ",
                     args.log_file)
     return clauses
 
