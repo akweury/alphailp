@@ -217,7 +217,8 @@ def ilp_eval(success, args, lang, clauses, g_data):
     if not success:
         log_utils.add_lines(f"ILP failed.", args.log_file)
 
-
+    if len(clauses)==0:
+        return
     # target_predicate = [clauses[0].head.pred.name]
     # calculate scores
     VM = ai_interface.get_vm(args, lang)
