@@ -1,7 +1,7 @@
 {
   "dataset": "square",
   "dataset-type": "custom_scenes",
-  "bk_pred_names": "rho",
+  "bk_pred_names": "phi,rho",
   "rho_num": 15,
   "phi_num": 8,
   "slope_num": 5,
