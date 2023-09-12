@@ -1,5 +1,4 @@
 ### NSFR
-torch==1.13.0
 lark-parser
 scikit-learn
 setuptools>=58.5.3
