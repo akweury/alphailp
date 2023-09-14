@@ -18,12 +18,12 @@ from pi import generate_explain_pred
 from pi_utils import gen_clu_pi_clauses, gen_exp_pi_clauses, generate_new_predicate
 
 
-def clause_eval(args, lang, FC, clauses, step):
+def clause_eval(args, lang, FC, clauses, step, eval_data=None):
     # clause evaluation
     NSFR = ai_interface.get_nsfr(args, lang, FC, clauses)
     # evaluate new clauses
     target_preds = [clauses[0].head.pred.name]
-    img_scores = get_clause_score(NSFR, args, target_preds)
+    img_scores = get_clause_score(NSFR, args, target_preds, eval_data)
     clause_scores = get_clause_3score(img_scores[:, :, args.index_pos], img_scores[:, :, args.index_neg], args, step)
     return img_scores, clause_scores
 
@@ -217,7 +217,7 @@ def ilp_eval(success, args, lang, clauses, g_data):
     if not success:
         log_utils.add_lines(f"ILP failed.", args.log_file)
 
-    if len(clauses)==0:
+    if len(clauses) == 0:
         return
     # target_predicate = [clauses[0].head.pred.name]
     # calculate scores
@@ -225,7 +225,9 @@ def ilp_eval(success, args, lang, clauses, g_data):
     FC = ai_interface.get_fc(args, lang, VM, args.group_e)
 
     # evaluate all test images at once
-    img_scores, clauses_scores = clause_eval(args, lang, FC, clauses, 0)
+    img_scores, clauses_scores = clause_eval(args, lang, FC, clauses, 0, eval_data="test")
+    clause_with_scores = sort_clauses_by_score(clauses, img_scores, clauses_scores, args)
+    success, clauses = log_utils.print_test_result(args, lang, clause_with_scores)
 
     for data_type in ["true", "false"]:
         if data_type == "true":
@@ -260,6 +262,7 @@ def ilp_eval(success, args, lang, clauses, g_data):
     log_utils.add_lines(f"Precision: {tp_count / (fp_count + tp_count)} ({tp_count}/{fp_count + tp_count})",
                         args.log_file)
     log_utils.add_lines("=======================================================================", args.log_file)
+
 
     return scores_dict
 
@@ -320,13 +323,20 @@ def get_clause_3score(score_pos, score_neg, args, c_length=0):
     return scores
 
 
-def get_clause_score(NSFR, args, pred_names, pos_group_pred=None, neg_group_pred=None, batch_size=None):
+def get_clause_score(NSFR, args, pred_names, eval_data, pos_group_pred=None, neg_group_pred=None, batch_size=None):
     """ input: clause, output: score """
 
     if pos_group_pred is None:
-        pos_group_pred = args.val_group_pos
+        if eval_data == "test":
+            pos_group_pred = args.test_group_pos
+        else:
+            pos_group_pred = args.val_group_pos
+
     if neg_group_pred is None:
-        neg_group_pred = args.val_group_neg
+        if eval_data == "test":
+            neg_group_pred = args.test_group_neg
+        else:
+            neg_group_pred = args.val_group_neg
     if batch_size is None:
         batch_size = args.batch_size_train
 
