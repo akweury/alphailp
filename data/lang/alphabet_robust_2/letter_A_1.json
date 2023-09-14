@@ -15,7 +15,7 @@
   "score_unique": true,
   "semantic_unique": true,
   "small_data": false,
-  "top_data": "full",
+  "top_data": 1000,
   "epochs": 100,
   "t_beam": 6,
   "n_beam": 5,

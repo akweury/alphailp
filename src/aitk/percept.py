@@ -125,7 +125,7 @@ def get_pred_res(args, data_type, file_path):
     # pred_pos_ordered = logic_utils.data_ordering(pred_pos_norm)
     # pred_neg_ordered = logic_utils.data_ordering(pred_neg_norm)
 
-    if args.top_data is not "full" and args.top_data < len(pred_neg_norm):
+    if args.top_data < len(pred_neg_norm):
         pred_pos_norm = pred_pos_norm[:args.top_data]
         pred_neg_norm = pred_neg_norm[:args.top_data]
 
