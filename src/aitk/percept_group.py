@@ -336,7 +336,7 @@ def prune_cirs(args, cir_tensors, cir_tensors_indices):
 
 def visual_group_analysis(args, g_indices, valid_obj_all, g_type, g_shape_data, unfit_error_all):
     # detect lines image by image
-    for img_i in range(args.top_data):
+    for img_i in range(len(g_indices)):
         if g_indices[img_i] is None:
             continue
         for g_i, obj_indices in enumerate(g_indices[img_i]):
@@ -833,7 +833,7 @@ def select_top_k_groups(args, object_groups, obj_indices):
     obj_groups_top = []
     obj_groups_top_indices = []
 
-    for img_i in range(args.top_data):
+    for img_i in range(len(object_groups)):
         # TODO: deal with group number less than group_e
         actual_group_num = len(object_groups[img_i])
 

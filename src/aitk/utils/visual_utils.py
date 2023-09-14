@@ -1048,7 +1048,7 @@ def visual_line(vis_file, slope, end_A, end_B, intercept, point_groups, point_gr
 
 
 def visual_selected_groups(args, g_indices, valid_obj_all, show=False, save=True):
-    for img_i in range(args.top_data):
+    for img_i in range(len(g_indices)):
         # if no groups in this image, continue
         if g_indices[img_i] is None:
             continue
