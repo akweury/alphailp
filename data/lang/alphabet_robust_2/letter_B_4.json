@@ -1,6 +1,6 @@
 {
   "dataset": "letter_B_4",
-  "dataset-type": "alphabet",
+  "dataset-type": "alphabet_robust_2",
   "bk_pred_names": "shape,phi,rho,slope",
   "max_group_num": 6,
   "obj_group": true,
