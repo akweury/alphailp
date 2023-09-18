@@ -22,9 +22,9 @@ class ExpTree(Transformer):
         head = trees[0]
         body = flatten([trees[1]])
 
-        for b in body:
-            if type(b.pred) == InventedPredicate:
-                return InventedClause(head, body)
+        # for b in body:
+        #     if type(b.pred) == InventedPredicate:
+        #         return InventedClause(head, body)
 
         if type(head.pred) == InventedPredicate:
             return InventedClause(head, body)

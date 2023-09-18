@@ -882,7 +882,7 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
         radius = 10
 
     for data_type in ["true", "false"]:
-        for img_i in range(len(args.test_group_pos)):
+        for img_i in range(len(args.train_group_pos)):
 
             data_name = args.image_name_dict['test'][data_type][img_i]
             if data_type == "true":

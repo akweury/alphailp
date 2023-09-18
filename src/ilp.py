@@ -28,6 +28,16 @@ def clause_eval(args, lang, FC, clauses, step, eval_data=None):
     return img_scores, clause_scores
 
 
+def clause_robust_eval(args, lang, FC, clauses, step, eval_data=None):
+    # clause evaluation
+    NSFR = ai_interface.get_nsfr(args, lang, FC, clauses)
+    # evaluate new clauses
+    target_preds = [clauses[0].head.pred.name]
+    img_scores = get_clause_score(NSFR, args, target_preds, eval_data, args.train_group_pos, args.train_group_neg)
+    clause_scores = get_clause_3score(img_scores[:, :, args.index_pos], img_scores[:, :, args.index_neg], args, step)
+    return img_scores, clause_scores
+
+
 # def clause_prune(args, clauses, score_all, scores):
 #     # classify clauses
 #     clause_with_scores = prune_low_score_clauses(clauses, score_all, scores, args)
@@ -263,6 +273,55 @@ def ilp_eval(success, args, lang, clauses, g_data):
                         args.log_file)
     log_utils.add_lines("=======================================================================", args.log_file)
 
+    return scores_dict
+
+
+def ilp_robust_eval(args, lang):
+    scores_dict = {}
+    clauses = lang.all_clauses
+    # target_predicate = [clauses[0].head.pred.name]
+    # calculate scores
+    VM = ai_interface.get_vm(args, lang)
+    FC = ai_interface.get_fc(args, lang, VM, args.group_e)
+
+    # evaluate all test images at once
+    img_scores, clauses_scores = clause_robust_eval(args, lang, FC, clauses, 0, eval_data="train")
+    clause_with_scores = sort_clauses_by_score(clauses, img_scores, clauses_scores, args)
+    success, clauses = log_utils.print_test_result(args, lang, clause_with_scores)
+
+    for data_type in ["true", "false"]:
+        if data_type == "true":
+            img_sign = config.score_example_index["pos"]
+        else:
+            img_sign = config.score_example_index["neg"]
+        scores_dict[data_type] = {}
+        scores_dict[data_type]["clause"] = []
+        scores_dict[data_type]["score"] = []
+        for img_i in range(len(args.train_group_pos)):
+            # scores_sorted, scores_indices = torch.sort(img_scores[:, i, img_sign], descending=True)
+
+            score_best = img_scores[0, img_i, img_sign]
+            clause_best = clauses[0]
+            scores_dict[data_type]["score"].append(score_best)
+            scores_dict[data_type]["clause"].append(clause_best)
+
+            if data_type == "false" and score_best > 0.9:
+                print("(FP)")
+            elif data_type == "true" and score_best < 0.1:
+                print("(FN)")
+    # visual_utils.visualization(args, lang, scores_dict)
+
+    log_utils.add_lines("===================== top clause score ================================", args.log_file)
+    positive_res = torch.tensor(scores_dict['true']['score'])
+    negative_res = torch.tensor(scores_dict['false']['score'])
+    tp_count = len(positive_res[positive_res > 0.95])
+    p_total = len(positive_res)
+    fp_count = len(negative_res[negative_res > 0.95])
+    f_total = len(negative_res)
+    log_utils.add_lines(f"Recall: {tp_count / p_total} ({tp_count}/{p_total})", args.log_file)
+    log_utils.add_lines(f"Precision: {tp_count / (fp_count + tp_count+ 1e-10)} ({tp_count}/{fp_count + tp_count})",
+                        args.log_file)
+    log_utils.add_lines("=======================================================================", args.log_file)
 
     return scores_dict
 

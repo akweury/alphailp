@@ -14,7 +14,17 @@ def init_ilp(args, percept_dict, obj_groups, obj_avail, pi_type, level):
     lang = Language(args, [], pi_type, level)
     return lang
 
+def init_eval_ilp(args, percept_dict, obj_groups, obj_avail, pi_type, level,  target_clauses, inv_p_clauses):
+    logic_utils.update_eval_args(args, percept_dict, obj_groups, obj_avail)
+    lang = Language(args, [], pi_type, level)
 
+    reset_lang(lang, args, level, args.neural_preds, full_bk=True)
+    lang.load_invented_preds(inv_p_clauses, target_clauses)
+    reset_args(args)
+    import aitk.utils.lang_utils as lang_utils
+    lang.mode_declarations = lang_utils.get_mode_declarations(args.group_e, lang)
+
+    return lang
 # def run_ilp(args, lang, level):
 #     success = ilp.ilp_main(args, lang, level)
 #     return success
@@ -83,6 +93,9 @@ def ilp_eval(success, args, lang, clauses, g_data):
     scores = ilp.ilp_eval(success, args, lang, clauses, g_data)
     return scores
 
+def ilp_robust_eval(args, lang):
+    scores = ilp.ilp_robust_eval(args, lang)
+    return scores
 
 def train_nsfr(args, rtpt, lang, clauses):
     ilp.train_nsfr(args, rtpt, lang, clauses)

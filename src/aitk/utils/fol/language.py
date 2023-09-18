@@ -1,7 +1,7 @@
 import glob
 from lark import Lark
 import itertools
-
+import re
 from .exp_parser import ExpTree
 from .logic import *
 from . import bk
@@ -194,12 +194,12 @@ class Language(object):
 
         return clause
 
-    def parse_invented_bk_pred(self, bk_prefix, line):
+    def parse_invented_bk_pred(self, line):
         """Parse string to invented predicates.
         """
         head, body = line.split(':-')
         arity = len(head.split(","))
-        head_dtype_names = arity * ['object']
+        head_dtype_names = arity * ['group']
         dtypes = [DataType(dt) for dt in head_dtype_names]
 
         # pred_with_id = pred + f"_{i}"
@@ -208,23 +208,67 @@ class Language(object):
 
         return invented_pred
 
-    def load_invented_preds(self, bk_prefix, path):
-        f = open(path)
-        lines = f.readlines()
-        lines = [self.rename_bk_preds_in_clause(bk_prefix, line) for line in lines]
-        preds = [self.parse_invented_bk_pred(bk_prefix, line) for line in lines]
-        return preds
+    def count_arity_from_clauses(self, clause_cluster):
+        OX = "O"
+        arity = 1
+        arity_list = []
+        id = clause_cluster[0].split("inv_pred")[1].split("(")[0]
+        while (OX + str(arity)) in clause_cluster[0]:
+            arity_list.append(OX + str(arity))
+            arity += 1
+        return arity_list, id
+
+    def load_invented_preds(self, clauses_str, target_clauses_str):
+        inv_p_clauses = []
+        inv_preds = []
+        # generate clauses
+        for clause_str in clauses_str:
+            inv_pred = self.parse_invented_bk_pred(clause_str)
+            if inv_pred not in self.invented_preds:
+                self.invented_preds.append(inv_pred)
+            inv_preds.append(inv_pred)
+            tree = self.lp_clause.parse(clause_str)
+            clause = ExpTree(self).transform(tree)
+            # generate clauses
+            inv_p_clauses.append(clause)
+
+        self.all_invented_preds = self.invented_preds
+        self.all_pi_clauses = inv_p_clauses
+
+        target_clauses = []
+        for target_clause_str in target_clauses_str:
+            tree = self.lp_clause.parse(target_clause_str)
+            clause = ExpTree(self).transform(tree)
+            # generate clauses
+            target_clauses.append(clause)
+        self.all_clauses = target_clauses
+        # unique predicate
+        new_predicates = []
+        p_names = []
+        for pred in inv_preds:
+            if "inv" in pred.name and pred.name not in p_names:
+                p_names.append(pred.name)
+                new_predicates.append(pred)
+
+        for inv_pred in self.invented_preds:
+            inv_pred.body = []
+            for c in inv_p_clauses:
+                if c.head.pred.name == inv_pred.name:
+                    inv_pred.body.append(c.body)
+
+        self.update_inv()
+
+
+    def update_inv(self):
+        self.invented_preds = self.all_invented_preds
+        self.pi_clauses = self.all_pi_clauses
+        self.generate_atoms()
 
     def load_lang(self, args, pi_type, level):
         self.preds = [self.parse_pred(line, pi_type) for line in bk.target_predicate]
         # preds += self.load_neural_preds()
         self.consts = self.load_consts(args, level)
         # pi_templates = self.load_invented_preds_template(str(self.base_path / 'neural_preds.txt'))
-
-        if args.with_bk:
-            bk_pred_files = glob.glob(str(self.base_path / ".." / "bg_predicates" / "*.txt"))
-            for bk_i, bk_file in enumerate(bk_pred_files):
-                self.bk_inv_preds += self.load_invented_preds(bk_i, bk_file)
 
     def get_var_and_dtype(self, atom):
         """Get all variables in an input atom with its dtypes by enumerating variables in the input atom.
@@ -347,9 +391,29 @@ class Language(object):
         """
         prefix = "inv_pred"
         new_predicate_id = self.invented_preds_number
-        args.p_inv_counter += 1
-        self.invented_preds_number = args.p_inv_counter
+        if args is not None:
+            args.p_inv_counter += 1
+            self.invented_preds_number = args.p_inv_counter
         pred_with_id = prefix + str(new_predicate_id)
+
+        new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, p_args, pi_type=pi_type)
+        # self.invented_preds.append(new_predicate)
+
+        return new_predicate
+
+    def load_inv_pred(self, id, arity, pi_dtypes, p_args, pi_type):
+        """Get the predicate by its id.
+
+        Args:
+            pi_template (str): The name of the predicate template.
+
+        Returns:
+            InventedPredicat: The matched invented predicate with the given name.
+        """
+        prefix = "inv_pred"
+        # new_predicate_id = self.invented_preds_number
+
+        pred_with_id = prefix + str(id)
 
         new_predicate = InventedPredicate(pred_with_id, int(arity), pi_dtypes, p_args, pi_type=pi_type)
         # self.invented_preds.append(new_predicate)

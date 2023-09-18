@@ -276,9 +276,9 @@ class TensorEncoder(object):
         if len(list(set(dtypes))) == 0:
             return []
         # check the data type consistency
-        assert len(list(set(dtypes))) == 1, "Invalid existentially quantified variables. " + \
-                                            str(len(list(set(dtypes)))) + " data types in the body: " + str(
-            body) + " dypes: " + str(dtypes)
+        # assert len(list(set(dtypes))) == 1, "Invalid existentially quantified variables. " + \
+        #                                     str(len(list(set(dtypes)))) + " data types in the body: " + str(
+        #     body) + " dypes: " + str(dtypes)
 
         vars = list(set(vars))
         n_vars = len(vars)

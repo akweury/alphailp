@@ -36,6 +36,6 @@ def get_image_names(args):
         image_name_dict[data_mode] = {}
         image_name_dict[data_mode]["true"] = tensor_dict["pos_names"]
         image_name_dict[data_mode]["false"] = tensor_dict["neg_names"]
-        if len(image_name_dict[data_mode]["true"]) == 0 or len(image_name_dict[data_mode]["false"]) == 0:
-            raise ValueError
+        # if len(image_name_dict[data_mode]["true"]) == 0 or len(image_name_dict[data_mode]["false"]) == 0:
+        #     raise ValueError
     args.image_name_dict = image_name_dict

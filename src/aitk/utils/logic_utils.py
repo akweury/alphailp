@@ -247,6 +247,7 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
     args.train_pos = pm_prediction_dict["train_pos"]#.to(args.device)
     args.train_neg = pm_prediction_dict["train_neg"]#.to(args.device)
 
+
     args.val_group_pos = obj_groups['group_val_pos']
     args.val_group_neg = obj_groups['group_val_neg']
     args.train_group_pos = obj_groups['group_train_pos']
@@ -262,6 +263,33 @@ def update_args(args, pm_prediction_dict, obj_groups, obj_avail):
     args.obj_avail_test_neg = obj_avail['obj_avail_test_neg']
 
     args.data_size = len(args.val_pos)
+    args.invented_pred_num = 0
+    args.last_refs = []
+    args.found_ns = False
+    args.d = len(config.group_tensor_index)
+
+    # clause generation and predicate invention
+    lang_data_path = args.lang_base_path / args.dataset_type / args.dataset
+
+    pi_type = config.pi_type['bk']
+    bk_preds = [bk.neural_predicate_2[bk_pred_name] for bk_pred_name in args.bk_pred_names.split(",")]
+    neural_preds = file_utils.load_neural_preds(bk_preds, pi_type)
+
+    args.neural_preds = [neural_pred for neural_pred in neural_preds]
+    args.p_inv_counter = 0
+
+
+
+def update_eval_args(args, pm_prediction_dict, obj_groups, obj_avail):
+    args.train_pos = pm_prediction_dict["train_pos"]#.to(args.device)
+    args.train_neg = pm_prediction_dict["train_neg"]#.to(args.device)
+    args.train_group_pos = obj_groups['group_train_pos']
+    args.train_group_neg = obj_groups['group_train_neg']
+    args.obj_avail_train_pos = obj_avail['obj_avail_train_pos']
+    args.obj_avail_train_neg = obj_avail['obj_avail_train_neg']
+
+
+    args.data_size = len(args.train_pos)
     args.invented_pred_num = 0
     args.last_refs = []
     args.found_ns = False
