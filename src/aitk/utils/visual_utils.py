@@ -940,6 +940,73 @@ def visualization(args, lang, scores=None, colors=None, thickness=None, radius=N
                 args.image_output_path / f"{data_name.split('.data0.json')[0]}.output.png")
 
             save_image(final_image, final_image_filename)
+def visualization_robust(args, lang, scores=None, colors=None, thickness=None, radius=None):
+    if colors is None:
+        # Blue color in BGR
+        colors = [
+            (255, 0, 0),
+            (255, 255, 0),
+            (0, 255, 0),
+            (0, 0, 255),
+            (0, 255, 255),
+        ]
+    if thickness is None:
+        # Line thickness of 2 px
+        thickness = 2
+    if radius is None:
+        radius = 10
+
+    for data_type in ["true", "false"]:
+        for img_i in range(len(args.train_group_pos)):
+
+            data_name = args.image_name_dict['train'][data_type][img_i]
+            if data_type == "true":
+                data = args.train_group_pos[img_i]
+                data_indices = args.obj_avail_train_pos[img_i]
+                obj_data = args.train_pos[img_i]
+            else:
+                data = args.train_group_neg[img_i]
+                data_indices = args.obj_avail_train_neg[img_i]
+                obj_data = args.train_neg[img_i]
+
+            visual_images = []
+            # input image
+            file_prefix = \
+                str(config.buffer_path / args.dataset_type / args.dataset / "train" / data_type / data_name).split(
+                    ".data0.json")[0]
+            image_file = file_prefix + ".image.png"
+            input_image = get_cv_image(image_file)
+
+            # group prediction
+            group_pred_image = visual_group_predictions(args, data, data_indices, obj_data, input_image, colors,
+                                                        thickness,
+                                                        config.group_tensor_index, config.obj_tensor_index)
+            group_img_name = str(
+                args.image_output_path / f"{data_name.split('.data0.json')[0]}.group.output.png")
+            save_image(group_pred_image, group_img_name)
+
+            # information image
+            info_image = visual_info(lang, input_image.shape, font_size=0.3)
+
+            # adding header and footnotes
+            input_image = draw_text(input_image, "input")
+            visual_images.append(input_image)
+
+            group_pred_image = draw_text(group_pred_image,
+                                         f"group:{round(scores[data_type]['score'][img_i].tolist(), 4)}")
+            group_pred_image = draw_text(group_pred_image, f"{scores[data_type]['clause'][img_i]}",
+                                         position="lower_left", font_size=0.4)
+            visual_images.append(group_pred_image)
+
+            info_image = draw_text(info_image, f"Info:")
+            visual_images.append(info_image)
+
+            # final processing
+            final_image = hconcat_resize(visual_images)
+            final_image_filename = str(
+                args.image_output_path / f"{data_name.split('.data0.json')[0]}.output.png")
+
+            save_image(final_image, final_image_filename)
 
 
 # def visual_lines(args, line_tensors, line_indices, data_type):

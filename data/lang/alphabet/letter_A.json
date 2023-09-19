@@ -2,7 +2,7 @@
   "dataset": "letter_A",
   "dataset-type": "alphabet",
   "bk_pred_names": "shape,phi,rho,slope",
-  "max_group_num": 5,
+  "max_group_num": 6,
   "obj_group": true,
   "line_group": true,
   "circle_group": false,

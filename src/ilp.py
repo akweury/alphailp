@@ -309,7 +309,7 @@ def ilp_robust_eval(args, lang):
                 print("(FP)")
             elif data_type == "true" and score_best < 0.1:
                 print("(FN)")
-    # visual_utils.visualization(args, lang, scores_dict)
+    visual_utils.visualization_robust(args, lang, scores_dict)
 
     log_utils.add_lines("===================== top clause score ================================", args.log_file)
     positive_res = torch.tensor(scores_dict['true']['score'])
