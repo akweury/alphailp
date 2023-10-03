@@ -4,7 +4,7 @@
   "bk_pred_names": "slope",
   "rho_num": 5,
   "phi_num": 5,
-  "slope_num": 12,
+  "slope_num": 8,
   "max_group_num": 3,
   "obj_group": false,
   "line_group": true,

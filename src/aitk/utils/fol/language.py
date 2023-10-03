@@ -237,6 +237,7 @@ class Language(object):
 
         target_clauses = []
         for target_clause_str in target_clauses_str:
+            target_clause_str = target_clause_str.replace(" ", "")
             tree = self.lp_clause.parse(target_clause_str)
             clause = ExpTree(self).transform(tree)
             # generate clauses
@@ -257,7 +258,6 @@ class Language(object):
                     inv_pred.body.append(c.body)
 
         self.update_inv()
-
 
     def update_inv(self):
         self.invented_preds = self.all_invented_preds

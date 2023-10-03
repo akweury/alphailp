@@ -305,24 +305,7 @@ def ilp_robust_eval(args, lang):
             scores_dict[data_type]["score"].append(score_best)
             scores_dict[data_type]["clause"].append(clause_best)
 
-            if data_type == "false" and score_best > 0.9:
-                print("(FP)")
-            elif data_type == "true" and score_best < 0.1:
-                print("(FN)")
     visual_utils.visualization_robust(args, lang, scores_dict)
-
-    log_utils.add_lines("===================== top clause score ================================", args.log_file)
-    positive_res = torch.tensor(scores_dict['true']['score'])
-    negative_res = torch.tensor(scores_dict['false']['score'])
-    tp_count = len(positive_res[positive_res > 0.95])
-    p_total = len(positive_res)
-    fp_count = len(negative_res[negative_res > 0.95])
-    f_total = len(negative_res)
-    log_utils.add_lines(f"Recall: {tp_count / p_total} ({tp_count}/{p_total})", args.log_file)
-    log_utils.add_lines(f"Precision: {tp_count / (fp_count + tp_count+ 1e-10)} ({tp_count}/{fp_count + tp_count})",
-                        args.log_file)
-    log_utils.add_lines("=======================================================================", args.log_file)
-
     return scores_dict
 
 

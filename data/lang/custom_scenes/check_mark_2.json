@@ -1,5 +1,5 @@
 {
-  "dataset": "check_mark",
+  "dataset": "check_mark_2",
   "dataset-type": "custom_scenes",
   "bk_pred_names": "phi,rho,slope",
   "rho_num": 20,

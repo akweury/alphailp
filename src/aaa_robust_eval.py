@@ -106,13 +106,13 @@ def load_inv_preds(file_path):
     arity = 1
     target_clauses = []
     inv_p_clauses = []
+
     for clause_str in clauses:
+        # find its arity
+        while ("O" + str(arity + 1)) in clause_str:
+            arity += 1
         clause_str = clause_str.replace("\n", "")
         if "kp(X)" not in clause_str:
-            head, body = clause_str.split(':-')
-            new_arity = len(head.split(","))
-            if new_arity > arity:
-                arity = new_arity
             inv_p_clauses.append(clause_str)
         else:
             target_clauses.append(clause_str)
@@ -138,8 +138,12 @@ def main():
     print(f"- log_file_path:{log_file}")
     args.log_file = log_file
 
-    arity, target_clauses, inv_p_clauses = load_inv_preds(
-        config.buffer_path / args.dataset_type / args.dataset / "learned_p_and_c.txt")
+    if args.with_pi:
+        bk_file = config.buffer_path / args.dataset_type / args.dataset / "learned_p_and_c.txt"
+    else:
+        bk_file = config.buffer_path / args.dataset_type / args.dataset / "learned_c.txt"
+
+    arity, target_clauses, inv_p_clauses = load_inv_preds(bk_file)
     args.group_e = arity
 
     args, rtpt, percept_dict, obj_groups, obj_avail, nsfr = init(args)
