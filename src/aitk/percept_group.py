@@ -380,8 +380,7 @@ def detect_line_groups(args, valid_obj_all, visual):
     line_tensors, line_tensors_indices = encode_groups(args, valid_obj_all, line_indices, line_groups, "line")
     # logic: prune strategy
     g_tensors, indices, data, error = prune_groups(args, OBJ_N, line_tensors, line_tensors_indices, line_data,
-                                                   line_error,
-                                                   "line")
+                                                   line_error, "line")
     if visual:
         visual_group_analysis(args, indices, valid_obj_all, "line", data, error)
     return g_tensors, indices
@@ -472,11 +471,13 @@ def extend_line_group(args, obj_indices, obj_tensors):
         tensor_index = config.group_tensor_index
         colinearities = eval_utils.calc_colinearity(line_objs_extended,
                                                     [tensor_index[i] for i in config.obj_positions])
-        avg_distances = eval_utils.calc_avg_dist(line_objs_extended, [tensor_index[i] for i in config.obj_positions])
+        avg_distances_error, avg_dist = eval_utils.calc_avg_dist(line_objs_extended,
+                                                                 [tensor_index[i] for i in config.obj_positions])
 
         is_line = colinearities < args.error_th
-        is_even_dist = avg_distances < args.line_even_error
-        passed_indices = is_line * is_even_dist
+        is_even_dist = avg_distances_error < args.line_even_error
+        is_valid_dist = avg_dist < args.avg_dist_penalty
+        passed_indices = is_line * is_even_dist * is_valid_dist
         has_new_element = passed_indices.sum() > 0
         passed_objs = extra_objs[passed_indices]
         passed_indices = extra_index[passed_indices]
@@ -525,16 +526,14 @@ def extend_line_group_cuda(args, obj_indices, obj_tensors):
     passed_obj_th = 1e-4
     passed_obj_scores = extra_obj_scores_sorted[:, :obj_add_num]
 
-
-
     passed_obj_mask = torch.lt(passed_obj_scores, passed_obj_th)
     passed_obj_index = extra_obj_scores_indices[:, :obj_add_num]
-    passed_objs =torch.tensor([extra_objs[img_i][passed_obj_index[img_i]].tolist() for img_i in range(obj_tensors.shape[0])])
+    passed_objs = torch.tensor(
+        [extra_objs[img_i][passed_obj_index[img_i]].tolist() for img_i in range(obj_tensors.shape[0])])
 
     # add passed objects to line groups
     line_objs = torch.cat([line_objs, passed_objs], dim=1)
     # add mask and index to corresponding groups
-
 
     passed_indices = extra_index[passed_indices]
     line_groups = torch.cat([line_objs, passed_objs], dim=0)

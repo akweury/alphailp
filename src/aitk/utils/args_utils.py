@@ -165,6 +165,8 @@ def get_args(data_path):
                         help="The number of distance for distance predicates.")
     parser.add_argument("--slope_num", type=int, default=10,
                         help="The number of directions for direction predicates.")
+    parser.add_argument("--avg_dist_penalty", type=float, default=0.2,
+                        help="The number of directions for direction predicates.")
     args = parser.parse_args()
 
     args_file = data_path / "lang" / args.dataset_type / str(str(args.dataset) + ".json")

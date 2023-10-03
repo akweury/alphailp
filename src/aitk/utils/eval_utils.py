@@ -303,8 +303,7 @@ def calc_avg_dist(obj_tensors, indices_position):
         distances.append(distance.tolist())
 
     error = torch.mean((torch.tensor(distances) - torch.mean(torch.tensor(distances), dim=0)) ** 2, dim=0)
-
-    return error
+    return error, torch.mean(torch.tensor(distances), dim=0)
 
 
 def calc_avg_dist_cuda(obj_tensors):
