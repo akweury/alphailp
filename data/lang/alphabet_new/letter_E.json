@@ -1,7 +1,7 @@
 {
   "dataset": "letter_E",
   "dataset-type": "alphabet_new",
-  "bk_pred_names": "color,shape,phi,rho,slope",
+  "bk_pred_names": "phi,rho,slope",
   "max_group_num": 5,
   "obj_group": false,
   "line_group": true,
@@ -41,7 +41,7 @@
   "with_bk": true ,
   "plot_four_zone": false,
   "with_explain": false,
-  "is_visual": false,
+  "is_visual": true,
   "re_eval_groups": true,
-  "show_process": false
+  "show_process": true
 }
