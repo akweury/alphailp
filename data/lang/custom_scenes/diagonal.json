@@ -5,7 +5,7 @@
   "max_group_num": 3,
   "obj_group": true,
   "line_group": false,
-  "circle_group":false,
+  "circle_group": false,
   "conic_group": false,
   "max_step": 3,
   "weight_tp": 0.95,
@@ -45,5 +45,7 @@
   "with_pi": true,
   "is_visual": false,
   "re_eval_groups": true,
-  "show_process": false
+  "show_process": false,
+  "top_k_percent": false,
+  "k_percent": 0.9
 }

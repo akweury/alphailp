@@ -255,10 +255,10 @@ def ilp_eval(success, args, lang, clauses, g_data):
             scores_dict[data_type]["score"].append(score_best)
             scores_dict[data_type]["clause"].append(clause_best)
 
-            if data_type == "false" and score_best > 0.9:
-                print("(FP)")
-            elif data_type == "true" and score_best < 0.1:
-                print("(FN)")
+            # if data_type == "false" and score_best > 0.9:
+            #     print("(FP)")
+            # elif data_type == "true" and score_best < 0.1:
+            #     print("(FN)")
     visual_utils.visualization(args, lang, scores_dict)
 
     log_utils.add_lines("===================== top clause score ================================", args.log_file)
@@ -269,7 +269,7 @@ def ilp_eval(success, args, lang, clauses, g_data):
     fp_count = len(negative_res[negative_res > 0.95])
     f_total = len(negative_res)
     log_utils.add_lines(f"Recall: {tp_count / p_total} ({tp_count}/{p_total})", args.log_file)
-    log_utils.add_lines(f"Precision: {tp_count / (fp_count + tp_count)} ({tp_count}/{fp_count + tp_count})",
+    log_utils.add_lines(f"Precision: {tp_count / (fp_count + tp_count+1e-20)} ({tp_count}/{fp_count + tp_count})",
                         args.log_file)
     log_utils.add_lines("=======================================================================", args.log_file)
 
@@ -509,14 +509,29 @@ def prune_clauses(clause_with_scores, args):
     if args.show_process:
         log_utils.add_lines(f"- {len(c_score_pruned)} clauses left.", args.log_file)
 
+    if args.top_k_percent:
+        percent = 0
+        passed_c_scores = []
+        for cs_i, c_score in enumerate(c_score_pruned):
+            passed_c_scores.append(c_score_pruned[cs_i])
+            percent += c_score[1][2]
+            if percent > args.k_percent or len(passed_c_scores)>=10:
+                break
+
+        if percent < args.k_percent:
+            print("break")
+        log_utils.add_lines(f"- top k percent: {percent * 100} %. ", args.log_file)
+        log_utils.add_lines(f"- {len(passed_c_scores)} clauses left. ", args.log_file)
+
     # select top N clauses
-    if args.c_top is not None and len(c_score_pruned) > args.c_top:
-        c_score_pruned = c_score_pruned[:args.c_top]
+    elif args.c_top is not None and len(c_score_pruned) > args.c_top:
+        passed_c_scores = c_score_pruned[:args.c_top]
     # log_utils.add_lines(f"after top select: {len(c_score_pruned)}", args.log_file)
+    else:
+        passed_c_scores = c_score_pruned
+    refs += update_refs(passed_c_scores, args)
 
-    refs += update_refs(c_score_pruned, args)
-
-    return refs, c_score_pruned
+    return refs, passed_c_scores
 
 
 def check_result(args, clauses):

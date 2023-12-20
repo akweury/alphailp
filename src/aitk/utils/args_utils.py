@@ -167,6 +167,10 @@ def get_args(data_path):
                         help="The number of directions for direction predicates.")
     parser.add_argument("--avg_dist_penalty", type=float, default=0.2,
                         help="The number of directions for direction predicates.")
+    parser.add_argument("--top_k_percent", action="store_false",
+                        help="Use top k percent to prune clauses and predicates, defaults to False.")
+    parser.add_argument("--k_percent", type=float, default=0.9,
+                        help="The threshold of sum of sn scores.")
     args = parser.parse_args()
 
     args_file = data_path / "lang" / args.dataset_type / str(str(args.dataset) + ".json")

@@ -46,5 +46,7 @@
   "with_explain": false,
   "is_visual": true,
   "re_eval_groups": true,
-  "show_process": false
+  "show_process": false,
+  "top_k_percent": false,
+  "k_percent": 0.9
 }
