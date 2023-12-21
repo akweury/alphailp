@@ -25,7 +25,7 @@
   "nc_th": 0.8,
   "sc_th": 0.8,
   "sn_min_th": 0.1,
-  "c_top": 5,
+  "c_top": 3,
   "pi_top": 1,
   "length_weight": 0.02,
   "max_cluster_size": 8,
@@ -45,6 +45,6 @@
   "is_visual": false,
   "re_eval_groups": true,
   "show_process": false,
-  "top_k_percent": true,
+  "top_k_percent": false,
   "k_percent": 1
 }
