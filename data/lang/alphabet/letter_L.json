@@ -45,6 +45,6 @@
   "is_visual": false,
   "re_eval_groups": true,
   "show_process": false,
-  "top_k_percent": true,
+  "top_k_percent": false,
   "k_percent": 1
 }
